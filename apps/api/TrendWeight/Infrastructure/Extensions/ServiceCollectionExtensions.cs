@@ -50,28 +50,26 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IProviderLinkService, ProviderLinkService>();
         services.AddScoped<ISourceDataService, SourceDataService>();
         services.AddScoped<ILegacyDbService, LegacyDbService>();
+        services.AddScoped<ILegacyMigrationService, LegacyMigrationService>();
 
         // Register Withings service
         var withingsConfig = new WithingsConfig();
         configuration.GetSection("Withings").Bind(withingsConfig);
         services.AddSingleton(withingsConfig);
-        services.AddHttpClient<IWithingsService, WithingsService>();
-        services.AddHttpClient<IProviderService, WithingsService>();
+        services.AddHttpClient<WithingsService>();
+        services.AddScoped<IWithingsService>(sp => sp.GetRequiredService<WithingsService>());
+        services.AddScoped<IProviderService>(sp => sp.GetRequiredService<WithingsService>());
 
         // Register Fitbit service
         var fitbitConfig = new FitbitConfig();
         configuration.GetSection("Fitbit").Bind(fitbitConfig);
         services.AddSingleton(fitbitConfig);
-        services.AddHttpClient<IFitbitService, FitbitService>();
-        services.AddHttpClient<IProviderService, FitbitService>();
+        services.AddHttpClient<FitbitService>();
+        services.AddScoped<IFitbitService>(sp => sp.GetRequiredService<FitbitService>());
+        services.AddScoped<IProviderService>(sp => sp.GetRequiredService<FitbitService>());
 
         // Register provider integration orchestrator
         services.AddScoped<IProviderIntegrationService, ProviderIntegrationService>();
-
-        // Add feature services as we implement them
-        // services.AddScoped<IMeasurementService, MeasurementService>();
-        // services.AddScoped<IProfileService, ProfileService>();
-        // services.AddScoped<ISettingsService, SettingsService>();
 
         return services;
     }

@@ -179,7 +179,6 @@ export function buildExploreOptions(options: Options, builderOptions: BuilderOpt
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createAfterSetExtremesHandler(dataArrays: ChartDataArrays, mode: keyof typeof Modes, modeText: string, isNarrow: boolean) {
   const { actualData, interpolatedData, projectionsData, actualSinkersData, interpolatedSinkersData } = dataArrays;
 

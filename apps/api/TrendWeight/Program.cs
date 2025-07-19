@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.RateLimiting;
 using TrendWeight.Infrastructure.Extensions;
 using TrendWeight.Infrastructure.Middleware;
 
+// Create a singleton JsonSerializerOptions for rate limiting responses
+var rateLimitJsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
@@ -69,7 +72,7 @@ builder.Services.AddRateLimiter(options =>
         };
 
         await context.HttpContext.Response.WriteAsync(
-            JsonSerializer.Serialize(response, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
+            JsonSerializer.Serialize(response, rateLimitJsonOptions),
             cancellationToken: token);
     };
 

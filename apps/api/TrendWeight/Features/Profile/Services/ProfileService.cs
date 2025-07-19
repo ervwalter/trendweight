@@ -184,6 +184,55 @@ public class ProfileService : IProfileService
     }
 
     /// <summary>
+    /// Updates the sharing token for a user's profile
+    /// </summary>
+    /// <param name="userId">The user's Supabase UID</param>
+    /// <returns>Updated profile with new sharing token</returns>
+    public async Task<DbProfile?> GenerateNewSharingTokenAsync(string userId)
+    {
+        var user = await GetByIdAsync(userId);
+        if (user == null)
+        {
+            _logger.LogWarning("User document not found for Supabase UID: {UserId}", userId);
+            return null;
+        }
+
+        // Generate a new unique token
+        var newToken = await GenerateUniqueShareTokenAsync();
+
+        // Update the token
+        user.Profile.SharingToken = newToken;
+        user.UpdatedAt = DateTime.UtcNow.ToString("o");
+
+        // Save the update
+        return await UpdateAsync(user);
+    }
+
+    /// <summary>
+    /// Completes migration by clearing the IsNewlyMigrated flag
+    /// </summary>
+    /// <param name="userId">The user's Supabase UID</param>
+    /// <returns>True if successful, false otherwise</returns>
+    public async Task<bool> CompleteMigrationAsync(string userId)
+    {
+        var user = await GetByIdAsync(userId);
+        if (user == null)
+        {
+            _logger.LogWarning("User document not found for Supabase UID: {UserId}", userId);
+            return false;
+        }
+
+        // Clear the IsNewlyMigrated flag
+        user.Profile.IsNewlyMigrated = false;
+        user.UpdatedAt = DateTime.UtcNow.ToString("o");
+
+        // Save the update
+        await UpdateAsync(user);
+        _logger.LogInformation("Completed migration for user {UserId}", userId);
+        return true;
+    }
+
+    /// <summary>
     /// Deletes a user account and all associated data
     /// </summary>
     /// <param name="userId">The user's Supabase UID</param>

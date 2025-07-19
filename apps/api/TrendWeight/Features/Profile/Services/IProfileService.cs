@@ -13,5 +13,7 @@ public interface IProfileService
     Task<DbProfile?> GetBySharingTokenAsync(string sharingToken);
     string GenerateShareToken();
     Task<string> GenerateUniqueShareTokenAsync();
+    Task<DbProfile?> GenerateNewSharingTokenAsync(string userId);
+    Task<bool> CompleteMigrationAsync(string userId);
     Task<bool> DeleteAccountAsync(Guid userId);
 }
