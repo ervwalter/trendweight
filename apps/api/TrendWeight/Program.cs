@@ -80,19 +80,6 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
-// Add CORS for development
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("DevelopmentCors", policy =>
-    {
-        policy
-            .WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:3000") // Vite and Next.js ports
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
-    });
-});
-
 // Add HTTP logging
 builder.Services.AddHttpLogging(options =>
 {
@@ -160,7 +147,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.UseCors("DevelopmentCors");
 }
 
 app.UseHttpsRedirection();

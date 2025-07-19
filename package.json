@@ -8,7 +8,6 @@
   "scripts": {
     "dev": "tmuxinator start",
     "dev:stop": "tmuxinator stop trendweight",
-    "dev:shell": "./dev.sh",
     "dev:api": "npm run -w apps/api dev",
     "dev:web": "npm run -w apps/web dev",
     "build": "npm run build --workspaces --if-present",

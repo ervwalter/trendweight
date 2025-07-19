@@ -23,6 +23,9 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         PropertyNameCaseInsensitive = true
     };
 
+    // Token refresh buffer - refresh tokens 5 minutes before they expire
+    private const int TOKEN_EXPIRY_BUFFER_SECONDS = 300;
+
     /// <summary>
     /// Constructor
     /// </summary>
@@ -168,7 +171,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         {
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var expiresAt = receivedAt + expiresIn;
-            var isExpired = expiresAt <= now + 300; // 5 minutes buffer
+            var isExpired = expiresAt <= now + TOKEN_EXPIRY_BUFFER_SECONDS;
 
             Logger.LogDebug("Withings token - Received: {ReceivedAt}, ExpiresIn: {ExpiresIn}s, ExpiresAt: {ExpiresAt}, Now: {Now}, IsExpired: {IsExpired}",
                 receivedAt, expiresIn, expiresAt, now, isExpired);

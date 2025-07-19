@@ -1,5 +1,4 @@
 import type { Measurement, ProfileData, SourceData } from "../../core/interfaces";
-import "../../core/time";
 import { convertToSourceMeasurements } from "./conversion";
 import { filterAndGroupFatMeasurements, groupAndSelectFirstByDay } from "./grouping";
 import { interpolateFatMeasurements, interpolateWeightMeasurements } from "./interpolation";

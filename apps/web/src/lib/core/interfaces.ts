@@ -25,27 +25,6 @@ export interface SourceMeasurement {
   fatRatioIsInterpolated?: boolean;
 }
 
-export interface AccessToken {
-  userid: string;
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  scope: string;
-  expires_at?: string;
-}
-
-export interface ProviderLink {
-  token: AccessToken;
-  updateReason: string;
-  updateTime: string;
-}
-
-export interface Links {
-  uid: string;
-  withings?: ProviderLink;
-  fitbit?: ProviderLink;
-}
-
 export interface ProfileData {
   firstName: string;
   goalStart?: string;

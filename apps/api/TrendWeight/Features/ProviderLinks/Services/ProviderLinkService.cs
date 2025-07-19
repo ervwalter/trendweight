@@ -15,7 +15,7 @@ public class ProviderLinkService : IProviderLinkService
         _logger = logger;
     }
 
-    public async Task<DbProviderLink?> GetAsync(Guid uid, string provider)
+    public async Task<DbProviderLink?> GetProviderLinkAsync(Guid uid, string provider)
     {
         try
         {
@@ -60,28 +60,19 @@ public class ProviderLinkService : IProviderLinkService
         return await _supabaseService.UpdateAsync(providerLink);
     }
 
-    public async Task DeleteAsync(Guid uid, string provider)
+    public async Task RemoveProviderLinkAsync(Guid uid, string provider)
     {
-        var providerLink = await GetAsync(uid, provider);
+        var providerLink = await GetProviderLinkAsync(uid, provider);
         if (providerLink != null)
         {
             await _supabaseService.DeleteAsync(providerLink);
         }
     }
 
-    public Task<DbProviderLink?> GetProviderLinkAsync(Guid uid, string provider)
-    {
-        return GetAsync(uid, provider);
-    }
-
-    public Task RemoveProviderLinkAsync(Guid uid, string provider)
-    {
-        return DeleteAsync(uid, provider);
-    }
 
     public async Task StoreProviderLinkAsync(Guid uid, string provider, Dictionary<string, object> token, string? updateReason = null)
     {
-        var existingLink = await GetAsync(uid, provider);
+        var existingLink = await GetProviderLinkAsync(uid, provider);
 
         if (existingLink != null)
         {

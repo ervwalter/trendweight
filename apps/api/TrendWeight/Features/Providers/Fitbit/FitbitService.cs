@@ -24,6 +24,9 @@ public class FitbitService : ProviderServiceBase, IFitbitService
     private int _remainingApiCalls = int.MaxValue;
     private DateTimeOffset _rateLimitResetTime = DateTimeOffset.UtcNow;
 
+    // Token refresh buffer - refresh tokens 5 minutes before they expire
+    private const int TOKEN_EXPIRY_BUFFER_SECONDS = 300;
+
     /// <summary>
     /// Constructor
     /// </summary>
@@ -140,7 +143,7 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         {
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var expiresAt = receivedAt + expiresIn;
-            var isExpired = expiresAt <= now + 300; // 5 minutes buffer
+            var isExpired = expiresAt <= now + TOKEN_EXPIRY_BUFFER_SECONDS;
 
             Logger.LogDebug("Fitbit token - Received: {ReceivedAt}, ExpiresIn: {ExpiresIn}s, ExpiresAt: {ExpiresAt}, Now: {Now}, IsExpired: {IsExpired}",
                 receivedAt, expiresIn, expiresAt, now, isExpired);

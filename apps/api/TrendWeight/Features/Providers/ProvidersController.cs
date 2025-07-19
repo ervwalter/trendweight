@@ -98,7 +98,7 @@ public class ProvidersController : ControllerBase
             }
 
             // Check if the provider link exists
-            var existingLink = await _providerLinkService.GetAsync(userGuid, provider);
+            var existingLink = await _providerLinkService.GetProviderLinkAsync(userGuid, provider);
             if (existingLink == null)
             {
                 return NotFound(new { error = $"No {provider} connection found" });
@@ -154,7 +154,7 @@ public class ProvidersController : ControllerBase
             }
 
             // Check if the provider link exists
-            var existingLink = await _providerLinkService.GetAsync(userGuid, provider);
+            var existingLink = await _providerLinkService.GetProviderLinkAsync(userGuid, provider);
             if (existingLink == null)
             {
                 return NotFound(new { error = $"No {provider} connection found" });

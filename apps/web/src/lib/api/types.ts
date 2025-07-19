@@ -14,21 +14,6 @@ export interface Measurement {
   change?: number;
 }
 
-export interface ChartData {
-  measurements: Measurement[];
-  startDate: string;
-  endDate: string;
-  currentWeight?: number;
-  currentTrend?: number;
-}
-
-// Test endpoint data for authentication verification
-export interface TestData {
-  userId: string;
-  email: string;
-  claims: Record<string, string | number | boolean>;
-}
-
 // Source data from /api/data endpoint
 export interface ApiSourceData {
   source: string; // "withings" or "fitbit"

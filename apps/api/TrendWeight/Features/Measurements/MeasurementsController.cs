@@ -25,9 +25,12 @@ public class MeasurementsController : ControllerBase
     private readonly ILogger<MeasurementsController> _logger;
     private readonly IWebHostEnvironment _environment;
 
-    // Data is considered fresh for 5 minutes in production (matching legacy behavior)
-    // In development, use 10 seconds for easier debugging
-    private readonly int CACHE_DURATION_SECONDS;
+    // Data is considered fresh for 5 minutes in production
+    private const int CACHE_DURATION_SECONDS_PRODUCTION = 300;
+    // Use shorter cache duration in development for easier debugging  
+    private const int CACHE_DURATION_SECONDS_DEVELOPMENT = 10;
+
+    private readonly int _cacheDurationSeconds;
 
     public MeasurementsController(
         IProfileService profileService,
@@ -42,10 +45,12 @@ public class MeasurementsController : ControllerBase
         _logger = logger;
         _environment = environment;
 
-        // Use shorter cache duration in development for easier debugging
-        CACHE_DURATION_SECONDS = _environment.IsDevelopment() ? 10 : 300;
+        _cacheDurationSeconds = _environment.IsDevelopment()
+            ? CACHE_DURATION_SECONDS_DEVELOPMENT
+            : CACHE_DURATION_SECONDS_PRODUCTION;
+
         _logger.LogDebug("Cache duration set to {Duration} seconds ({Environment} mode)",
-            CACHE_DURATION_SECONDS, _environment.EnvironmentName);
+            _cacheDurationSeconds, _environment.EnvironmentName);
     }
 
     /// <summary>
@@ -136,12 +141,12 @@ public class MeasurementsController : ControllerBase
             {
                 // Check last sync time for this provider
                 var lastSync = await _sourceDataService.GetLastSyncTimeAsync(userId, provider);
-                var needsRefresh = lastSync == null || (now - lastSync.Value).TotalSeconds > CACHE_DURATION_SECONDS;
+                var needsRefresh = lastSync == null || (now - lastSync.Value).TotalSeconds > _cacheDurationSeconds;
 
                 if (lastSync != null)
                 {
                     _logger.LogInformation("Provider {Provider} - Now: {Now}, LastSync: {LastSync}, Age: {Age}s, CacheDuration: {CacheDuration}s",
-                        provider, now.ToString("o"), lastSync.Value.ToString("o"), (now - lastSync.Value).TotalSeconds, CACHE_DURATION_SECONDS);
+                        provider, now.ToString("o"), lastSync.Value.ToString("o"), (now - lastSync.Value).TotalSeconds, _cacheDurationSeconds);
                 }
 
                 if (needsRefresh)

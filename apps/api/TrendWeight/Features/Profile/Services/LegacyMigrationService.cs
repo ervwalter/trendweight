@@ -11,6 +11,9 @@ public class LegacyMigrationService : ILegacyMigrationService
     private readonly IProviderLinkService _providerLinkService;
     private readonly ILogger<LegacyMigrationService> _logger;
 
+    // Expired token marker - 1 hour duration for a token received at Unix timestamp 0
+    private const int EXPIRED_TOKEN_EXPIRES_IN = 3600;
+
     public LegacyMigrationService(
         IProfileService profileService,
         ILegacyDbService legacyDbService,
@@ -111,7 +114,7 @@ public class LegacyMigrationService : ILegacyMigrationService
             ["token_type"] = "Bearer",
             ["scope"] = "user.metrics",
             ["received_at"] = 0L, // Unix timestamp 0 (1970-01-01)
-            ["expires_in"] = 3600 // 1 hour (already expired since received_at is 0)
+            ["expires_in"] = EXPIRED_TOKEN_EXPIRES_IN // Already expired since received_at is 0
         };
 
         await _providerLinkService.StoreProviderLinkAsync(userId, providerName, expiredToken);
