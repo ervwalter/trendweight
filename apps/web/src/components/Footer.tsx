@@ -48,12 +48,12 @@ export function Footer() {
             <a href="mailto:erv@ewal.net" className="transition-colors hover:text-gray-600">
               Contact
             </a>
-            <a href="/tipjar" className="transition-colors hover:text-gray-600">
+            <Link to="/tipjar" className="transition-colors hover:text-gray-600">
               Tip Jar
-            </a>
-            <a href="/privacy" className="transition-colors hover:text-gray-600">
+            </Link>
+            <Link to="/privacy" className="transition-colors hover:text-gray-600">
               Privacy
-            </a>
+            </Link>
           </div>
         </div>
       </Container>

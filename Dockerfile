@@ -62,11 +62,21 @@ WORKDIR /app
 # Install curl for health checks
 RUN apk add --no-cache curl
 
+# Create non-root user and group
+RUN addgroup -g 1000 -S appgroup && \
+    adduser -u 1000 -S appuser -G appgroup
+
 # Copy published backend
 COPY --from=backend-build /app/publish .
 
 # Copy frontend build to wwwroot
 COPY --from=frontend-build /app/apps/web/dist ./wwwroot
+
+# Change ownership of the app directory
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER 1000:1000
 
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080

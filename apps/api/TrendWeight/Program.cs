@@ -1,7 +1,9 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using TrendWeight.Infrastructure.Extensions;
 using TrendWeight.Infrastructure.Middleware;
 
@@ -27,6 +29,53 @@ builder.Services.AddSupabaseAuthentication(builder.Configuration);
 
 // Add TrendWeight services
 builder.Services.AddTrendWeightServices(builder.Configuration);
+
+// Add rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        // Only apply rate limiting to authenticated users
+        var userId = httpContext.User?.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            // No rate limiting for anonymous requests
+            return RateLimitPartition.GetNoLimiter("anonymous");
+        }
+
+        // Apply rate limiting for authenticated users
+        return RateLimitPartition.GetFixedWindowLimiter(
+            userId,
+            partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1)
+            });
+    });
+
+    // Return 429 Too Many Requests when rate limit is exceeded
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/json";
+
+        var response = new
+        {
+            message = "Too many requests. Please try again later.",
+            statusCode = 429,
+            errorCode = "RATE_LIMIT_EXCEEDED"
+        };
+
+        await context.HttpContext.Response.WriteAsync(
+            JsonSerializer.Serialize(response, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
+            cancellationToken: token);
+    };
+
+    // Set standard rate limit headers
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 // Add CORS for development
 builder.Services.AddCors(options =>
@@ -116,13 +165,17 @@ app.UseHttpsRedirection();
 // Serve static files from wwwroot (for production container)
 app.UseStaticFiles();
 
+// Apply rate limiting only to API routes (after static files)
+app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 // Health check endpoint for container health checks
-app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "TrendWeight API", timestamp = DateTime.UtcNow }));
+app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "TrendWeight API", timestamp = DateTime.UtcNow }))
+    .DisableRateLimiting();
 
 // For production, serve the SPA for any non-API routes
 if (!app.Environment.IsDevelopment())

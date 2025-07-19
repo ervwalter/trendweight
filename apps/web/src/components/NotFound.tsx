@@ -1,5 +1,7 @@
+import { Link } from "@tanstack/react-router";
 import { Container } from "./Container";
 import { pageTitle } from "../lib/utils/pageTitle";
+import { Button } from "./ui/Button";
 
 export function NotFound() {
   return (
@@ -20,9 +22,9 @@ export function NotFound() {
                 Maybe the page was moved. Or maybe the link you clicked on is just wrong. Or maybe it was abducted? We'll probably never know.
               </div>
               <div className="mt-4">
-                <a href="/" className="bg-brand-600 hover:bg-brand-700 inline-block rounded px-4 py-2 text-white transition-colors">
-                  Go to Homepage
-                </a>
+                <Button asChild>
+                  <Link to="/">Go to Homepage</Link>
+                </Button>
               </div>
             </div>
             <img src="/assets/taken.svg" alt="alien abduction icon" className="h-auto w-full max-w-[200px] md:h-[150px] md:w-auto lg:h-[200px]" />
