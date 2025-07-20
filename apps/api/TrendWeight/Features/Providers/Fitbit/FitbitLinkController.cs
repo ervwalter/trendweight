@@ -4,8 +4,10 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using TrendWeight.Features.Common;
+using Microsoft.Extensions.Options;
 using TrendWeight.Features.Common.Models;
 using TrendWeight.Features.Providers.Exceptions;
+using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Features.Providers.Fitbit;
 
@@ -26,12 +28,12 @@ public class FitbitLinkController : BaseAuthController
     /// </summary>
     public FitbitLinkController(
         IFitbitService fitbitService,
-        FitbitConfig config,
+        IOptions<AppOptions> appOptions,
         IConfiguration configuration,
         ILogger<FitbitLinkController> logger)
     {
         _fitbitService = fitbitService;
-        _config = config;
+        _config = appOptions.Value.Fitbit;
         _configuration = configuration;
         _logger = logger;
     }

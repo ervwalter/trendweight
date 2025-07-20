@@ -5,7 +5,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using TrendWeight.Infrastructure.DataAccess;
+using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Infrastructure.Auth;
 
@@ -19,10 +19,10 @@ public class SupabaseAuthenticationHandler : AuthenticationHandler<SupabaseAuthe
         IOptionsMonitor<SupabaseAuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        SupabaseConfig supabaseConfig)
+        IOptions<AppOptions> appOptions)
         : base(options, logger, encoder)
     {
-        _supabaseConfig = supabaseConfig;
+        _supabaseConfig = appOptions.Value.Supabase;
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators - required by base class
@@ -57,7 +57,7 @@ public class SupabaseAuthenticationHandler : AuthenticationHandler<SupabaseAuthe
                 ValidateAudience = true,
                 ValidAudience = "authenticated",
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.FromMinutes(5)
             };
 
             var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);

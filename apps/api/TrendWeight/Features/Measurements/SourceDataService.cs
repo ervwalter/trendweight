@@ -93,9 +93,6 @@ public class SourceDataService : ISourceDataService
                         dbSourceData.Measurements = mergedMeasurements;
 
                     }
-                    else
-                    {
-                    }
 
                     // Always update LastSync timestamp and clear resync flag
                     dbSourceData.LastSync = sourceData.LastUpdate.ToUniversalTime().ToString("o");

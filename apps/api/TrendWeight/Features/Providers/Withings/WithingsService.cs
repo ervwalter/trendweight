@@ -2,12 +2,14 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using System.Web;
+using Microsoft.Extensions.Options;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Withings.Models;
+using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Features.Providers.Withings;
 
@@ -31,7 +33,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
     /// </summary>
     public WithingsService(
         HttpClient httpClient,
-        WithingsConfig config,
+        IOptions<AppOptions> appOptions,
         IProviderLinkService providerLinkService,
         ISourceDataService sourceDataService,
         IProfileService profileService,
@@ -39,7 +41,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         : base(providerLinkService, sourceDataService, profileService, logger)
     {
         _httpClient = httpClient;
-        _config = config;
+        _config = appOptions.Value.Withings;
     }
 
     /// <inheritdoc />

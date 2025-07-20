@@ -8,20 +8,28 @@ interface ScaleReadingsTableProps {
   useMetric: boolean;
 }
 
+// Create formatters once at module level
+const dateFormatter = new Intl.DateTimeFormat([], {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
+
+const timeFormatter = new Intl.DateTimeFormat([], {
+  hour: "numeric",
+  minute: "2-digit",
+});
+
 const formatDate = (date: LocalDate) => {
   const nativeDate = convert(date).toDate();
-  return nativeDate.toLocaleDateString([], {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return dateFormatter.format(nativeDate);
 };
 
 const formatTime = (time: string) => {
   const [hours, minutes] = time.split(":").map(Number);
   const date = new Date();
   date.setHours(hours, minutes, 0);
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return timeFormatter.format(date);
 };
 
 export function ScaleReadingsTable({ readings, viewType, useMetric }: ScaleReadingsTableProps) {

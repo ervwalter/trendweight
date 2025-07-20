@@ -19,14 +19,7 @@ TrendWeight is a web application for tracking weight trends by integrating with 
 
 ### Service Layer Pattern
 
-The backend uses a service layer pattern to separate business logic from controllers:
-
-- **ProfileService**: Manages user profile CRUD operations and business logic
-- **ProviderService**: Base class for provider-specific implementations (Withings/Fitbit)
-- **SourceDataService**: Handles raw measurement data storage and retrieval
-- **MeasurementsController**: Orchestrates data fetching from multiple providers
-
-Controllers should be thin, delegating complex logic to services.
+The backend uses a service layer pattern where controllers remain thin and delegate business logic to dedicated service classes. This promotes testability and separation of concerns.
 
 ### Key Directory Structure
 
@@ -120,16 +113,9 @@ This approach:
   - `created_at`, `updated_at` (text) - ISO 8601 timestamps
 
 ### Important Notes
-- All timestamps are stored as `text` in ISO 8601 format to avoid timezone issues
-- Use `DateTime.UtcNow.ToString("o")` when storing
-- Parse with `DateTime.Parse(timestamp, null, DateTimeStyles.RoundtripKind).ToUniversalTime()`
-- **All weights are stored in kg** in the database for consistency
-  - Client-side conversion handles imperial/metric display based on user preference
-  - This enables instant unit switching without data resync
-- **Measurement timestamps are stored as local date/time strings**:
-  - Separate `date` (yyyy-MM-dd) and `time` (HH:mm:ss) fields
-  - Withings: Converts UTC timestamps to local time using provider timezone
-  - Fitbit: Stores date/time as-is (already in local timezone)
+- All timestamps are stored as ISO 8601 text to avoid timezone issues
+- All weights are stored in kg for consistency (client handles unit conversion)
+- Measurement timestamps use separate date/time fields in local timezone
 
 ## Authentication Flow
 
@@ -199,11 +185,19 @@ The app uses @bprogress/react for progress indication:
 - All API endpoints are under `/api/`
 - Feature-based organization (e.g., `/api/settings`, `/api/measurements`)
 - Consistent JSON response format
+- No CORS configuration needed (Vite proxy handles in development)
 
 ### Error Handling
-- Global error handling middleware
+- Global error handling middleware with correlation IDs
 - Consistent error response format
 - Proper HTTP status codes
+- Validation errors (400) show details, server errors (500) show generic message
+- All errors logged with correlation ID for debugging
+
+### Configuration
+- Uses IOptions pattern throughout for type-safe configuration
+- All configuration consolidated in `AppOptions` class
+- Environment-specific settings via appsettings.{Environment}.json
 
 ## Development Guidelines
 
@@ -254,40 +248,14 @@ The app uses @bprogress/react for progress indication:
 #### Standard UI Components
 **IMPORTANT**: Always use the standard UI components instead of raw HTML elements:
 
-##### Button Component (`/components/ui/Button.tsx`)
-- **Never use raw `<button>` elements** - Always use the `Button` component
-- Available variants: `primary`, `secondary`, `ghost`, `success`, `destructive`, `warning`
-- Available sizes: `sm`, `md`, `lg`, `xl`
-- Supports `asChild` prop for use with Link components
-- Example usage:
-  ```tsx
-  import { Button } from "../components/ui/Button";
-  
-  // Standard button
-  <Button variant="primary" size="md">Click me</Button>
-  
-  // Button as a Link
-  <Button asChild variant="secondary">
-    <Link to="/settings">Go to Settings</Link>
-  </Button>
-  
-  // With custom classes (uses tailwind-merge for proper overrides)
-  <Button variant="secondary" className="w-full justify-start">
-    Sign in with Google
-  </Button>
-  ```
-
-##### Heading Component (`/components/ui/Heading.tsx`)
-- **Never use raw heading tags** (`<h1>`, `<h2>`, etc.) - Always use the `Heading` component
-- Ensures consistent typography and spacing across the application
-- Supports levels 1-4 and custom className overrides
-- Example usage:
-  ```tsx
-  import { Heading } from "../components/ui/Heading";
-  
-  <Heading level={1}>Page Title</Heading>
-  <Heading level={2} className="text-gray-600">Section Header</Heading>
-  ```
+##### Standard Components
+- **Button Component** - Use instead of raw `<button>` elements
+  - Multiple variants and sizes available
+  - Supports `asChild` prop for use with Links
+- **Heading Component** - Use instead of raw heading tags (`<h1>`, `<h2>`, etc.)
+  - Ensures consistent typography across the application
+- **Select Component** - Our standard dropdown control using react-select
+  - Always use instead of native HTML select elements
 
 ### Form Management
 - react-hook-form for form state management
@@ -485,32 +453,21 @@ The containerized application:
 
 ### Authentication Issues
 - Verify Supabase JWT secret matches in backend config
-- Check CORS settings for local development
-- Ensure frontend uses correct API URL
+- Frontend API calls are proxied through Vite in development
+- JWT tokens have 5-minute clock skew tolerance
+- Rate limiting may reject excessive requests (>100/minute)
 
 ### Database Issues
-- All timestamps must be stored as ISO 8601 strings
-- JSONB queries use PostgreSQL syntax
 - Check Supabase logs for query errors
+- JSONB queries use PostgreSQL syntax
 
 ## Important Notes
 
 1. **Never store secrets in code** - Use environment variables
-2. **Always handle errors gracefully** - Show user-friendly messages
+2. **Always handle errors gracefully** - Show user-friendly messages with correlation IDs
 3. **Test on mobile** - The app must be fully responsive
 4. **Keep accessibility in mind** - Use semantic HTML and ARIA labels
-5. **Service Layer Pattern** - Controllers should be thin, delegating business logic to services
-6. **Profile Creation** - ProfileService handles complex update/create logic, never defaults nullable fields to 0
+5. **Security** - Docker containers run as non-root user
+6. **Rate Limiting** - 100 requests/minute per user globally applied
+7. **No CORS** - Not needed due to Vite proxy in development and same-origin in production
 
-## Settings Page Help Text
-
-All settings on the /settings page have concise help text:
-- **First Name**: "Used for greetings on the dashboard"
-- **Weight Units**: "Choose your preferred unit of measurement"
-- **Start Date**: "The baseline date for measuring progress toward your goal"
-- **Goal Weight**: "The weight you are working toward achieving"
-- **My Plan**: "Your planned rate of weight change. This helps track if you're ahead or behind schedule."
-- **Day Start**: Already has comprehensive multi-paragraph explanation
-- **Show calorie calculations**: "Display estimated calorie surplus/deficit based on your weight changes"
-
-Settings sections use `mt-6` spacing between groups for visual separation.

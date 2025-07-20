@@ -13,9 +13,10 @@ A web application for tracking weight trends by integrating with smart scales fr
 - 📊 Weight trend visualization with moving averages
 - 🔄 Automatic sync with Withings and Fitbit smart scales
 - 📱 Responsive design for mobile and desktop
-- 🔐 Authentication with Supabase Auth
+- 🔐 Secure authentication with Supabase Auth and Cloudflare Turnstile
 - 📈 Goal tracking and progress monitoring
 - 🌍 Metric and imperial unit support
+- 🔗 Legacy user migration from classic TrendWeight
 
 ## Tech Stack
 
@@ -47,7 +48,10 @@ For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
    npm install
    ```
 
-3. Copy `.env.example` to `.env` and configure your environment variables
+3. Copy `.env.example` to `.env` and configure your environment variables:
+   ```bash
+   cp .env.example .env
+   ```
 
 4. Start the development servers:
    ```bash
@@ -61,10 +65,12 @@ For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
 ### Available Scripts
 
 - `npm run dev` - Start both frontend and backend in development mode
+- `npm run dev:stop` - Stop the development servers
 - `npm run build` - Build all workspaces for production
 - `npm run test` - Run tests in all workspaces
-- `npm run lint` - Run linting in all workspaces
+- `npm run check` - Run TypeScript and lint checks
 - `npm run format` - Format code in all workspaces
+- `npm run clean` - Clean all build artifacts and dependencies
 
 ### Docker
 
@@ -76,7 +82,14 @@ npm run docker:run
 
 ## Deployment
 
-The application is containerized and can be deployed to any platform that supports Docker. GitHub Actions automatically builds and publishes images to GitHub Container Registry on push to main.
+The application is designed to be deployed as a Docker container. The included Dockerfile creates a production-ready image that serves both the API and frontend.
+
+Build the Docker image:
+```bash
+docker build -t trendweight:latest .
+```
+
+The container runs on port 8080 and requires environment variables for backend configuration. See [ARCHITECTURE.md](ARCHITECTURE.md) for deployment details.
 
 ## Contributing
 

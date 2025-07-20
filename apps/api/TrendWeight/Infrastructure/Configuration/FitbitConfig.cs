@@ -1,17 +1,17 @@
-namespace TrendWeight.Features.Providers.Withings;
+namespace TrendWeight.Infrastructure.Configuration;
 
 /// <summary>
-/// Configuration for Withings API integration
+/// Configuration for Fitbit OAuth
 /// </summary>
-public class WithingsConfig
+public class FitbitConfig
 {
     /// <summary>
-    /// Withings OAuth client ID
+    /// Fitbit OAuth client ID
     /// </summary>
     public string ClientId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Withings OAuth client secret
+    /// Fitbit OAuth client secret
     /// </summary>
     public string ClientSecret { get; set; } = string.Empty;
 }

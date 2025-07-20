@@ -8,6 +8,13 @@ import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Heading } from "../ui/Heading";
 import { Button } from "../ui/Button";
 
+// Simple date formatter for connection dates
+const connectionDateFormatter = new Intl.DateTimeFormat([], {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+});
+
 interface ProviderListProps {
   variant?: "link" | "settings"; // Different layouts for different pages
   showHeader?: boolean;
@@ -110,7 +117,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                       {provider.name}
                     </Heading>
                     <p className="text-sm text-gray-600">
-                      {isConnected ? `Connected ${new Date(providerLink!.connectedAt).toLocaleDateString()}` : "Not connected"}
+                      {isConnected ? `Connected ${connectionDateFormatter.format(new Date(providerLink!.connectedAt))}` : "Not connected"}
                     </p>
                   </div>
                 </div>

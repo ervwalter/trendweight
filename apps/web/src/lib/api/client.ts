@@ -24,15 +24,14 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
   // Use a relative path for the API base URL to work with the Vite proxy
   const apiBaseUrl = "/api";
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...options?.headers,
+    ...((options?.headers as Record<string, string>) || {}),
   };
 
   // Add Authorization header with Supabase JWT token if available
   if (token) {
-    // Use proper type assertion for the headers object to avoid TypeScript errors
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   const response = await fetch(`${apiBaseUrl}${path}`, {

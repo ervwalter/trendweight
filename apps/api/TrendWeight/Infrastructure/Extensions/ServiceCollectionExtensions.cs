@@ -8,6 +8,7 @@ using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Measurements;
+using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Infrastructure.Extensions;
 
@@ -18,9 +19,8 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Get Supabase config (already registered in AddTrendWeightServices)
-        var supabaseConfig = new SupabaseConfig();
-        configuration.GetSection("Supabase").Bind(supabaseConfig);
+        // Configure app options (will be used by authentication handler)
+        services.Configure<AppOptions>(configuration);
 
         // Configure authentication - Supabase only
         services.AddAuthentication("Supabase")
@@ -39,10 +39,10 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddTrendWeightServices(this IServiceCollection services, IConfiguration configuration)
     {
+        // Configure unified app options
+        services.Configure<AppOptions>(configuration);
+
         // Register Supabase services
-        var supabaseConfig = new SupabaseConfig();
-        configuration.GetSection("Supabase").Bind(supabaseConfig);
-        services.AddSingleton(supabaseConfig);
         services.AddSingleton<ISupabaseService, SupabaseService>();
 
         // Register feature services
@@ -53,17 +53,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILegacyMigrationService, LegacyMigrationService>();
 
         // Register Withings service
-        var withingsConfig = new WithingsConfig();
-        configuration.GetSection("Withings").Bind(withingsConfig);
-        services.AddSingleton(withingsConfig);
         services.AddHttpClient<WithingsService>();
         services.AddScoped<IWithingsService>(sp => sp.GetRequiredService<WithingsService>());
         services.AddScoped<IProviderService>(sp => sp.GetRequiredService<WithingsService>());
 
         // Register Fitbit service
-        var fitbitConfig = new FitbitConfig();
-        configuration.GetSection("Fitbit").Bind(fitbitConfig);
-        services.AddSingleton(fitbitConfig);
         services.AddHttpClient<FitbitService>();
         services.AddScoped<IFitbitService>(sp => sp.GetRequiredService<FitbitService>());
         services.AddScoped<IProviderService>(sp => sp.GetRequiredService<FitbitService>());

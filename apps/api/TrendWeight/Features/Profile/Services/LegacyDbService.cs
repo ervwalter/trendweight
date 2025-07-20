@@ -1,7 +1,9 @@
 using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Options;
 using TrendWeight.Features.Profile.Models;
+using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Features.Profile.Services;
 
@@ -13,9 +15,9 @@ public class LegacyDbService : ILegacyDbService
     private readonly string? _connectionString;
     private readonly ILogger<LegacyDbService> _logger;
 
-    public LegacyDbService(IConfiguration configuration, ILogger<LegacyDbService> logger)
+    public LegacyDbService(IOptions<AppOptions> options, ILogger<LegacyDbService> logger)
     {
-        _connectionString = configuration["LegacyDbConnectionString"];
+        _connectionString = options.Value.LegacyDbConnectionString;
         _logger = logger;
     }
 

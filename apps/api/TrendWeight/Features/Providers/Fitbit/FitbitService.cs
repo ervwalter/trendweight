@@ -4,12 +4,14 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using Microsoft.Extensions.Options;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Fitbit.Models;
+using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Features.Providers.Fitbit;
 
@@ -32,7 +34,7 @@ public class FitbitService : ProviderServiceBase, IFitbitService
     /// </summary>
     public FitbitService(
         HttpClient httpClient,
-        FitbitConfig config,
+        IOptions<AppOptions> appOptions,
         IProviderLinkService providerLinkService,
         ISourceDataService sourceDataService,
         IProfileService profileService,
@@ -40,7 +42,7 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         : base(providerLinkService, sourceDataService, profileService, logger)
     {
         _httpClient = httpClient;
-        _config = config;
+        _config = appOptions.Value.Fitbit;
     }
 
     /// <inheritdoc />

@@ -66,7 +66,13 @@ To view logs:
 
 ## UI Components and Styling
 
-**IMPORTANT**: Always use the standard UI components from our component library. See ARCHITECTURE.md for detailed UI component documentation including Button, Heading, Select, and other standard components.
+**IMPORTANT**: Always use the standard UI components from our component library:
+- Use `Button` component instead of raw `<button>` tags
+- Use `Heading` component instead of raw `<h1>`, `<h2>`, etc.
+- Use `Select` component instead of raw `<select>` tags
+- Use `Link` from TanStack Router for internal navigation
+
+See ARCHITECTURE.md for detailed UI component documentation.
 
 ## AI Code Generation Guidelines
 
@@ -84,6 +90,8 @@ To view logs:
 - Create custom hooks for reusable logic
 - Implement proper error boundaries
 - Use Suspense for async operations
+- Cache Intl formatters at module level for performance
+- Use TanStack Query for all API calls
 
 ### When Generating C# Code
 - Use feature folders for organization
@@ -91,6 +99,9 @@ To view logs:
 - Use async/await for all I/O operations
 - Leverage JSONB for flexible data storage
 - Follow the existing service layer pattern
+- Use IOptions<T> pattern for configuration
+- Keep controllers thin - all logic in services
+- Use constants for magic numbers (cache durations, etc.)
 
 ## AI-Specific Instructions for Common Tasks
 
@@ -127,13 +138,25 @@ To view logs:
 ## Important AI Code Generation Notes
 
 1. **Never store secrets in code** - Always use environment variables
-2. **Always handle errors gracefully** - Show user-friendly messages
+2. **Always handle errors gracefully** - Show user-friendly messages with correlation IDs
 3. **Test on mobile** - The app must be fully responsive
 4. **Keep accessibility in mind** - Use semantic HTML and ARIA labels
 5. **Use standard UI components** - Never use raw HTML elements when standard components exist
 6. **Follow existing patterns** - Match the codebase style and conventions
-7. **Service Layer Pattern** - Controllers should be thin, delegating business logic to services
+7. **Service Layer Pattern** - Controllers must be thin, all logic in services
 8. **Database considerations** - All timestamps stored as ISO 8601 strings, all weights in kg
+9. **No CORS configuration** - Never add CORS to the API (Vite proxy handles it)
+10. **Performance** - Cache Intl formatters at module level, use React.memo where appropriate
+
+## Recent Lessons Learned (from Code Review)
+
+1. **Raw HTML Usage** - Several components were using raw HTML elements. Always check for and use our standard UI components.
+2. **Type Assertions** - Avoid type assertions like `as HeadersInit`. Use proper types instead.
+3. **Complex Files** - Break down files over 200 lines into smaller, focused modules.
+4. **Magic Numbers** - Always extract to named constants (cache durations, buffer times, etc.)
+5. **Service Registration** - Don't register services multiple times. Once is enough.
+6. **Error Messages** - Never expose exception details to users. Use correlation IDs instead.
+7. **Performance** - Module-level caching of formatters significantly improves performance.
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
@@ -143,14 +166,17 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 
 ### IMPORTANT: Keep CLAUDE.md Updated
 **You MUST automatically update this CLAUDE.md file whenever you learn something new that is likely important for future sessions.** This includes:
-- Project-specific patterns, conventions, or architecture decisions
-- User's personal coding preferences or approaches
-- Important technical discoveries (e.g., library quirks, API behaviors)
-- Lessons learned from debugging or problem-solving
-- Clarifications about business logic or domain concepts
-- Any other information that would help future Claude instances work more effectively on this codebase
+- AI-specific coding patterns or generation rules
+- User's personal coding preferences that affect AI generation
+- Important technical discoveries that impact how AI should generate code
+- Lessons learned that would help future AI instances
 
-Add these updates in the appropriate section or create a new section if needed. This ensures knowledge is preserved across sessions.
+Do NOT add:
+- General architectural information (belongs in ARCHITECTURE.md)
+- Feature documentation (belongs in ARCHITECTURE.md)
+- Setup instructions (belongs in README.md)
+
+Keep this file focused on AI code generation guidance only.
 
 ## Development Workflow
 

@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Options;
 using Supabase;
 using Supabase.Postgrest.Models;
+using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Infrastructure.DataAccess;
 
@@ -8,13 +10,13 @@ public class SupabaseService : ISupabaseService
     private readonly Client _supabaseClient;
     private readonly SupabaseConfig _config;
     private readonly ILogger<SupabaseService> _logger;
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public SupabaseService(SupabaseConfig config, ILogger<SupabaseService> logger, IHttpClientFactory httpClientFactory)
+    public SupabaseService(IOptions<AppOptions> appOptions, ILogger<SupabaseService> logger, IHttpClientFactory httpClientFactory)
     {
-        _config = config;
+        _config = appOptions.Value.Supabase;
         _logger = logger;
-        _httpClient = httpClientFactory.CreateClient();
+        _httpClientFactory = httpClientFactory;
 
         var options = new SupabaseOptions
         {
@@ -22,10 +24,10 @@ public class SupabaseService : ISupabaseService
             AutoConnectRealtime = false
         };
 
-        _supabaseClient = new Client(config.Url, config.ServiceKey, options);
+        _supabaseClient = new Client(_config.Url, _config.ServiceKey, options);
         var initTask = _supabaseClient.InitializeAsync();
         initTask.Wait(); // Wait for initialization
-        _logger.LogInformation("Supabase client initialized for URL: {Url}", config.Url);
+        _logger.LogInformation("Supabase client initialized for URL: {Url}", _config.Url);
     }
 
     public async Task<T?> GetByIdAsync<T>(Guid id) where T : BaseModel, new()
@@ -34,9 +36,23 @@ public class SupabaseService : ISupabaseService
         {
             var response = await _supabaseClient.From<T>()
                 .Filter("uid", Supabase.Postgrest.Constants.Operator.Equals, id.ToString())
-                .Single();
+                .Get();
 
-            return response;
+            if (response.Models.Count == 0)
+            {
+                // Not found - this is an expected scenario, not an error
+                _logger.LogDebug("{Type} not found with ID {Id}", typeof(T).Name, id);
+                return null;
+            }
+
+            if (response.Models.Count > 1)
+            {
+                // Multiple records found - this is an error
+                _logger.LogError("Multiple {Type} records found with ID {Id}", typeof(T).Name, id);
+                return null;
+            }
+
+            return response.Models.First();
         }
         catch (Exception ex)
         {
@@ -51,9 +67,23 @@ public class SupabaseService : ISupabaseService
         {
             var response = await _supabaseClient.From<T>()
                 .Filter("uid", Supabase.Postgrest.Constants.Operator.Equals, id)
-                .Single();
+                .Get();
 
-            return response;
+            if (response.Models.Count == 0)
+            {
+                // Not found - this is an expected scenario, not an error
+                _logger.LogDebug("{Type} not found with ID {Id}", typeof(T).Name, id);
+                return null;
+            }
+
+            if (response.Models.Count > 1)
+            {
+                // Multiple records found - this is an error
+                _logger.LogError("Multiple {Type} records found with ID {Id}", typeof(T).Name, id);
+                return null;
+            }
+
+            return response.Models.First();
         }
         catch (Exception ex)
         {
@@ -68,6 +98,11 @@ public class SupabaseService : ISupabaseService
         {
             var response = await _supabaseClient.From<T>()
                 .Get();
+
+            if (response.Models.Count == 0)
+            {
+                _logger.LogDebug("No {Type} records found", typeof(T).Name);
+            }
 
             return response.Models;
         }
@@ -132,6 +167,11 @@ public class SupabaseService : ISupabaseService
             query(table);
             var response = await table.Get();
 
+            if (response.Models.Count == 0)
+            {
+                _logger.LogDebug("Query returned no {Type} records", typeof(T).Name);
+            }
+
             return response.Models;
         }
         catch (Exception ex)
@@ -152,7 +192,8 @@ public class SupabaseService : ISupabaseService
             request.Headers.Add("apikey", _config.ServiceKey);
             request.Headers.Add("Authorization", $"Bearer {_config.ServiceKey}");
 
-            var response = await _httpClient.SendAsync(request);
+            using var httpClient = _httpClientFactory.CreateClient();
+            var response = await httpClient.SendAsync(request);
 
             if (response.IsSuccessStatusCode)
             {

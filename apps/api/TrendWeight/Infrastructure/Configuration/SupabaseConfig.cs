@@ -1,4 +1,4 @@
-namespace TrendWeight.Infrastructure.DataAccess;
+namespace TrendWeight.Infrastructure.Configuration;
 
 public class SupabaseConfig
 {

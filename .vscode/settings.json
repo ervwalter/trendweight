@@ -30,7 +30,7 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "files.exclude": {
     ".next": true,
-    ".yarn": true,
+    ".yarn": true
   },
   "cSpell.words": ["automerge", "chakra", "ervwalter", "highcharts", "Highstock", "ohlc", "resetpassword"]
 }
