@@ -30,7 +30,7 @@ public class ProviderLinkServiceTests : TestBase
         var uid = Guid.NewGuid();
         var provider = "fitbit";
         var expectedLink = CreateTestProviderLink(uid, provider);
-        
+
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
             .ReturnsAsync(new List<DbProviderLink> { expectedLink });
 
@@ -49,7 +49,7 @@ public class ProviderLinkServiceTests : TestBase
         // Arrange
         var uid = Guid.NewGuid();
         var provider = "fitbit";
-        
+
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
             .ReturnsAsync(new List<DbProviderLink>());
 
@@ -66,7 +66,7 @@ public class ProviderLinkServiceTests : TestBase
         // Arrange
         var uid = Guid.NewGuid();
         var provider = "fitbit";
-        
+
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
             .ThrowsAsync(new Exception("Database error"));
 
@@ -95,7 +95,7 @@ public class ProviderLinkServiceTests : TestBase
             CreateTestProviderLink(uid, "fitbit"),
             CreateTestProviderLink(uid, "withings")
         };
-        
+
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
             .ReturnsAsync(links);
 
@@ -113,7 +113,7 @@ public class ProviderLinkServiceTests : TestBase
         // Arrange
         var link = CreateTestProviderLink(Guid.NewGuid(), "fitbit");
         link.UpdatedAt = null!;
-        
+
         _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbProviderLink>()))
             .ReturnsAsync((DbProviderLink l) => l);
 
@@ -134,7 +134,7 @@ public class ProviderLinkServiceTests : TestBase
         var link = CreateTestProviderLink(Guid.NewGuid(), "fitbit");
         var oldUpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o");
         link.UpdatedAt = oldUpdatedAt;
-        
+
         _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProviderLink>()))
             .ReturnsAsync((DbProviderLink l) => l);
 
@@ -155,7 +155,7 @@ public class ProviderLinkServiceTests : TestBase
         var uid = Guid.NewGuid();
         var provider = "fitbit";
         var link = CreateTestProviderLink(uid, provider);
-        
+
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
             .ReturnsAsync(new List<DbProviderLink> { link });
 
@@ -172,7 +172,7 @@ public class ProviderLinkServiceTests : TestBase
         // Arrange
         var uid = Guid.NewGuid();
         var provider = "fitbit";
-        
+
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
             .ReturnsAsync(new List<DbProviderLink>());
 
@@ -192,7 +192,7 @@ public class ProviderLinkServiceTests : TestBase
         var existingLink = CreateTestProviderLink(uid, provider);
         var newToken = new Dictionary<string, object> { { "access_token", "new_token" } };
         var updateReason = "Token refresh";
-        
+
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
             .ReturnsAsync(new List<DbProviderLink> { existingLink });
         _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProviderLink>()))
@@ -202,8 +202,8 @@ public class ProviderLinkServiceTests : TestBase
         await _sut.StoreProviderLinkAsync(uid, provider, newToken, updateReason);
 
         // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbProviderLink>(l => 
-            l.Token == newToken && 
+        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbProviderLink>(l =>
+            l.Token == newToken &&
             l.UpdateReason == updateReason)), Times.Once);
     }
 
@@ -215,7 +215,7 @@ public class ProviderLinkServiceTests : TestBase
         var provider = "fitbit";
         var token = new Dictionary<string, object> { { "access_token", "new_token" } };
         var updateReason = "Initial auth";
-        
+
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
             .ReturnsAsync(new List<DbProviderLink>());
         _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbProviderLink>()))
@@ -225,10 +225,10 @@ public class ProviderLinkServiceTests : TestBase
         await _sut.StoreProviderLinkAsync(uid, provider, token, updateReason);
 
         // Assert
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbProviderLink>(l => 
+        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbProviderLink>(l =>
             l.Uid == uid &&
             l.Provider == provider &&
-            l.Token == token && 
+            l.Token == token &&
             l.UpdateReason == updateReason)), Times.Once);
     }
 
@@ -242,7 +242,7 @@ public class ProviderLinkServiceTests : TestBase
             CreateTestProviderLink(uid, "fitbit"),
             CreateTestProviderLink(uid, "withings")
         };
-        
+
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
             .ReturnsAsync(links);
 
@@ -259,8 +259,8 @@ public class ProviderLinkServiceTests : TestBase
         {
             Uid = uid,
             Provider = provider,
-            Token = new Dictionary<string, object> 
-            { 
+            Token = new Dictionary<string, object>
+            {
                 { "access_token", "test_token" },
                 { "refresh_token", "test_refresh" }
             },
