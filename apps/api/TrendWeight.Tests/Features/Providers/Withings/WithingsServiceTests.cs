@@ -63,7 +63,7 @@ public class WithingsServiceTests : TestBase
             _httpClient,
             _appOptionsMock.Object,
             _providerLinkServiceMock.Object,
-            _sourceDataServiceMock.Object,
+            (IServiceProvider)_sourceDataServiceMock.Object,
             _profileServiceMock.Object,
             _loggerMock.Object);
     }

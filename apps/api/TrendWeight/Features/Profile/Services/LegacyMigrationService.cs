@@ -40,13 +40,16 @@ public class LegacyMigrationService : ILegacyMigrationService
         }
 
         var legacyProfile = await _legacyDbService.FindProfileByEmailAsync(userEmail);
+
         if (legacyProfile == null)
         {
             return null;
         }
 
-        _logger.LogInformation("Migrating legacy profile for email {Email}", userEmail);
-        return await MigrateLegacyProfileAsync(userId, userEmail, legacyProfile);
+        _logger.LogInformation("Found legacy profile for email {Email}, starting migration", userEmail);
+        var result = await MigrateLegacyProfileAsync(userId, userEmail, legacyProfile);
+
+        return result;
     }
 
     /// <summary>

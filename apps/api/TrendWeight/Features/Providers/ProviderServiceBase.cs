@@ -15,18 +15,24 @@ namespace TrendWeight.Features.Providers;
 public abstract class ProviderServiceBase : IProviderService
 {
     protected IProviderLinkService ProviderLinkService { get; }
-    protected ISourceDataService SourceDataService { get; }
     protected IProfileService ProfileService { get; }
     protected ILogger Logger { get; }
 
+    private readonly IServiceProvider _serviceProvider;
+    private ISourceDataService? _sourceDataService;
+
+    // Lazy load SourceDataService to avoid circular dependency
+    protected ISourceDataService SourceDataService =>
+        _sourceDataService ??= _serviceProvider.GetRequiredService<ISourceDataService>();
+
     protected ProviderServiceBase(
         IProviderLinkService providerLinkService,
-        ISourceDataService sourceDataService,
+        IServiceProvider serviceProvider,
         IProfileService profileService,
         ILogger logger)
     {
         ProviderLinkService = providerLinkService;
-        SourceDataService = sourceDataService;
+        _serviceProvider = serviceProvider;
         ProfileService = profileService;
         Logger = logger;
     }

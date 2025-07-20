@@ -37,6 +37,7 @@ public class SupabaseTokenService : ISupabaseTokenService
             };
 
             var principal = _tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+
             var jwtToken = (JwtSecurityToken)validatedToken;
 
             // Extract and map claims according to our business logic
@@ -51,9 +52,8 @@ public class SupabaseTokenService : ISupabaseTokenService
         {
             return TokenValidationResult.Failure("Token has expired");
         }
-        catch (SecurityTokenValidationException ex)
+        catch (SecurityTokenValidationException)
         {
-            _logger.LogWarning(ex, "Token validation failed");
             return TokenValidationResult.Failure("Token validation failed");
         }
         catch (Exception ex)

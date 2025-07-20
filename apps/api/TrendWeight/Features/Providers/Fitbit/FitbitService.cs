@@ -36,12 +36,18 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         HttpClient httpClient,
         IOptions<AppOptions> appOptions,
         IProviderLinkService providerLinkService,
-        ISourceDataService sourceDataService,
+        IServiceProvider serviceProvider,
         IProfileService profileService,
         ILogger<FitbitService> logger)
-        : base(providerLinkService, sourceDataService, profileService, logger)
+        : base(providerLinkService, serviceProvider, profileService, logger)
     {
         _httpClient = httpClient;
+
+        if (appOptions?.Value?.Fitbit == null)
+        {
+            throw new InvalidOperationException("Fitbit configuration not found");
+        }
+
         _config = appOptions.Value.Fitbit;
     }
 

@@ -47,6 +47,7 @@ public class ProfileController : ControllerBase
 
             // Get user from Supabase by UID
             var user = await _profileService.GetByIdAsync(userId);
+
             if (user == null)
             {
                 // Check for legacy profile migration

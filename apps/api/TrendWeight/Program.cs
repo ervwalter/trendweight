@@ -114,6 +114,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
+app.UseMiddleware<RequestTimingMiddleware>();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Enable HTTP request logging

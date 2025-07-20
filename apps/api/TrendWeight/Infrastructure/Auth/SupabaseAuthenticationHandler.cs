@@ -30,6 +30,7 @@ public class SupabaseAuthenticationHandler : AuthenticationHandler<SupabaseAuthe
         }
 
         var authHeader = Request.Headers.Authorization.ToString();
+
         if (!authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
             return Task.FromResult(AuthenticateResult.NoResult());

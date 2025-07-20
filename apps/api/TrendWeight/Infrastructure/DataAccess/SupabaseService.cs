@@ -7,10 +7,11 @@ namespace TrendWeight.Infrastructure.DataAccess;
 
 public class SupabaseService : ISupabaseService
 {
-    private readonly Client _supabaseClient;
+    private readonly Lazy<Client> _supabaseClient;
     private readonly SupabaseConfig _config;
     private readonly ILogger<SupabaseService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private Client SupabaseClient => _supabaseClient.Value;
 
     public SupabaseService(IOptions<AppOptions> appOptions, ILogger<SupabaseService> logger, IHttpClientFactory httpClientFactory)
     {
@@ -18,36 +19,40 @@ public class SupabaseService : ISupabaseService
         _logger = logger;
         _httpClientFactory = httpClientFactory;
 
-        var options = new SupabaseOptions
-        {
-            AutoRefreshToken = true,
-            AutoConnectRealtime = false
-        };
 
-        _supabaseClient = new Client(_config.Url, _config.ServiceKey, options);
-        var initTask = _supabaseClient.InitializeAsync();
-        initTask.Wait(); // Wait for initialization
-        _logger.LogInformation("Supabase client initialized for URL: {Url}", _config.Url);
+        _supabaseClient = new Lazy<Client>(() =>
+        {
+            var options = new SupabaseOptions
+            {
+                AutoRefreshToken = true,
+                AutoConnectRealtime = false
+            };
+
+            var client = new Client(_config.Url, _config.ServiceKey, options);
+            
+            // Use GetAwaiter().GetResult() instead of Wait() to avoid deadlock
+            client.InitializeAsync().GetAwaiter().GetResult();
+
+            return client;
+        });
     }
 
     public async Task<T?> GetByIdAsync<T>(Guid id) where T : BaseModel, new()
     {
         try
         {
-            var response = await _supabaseClient.From<T>()
-                .Filter("uid", Supabase.Postgrest.Constants.Operator.Equals, id.ToString())
-                .Get();
+            var query = SupabaseClient.From<T>()
+                .Filter("uid", Supabase.Postgrest.Constants.Operator.Equals, id.ToString());
+
+            var response = await query.Get();
 
             if (response.Models.Count == 0)
             {
-                // Not found - this is an expected scenario, not an error
-                _logger.LogDebug("{Type} not found with ID {Id}", typeof(T).Name, id);
                 return null;
             }
 
             if (response.Models.Count > 1)
             {
-                // Multiple records found - this is an error
                 _logger.LogError("Multiple {Type} records found with ID {Id}", typeof(T).Name, id);
                 return null;
             }
@@ -65,7 +70,7 @@ public class SupabaseService : ISupabaseService
     {
         try
         {
-            var response = await _supabaseClient.From<T>()
+            var response = await SupabaseClient.From<T>()
                 .Filter("uid", Supabase.Postgrest.Constants.Operator.Equals, id)
                 .Get();
 
@@ -96,7 +101,7 @@ public class SupabaseService : ISupabaseService
     {
         try
         {
-            var response = await _supabaseClient.From<T>()
+            var response = await SupabaseClient.From<T>()
                 .Get();
 
             if (response.Models.Count == 0)
@@ -117,7 +122,7 @@ public class SupabaseService : ISupabaseService
     {
         try
         {
-            var response = await _supabaseClient.From<T>()
+            var response = await SupabaseClient.From<T>()
                 .Insert(model, new Supabase.Postgrest.QueryOptions { Upsert = false });
 
             return response.Models.First();
@@ -133,7 +138,7 @@ public class SupabaseService : ISupabaseService
     {
         try
         {
-            var response = await _supabaseClient.From<T>()
+            var response = await SupabaseClient.From<T>()
                 .Update(model);
 
             return response.Models.First();
@@ -149,7 +154,7 @@ public class SupabaseService : ISupabaseService
     {
         try
         {
-            await _supabaseClient.From<T>()
+            await SupabaseClient.From<T>()
                 .Delete(model);
         }
         catch (Exception ex)
@@ -163,7 +168,7 @@ public class SupabaseService : ISupabaseService
     {
         try
         {
-            var table = _supabaseClient.From<T>();
+            var table = SupabaseClient.From<T>();
             query(table);
             var response = await table.Get();
 
