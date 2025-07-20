@@ -7,7 +7,7 @@ namespace TrendWeight.Infrastructure.DataAccess.Models;
 [Table("profiles")]
 public class DbProfile : BaseModel
 {
-    [PrimaryKey]
+    [PrimaryKey("uid", false)]
     [Column("uid")]
     public Guid Uid { get; set; }
 
