@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TrendWeight.Features.Profile.Services;
+using TrendWeight.Common.Models;
+using TrendWeight.Features.Profile.Models;
 using TrendWeight.Features.Sharing.Models;
 using TrendWeight.Infrastructure.DataAccess.Models;
 
@@ -37,7 +39,7 @@ public class SharingController : ControllerBase
             if (string.IsNullOrEmpty(userId))
             {
                 _logger.LogWarning("User ID not found in authenticated user claims");
-                return Unauthorized(new { error = "User ID not found" });
+                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
             }
 
             // Get user from Supabase by UID
@@ -45,7 +47,7 @@ public class SharingController : ControllerBase
             if (user == null)
             {
                 _logger.LogWarning("User document not found for Supabase UID: {UserId}", userId);
-                return NotFound(new { error = "User not found" });
+                return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
             return Ok(new SharingResponse
@@ -57,7 +59,7 @@ public class SharingController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting sharing settings for user");
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
         }
     }
 
@@ -76,7 +78,7 @@ public class SharingController : ControllerBase
             if (string.IsNullOrEmpty(userId))
             {
                 _logger.LogWarning("User ID not found in authenticated user claims");
-                return Unauthorized(new { error = "User ID not found" });
+                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
             }
 
             // Get user from Supabase by UID
@@ -84,7 +86,7 @@ public class SharingController : ControllerBase
             if (user == null)
             {
                 _logger.LogWarning("User document not found for Supabase UID: {UserId}", userId);
-                return NotFound(new { error = "User not found" });
+                return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
             // Update only the sharing enabled flag
@@ -103,7 +105,7 @@ public class SharingController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error toggling sharing for user");
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
         }
     }
 

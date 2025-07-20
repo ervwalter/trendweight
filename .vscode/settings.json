@@ -32,5 +32,14 @@
     ".next": true,
     ".yarn": true
   },
-  "cSpell.words": ["automerge", "chakra", "ervwalter", "highcharts", "Highstock", "ohlc", "resetpassword"]
+  "cSpell.words": [
+    "automerge",
+    "chakra",
+    "ervwalter",
+    "highcharts",
+    "Highstock",
+    "ohlc",
+    "resetpassword"
+  ],
+  "dotnet.defaultSolution": "apps/api/TrendWeight.sln"
 }

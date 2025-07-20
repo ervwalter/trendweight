@@ -7,6 +7,8 @@ using TrendWeight.Features.Providers;
 using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Features.Profile.Models;
+using TrendWeight.Common.Models;
 
 namespace TrendWeight.Features.Measurements;
 
@@ -59,7 +61,7 @@ public class MeasurementsController : ControllerBase
     /// </summary>
     /// <returns>MeasurementsResponse with data and provider status</returns>
     [HttpGet]
-    public async Task<IActionResult> GetMeasurements()
+    public async Task<ActionResult<MeasurementsResponse>> GetMeasurements()
     {
         try
         {
@@ -67,7 +69,7 @@ public class MeasurementsController : ControllerBase
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token" });
+                return Unauthorized(new ErrorResponse { Error = "User ID not found in token" });
             }
 
             _logger.LogInformation("Getting measurements for user ID: {UserId}", userId);
@@ -76,7 +78,7 @@ public class MeasurementsController : ControllerBase
             var user = await _profileService.GetByIdAsync(userId);
             if (user == null)
             {
-                return NotFound(new { error = "User not found" });
+                return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
             return await GetMeasurementsForUser(user, isMe: true);
@@ -84,7 +86,7 @@ public class MeasurementsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting measurements");
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
         }
     }
 
@@ -95,7 +97,7 @@ public class MeasurementsController : ControllerBase
     /// <returns>MeasurementsResponse with data and provider status</returns>
     [HttpGet("{sharingCode}")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetMeasurementsBySharingCode(string sharingCode)
+    public async Task<ActionResult<MeasurementsResponse>> GetMeasurementsBySharingCode(string sharingCode)
     {
         try
         {
@@ -104,7 +106,7 @@ public class MeasurementsController : ControllerBase
             if (user == null)
             {
                 _logger.LogWarning("User not found for sharing code: {SharingCode}", sharingCode);
-                return NotFound(new { error = "User not found" });
+                return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
             _logger.LogInformation("Getting measurements for user ID: {UserId} via sharing code", user.Uid);
@@ -116,11 +118,11 @@ public class MeasurementsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting measurements for sharing code");
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
         }
     }
 
-    private async Task<IActionResult> GetMeasurementsForUser(DbProfile user, bool isMe)
+    private async Task<ActionResult<MeasurementsResponse>> GetMeasurementsForUser(DbProfile user, bool isMe)
     {
         try
         {
@@ -196,23 +198,19 @@ public class MeasurementsController : ControllerBase
 
             // Return the enhanced response with isMe flag
             // Only include providerStatus when it's the authenticated user
-            var response = new Dictionary<string, object>
+            var response = new MeasurementsResponse
             {
-                ["data"] = currentData,
-                ["isMe"] = isMe
+                Data = currentData,
+                IsMe = isMe,
+                ProviderStatus = isMe ? providerStatus : null
             };
-
-            if (isMe)
-            {
-                response["providerStatus"] = providerStatus;
-            }
 
             return Ok(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting measurements for user");
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
         }
     }
 

@@ -13,9 +13,14 @@ public class MeasurementsResponse
     public required List<SourceData> Data { get; init; }
 
     /// <summary>
-    /// Status of provider sync operations
+    /// Whether this is the authenticated user's own data
     /// </summary>
-    public required Dictionary<string, ProviderSyncStatus> ProviderStatus { get; init; }
+    public required bool IsMe { get; init; }
+
+    /// <summary>
+    /// Status of provider sync operations (only included for authenticated user)
+    /// </summary>
+    public Dictionary<string, ProviderSyncStatus>? ProviderStatus { get; init; }
 }
 
 /// <summary>
@@ -37,5 +42,24 @@ public class ProviderSyncStatus
     /// Human-readable error message
     /// </summary>
     public string? Message { get; init; }
+}
+
+/// <summary>
+/// Response model for data refresh operations
+/// </summary>
+public class DataRefreshResponse
+{
+    public required string Message { get; set; }
+    public required Dictionary<string, ProviderStatusInfo> Providers { get; set; }
+    public required DateTime Timestamp { get; set; }
+}
+
+/// <summary>
+/// Provider status information in refresh responses
+/// </summary>
+public class ProviderStatusInfo
+{
+    public required bool Success { get; set; }
+    public required bool Synced { get; set; }
 }
 
