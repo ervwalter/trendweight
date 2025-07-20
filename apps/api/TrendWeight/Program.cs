@@ -173,3 +173,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Make Program accessible to test projects
+public partial class Program { }

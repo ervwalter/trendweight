@@ -37,6 +37,20 @@ jobs:
     - name: Lint
       working-directory: apps/web
       run: npm run lint
+    
+    - name: Test
+      working-directory: apps/web
+      run: npm test -- --run
+    
+    - name: Test Coverage
+      working-directory: apps/web
+      run: npm run test:coverage
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-coverage
+        path: apps/web/coverage/
 
   backend-checks:
     name: Backend Checks
@@ -60,7 +74,13 @@ jobs:
     
     - name: Test
       working-directory: apps/api
-      run: dotnet test --no-build -c Release --verbosity normal
+      run: dotnet test --no-build -c Release --verbosity normal --collect:"XPlat Code Coverage"
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-coverage
+        path: apps/api/**/coverage.cobertura.xml
 
   docker-build:
     name: Docker Build
