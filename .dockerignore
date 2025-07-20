@@ -22,7 +22,7 @@ LICENSE
 
 # Build outputs
 **/dist/
-**/build/
+# **/build/ - Commented out because we have a src/components/build folder
 **/.next/
 **/.turbo/
 **/.vite/
