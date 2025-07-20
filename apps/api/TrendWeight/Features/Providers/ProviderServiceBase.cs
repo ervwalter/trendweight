@@ -1,5 +1,4 @@
 using System.Text.Json;
-using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
@@ -18,21 +17,12 @@ public abstract class ProviderServiceBase : IProviderService
     protected IProfileService ProfileService { get; }
     protected ILogger Logger { get; }
 
-    private readonly IServiceProvider _serviceProvider;
-    private ISourceDataService? _sourceDataService;
-
-    // Lazy load SourceDataService to avoid circular dependency
-    protected ISourceDataService SourceDataService =>
-        _sourceDataService ??= _serviceProvider.GetRequiredService<ISourceDataService>();
-
     protected ProviderServiceBase(
         IProviderLinkService providerLinkService,
-        IServiceProvider serviceProvider,
         IProfileService profileService,
         ILogger logger)
     {
         ProviderLinkService = providerLinkService;
-        _serviceProvider = serviceProvider;
         ProfileService = profileService;
         Logger = logger;
     }
@@ -110,29 +100,10 @@ public abstract class ProviderServiceBase : IProviderService
     }
 
     /// <inheritdoc />
-    public async Task<ProviderSyncResult> SyncMeasurementsAsync(Guid userId, bool metric)
+    public async Task<ProviderSyncResult> SyncMeasurementsAsync(Guid userId, bool metric, DateTime? startDate = null)
     {
         try
         {
-            // Get the last sync time to determine fetch window
-            var lastSyncTime = await SourceDataService.GetLastSyncTimeAsync(userId, ProviderName);
-
-            // Calculate start date: 90 days before last sync, or all time if no previous sync
-            DateTime startDate;
-            if (lastSyncTime.HasValue)
-            {
-                // Fetch from 90 days before last sync to catch any late-arriving or edited measurements
-                startDate = lastSyncTime.Value.AddDays(-90);
-                Logger.LogDebug("Fetching {Provider} measurements from {StartDate} (90 days before last sync)",
-                    ProviderName, startDate.ToString("o"));
-            }
-            else
-            {
-                // No previous sync - fetch all data
-                startDate = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                Logger.LogDebug("No previous sync for {Provider}, fetching all measurements", ProviderName);
-            }
-
             // Get measurements from the provider
             var measurements = await GetMeasurementsAsync(userId, metric, startDate);
             if (measurements == null)
@@ -148,24 +119,14 @@ public abstract class ProviderServiceBase : IProviderService
                 };
             }
 
-            // Update source data
-            var sourceData = new SourceData
-            {
-                Source = ProviderName,
-                LastUpdate = DateTime.UtcNow,
-                Measurements = measurements
-            };
-
-            // Store in database (UpdateSourceDataAsync will handle merging)
-            await SourceDataService.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
-
-            Logger.LogDebug("Successfully synced {Count} {Provider} measurements for user {UserId}",
+            Logger.LogDebug("Successfully retrieved {Count} {Provider} measurements for user {UserId}",
                 measurements.Count, ProviderName, userId);
 
             return new ProviderSyncResult
             {
                 Provider = ProviderName,
-                Success = true
+                Success = true,
+                Measurements = measurements
             };
         }
         catch (ProviderAuthException ex)
@@ -218,10 +179,8 @@ public abstract class ProviderServiceBase : IProviderService
             // Remove the provider link
             await ProviderLinkService.RemoveProviderLinkAsync(userId, ProviderName);
 
-            // Also delete the source data row for this provider
-            await SourceDataService.DeleteSourceDataAsync(userId, ProviderName);
-
-            Logger.LogInformation("Removed {Provider} link and deleted source data for user {UserId}", ProviderName, userId);
+            // Note: Source data deletion is now handled by the caller if needed
+            Logger.LogInformation("Removed {Provider} link for user {UserId}", ProviderName, userId);
             return true;
         }
         catch (Exception ex)

@@ -26,7 +26,6 @@ public class WithingsServiceTests : TestBase
     private readonly HttpClient _httpClient;
     private readonly Mock<IOptions<AppOptions>> _appOptionsMock;
     private readonly Mock<IProviderLinkService> _providerLinkServiceMock;
-    private readonly Mock<ISourceDataService> _sourceDataServiceMock;
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILogger<WithingsService>> _loggerMock;
     private readonly WithingsService _sut;
@@ -55,7 +54,6 @@ public class WithingsServiceTests : TestBase
         _appOptionsMock.Setup(x => x.Value).Returns(appOptions);
 
         _providerLinkServiceMock = new Mock<IProviderLinkService>();
-        _sourceDataServiceMock = new Mock<ISourceDataService>();
         _profileServiceMock = new Mock<IProfileService>();
         _loggerMock = new Mock<ILogger<WithingsService>>();
 
@@ -63,7 +61,6 @@ public class WithingsServiceTests : TestBase
             _httpClient,
             _appOptionsMock.Object,
             _providerLinkServiceMock.Object,
-            (IServiceProvider)_sourceDataServiceMock.Object,
             _profileServiceMock.Object,
             _loggerMock.Object);
     }
@@ -521,25 +518,14 @@ public class WithingsServiceTests : TestBase
 
         SetupPaginatedHttpResponses(firstPageResponse, secondPageResponse);
 
-        _sourceDataServiceMock.Setup(x => x.UpdateSourceDataAsync(
-            userId,
-            It.IsAny<List<SourceData>>()))
-            .Returns(Task.CompletedTask);
-
         // Act
         var result = await _sut.SyncMeasurementsAsync(userId, true);
 
         // Assert
         result.Success.Should().BeTrue();
         result.Provider.Should().Be("withings");
-
-        // Sync date is managed by the service internally
-
-        // Verify that source data was updated
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
-            userId,
-            It.IsAny<List<SourceData>>()),
-            Times.Once);
+        result.Measurements.Should().NotBeNull();
+        result.Measurements!.Count.Should().Be(15); // 10 from first page + 5 from second page
     }
 
     #endregion

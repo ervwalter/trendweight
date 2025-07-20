@@ -35,10 +35,9 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         HttpClient httpClient,
         IOptions<AppOptions> appOptions,
         IProviderLinkService providerLinkService,
-        IServiceProvider serviceProvider,
         IProfileService profileService,
         ILogger<WithingsService> logger)
-        : base(providerLinkService, serviceProvider, profileService, logger)
+        : base(providerLinkService, profileService, logger)
     {
         _httpClient = httpClient;
         _config = appOptions.Value.Withings;

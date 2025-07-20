@@ -19,6 +19,7 @@ public class ProvidersController : ControllerBase
     private readonly IProviderLinkService _providerLinkService;
     private readonly ISourceDataService _sourceDataService;
     private readonly IProviderIntegrationService _providerIntegrationService;
+    private readonly IMeasurementSyncService _measurementSyncService;
     private readonly IProfileService _profileService;
     private readonly ILogger<ProvidersController> _logger;
 
@@ -26,12 +27,14 @@ public class ProvidersController : ControllerBase
         IProviderLinkService providerLinkService,
         ISourceDataService sourceDataService,
         IProviderIntegrationService providerIntegrationService,
+        IMeasurementSyncService measurementSyncService,
         IProfileService profileService,
         ILogger<ProvidersController> logger)
     {
         _providerLinkService = providerLinkService;
         _sourceDataService = sourceDataService;
         _providerIntegrationService = providerIntegrationService;
+        _measurementSyncService = measurementSyncService;
         _profileService = profileService;
         _logger = logger;
     }
@@ -113,12 +116,15 @@ public class ProvidersController : ControllerBase
                 return BadRequest(new ErrorResponse { Error = $"Provider service not found for: {provider}" });
             }
 
-            // Remove provider link and associated source data
+            // Remove provider link
             var success = await providerService.RemoveProviderLinkAsync(userGuid);
             if (!success)
             {
                 return StatusCode(500, new ErrorResponse { Error = $"Failed to disconnect {provider}" });
             }
+
+            // Also delete the source data for this provider
+            await _sourceDataService.DeleteSourceDataAsync(userGuid, provider);
 
             _logger.LogInformation("Disconnected {Provider} and cleared source data for user {UserId}", provider, userId);
             return Ok(new ProviderOperationResponse { Message = $"{provider} disconnected successfully" });
@@ -169,33 +175,17 @@ public class ProvidersController : ControllerBase
                 return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
-            // Set the resync requested flag immediately
-            await _sourceDataService.SetResyncRequestedAsync(userGuid, provider);
-            _logger.LogInformation("Set resync requested flag for {Provider} for user {UserId}", provider, userId);
-
-            // Clear existing source data for this provider
-            await _sourceDataService.ClearSourceDataAsync(userGuid, provider);
-            _logger.LogInformation("Cleared source data for {Provider} for user {UserId}", provider, userId);
-
-            // Get provider service and trigger sync
-            var providerService = _providerIntegrationService.GetProviderService(provider);
-            if (providerService == null)
-            {
-                return BadRequest(new ErrorResponse { Error = $"Provider service not found for: {provider}" });
-            }
-
-            // Sync with metric=true (always store in kg)
-            var syncResult = await providerService.SyncMeasurementsAsync(userGuid, true);
+            // Use the measurement sync service to handle the resync
+            var syncResult = await _measurementSyncService.ResyncProviderAsync(userGuid, provider, user.Profile.UseMetric);
 
             if (syncResult.Success)
             {
-                _logger.LogInformation("Successfully resynced {Provider} for user {UserId}", provider, userId);
                 return Ok(new ProviderOperationResponse { Message = $"{provider} resync completed successfully" });
             }
             else
             {
-                _logger.LogError("Failed to resync {Provider} for user {UserId}", provider, userId);
-                return StatusCode(500, new ErrorResponse { Error = $"Failed to resync {provider} data" });
+                _logger.LogError("Failed to resync {Provider} for user {UserId}: {Error}", provider, userId, syncResult.Message);
+                return StatusCode(500, new ErrorResponse { Error = syncResult.Message ?? $"Failed to resync {provider} data" });
             }
         }
         catch (Exception ex)

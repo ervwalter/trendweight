@@ -28,7 +28,6 @@ public class FitbitServiceTests : TestBase
     private readonly HttpClient _httpClient;
     private readonly Mock<IOptions<AppOptions>> _appOptionsMock;
     private readonly Mock<IProviderLinkService> _providerLinkServiceMock;
-    private readonly Mock<ISourceDataService> _sourceDataServiceMock;
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILogger<FitbitService>> _loggerMock;
     private readonly FitbitService _sut;
@@ -57,7 +56,6 @@ public class FitbitServiceTests : TestBase
         _appOptionsMock.Setup(x => x.Value).Returns(appOptions);
 
         _providerLinkServiceMock = new Mock<IProviderLinkService>();
-        _sourceDataServiceMock = new Mock<ISourceDataService>();
         _profileServiceMock = new Mock<IProfileService>();
         _loggerMock = new Mock<ILogger<FitbitService>>();
 
@@ -65,7 +63,6 @@ public class FitbitServiceTests : TestBase
             _httpClient,
             _appOptionsMock.Object,
             _providerLinkServiceMock.Object,
-            (IServiceProvider)_sourceDataServiceMock.Object,
             _profileServiceMock.Object,
             _loggerMock.Object);
     }
@@ -579,10 +576,7 @@ public class FitbitServiceTests : TestBase
                 return response;
             });
 
-        _sourceDataServiceMock.Setup(x => x.UpdateSourceDataAsync(
-            userId,
-            It.IsAny<List<SourceData>>()))
-            .Returns(Task.CompletedTask);
+        // Source data update is now handled by the caller
 
         // Act
         var result = await _sut.SyncMeasurementsAsync(userId, true);
@@ -590,8 +584,7 @@ public class FitbitServiceTests : TestBase
         // Assert
         result.Success.Should().BeTrue();
         result.Provider.Should().Be("fitbit");
-
-        // Sync date is managed by the service internally
+        result.Measurements.Should().NotBeNull();
 
         // Verify multiple chunks were processed
         _httpMessageHandlerMock.Protected().Verify(

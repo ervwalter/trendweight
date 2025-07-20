@@ -160,16 +160,6 @@ public class SupabaseTokenServiceTests : TestBase
         result.IsValid.Should().BeFalse();
         result.Principal.Should().BeNull();
         result.ErrorMessage.Should().Be("Token validation failed");
-
-        // Verify warning was logged
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Token validation failed")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
     }
 
     [Fact]

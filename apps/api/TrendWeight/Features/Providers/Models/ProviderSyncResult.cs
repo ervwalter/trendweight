@@ -1,3 +1,5 @@
+using TrendWeight.Features.Measurements.Models;
+
 namespace TrendWeight.Features.Providers.Models;
 
 /// <summary>
@@ -24,6 +26,11 @@ public class ProviderSyncResult
     /// Human-readable error message
     /// </summary>
     public string? Message { get; init; }
+
+    /// <summary>
+    /// The measurements retrieved (if successful)
+    /// </summary>
+    public List<RawMeasurement>? Measurements { get; init; }
 }
 
 /// <summary>

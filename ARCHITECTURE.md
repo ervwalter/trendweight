@@ -21,6 +21,26 @@ TrendWeight is a web application for tracking weight trends by integrating with 
 
 The backend uses a service layer pattern where controllers remain thin and delegate business logic to dedicated service classes. This promotes testability and separation of concerns.
 
+### Measurement Sync Architecture
+
+The measurement synchronization process is orchestrated by `MeasurementSyncService`, which:
+- Manages cache expiration and determines when data needs refreshing
+- Coordinates between provider services and the source data storage
+- Handles both incremental syncs (last 90 days) and full resyncs
+- Provides a clean separation between provider integrations and data storage
+
+Key components:
+- **MeasurementSyncService**: Orchestrates the sync process and manages refresh logic
+- **Provider Services** (Withings/Fitbit): Fetch measurements from external APIs
+- **SourceDataService**: Stores and retrieves measurement data from the database
+- **ProviderIntegrationService**: Factory for getting provider service instances
+
+Data refresh logic:
+- Cache duration: 5 minutes in production, 10 seconds in development
+- Regular refresh: Fetches measurements from 90 days before last sync
+- Full resync: Clears all data then fetches entire history
+- No provider dependencies on storage layer - clean separation of concerns
+
 ### Key Directory Structure
 
 ```
@@ -105,12 +125,11 @@ This approach:
   - `created_at`, `updated_at` (text) - ISO 8601 timestamps
 
 - **source_data**: Raw measurement data from providers
-  - `user_id` (uuid) - Foreign key to profiles  
+  - `uid` (uuid) - Foreign key to profiles  
   - `provider` (text) - Data source provider
-  - `source_data` (jsonb) - Raw measurement data with date/time strings
-  - `last_sync_date` (text) - ISO 8601 timestamp
-  - `resync_requested` (boolean) - Flag for pending resync operations
-  - `created_at`, `updated_at` (text) - ISO 8601 timestamps
+  - `measurements` (jsonb) - Raw measurement data with date/time strings
+  - `last_sync` (text) - ISO 8601 timestamp
+  - `updated_at` (text) - ISO 8601 timestamp
 
 ### Important Notes
 - All timestamps are stored as ISO 8601 text to avoid timezone issues

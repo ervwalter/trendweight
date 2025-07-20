@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -22,28 +21,22 @@ public class MeasurementsControllerTests : TestBase
 {
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<IProviderIntegrationService> _providerIntegrationServiceMock;
-    private readonly Mock<ISourceDataService> _sourceDataServiceMock;
+    private readonly Mock<IMeasurementSyncService> _measurementSyncServiceMock;
     private readonly Mock<ILogger<MeasurementsController>> _loggerMock;
-    private readonly Mock<IWebHostEnvironment> _environmentMock;
     private readonly MeasurementsController _sut;
 
     public MeasurementsControllerTests()
     {
         _profileServiceMock = new Mock<IProfileService>();
         _providerIntegrationServiceMock = new Mock<IProviderIntegrationService>();
-        _sourceDataServiceMock = new Mock<ISourceDataService>();
+        _measurementSyncServiceMock = new Mock<IMeasurementSyncService>();
         _loggerMock = new Mock<ILogger<MeasurementsController>>();
-        _environmentMock = new Mock<IWebHostEnvironment>();
-
-        // Default to production environment
-        _environmentMock.Setup(x => x.EnvironmentName).Returns("Production");
 
         _sut = new MeasurementsController(
             _profileServiceMock.Object,
             _providerIntegrationServiceMock.Object,
-            _sourceDataServiceMock.Object,
-            _loggerMock.Object,
-            _environmentMock.Object);
+            _measurementSyncServiceMock.Object,
+            _loggerMock.Object);
     }
 
     #region GetMeasurements Tests
@@ -60,10 +53,17 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings", "fitbit" });
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
-            .ReturnsAsync(DateTime.UtcNow.AddMinutes(-1)); // Fresh data
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
-            .ReturnsAsync(sourceData);
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+                It.IsAny<List<string>>(), user.Profile.UseMetric))
+            .ReturnsAsync(new MeasurementsResult 
+            { 
+                Data = sourceData,
+                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
+                {
+                    { "withings", new ProviderSyncStatus { Success = true } },
+                    { "fitbit", new ProviderSyncStatus { Success = true } }
+                }
+            });
 
         // Act
         var result = await _sut.GetMeasurements();
@@ -126,15 +126,16 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings" });
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
-            .ReturnsAsync(DateTime.UtcNow.AddHours(-1)); // Stale data
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
-            .ReturnsAsync(sourceData);
-
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
-            .Returns(providerService.Object);
-        providerService.Setup(x => x.SyncMeasurementsAsync(userId, It.IsAny<bool>()))
-            .ReturnsAsync(new ProviderSyncResult { Provider = "withings", Success = true });
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+                It.IsAny<List<string>>(), user.Profile.UseMetric))
+            .ReturnsAsync(new MeasurementsResult 
+            { 
+                Data = sourceData,
+                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
+                {
+                    { "withings", new ProviderSyncStatus { Success = true } }
+                }
+            });
 
         // Act
         var result = await _sut.GetMeasurements();
@@ -142,7 +143,8 @@ public class MeasurementsControllerTests : TestBase
         // Assert
         result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        providerService.Verify(x => x.SyncMeasurementsAsync(userId, false), Times.Once);
+        var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
+        response.Data.Should().BeEquivalentTo(sourceData);
     }
 
     [Fact]
@@ -158,20 +160,23 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings" });
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
-            .ReturnsAsync((DateTime?)null); // Never synced
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
-            .ReturnsAsync(sourceData);
-
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
-            .Returns(providerService.Object);
-        providerService.Setup(x => x.SyncMeasurementsAsync(userId, It.IsAny<bool>()))
-            .ReturnsAsync(new ProviderSyncResult
-            {
-                Provider = "withings",
-                Success = false,
-                Error = ProviderSyncError.AuthFailed,
-                Message = "Authentication expired"
+        
+        // Setup to return error status for provider
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+                It.IsAny<List<string>>(), user.Profile.UseMetric))
+            .ReturnsAsync(new MeasurementsResult 
+            { 
+                Data = sourceData,
+                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
+                {
+                    { "withings", new ProviderSyncStatus 
+                        { 
+                            Success = false,
+                            Error = "authfailed",
+                            Message = "Authentication expired"
+                        } 
+                    }
+                }
             });
 
         // Act
@@ -184,48 +189,6 @@ public class MeasurementsControllerTests : TestBase
         response.ProviderStatus!["withings"].Success.Should().BeFalse();
         response.ProviderStatus["withings"].Error.Should().Be("authfailed");
         response.ProviderStatus["withings"].Message.Should().Be("Authentication expired");
-    }
-
-    [Fact]
-    public async Task GetMeasurements_InDevelopmentEnvironment_UsesShorterCacheDuration()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = CreateTestProfile(userId);
-
-        // Create new controller with development environment
-        var envMock = new Mock<IWebHostEnvironment>();
-        envMock.Setup(x => x.EnvironmentName).Returns("Development");
-        // Development environment is already set by EnvironmentName
-
-        var controller = new MeasurementsController(
-            _profileServiceMock.Object,
-            _providerIntegrationServiceMock.Object,
-            _sourceDataServiceMock.Object,
-            _loggerMock.Object,
-            envMock.Object);
-
-        SetupAuthenticatedUser(userId.ToString(), controller);
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
-            .ReturnsAsync(new List<string> { "withings" });
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
-            .ReturnsAsync(DateTime.UtcNow.AddSeconds(-15)); // 15 seconds old (stale in dev)
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
-            .ReturnsAsync(new List<SourceData>());
-
-        var providerService = new Mock<IProviderService>();
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
-            .Returns(providerService.Object);
-        providerService.Setup(x => x.SyncMeasurementsAsync(userId, It.IsAny<bool>()))
-            .ReturnsAsync(new ProviderSyncResult { Provider = "withings", Success = true });
-
-        // Act
-        var result = await controller.GetMeasurements();
-
-        // Assert
-        result.Result.Should().BeOfType<OkObjectResult>();
-        providerService.Verify(x => x.SyncMeasurementsAsync(userId, It.IsAny<bool>()), Times.Once);
     }
 
     [Fact]
@@ -263,10 +226,16 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings" });
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
-            .ReturnsAsync(DateTime.UtcNow.AddMinutes(-1)); // Fresh data
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
-            .ReturnsAsync(sourceData);
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+                It.IsAny<List<string>>(), user.Profile.UseMetric))
+            .ReturnsAsync(new MeasurementsResult 
+            { 
+                Data = sourceData,
+                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
+                {
+                    { "withings", new ProviderSyncStatus { Success = true } }
+                }
+            });
 
         // Act
         var result = await _sut.GetMeasurementsBySharingCode(sharingCode);
@@ -296,37 +265,7 @@ public class MeasurementsControllerTests : TestBase
             .Which.Error.Should().Be("User not found");
     }
 
-    [Fact]
-    public async Task GetMeasurementsBySharingCode_StillRefreshesDataIfNeeded()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var sharingCode = "test-sharing-code";
-        var user = CreateTestProfile(userId);
-        user.Profile.SharingEnabled = true;
-        user.Profile.SharingToken = sharingCode;
-        var providerService = new Mock<IProviderService>();
-
-        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
-            .ReturnsAsync(new List<string> { "withings" });
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
-            .ReturnsAsync((DateTime?)null); // Never synced
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
-            .ReturnsAsync(new List<SourceData>());
-
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
-            .Returns(providerService.Object);
-        providerService.Setup(x => x.SyncMeasurementsAsync(userId, It.IsAny<bool>()))
-            .ReturnsAsync(new ProviderSyncResult { Provider = "withings", Success = true });
-
-        // Act
-        var result = await _sut.GetMeasurementsBySharingCode(sharingCode);
-
-        // Assert
-        result.Result.Should().BeOfType<OkObjectResult>();
-        providerService.Verify(x => x.SyncMeasurementsAsync(userId, false), Times.Once);
-    }
+    // Test removed - refresh logic is now internal to MeasurementSyncService
 
     [Fact]
     public async Task GetMeasurementsBySharingCode_WhenExceptionThrown_ReturnsInternalServerError()
@@ -348,45 +287,7 @@ public class MeasurementsControllerTests : TestBase
 
     #region Multiple Providers Tests
 
-    [Fact]
-    public async Task GetMeasurements_WithMultipleProviders_RefreshesOnlyStaleProviders()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = CreateTestProfile(userId);
-        var withingsService = new Mock<IProviderService>();
-        var fitbitService = new Mock<IProviderService>();
-
-        SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
-            .ReturnsAsync(new List<string> { "withings", "fitbit" });
-
-        // Withings is fresh, Fitbit is stale
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
-            .ReturnsAsync(DateTime.UtcNow.AddMinutes(-1));
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "fitbit"))
-            .ReturnsAsync(DateTime.UtcNow.AddHours(-1));
-
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
-            .ReturnsAsync(new List<SourceData>());
-
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
-            .Returns(withingsService.Object);
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("fitbit"))
-            .Returns(fitbitService.Object);
-
-        fitbitService.Setup(x => x.SyncMeasurementsAsync(userId, It.IsAny<bool>()))
-            .ReturnsAsync(new ProviderSyncResult { Provider = "fitbit", Success = true });
-
-        // Act
-        var result = await _sut.GetMeasurements();
-
-        // Assert
-        result.Result.Should().BeOfType<OkObjectResult>();
-        withingsService.Verify(x => x.SyncMeasurementsAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
-        fitbitService.Verify(x => x.SyncMeasurementsAsync(userId, false), Times.Once);
-    }
+    // Test removed - refresh logic is now internal to MeasurementSyncService
 
     [Fact]
     public async Task GetMeasurements_WhenProviderServiceNotFound_ReturnsErrorForThatProvider()
@@ -399,13 +300,22 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "unknown-provider" });
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "unknown-provider"))
-            .ReturnsAsync((DateTime?)null);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
-            .ReturnsAsync(new List<SourceData>());
-
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("unknown-provider"))
-            .Returns((IProviderService?)null);
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+                It.IsAny<List<string>>(), user.Profile.UseMetric))
+            .ReturnsAsync(new MeasurementsResult 
+            { 
+                Data = new List<SourceData>(),
+                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
+                {
+                    { "unknown-provider", new ProviderSyncStatus 
+                        { 
+                            Success = false, 
+                            Error = "unknown",
+                            Message = "Provider service not found"
+                        } 
+                    }
+                }
+            });
 
         // Act
         var result = await _sut.GetMeasurements();

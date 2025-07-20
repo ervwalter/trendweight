@@ -111,9 +111,9 @@ public class ProviderIntegrationServiceTests : TestBase
         _fitbitServiceMock.Setup(x => x.HasActiveProviderLinkAsync(userId))
             .ReturnsAsync(true);
 
-        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = true, Provider = "withings" });
-        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = true, Provider = "fitbit" });
 
         // Act
@@ -124,8 +124,8 @@ public class ProviderIntegrationServiceTests : TestBase
         result["withings"].Should().BeTrue();
         result["fitbit"].Should().BeTrue();
 
-        _withingsServiceMock.Verify(x => x.SyncMeasurementsAsync(userId, metric), Times.Once);
-        _fitbitServiceMock.Verify(x => x.SyncMeasurementsAsync(userId, metric), Times.Once);
+        _withingsServiceMock.Verify(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()), Times.Once);
+        _fitbitServiceMock.Verify(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()), Times.Once);
     }
 
     [Fact]
@@ -146,8 +146,8 @@ public class ProviderIntegrationServiceTests : TestBase
         // Assert
         result.Should().BeEmpty();
 
-        _withingsServiceMock.Verify(x => x.SyncMeasurementsAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
-        _fitbitServiceMock.Verify(x => x.SyncMeasurementsAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
+        _withingsServiceMock.Verify(x => x.SyncMeasurementsAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<DateTime?>()), Times.Never);
+        _fitbitServiceMock.Verify(x => x.SyncMeasurementsAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<DateTime?>()), Times.Never);
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class ProviderIntegrationServiceTests : TestBase
         _fitbitServiceMock.Setup(x => x.HasActiveProviderLinkAsync(userId))
             .ReturnsAsync(false);
 
-        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = true, Provider = "withings" });
 
         // Act
@@ -172,8 +172,8 @@ public class ProviderIntegrationServiceTests : TestBase
         result.Should().HaveCount(1);
         result["withings"].Should().BeTrue();
 
-        _withingsServiceMock.Verify(x => x.SyncMeasurementsAsync(userId, metric), Times.Once);
-        _fitbitServiceMock.Verify(x => x.SyncMeasurementsAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
+        _withingsServiceMock.Verify(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()), Times.Once);
+        _fitbitServiceMock.Verify(x => x.SyncMeasurementsAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<DateTime?>()), Times.Never);
     }
 
     [Fact]
@@ -188,9 +188,9 @@ public class ProviderIntegrationServiceTests : TestBase
         _fitbitServiceMock.Setup(x => x.HasActiveProviderLinkAsync(userId))
             .ReturnsAsync(true);
 
-        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = true, Provider = "withings" });
-        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = false, Provider = "fitbit" });
 
         // Act
@@ -223,9 +223,9 @@ public class ProviderIntegrationServiceTests : TestBase
         _fitbitServiceMock.Setup(x => x.HasActiveProviderLinkAsync(userId))
             .ReturnsAsync(true);
 
-        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = true, Provider = "withings" });
-        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ThrowsAsync(new Exception("Network error"));
 
         // Act
@@ -258,7 +258,7 @@ public class ProviderIntegrationServiceTests : TestBase
         _fitbitServiceMock.Setup(x => x.HasActiveProviderLinkAsync(userId))
             .ReturnsAsync(true);
 
-        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = true, Provider = "fitbit" });
 
         // Act
@@ -270,7 +270,7 @@ public class ProviderIntegrationServiceTests : TestBase
         result["fitbit"].Should().BeTrue();
 
         // Verify fitbit was still synced despite withings exception
-        _fitbitServiceMock.Verify(x => x.SyncMeasurementsAsync(userId, metric), Times.Once);
+        _fitbitServiceMock.Verify(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()), Times.Once);
     }
 
     #endregion
@@ -351,7 +351,7 @@ public class ProviderIntegrationServiceTests : TestBase
         garminServiceMock.Setup(x => x.ProviderName).Returns("garmin");
         garminServiceMock.Setup(x => x.HasActiveProviderLinkAsync(userId))
             .ReturnsAsync(true);
-        garminServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        garminServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = true, Provider = "garmin" });
 
         var providerServices = new List<IProviderService>
@@ -366,13 +366,13 @@ public class ProviderIntegrationServiceTests : TestBase
         // Withings: active and successful
         _withingsServiceMock.Setup(x => x.HasActiveProviderLinkAsync(userId))
             .ReturnsAsync(true);
-        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _withingsServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = true, Provider = "withings" });
 
         // Fitbit: active but fails
         _fitbitServiceMock.Setup(x => x.HasActiveProviderLinkAsync(userId))
             .ReturnsAsync(true);
-        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric))
+        _fitbitServiceMock.Setup(x => x.SyncMeasurementsAsync(userId, metric, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult { Success = false, Provider = "fitbit" });
 
         // Garmin: active and successful

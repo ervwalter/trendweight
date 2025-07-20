@@ -40,12 +40,13 @@ public interface IProviderService
     Task<List<RawMeasurement>?> GetMeasurementsAsync(Guid userId, bool metric, DateTime? startDate = null);
 
     /// <summary>
-    /// Syncs all measurements for a user and updates the source data
+    /// Syncs measurements for a user from a specific start date
     /// </summary>
     /// <param name="userId">Supabase user ID</param>
     /// <param name="metric">Whether to store measurements in metric units</param>
+    /// <param name="startDate">Start date for measurements (null for all)</param>
     /// <returns>Sync result with success status and error details</returns>
-    Task<ProviderSyncResult> SyncMeasurementsAsync(Guid userId, bool metric);
+    Task<ProviderSyncResult> SyncMeasurementsAsync(Guid userId, bool metric, DateTime? startDate = null);
 
     /// <summary>
     /// Checks if a user has an active provider link

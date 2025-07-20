@@ -36,10 +36,9 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         HttpClient httpClient,
         IOptions<AppOptions> appOptions,
         IProviderLinkService providerLinkService,
-        IServiceProvider serviceProvider,
         IProfileService profileService,
         ILogger<FitbitService> logger)
-        : base(providerLinkService, serviceProvider, profileService, logger)
+        : base(providerLinkService, profileService, logger)
     {
         _httpClient = httpClient;
 

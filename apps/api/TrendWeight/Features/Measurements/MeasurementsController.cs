@@ -20,18 +20,18 @@ public class MeasurementsController : ControllerBase
 {
     private readonly IProfileService _profileService;
     private readonly IProviderIntegrationService _providerIntegrationService;
-    private readonly ISourceDataService _sourceDataService;
+    private readonly IMeasurementSyncService _measurementSyncService;
     private readonly ILogger<MeasurementsController> _logger;
 
     public MeasurementsController(
         IProfileService profileService,
         IProviderIntegrationService providerIntegrationService,
-        ISourceDataService sourceDataService,
+        IMeasurementSyncService measurementSyncService,
         ILogger<MeasurementsController> logger)
     {
         _profileService = profileService;
         _providerIntegrationService = providerIntegrationService;
-        _sourceDataService = sourceDataService;
+        _measurementSyncService = measurementSyncService;
         _logger = logger;
     }
 
@@ -65,7 +65,7 @@ public class MeasurementsController : ControllerBase
             var activeProviders = await _providerIntegrationService.GetActiveProvidersAsync(user.Uid);
 
             // Get measurements with automatic refresh
-            var result = await _sourceDataService.GetMeasurementsForUserAsync(
+            var result = await _measurementSyncService.GetMeasurementsForUserAsync(
                 user.Uid,
                 activeProviders,
                 user.Profile.UseMetric);
@@ -109,7 +109,7 @@ public class MeasurementsController : ControllerBase
             var activeProviders = await _providerIntegrationService.GetActiveProvidersAsync(user.Uid);
 
             // Get measurements with automatic refresh
-            var result = await _sourceDataService.GetMeasurementsForUserAsync(
+            var result = await _measurementSyncService.GetMeasurementsForUserAsync(
                 user.Uid,
                 activeProviders,
                 user.Profile.UseMetric);

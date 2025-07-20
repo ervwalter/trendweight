@@ -22,6 +22,7 @@ public class ProvidersControllerTests : TestBase
     private readonly Mock<IProviderLinkService> _providerLinkServiceMock;
     private readonly Mock<ISourceDataService> _sourceDataServiceMock;
     private readonly Mock<IProviderIntegrationService> _providerIntegrationServiceMock;
+    private readonly Mock<IMeasurementSyncService> _measurementSyncServiceMock;
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILogger<ProvidersController>> _loggerMock;
     private readonly ProvidersController _sut;
@@ -31,6 +32,7 @@ public class ProvidersControllerTests : TestBase
         _providerLinkServiceMock = new Mock<IProviderLinkService>();
         _sourceDataServiceMock = new Mock<ISourceDataService>();
         _providerIntegrationServiceMock = new Mock<IProviderIntegrationService>();
+        _measurementSyncServiceMock = new Mock<IMeasurementSyncService>();
         _profileServiceMock = new Mock<IProfileService>();
         _loggerMock = new Mock<ILogger<ProvidersController>>();
 
@@ -38,6 +40,7 @@ public class ProvidersControllerTests : TestBase
             _providerLinkServiceMock.Object,
             _sourceDataServiceMock.Object,
             _providerIntegrationServiceMock.Object,
+            _measurementSyncServiceMock.Object,
             _profileServiceMock.Object,
             _loggerMock.Object);
     }
@@ -273,9 +276,7 @@ public class ProvidersControllerTests : TestBase
             .ReturnsAsync(existingLink);
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
             .ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider))
-            .Returns(providerService.Object);
-        providerService.Setup(x => x.SyncMeasurementsAsync(userId, true))
+        _measurementSyncServiceMock.Setup(x => x.ResyncProviderAsync(userId, provider, user.Profile.UseMetric))
             .ReturnsAsync(new ProviderSyncResult { Provider = provider, Success = true });
 
         // Act
@@ -287,9 +288,7 @@ public class ProvidersControllerTests : TestBase
         var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
 
         response.Message.Should().Be($"{provider} resync completed successfully");
-        _sourceDataServiceMock.Verify(x => x.SetResyncRequestedAsync(userId, provider), Times.Once);
-        _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(userId, provider), Times.Once);
-        providerService.Verify(x => x.SyncMeasurementsAsync(userId, true), Times.Once);
+        // Resync logic is now handled internally by MeasurementSyncService
     }
 
     [Fact]
@@ -346,9 +345,7 @@ public class ProvidersControllerTests : TestBase
             .ReturnsAsync(existingLink);
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
             .ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider))
-            .Returns(providerService.Object);
-        providerService.Setup(x => x.SyncMeasurementsAsync(userId, true))
+        _measurementSyncServiceMock.Setup(x => x.ResyncProviderAsync(userId, provider, user.Profile.UseMetric))
             .ReturnsAsync(new ProviderSyncResult { Provider = provider, Success = false });
 
         // Act
