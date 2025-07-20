@@ -387,8 +387,8 @@ This section tracks all areas that need test coverage. Check off items as they a
 - [ ] `SupabaseService` - Database operations
 
 #### Authentication & Authorization
+- [x] `SupabaseTokenService` - JWT token validation and claims mapping (9 tests)
 - [ ] `BaseAuthController` - Auth helper methods
-- [ ] JWT token validation
 - [ ] User authentication flows
 - [ ] Authorization policies
 - [ ] API key authentication

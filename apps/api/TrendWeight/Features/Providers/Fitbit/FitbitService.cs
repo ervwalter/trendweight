@@ -61,7 +61,15 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         url.Query = query.ToString();
 
         Logger.LogDebug("Generated Fitbit authorization URL");
-        return url.ToString();
+
+        // Remove default port 443 from HTTPS URLs
+        var result = url.ToString();
+        if (url.Scheme == "https" && url.Port == 443)
+        {
+            result = result.Replace(":443", string.Empty);
+        }
+
+        return result;
     }
 
     /// <inheritdoc />

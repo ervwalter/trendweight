@@ -22,6 +22,9 @@ public static class ServiceCollectionExtensions
         // Configure app options (will be used by authentication handler)
         services.Configure<AppOptions>(configuration);
 
+        // Add token service
+        services.AddSingleton<ISupabaseTokenService, SupabaseTokenService>();
+
         // Configure authentication - Supabase only
         services.AddAuthentication("Supabase")
             .AddScheme<SupabaseAuthenticationSchemeOptions, SupabaseAuthenticationHandler>("Supabase", null);

@@ -59,7 +59,14 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         query["redirect_uri"] = callbackUrl;
         url.Query = query.ToString();
 
-        return url.ToString();
+        // Remove default port 443 from HTTPS URLs
+        var result = url.ToString();
+        if (url.Scheme == "https" && url.Port == 443)
+        {
+            result = result.Replace(":443", string.Empty);
+        }
+
+        return result;
     }
 
     /// <inheritdoc />

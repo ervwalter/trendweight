@@ -157,6 +157,7 @@ See ARCHITECTURE.md for detailed UI component documentation.
 5. **Service Registration** - Don't register services multiple times. Once is enough.
 6. **Error Messages** - Never expose exception details to users. Use correlation IDs instead.
 7. **Performance** - Module-level caching of formatters significantly improves performance.
+8. **UriBuilder Default Ports** - When using UriBuilder for HTTPS URLs, the default port 443 is included. Remove it to avoid URLs like `https://example.com:443/path`. Tests caught this bug!
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
@@ -183,3 +184,14 @@ Keep this file focused on AI code generation guidance only.
 ### Always Run Comprehensive Checks
 - When checking for code issues, always run 'npm run format && npm run check' from the top level folder of the repo
 - Do not attempt to be tactical and run subtasks in lower level folders
+
+## Testing Guidelines
+
+### Authentication Handler Testing
+**Important**: When testing authentication components, focus on testing the business logic we own rather than the framework integration:
+- Do NOT test ASP.NET Core authentication handlers directly (tight framework coupling)
+- Instead, extract business logic into testable services (e.g., token validation, claims mapping)
+- Test the extracted services thoroughly
+- Trust that the framework integration works as documented
+
+Example: For Supabase authentication, we created `ISupabaseTokenService` to test JWT validation and claims mapping logic separately from the authentication handler.
