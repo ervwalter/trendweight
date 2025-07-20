@@ -19,6 +19,14 @@ The backend uses the following testing libraries:
 - **FluentAssertions**: Assertion library
 - **Microsoft.AspNetCore.Mvc.Testing**: Integration testing
 
+### Recent Architectural Changes
+
+The backend architecture was refactored to eliminate circular dependencies:
+- Introduced `MeasurementSyncService` to orchestrate syncing between providers and storage
+- Providers no longer depend on `SourceDataService`
+- Clear separation of concerns between data fetching and storage
+- Tests have been updated to reflect these architectural changes
+
 ### Running Backend Tests
 
 ```bash
@@ -362,11 +370,11 @@ public void DebugTest()
 
 This section tracks all areas that need test coverage. Check off items as they are completed.
 
-### Backend (C#/.NET) - Current Coverage: 8.79%
+### Backend (C#/.NET) - Current Coverage: ~25% (estimated)
 
 #### Controllers (8/8 tested) ✅ COMPLETE
 - [x] `ProfileController` - All endpoints (GET, PUT, POST generate-token, POST complete-migration, DELETE)
-- [x] `MeasurementsController` - GET endpoints (authenticated and sharing code)
+- [x] `MeasurementsController` - GET endpoints (authenticated and sharing code) - updated to use IMeasurementSyncService
 - [x] `DataRefreshController` - POST refresh endpoints (tests updated to use concrete response types)
 - [x] `ProvidersController` - GET, DELETE, POST resync endpoints (17 tests)
 - [x] `SharingController` - GET, POST toggle endpoints (10 tests)
@@ -377,14 +385,15 @@ This section tracks all areas that need test coverage. Check off items as they a
 #### Services (Partial coverage)
 - [x] `ProfileService` - Basic CRUD tests (needs expansion for edge cases)
 - [x] `ProviderLinkService` - Basic tests (needs expansion)
-- [ ] `MeasurementService` - All measurement operations
-- [ ] `DataRefreshService` - Provider data refresh logic
+- [x] `ProviderIntegrationService` - Provider factory service (comprehensive tests)
+- [ ] `MeasurementSyncService` - Orchestrates measurement syncing between providers and storage
+- [ ] `SourceDataService` - Handles storage and retrieval of measurement data
 - [ ] `SharingService` - Sharing functionality
-- [ ] `WithingsService` - Withings API integration
-- [ ] `FitbitService` - Fitbit API integration
+- [x] `WithingsService` - Withings API integration (comprehensive tests including pagination)
+- [x] `FitbitService` - Fitbit API integration (comprehensive tests including date chunking)
 - [ ] `AuthenticationService` - Auth token validation
 - [ ] `MigrationService` - User migration logic
-- [ ] `SupabaseService` - Database operations
+- [ ] `SupabaseService` - Database operations (infrastructure - may not need testing)
 
 #### Authentication & Authorization
 - [x] `SupabaseTokenService` - JWT token validation and claims mapping (9 tests)

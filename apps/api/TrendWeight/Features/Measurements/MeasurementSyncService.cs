@@ -155,7 +155,7 @@ public class MeasurementSyncService : IMeasurementSyncService
 
             // Sync measurements from provider
             var result = await providerService.SyncMeasurementsAsync(userId, useMetric, startDate);
-            
+
             // If sync was successful and we have measurements, store them
             if (result.Success && result.Measurements != null)
             {
@@ -167,7 +167,7 @@ public class MeasurementSyncService : IMeasurementSyncService
                 };
 
                 await _sourceDataService.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
-                _logger.LogInformation("Successfully stored {Count} measurements for {Provider}", 
+                _logger.LogInformation("Successfully stored {Count} measurements for {Provider}",
                     result.Measurements.Count, provider);
             }
 

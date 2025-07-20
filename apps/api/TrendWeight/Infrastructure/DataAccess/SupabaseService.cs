@@ -29,7 +29,7 @@ public class SupabaseService : ISupabaseService
             };
 
             var client = new Client(_config.Url, _config.ServiceKey, options);
-            
+
             // Use GetAwaiter().GetResult() instead of Wait() to avoid deadlock
             client.InitializeAsync().GetAwaiter().GetResult();
 

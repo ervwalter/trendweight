@@ -68,32 +68,20 @@ public class SourceDataService : ISourceDataService
                     // Sort new measurements in descending order by date/time
                     newMeasurements.Sort((a, b) => string.Compare($"{b.Date} {b.Time}", $"{a.Date} {a.Time}", StringComparison.Ordinal));
 
-                    // Get existing measurements that should be replaced (within the refresh window)
-                    var existingMeasurementsToReplace = existingMeasurements
-                        .Where(m => string.Compare(m.Date, cutoffDate, StringComparison.Ordinal) >= 0)
-                        .OrderByDescending(m => $"{m.Date} {m.Time}")
+                    // Always replace measurements in sync window with provider data (provider is truth)
+                    // Keep older measurements (before the refresh window)
+                    var existingMeasurementsToKeep = existingMeasurements
+                        .Where(m => string.Compare(m.Date, cutoffDate, StringComparison.Ordinal) < 0)
                         .ToList();
 
-                    // Check if data actually changed by comparing overlapping measurements
-                    bool dataChanged = !AreMeasurementsEqual(existingMeasurementsToReplace, newMeasurements);
+                    // Combine: new measurements + older kept measurements
+                    var mergedMeasurements = newMeasurements.Concat(existingMeasurementsToKeep).ToList();
 
-                    if (dataChanged)
-                    {
-                        // Keep older measurements (before the refresh window)
-                        var existingMeasurementsToKeep = existingMeasurements
-                            .Where(m => string.Compare(m.Date, cutoffDate, StringComparison.Ordinal) < 0)
-                            .ToList();
+                    // Sort merged measurements in descending order by date/time
+                    mergedMeasurements.Sort((a, b) => string.Compare($"{b.Date} {b.Time}", $"{a.Date} {a.Time}", StringComparison.Ordinal));
 
-                        // Combine: new measurements + older kept measurements
-                        var mergedMeasurements = newMeasurements.Concat(existingMeasurementsToKeep).ToList();
-
-                        // Sort merged measurements in descending order by date/time
-                        mergedMeasurements.Sort((a, b) => string.Compare($"{b.Date} {b.Time}", $"{a.Date} {a.Time}", StringComparison.Ordinal));
-
-                        // Update the measurements
-                        dbSourceData.Measurements = mergedMeasurements;
-
-                    }
+                    // Update the measurements
+                    dbSourceData.Measurements = mergedMeasurements;
 
                     // Always update LastSync timestamp
                     dbSourceData.LastSync = sourceData.LastUpdate.ToUniversalTime().ToString("o");
@@ -227,30 +215,6 @@ public class SourceDataService : ISourceDataService
     }
 
 
-    /// <summary>
-    /// Compares two lists of measurements for equality
-    /// </summary>
-    private static bool AreMeasurementsEqual(List<RawMeasurement> list1, List<RawMeasurement> list2)
-    {
-        if (list1.Count != list2.Count)
-            return false;
-
-        for (int i = 0; i < list1.Count; i++)
-        {
-            var m1 = list1[i];
-            var m2 = list2[i];
-
-            if (m1.Date != m2.Date ||
-                m1.Time != m2.Time ||
-                m1.Weight != m2.Weight ||
-                m1.FatRatio != m2.FatRatio)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
 
     /// <inheritdoc />
     public async Task DeleteSourceDataAsync(Guid userId, string provider)

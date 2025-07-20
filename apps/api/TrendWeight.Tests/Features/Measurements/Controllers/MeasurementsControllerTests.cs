@@ -53,10 +53,10 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings", "fitbit" });
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
                 It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult 
-            { 
+            .ReturnsAsync(new MeasurementsResult
+            {
                 Data = sourceData,
                 ProviderStatus = new Dictionary<string, ProviderSyncStatus>
                 {
@@ -126,10 +126,10 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings" });
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
                 It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult 
-            { 
+            .ReturnsAsync(new MeasurementsResult
+            {
                 Data = sourceData,
                 ProviderStatus = new Dictionary<string, ProviderSyncStatus>
                 {
@@ -160,21 +160,21 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings" });
-        
+
         // Setup to return error status for provider
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
                 It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult 
-            { 
+            .ReturnsAsync(new MeasurementsResult
+            {
                 Data = sourceData,
                 ProviderStatus = new Dictionary<string, ProviderSyncStatus>
                 {
-                    { "withings", new ProviderSyncStatus 
-                        { 
+                    { "withings", new ProviderSyncStatus
+                        {
                             Success = false,
                             Error = "authfailed",
                             Message = "Authentication expired"
-                        } 
+                        }
                     }
                 }
             });
@@ -226,10 +226,10 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings" });
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
                 It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult 
-            { 
+            .ReturnsAsync(new MeasurementsResult
+            {
                 Data = sourceData,
                 ProviderStatus = new Dictionary<string, ProviderSyncStatus>
                 {
@@ -300,19 +300,19 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "unknown-provider" });
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId, 
+        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
                 It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult 
-            { 
+            .ReturnsAsync(new MeasurementsResult
+            {
                 Data = new List<SourceData>(),
                 ProviderStatus = new Dictionary<string, ProviderSyncStatus>
                 {
-                    { "unknown-provider", new ProviderSyncStatus 
-                        { 
-                            Success = false, 
+                    { "unknown-provider", new ProviderSyncStatus
+                        {
+                            Success = false,
                             Error = "unknown",
                             Message = "Provider service not found"
-                        } 
+                        }
                     }
                 }
             });
