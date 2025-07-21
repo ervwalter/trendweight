@@ -1,5 +1,96 @@
 # Changelog
 
+## [2.0.0-alpha.7](https://github.com/ervwalter/trendweight/compare/v2.0.0-alpha.6...v2.0.0-alpha.7) (2025-07-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* SourceDataService methods SetResyncRequestedAsync and IsResyncRequestedAsync have been removed. Any code depending on these methods must be updated.
+* Removed /api/data/refresh endpoints. Data refresh now happens automatically when fetching measurements via GET /api/measurements.
+
+### Features
+
+* add API rate limiting for authenticated users ([cc6039d](https://github.com/ervwalter/trendweight/commit/cc6039d65691df2b289a6d2d0194eb30720f60bc))
+* add comprehensive test coverage for measurement sync services ([80dd5e4](https://github.com/ervwalter/trendweight/commit/80dd5e4b60b416c3c5f4618e21a2940467b60cb2))
+* add JWT clock skew tolerance ([082a0f7](https://github.com/ervwalter/trendweight/commit/082a0f7dafe84fd16b048e36116bc29d8cd9d12c))
+* add unified AppOptions configuration class ([082a0f7](https://github.com/ervwalter/trendweight/commit/082a0f7dafe84fd16b048e36116bc29d8cd9d12c))
+* enhance error handling with correlation IDs and error codes ([cc6039d](https://github.com/ervwalter/trendweight/commit/cc6039d65691df2b289a6d2d0194eb30720f60bc))
+
+
+### Bug Fixes
+
+* cache JsonSerializerOptions to resolve CA1869 warning ([2bf208e](https://github.com/ervwalter/trendweight/commit/2bf208e37e90f01679dd1d4b214a26aa87ea9256))
+* correct data sync business logic in SourceDataService ([80dd5e4](https://github.com/ervwalter/trendweight/commit/80dd5e4b60b416c3c5f4618e21a2940467b60cb2))
+* correct PrimaryKey attribute syntax in DbProfile model ([cc6039d](https://github.com/ervwalter/trendweight/commit/cc6039d65691df2b289a6d2d0194eb30720f60bc))
+* implement incremental sync for provider data refreshes ([bf9bb67](https://github.com/ervwalter/trendweight/commit/bf9bb679438cdfd8caf8b5c0b7b0c87dc4d67b9d))
+* improve SupabaseService error handling ([082a0f7](https://github.com/ervwalter/trendweight/commit/082a0f7dafe84fd16b048e36116bc29d8cd9d12c))
+* remove default HTTPS port from authorization URLs ([98b58d7](https://github.com/ervwalter/trendweight/commit/98b58d778b086b9ac3f33152edccbb8a1011f31f))
+* remove hardcoded API key from client.ts ([082a0f7](https://github.com/ervwalter/trendweight/commit/082a0f7dafe84fd16b048e36116bc29d8cd9d12c))
+* resolve circular dependency causing API hang ([09b10f4](https://github.com/ervwalter/trendweight/commit/09b10f4c2dcd7a261395a18d776a82966e90b370))
+* resolve Docker build issue and ESLint warnings ([cbe56e3](https://github.com/ervwalter/trendweight/commit/cbe56e388a29e8c26e9a996ccea7f57004f2ff61))
+* resolve test framework CI/CD issues ([2c6c5a5](https://github.com/ervwalter/trendweight/commit/2c6c5a591354f071549b0a580d92c7345a9af17d))
+* restore PrimaryKey attribute parameters in DbProfile model ([12bbe75](https://github.com/ervwalter/trendweight/commit/12bbe75d0457bf86d3dd6706baa73a8c943fae49))
+* run Docker container as non-root user for security ([cc6039d](https://github.com/ervwalter/trendweight/commit/cc6039d65691df2b289a6d2d0194eb30720f60bc))
+* simplify provider service registration in DI container ([2bf208e](https://github.com/ervwalter/trendweight/commit/2bf208e37e90f01679dd1d4b214a26aa87ea9256))
+* update CLAUDE.md with testing instructions ([1489412](https://github.com/ervwalter/trendweight/commit/14894128571bf7cabefe4fbe687e192e58a4cd11))
+* update tests for fluentassertions v8 compatibility ([f90e003](https://github.com/ervwalter/trendweight/commit/f90e003d3ab6e905ff494111c3a8d15837162929))
+* update tests to use IServiceProvider ([09b10f4](https://github.com/ervwalter/trendweight/commit/09b10f4c2dcd7a261395a18d776a82966e90b370))
+* use proper Link components for internal navigation ([cc6039d](https://github.com/ervwalter/trendweight/commit/cc6039d65691df2b289a6d2d0194eb30720f60bc))
+
+
+### Documentation
+
+* add testing guidelines for authentication handlers ([98b58d7](https://github.com/ervwalter/trendweight/commit/98b58d778b086b9ac3f33152edccbb8a1011f31f))
+* consolidate documentation to eliminate duplication ([d35e8c1](https://github.com/ervwalter/trendweight/commit/d35e8c1467148999c0abe6fc91f3ce3e5493fb98))
+* simplify ARCHITECTURE.md and CLAUDE.md ([082a0f7](https://github.com/ervwalter/trendweight/commit/082a0f7dafe84fd16b048e36116bc29d8cd9d12c))
+* update ARCHITECTURE.md with new measurement sync architecture ([bf9bb67](https://github.com/ervwalter/trendweight/commit/bf9bb679438cdfd8caf8b5c0b7b0c87dc4d67b9d))
+* update testing documentation ([ccba776](https://github.com/ervwalter/trendweight/commit/ccba776b6594add9398d934e0ff764a4daf5a5a9))
+* update TESTING.md with current coverage stats ([1489412](https://github.com/ervwalter/trendweight/commit/14894128571bf7cabefe4fbe687e192e58a4cd11))
+
+
+### Code Refactoring
+
+* clean up codebase and extract magic numbers to constants ([d35e8c1](https://github.com/ervwalter/trendweight/commit/d35e8c1467148999c0abe6fc91f3ce3e5493fb98))
+* clean up unused code and type assertions ([082a0f7](https://github.com/ervwalter/trendweight/commit/082a0f7dafe84fd16b048e36116bc29d8cd9d12c))
+* componentize build.tsx page into focused sections ([2bf208e](https://github.com/ervwalter/trendweight/commit/2bf208e37e90f01679dd1d4b214a26aa87ea9256))
+* componentize login.tsx authentication sections ([2bf208e](https://github.com/ervwalter/trendweight/commit/2bf208e37e90f01679dd1d4b214a26aa87ea9256))
+* consolidate configuration and improve service architecture ([082a0f7](https://github.com/ervwalter/trendweight/commit/082a0f7dafe84fd16b048e36116bc29d8cd9d12c))
+* consolidate data refresh logic into MeasurementsController ([09b10f4](https://github.com/ervwalter/trendweight/commit/09b10f4c2dcd7a261395a18d776a82966e90b370))
+* decompose complex measurements.ts into focused modules ([cc6039d](https://github.com/ervwalter/trendweight/commit/cc6039d65691df2b289a6d2d0194eb30720f60bc))
+* enhance controller error handling consistency ([ccba776](https://github.com/ervwalter/trendweight/commit/ccba776b6594add9398d934e0ff764a4daf5a5a9))
+* extract business logic from ProfileController to services ([2bf208e](https://github.com/ervwalter/trendweight/commit/2bf208e37e90f01679dd1d4b214a26aa87ea9256))
+* extract chart option builders to separate modules ([cc6039d](https://github.com/ervwalter/trendweight/commit/cc6039d65691df2b289a6d2d0194eb30720f60bc))
+* extract JWT validation logic into testable service ([98b58d7](https://github.com/ervwalter/trendweight/commit/98b58d778b086b9ac3f33152edccbb8a1011f31f))
+* improve codebase maintainability and security ([cc6039d](https://github.com/ervwalter/trendweight/commit/cc6039d65691df2b289a6d2d0194eb30720f60bc))
+* introduce MeasurementSyncService to eliminate circular dependencies ([bf9bb67](https://github.com/ervwalter/trendweight/commit/bf9bb679438cdfd8caf8b5c0b7b0c87dc4d67b9d))
+* move config classes to Infrastructure/Configuration ([082a0f7](https://github.com/ervwalter/trendweight/commit/082a0f7dafe84fd16b048e36116bc29d8cd9d12c))
+* redesign error boundary with professional UI ([cc6039d](https://github.com/ervwalter/trendweight/commit/cc6039d65691df2b289a6d2d0194eb30720f60bc))
+* remove ResyncRequested flag and simplify sync logic ([bf9bb67](https://github.com/ervwalter/trendweight/commit/bf9bb679438cdfd8caf8b5c0b7b0c87dc4d67b9d))
+* remove unnecessary CORS configuration ([d35e8c1](https://github.com/ervwalter/trendweight/commit/d35e8c1467148999c0abe6fc91f3ce3e5493fb98))
+* remove unused code and interfaces ([d35e8c1](https://github.com/ervwalter/trendweight/commit/d35e8c1467148999c0abe6fc91f3ce3e5493fb98))
+* standardize API response architecture ([ccba776](https://github.com/ervwalter/trendweight/commit/ccba776b6594add9398d934e0ff764a4daf5a5a9))
+* update TESTING.md documentation ([80dd5e4](https://github.com/ervwalter/trendweight/commit/80dd5e4b60b416c3c5f4618e21a2940467b60cb2))
+
+
+### Tests
+
+* add comprehensive backend test coverage and fix critical data sync bug ([80dd5e4](https://github.com/ervwalter/trendweight/commit/80dd5e4b60b416c3c5f4618e21a2940467b60cb2))
+* add comprehensive backend tests for providers and authentication ([98b58d7](https://github.com/ervwalter/trendweight/commit/98b58d778b086b9ac3f33152edccbb8a1011f31f))
+* add comprehensive controller test suites ([ccba776](https://github.com/ervwalter/trendweight/commit/ccba776b6594add9398d934e0ff764a4daf5a5a9))
+* add comprehensive testing infrastructure for frontend and backend ([8939bb1](https://github.com/ervwalter/trendweight/commit/8939bb1ddc3a0baf122d7abc5401ff73992aadb1))
+* add comprehensive tests for data sync merging logic ([1489412](https://github.com/ervwalter/trendweight/commit/14894128571bf7cabefe4fbe687e192e58a4cd11))
+* add comprehensive unit tests for all backend controllers ([ccba776](https://github.com/ervwalter/trendweight/commit/ccba776b6594add9398d934e0ff764a4daf5a5a9))
+* add critical data merging scenarios ([80dd5e4](https://github.com/ervwalter/trendweight/commit/80dd5e4b60b416c3c5f4618e21a2940467b60cb2))
+
+
+### Dependencies
+
+* update dependency fluentassertions to v8 ([f90e003](https://github.com/ervwalter/trendweight/commit/f90e003d3ab6e905ff494111c3a8d15837162929))
+* update dependency fluentassertions to v8 ([#256](https://github.com/ervwalter/trendweight/issues/256)) ([f90e003](https://github.com/ervwalter/trendweight/commit/f90e003d3ab6e905ff494111c3a8d15837162929))
+* update dependency xunit.runner.visualstudio to v3 ([#257](https://github.com/ervwalter/trendweight/issues/257)) ([4082c44](https://github.com/ervwalter/trendweight/commit/4082c447643a31280c9bc8ee06904c1293097040))
+* update npm dependencies ([#253](https://github.com/ervwalter/trendweight/issues/253)) ([e91a607](https://github.com/ervwalter/trendweight/commit/e91a6077a433a78bba097fdc8588bcc298844c4c))
+* update nuget dependencies ([#255](https://github.com/ervwalter/trendweight/issues/255)) ([19fbbe0](https://github.com/ervwalter/trendweight/commit/19fbbe038bae035d05cbecfa75b91e74c0c5fd2b))
+
 ## [2.0.0-alpha.6](https://github.com/ervwalter/trendweight/compare/v2.0.0-alpha.5...v2.0.0-alpha.6) (2025-07-18)
 
 
