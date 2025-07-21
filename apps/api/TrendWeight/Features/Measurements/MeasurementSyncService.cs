@@ -156,19 +156,47 @@ public class MeasurementSyncService : IMeasurementSyncService
             // Sync measurements from provider
             var result = await providerService.SyncMeasurementsAsync(userId, useMetric, startDate);
 
-            // If sync was successful and we have measurements, store them
+            // If sync was successful and we have measurements, merge and store them
             if (result.Success && result.Measurements != null)
             {
+                // Get existing data to merge with
+                var existingSourceData = await _sourceDataService.GetSourceDataAsync(userId);
+                var existingProviderData = existingSourceData?.FirstOrDefault(sd => sd.Source == provider);
+
+                List<RawMeasurement> mergedMeasurements;
+
+                if (existingProviderData?.Measurements != null && startDate.HasValue)
+                {
+                    // We have existing data and a sync window - merge them
+                    var cutoffDate = startDate.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+                    // Keep only measurements before the cutoff date from existing data
+                    var existingMeasurementsToKeep = existingProviderData.Measurements
+                        .Where(m => string.Compare(m.Date, cutoffDate, StringComparison.Ordinal) < 0)
+                        .ToList();
+
+                    // Combine: new measurements (truth for sync window) + older kept measurements
+                    mergedMeasurements = result.Measurements.Concat(existingMeasurementsToKeep).ToList();
+                }
+                else
+                {
+                    // No existing data or no start date (full sync) - use provider data as complete truth
+                    mergedMeasurements = result.Measurements;
+                }
+
+                // Sort merged measurements in descending order by date/time
+                mergedMeasurements.Sort((a, b) => string.Compare($"{b.Date} {b.Time}", $"{a.Date} {a.Time}", StringComparison.Ordinal));
+
                 var sourceData = new SourceData
                 {
                     Source = provider,
                     LastUpdate = DateTime.UtcNow,
-                    Measurements = result.Measurements
+                    Measurements = mergedMeasurements
                 };
 
                 await _sourceDataService.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
                 _logger.LogInformation("Successfully stored {Count} measurements for {Provider}",
-                    result.Measurements.Count, provider);
+                    mergedMeasurements.Count, provider);
             }
 
             return result;

@@ -184,6 +184,7 @@ Keep this file focused on AI code generation guidance only.
 ### Always Run Comprehensive Checks
 - When checking for code issues, always run 'npm run format && npm run check' from the top level folder of the repo
 - Do not attempt to be tactical and run subtasks in lower level folders
+- **When you need to check if the repo is in a clean state before doing a commit, do 'npm run format && npm run check && npm run test' as a single Bash command from the top of the repo**
 
 ## Testing Guidelines
 
@@ -195,3 +196,4 @@ Keep this file focused on AI code generation guidance only.
 - Trust that the framework integration works as documented
 
 Example: For Supabase authentication, we created `ISupabaseTokenService` to test JWT validation and claims mapping logic separately from the authentication handler.
+```

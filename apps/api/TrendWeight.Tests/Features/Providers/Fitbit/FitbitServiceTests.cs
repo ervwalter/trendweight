@@ -14,6 +14,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Fitbit;
 using TrendWeight.Features.Providers.Fitbit.Models;
+using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.DataAccess.Models;
@@ -317,6 +318,139 @@ public class FitbitServiceTests : TestBase
     }
 
     [Fact]
+    public async Task GetMeasurementsAsync_VerifiesCompleteRangeCoverageWithNoGaps()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var fitbitUserId = "ABCDEF";
+        var token = CreateValidToken(fitbitUserId);
+        var providerLink = new DbProviderLink
+        {
+            Provider = "fitbit",
+            Token = token
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(providerLink);
+
+        // Set up a specific date range to test complete coverage
+        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var endDate = new DateTime(2024, 4, 15, 0, 0, 0, DateTimeKind.Utc); // 105 days
+
+        // Track all date ranges requested
+        var requestedRanges = new List<(DateTime start, DateTime end)>();
+
+        _httpMessageHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("/body/log/weight/date")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync((HttpRequestMessage request, CancellationToken ct) =>
+            {
+                var url = request.RequestUri!.ToString();
+                var match = System.Text.RegularExpressions.Regex.Match(url, @"/date/(\d{4}-\d{2}-\d{2})/(\d{4}-\d{2}-\d{2})\.json");
+                if (match.Success)
+                {
+                    var start = DateTime.ParseExact(match.Groups[1].Value, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+                    var end = DateTime.ParseExact(match.Groups[2].Value, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+                    requestedRanges.Add((start, end));
+                }
+
+                var weightData = new FitbitWeightLog { Weight = new List<FitbitWeightLogEntry>() };
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(weightData), Encoding.UTF8, "application/json")
+                };
+                response.Headers.Add("fitbit-rate-limit-limit", "150");
+                response.Headers.Add("fitbit-rate-limit-remaining", "149");
+                response.Headers.Add("fitbit-rate-limit-reset", "3600");
+                return response;
+            });
+
+        // Act
+        await _sut.GetMeasurementsAsync(userId, true, startDate);
+
+        // Assert - Verify complete coverage
+        requestedRanges.Should().NotBeEmpty();
+
+        // Sort ranges by start date
+        var sortedRanges = requestedRanges.OrderBy(r => r.start).ToList();
+
+        // First chunk should start at our start date
+        sortedRanges.First().start.Should().Be(startDate);
+
+        // Last chunk should include today (or close to it)
+        sortedRanges.Last().end.Should().BeOnOrAfter(DateTime.UtcNow.Date.AddDays(-1));
+
+        // Verify no gaps between chunks
+        for (int i = 0; i < sortedRanges.Count - 1; i++)
+        {
+            var currentEnd = sortedRanges[i].end;
+            var nextStart = sortedRanges[i + 1].start;
+
+            // Next chunk should start exactly one day after current chunk ends
+            nextStart.Should().Be(currentEnd.AddDays(1));
+        }
+
+        // Verify all chunks are within the 32-day limit
+        foreach (var range in sortedRanges)
+        {
+            var days = (range.end - range.start).Days + 1;
+            days.Should().BeLessOrEqualTo(32);
+        }
+    }
+
+    [Fact]
+    public async Task GetMeasurementsAsync_WithExactly32DayRange_MakesSingleRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var fitbitUserId = "ABCDEF";
+        var token = CreateValidToken(fitbitUserId);
+        var providerLink = new DbProviderLink
+        {
+            Provider = "fitbit",
+            Token = token
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(providerLink);
+
+        // Exactly 32 days
+        var startDate = DateTime.UtcNow.AddDays(-31);
+        var apiCallCount = 0;
+
+        _httpMessageHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("/body/log/weight/date")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                apiCallCount++;
+                var weightData = new FitbitWeightLog { Weight = new List<FitbitWeightLogEntry>() };
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(weightData), Encoding.UTF8, "application/json")
+                };
+                response.Headers.Add("fitbit-rate-limit-limit", "150");
+                response.Headers.Add("fitbit-rate-limit-remaining", "149");
+                response.Headers.Add("fitbit-rate-limit-reset", "3600");
+                return response;
+            });
+
+        // Act
+        await _sut.GetMeasurementsAsync(userId, true, startDate);
+
+        // Assert
+        apiCallCount.Should().Be(1);
+    }
+
+    [Fact]
     public async Task GetMeasurementsAsync_WithRateLimitHeaders_ProcessesHeadersCorrectly()
     {
         // Arrange
@@ -371,6 +505,112 @@ public class FitbitServiceTests : TestBase
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task GetMeasurementsAsync_WithYearSpanningRange_HandlesCorrectly()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var fitbitUserId = "ABCDEF";
+        var token = CreateValidToken(fitbitUserId);
+        var providerLink = new DbProviderLink
+        {
+            Provider = "fitbit",
+            Token = token
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(providerLink);
+
+        // Start in 2009 (minimum date) and request a full year
+        var startDate = new DateTime(2009, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var requestCount = 0;
+
+        _httpMessageHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("/body/log/weight/date")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                requestCount++;
+                var weightData = new FitbitWeightLog { Weight = new List<FitbitWeightLogEntry>() };
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(weightData), Encoding.UTF8, "application/json")
+                };
+                response.Headers.Add("fitbit-rate-limit-limit", "150");
+                response.Headers.Add("fitbit-rate-limit-remaining", "149");
+                response.Headers.Add("fitbit-rate-limit-reset", "3600");
+                return response;
+            });
+
+        // Act
+        await _sut.GetMeasurementsAsync(userId, true, startDate);
+
+        // Assert
+        // From 2009-01-01 to today is many years, should be many chunks
+        requestCount.Should().BeGreaterThan(100); // Rough estimate: 15+ years * 12 chunks/year
+    }
+
+    [Fact]
+    public async Task GetMeasurementsAsync_WhenChunkFailsPartway_ThrowsProviderAuthException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var fitbitUserId = "ABCDEF";
+        var token = CreateValidToken(fitbitUserId);
+        var providerLink = new DbProviderLink
+        {
+            Provider = "fitbit",
+            Token = token
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(providerLink);
+
+        var startDate = DateTime.UtcNow.AddDays(-100); // Multiple chunks needed
+        var callCount = 0;
+
+        _httpMessageHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("/body/log/weight/date")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                callCount++;
+                if (callCount == 2)
+                {
+                    // Fail on second chunk with 401
+                    return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                    {
+                        Content = new StringContent("{\"errors\":[{\"errorType\":\"oauth\",\"message\":\"Access token invalid\"}]}")
+                    };
+                }
+
+                var weightData = new FitbitWeightLog { Weight = new List<FitbitWeightLogEntry>() };
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(weightData), Encoding.UTF8, "application/json")
+                };
+                response.Headers.Add("fitbit-rate-limit-limit", "150");
+                response.Headers.Add("fitbit-rate-limit-remaining", "149");
+                response.Headers.Add("fitbit-rate-limit-reset", "3600");
+                return response;
+            });
+
+        // Act & Assert
+        await _sut.Invoking(x => x.GetMeasurementsAsync(userId, true, startDate))
+            .Should().ThrowAsync<ProviderAuthException>();
+
+        // Verify we made exactly 2 calls (succeeded on first, failed on second)
+        callCount.Should().Be(2);
     }
 
     #endregion
@@ -631,6 +871,133 @@ public class FitbitServiceTests : TestBase
                 ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains(urlContains)),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(response);
+    }
+
+    #endregion
+
+    #region ProviderServiceBase Method Tests
+
+    [Fact]
+    public async Task HasActiveProviderLinkAsync_WithExistingLink_ReturnsTrue()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var providerLink = new DbProviderLink
+        {
+            Uid = userId,
+            Provider = "fitbit",
+            Token = CreateValidToken("fitbit-user-123"),
+            UpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o")
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(providerLink);
+
+        // Act
+        var result = await _sut.HasActiveProviderLinkAsync(userId);
+
+        // Assert
+        result.Should().BeTrue();
+        _providerLinkServiceMock.Verify(x => x.GetProviderLinkAsync(userId, "fitbit"), Times.Once);
+    }
+
+    [Fact]
+    public async Task HasActiveProviderLinkAsync_WithNoLink_ReturnsFalse()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync((DbProviderLink?)null);
+
+        // Act
+        var result = await _sut.HasActiveProviderLinkAsync(userId);
+
+        // Assert
+        result.Should().BeFalse();
+        _providerLinkServiceMock.Verify(x => x.GetProviderLinkAsync(userId, "fitbit"), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveProviderLinkAsync_Successfully_ReturnsTrue()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        _providerLinkServiceMock.Setup(x => x.RemoveProviderLinkAsync(userId, "fitbit"))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.RemoveProviderLinkAsync(userId);
+
+        // Assert
+        result.Should().BeTrue();
+        _providerLinkServiceMock.Verify(x => x.RemoveProviderLinkAsync(userId, "fitbit"), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveProviderLinkAsync_WithException_ReturnsFalse()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        _providerLinkServiceMock.Setup(x => x.RemoveProviderLinkAsync(userId, "fitbit"))
+            .ThrowsAsync(new InvalidOperationException("Database error"));
+
+        // Act
+        var result = await _sut.RemoveProviderLinkAsync(userId);
+
+        // Assert
+        result.Should().BeFalse();
+        _providerLinkServiceMock.Verify(x => x.RemoveProviderLinkAsync(userId, "fitbit"), Times.Once);
+    }
+
+
+
+    [Fact]
+    public async Task GetMeasurementsAsync_WithExpiredTokenAndFailedRefresh_ReturnsNull()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var expiredToken = CreateExpiredToken();
+        var providerLink = new DbProviderLink
+        {
+            Uid = userId,
+            Provider = "fitbit",
+            Token = expiredToken,
+            UpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o")
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(providerLink);
+
+        // Setup refresh token call to fail
+        _httpMessageHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("/oauth2/token")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+
+        // Act & Assert
+        await _sut.Invoking(x => x.GetMeasurementsAsync(userId, true))
+            .Should().ThrowAsync<ProviderAuthException>();
+    }
+
+    private Dictionary<string, object> CreateExpiredToken()
+    {
+        return new Dictionary<string, object>
+        {
+            ["access_token"] = "expired-token",
+            ["refresh_token"] = "test-refresh-token",
+            ["token_type"] = "Bearer",
+            ["expires_in"] = 3600,
+            ["scope"] = "weight",
+            ["user_id"] = "fitbit-user-id",
+            ["received_at"] = ((DateTimeOffset)DateTime.UtcNow.AddHours(-2)).ToUnixTimeSeconds() // Expired 2 hours ago
+        };
     }
 
     #endregion

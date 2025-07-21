@@ -29,11 +29,10 @@ public class SourceDataService : ISourceDataService
     {
         try
         {
-
-            // Update each source data
+            // Save each source data
             foreach (var sourceData in data)
             {
-                // Check if source data already exists
+                // Check if record exists to determine insert vs update
                 var existingData = await _supabaseService.QueryAsync<DbSourceData>(q =>
                     q.Where(sd => sd.Uid == userId && sd.Provider == sourceData.Source));
 
@@ -41,7 +40,7 @@ public class SourceDataService : ISourceDataService
 
                 if (dbSourceData == null)
                 {
-                    // Create new source data
+                    // Create new record
                     dbSourceData = new DbSourceData
                     {
                         Uid = userId,
@@ -52,38 +51,12 @@ public class SourceDataService : ISourceDataService
                     };
 
                     await _supabaseService.InsertAsync(dbSourceData);
+                    _logger.LogInformation("Created source data for user {Uid} provider {Provider}", userId, sourceData.Source);
                 }
                 else
                 {
-                    // Merge measurements instead of replacing
-                    var newMeasurements = sourceData.Measurements ?? new List<RawMeasurement>();
-                    var existingMeasurements = dbSourceData.Measurements ?? new List<RawMeasurement>();
-
-                    // Calculate the cutoff date (90 days before last sync)
-                    var lastSyncTime = string.IsNullOrEmpty(dbSourceData.LastSync)
-                        ? DateTime.UtcNow
-                        : DateTime.Parse(dbSourceData.LastSync, null, System.Globalization.DateTimeStyles.RoundtripKind).ToUniversalTime();
-                    var cutoffDate = lastSyncTime.AddDays(-90).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-
-                    // Sort new measurements in descending order by date/time
-                    newMeasurements.Sort((a, b) => string.Compare($"{b.Date} {b.Time}", $"{a.Date} {a.Time}", StringComparison.Ordinal));
-
-                    // Always replace measurements in sync window with provider data (provider is truth)
-                    // Keep older measurements (before the refresh window)
-                    var existingMeasurementsToKeep = existingMeasurements
-                        .Where(m => string.Compare(m.Date, cutoffDate, StringComparison.Ordinal) < 0)
-                        .ToList();
-
-                    // Combine: new measurements + older kept measurements
-                    var mergedMeasurements = newMeasurements.Concat(existingMeasurementsToKeep).ToList();
-
-                    // Sort merged measurements in descending order by date/time
-                    mergedMeasurements.Sort((a, b) => string.Compare($"{b.Date} {b.Time}", $"{a.Date} {a.Time}", StringComparison.Ordinal));
-
-                    // Update the measurements
-                    dbSourceData.Measurements = mergedMeasurements;
-
-                    // Always update LastSync timestamp
+                    // Update existing record with new data
+                    dbSourceData.Measurements = sourceData.Measurements ?? new List<RawMeasurement>();
                     dbSourceData.LastSync = sourceData.LastUpdate.ToUniversalTime().ToString("o");
                     dbSourceData.UpdatedAt = DateTime.UtcNow.ToString("o");
 
@@ -94,7 +67,7 @@ public class SourceDataService : ISourceDataService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating source data for user {Uid}", userId);
+            _logger.LogError(ex, "Error saving source data for user {Uid}", userId);
             throw;
         }
     }

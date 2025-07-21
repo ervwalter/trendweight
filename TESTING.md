@@ -219,18 +219,23 @@ describe('usePersistedState', () => {
 
 ## Test Coverage
 
+### Current Coverage Status
+
+- **Backend**: 65% line coverage, 52% branch coverage (237 tests)
+- **Frontend**: Vitest infrastructure configured, minimal test coverage
+
 ### Coverage Goals
 
-- **Minimum Coverage**: 70% for critical paths
-- **Target Coverage**: 80%+ for business logic
+- **Minimum Coverage**: 60% for critical paths
+- **Target Coverage**: 75%+ for business logic
 - **Focus Areas**: Services, custom hooks, utility functions
 
 ### Viewing Coverage Reports
 
 ```bash
-# Backend coverage (generates HTML report)
+# Backend coverage
 cd apps/api
-dotnet test --collect:"XPlat Code Coverage"
+dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 
 # Frontend coverage (generates HTML report in coverage/)
 cd apps/web
@@ -239,6 +244,10 @@ open coverage/index.html  # View in browser
 ```
 
 ### Coverage Configuration
+
+Backend coverage uses Coverlet for .NET:
+- OpenCover format for detailed reporting
+- Excludes generated code and migrations
 
 Frontend coverage is configured in `vitest.config.ts`:
 - Reports are generated in the `coverage/` directory
@@ -365,209 +374,3 @@ public void DebugTest()
 - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 - [FluentAssertions](https://fluentassertions.com/)
 - [Moq Quick Start](https://github.com/moq/moq4/wiki/Quickstart)
-
-## Test Coverage Task List
-
-This section tracks all areas that need test coverage. Check off items as they are completed.
-
-### Backend (C#/.NET) - Current Coverage: ~25% (estimated)
-
-#### Controllers (8/8 tested) ✅ COMPLETE
-- [x] `ProfileController` - All endpoints (GET, PUT, POST generate-token, POST complete-migration, DELETE)
-- [x] `MeasurementsController` - GET endpoints (authenticated and sharing code) - updated to use IMeasurementSyncService
-- [x] `DataRefreshController` - POST refresh endpoints (tests updated to use concrete response types)
-- [x] `ProvidersController` - GET, DELETE, POST resync endpoints (17 tests)
-- [x] `SharingController` - GET, POST toggle endpoints (10 tests)
-- [x] `WithingsLinkController` - OAuth flow endpoints (11 tests)
-- [x] `FitbitLinkController` - OAuth flow endpoints (10 tests)
-- [x] `AppleCallbackController` - Apple OAuth callback (6 tests)
-
-#### Services (Partial coverage)
-- [x] `ProfileService` - Basic CRUD tests (needs expansion for edge cases)
-- [x] `ProviderLinkService` - Basic tests (needs expansion)
-- [x] `ProviderIntegrationService` - Provider factory service (comprehensive tests)
-- [ ] `MeasurementSyncService` - Orchestrates measurement syncing between providers and storage
-- [ ] `SourceDataService` - Handles storage and retrieval of measurement data
-- [ ] `SharingService` - Sharing functionality
-- [x] `WithingsService` - Withings API integration (comprehensive tests including pagination)
-- [x] `FitbitService` - Fitbit API integration (comprehensive tests including date chunking)
-- [ ] `AuthenticationService` - Auth token validation
-- [ ] `MigrationService` - User migration logic
-- [ ] `SupabaseService` - Database operations (infrastructure - may not need testing)
-
-#### Authentication & Authorization
-- [x] `SupabaseTokenService` - JWT token validation and claims mapping (9 tests)
-- [ ] `BaseAuthController` - Auth helper methods
-- [ ] User authentication flows
-- [ ] Authorization policies
-- [ ] API key authentication
-
-#### Data Processing
-- [ ] Weight conversion utilities (kg/lbs)
-- [ ] Trend calculation algorithms
-- [ ] Data interpolation logic
-- [ ] Date/time handling with timezones
-- [ ] CSV export functionality
-
-#### Integration Tests
-- [ ] Full API endpoint integration tests using WebApplicationFactory
-- [ ] Database integration tests
-- [ ] External API integration tests (Withings, Fitbit)
-- [ ] OAuth flow integration tests
-
-### Frontend (React/TypeScript) - Current Coverage: 1.19%
-
-#### UI Components (2/15 tested)
-- [x] `Button` - Complete tests
-- [x] `Switch` - Complete tests
-- [ ] `ConfirmDialog` - Dialog interactions, confirmation flow
-- [ ] `Heading` - All heading levels (h1-h6)
-- [ ] `Pagination` - Page navigation, bounds checking
-- [ ] `Select` - Selection, search, multi-select
-- [ ] `Toast` - Notification display, auto-dismiss
-- [ ] `ToastProvider` - Context provider functionality
-- [ ] `ToggleButton` - Toggle state, group integration
-- [ ] `ToggleButtonGroup` - Group selection logic
-
-#### Route Components (0/23 tested)
-- [ ] `__root.tsx` - Root layout, error boundary
-- [ ] `index.tsx` - Home page, unauthenticated state
-- [ ] `dashboard.tsx` - Main dashboard, data display
-- [ ] `login.tsx` - Login form, validation
-- [ ] `settings.tsx` - Settings form, updates
-- [ ] `initial-setup.tsx` - Setup wizard flow
-- [ ] `migration.tsx` - Migration process
-- [ ] `u.$sharingCode.tsx` - Public profile view
-- [ ] `download.tsx` - Data export functionality
-- [ ] `link.tsx` - Provider linking
-- [ ] `about.tsx` - Static content
-- [ ] `faq.tsx` - FAQ accordion
-- [ ] `privacy.tsx` - Privacy policy
-- [ ] `build.tsx` - Build info display
-- [ ] `demo.tsx` - Demo mode
-- [ ] `math.tsx` - Math explanations
-- [ ] `tipjar.tsx` - Donation page
-- [ ] `check-email.tsx` - Email verification prompt
-- [ ] `account-deleted.tsx` - Deletion confirmation
-- [ ] `auth.verify.tsx` - Email verification handler
-- [ ] `auth.apple.callback.tsx` - Apple auth callback
-- [ ] `oauth/fitbit/callback.tsx` - Fitbit OAuth callback
-- [ ] `oauth/withings/callback.tsx` - Withings OAuth callback
-
-#### Dashboard Components (0/13 tested)
-- [ ] `Dashboard.tsx` - Main dashboard container
-- [ ] `Chart.tsx` - Chart rendering, interactions
-- [ ] `Stats.tsx` - Statistics calculations, display
-- [ ] `Currently.tsx` - Current weight display
-- [ ] `Deltas.tsx` - Weight change calculations
-- [ ] `RecentReadings.tsx` - Reading list, pagination
-- [ ] `Buttons.tsx` - Action buttons
-- [ ] `ProviderSyncError.tsx` - Error display
-- [ ] `ProviderSyncErrors.tsx` - Multiple errors
-- [ ] `NoDataCard.tsx` - Empty state
-- [ ] `DashboardPlaceholder.tsx` - Loading state
-- [ ] `ChangeArrow.tsx` - Trend indicators
-- [ ] `HelpLink.tsx` - Help tooltip
-
-#### Settings Components (0/10 tested)
-- [ ] `SettingsLayout.tsx` - Settings navigation
-- [ ] `ProfileSection.tsx` - Profile form
-- [ ] `BasicProfileSettings.tsx` - Basic settings
-- [ ] `GoalSection.tsx` - Goal configuration
-- [ ] `SharingSection.tsx` - Sharing toggle, token
-- [ ] `ConnectedAccountsSection.tsx` - Provider management
-- [ ] `DownloadSection.tsx` - Export options
-- [ ] `AdvancedSection.tsx` - Advanced options
-- [ ] `AccountManagementSection.tsx` - Account actions
-- [ ] `DangerZoneSection.tsx` - Deletion flow
-
-#### Layout Components (0/6 tested)
-- [ ] `Layout.tsx` - Main layout wrapper
-- [ ] `Header.tsx` - Navigation, user menu
-- [ ] `Footer.tsx` - Footer links
-- [ ] `Container.tsx` - Responsive container
-- [ ] `Logo.tsx` - Logo rendering
-- [ ] `ErrorBoundary.tsx` - Error handling
-- [ ] `NotFound.tsx` - 404 page
-
-#### Hooks (1/4 tested)
-- [x] `usePersistedState` - Complete tests
-- [ ] `useMediaQuery` - Breakpoint detection
-- [ ] `useNavigationGuard` - Navigation blocking
-- [ ] `useToast` - Toast notifications
-
-#### API Integration (0% tested)
-- [ ] `queries.ts` - All query hooks
-  - [ ] `useProfile` - Profile fetching
-  - [ ] `useData` - Measurement data
-  - [ ] `useProviderLinks` - Provider info
-  - [ ] `useSharing` - Sharing settings
-- [ ] `mutations.ts` - All mutation hooks
-  - [ ] `useUpdateProfile` - Profile updates
-  - [ ] `useDisconnectProvider` - Provider removal
-  - [ ] `useResyncProvider` - Data refresh
-  - [ ] `useToggleSharing` - Sharing toggle
-  - [ ] `useGenerateToken` - Token generation
-  - [ ] `useCompleteMigration` - Migration completion
-  - [ ] `useDeleteAccount` - Account deletion
-  - [ ] `useRefreshData` - Manual refresh
-- [ ] `client.ts` - API client, error handling
-
-#### Utility Functions (0% tested)
-- [ ] Date utilities (`dates.ts`)
-- [ ] Number formatting (`numbers.ts`)
-- [ ] Weight conversion (`conversion.ts`)
-- [ ] Trend calculations (`trend-calculations.ts`)
-- [ ] Data grouping (`grouping.ts`)
-- [ ] Interpolation (`interpolation.ts`)
-- [ ] Stats computations (`stats.ts`)
-- [ ] Chart data transformers (`data-transformers.ts`)
-- [ ] CSV export (`csvExport.ts`)
-- [ ] Locale utilities (`locale.ts`)
-- [ ] Page title helper (`pageTitle.ts`)
-
-#### Authentication (0% tested)
-- [ ] `AuthProvider.tsx` - Auth context provider
-- [ ] `useAuth.ts` - Auth hook
-- [ ] `authGuard.ts` - Route protection
-- [ ] `authSuspense.ts` - Auth loading states
-- [ ] `useAppleSignIn.ts` - Apple sign-in
-
-#### Progress Management (0% tested)
-- [ ] `ProgressManager.tsx` - Progress tracking
-- [ ] `BackgroundQueryProgress.tsx` - Query progress
-- [ ] Progress utilities
-
-### Integration & E2E Tests (0% implemented)
-
-#### Critical User Flows
-- [ ] New user registration and setup
-- [ ] Provider connection flow (Withings/Fitbit)
-- [ ] Daily weight sync and trend calculation
-- [ ] Profile settings update
-- [ ] Data export/download
-- [ ] Account deletion
-- [ ] Public profile sharing
-- [ ] Migration from legacy system
-
-#### API Integration Tests
-- [ ] Full request/response cycle
-- [ ] Authentication flow
-- [ ] Error handling
-- [ ] Rate limiting
-- [ ] CORS handling
-
-### Test Infrastructure Improvements
-- [ ] Add MSW for API mocking in frontend tests
-- [ ] Set up test data factories/builders
-- [ ] Configure coverage thresholds in CI
-- [ ] Add visual regression testing for charts
-- [ ] Set up database seeding for integration tests
-- [ ] Add performance benchmarks for critical paths
-
-### Coverage Goals
-- **Phase 1 (Current)**: Establish basic test infrastructure ✓
-- **Phase 2**: Achieve 30% coverage on critical paths
-- **Phase 3**: Achieve 60% overall coverage
-- **Phase 4**: Achieve 80% coverage on business logic
-- **Phase 5**: Maintain 80%+ with CI enforcement

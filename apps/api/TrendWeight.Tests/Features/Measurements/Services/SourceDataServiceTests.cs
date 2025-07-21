@@ -88,51 +88,6 @@ public class SourceDataServiceTests : TestBase
         _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<DbSourceData>()), Times.Once);
     }
 
-    [Fact]
-    public async Task UpdateSourceDataAsync_WithNewMeasurementsInRefreshWindow_MergesCorrectly()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow.AddDays(-1);
-        var cutoffDate = lastSync.AddDays(-90);
-
-        // Existing data has measurements from different time periods
-        var oldMeasurement = CreateTestRawMeasurement(cutoffDate.AddDays(-5).ToString("yyyy-MM-dd"), 65.0m); // Before cutoff - should keep
-        var recentMeasurement = CreateTestRawMeasurement(cutoffDate.AddDays(5).ToString("yyyy-MM-dd"), 70.0m); // After cutoff - should replace
-
-        var existingDbData = new DbSourceData
-        {
-            Uid = userId,
-            Provider = "withings",
-            Measurements = new List<RawMeasurement> { oldMeasurement, recentMeasurement },
-            LastSync = lastSync.ToString("o"),
-            UpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o")
-        };
-
-        // New data replaces recent measurements
-        var newMeasurement = CreateTestRawMeasurement(cutoffDate.AddDays(5).ToString("yyyy-MM-dd"), 71.0m); // Different weight
-        var sourceData = new SourceData
-        {
-            Source = "withings",
-            LastUpdate = DateTime.UtcNow,
-            Measurements = new List<RawMeasurement> { newMeasurement }
-        };
-
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData> { existingDbData });
-
-        // Act
-        await _sut.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbSourceData>(d =>
-            d.Uid == userId &&
-            d.Provider == "withings" &&
-            d.Measurements.Count == 2 && // Old + new measurement
-            d.Measurements.Any(m => m.Weight == 65.0m) && // Old measurement kept
-            d.Measurements.Any(m => m.Weight == 71.0m) && // New measurement added
-            !d.Measurements.Any(m => m.Weight == 70.0m))), Times.Once); // Old recent measurement replaced
-    }
 
     [Fact]
     public async Task UpdateSourceDataAsync_WithMultipleProviders_ProcessesAllProviders()
@@ -200,23 +155,18 @@ public class SourceDataServiceTests : TestBase
     #region UpdateSourceDataAsync Tests - Data Merging Scenarios
 
     [Fact]
-    public async Task UpdateSourceDataAsync_WhenProviderRemovesMeasurements_RemovesFromDatabase()
+    public async Task UpdateSourceDataAsync_WithExistingData_ReplacesCompletely()
     {
         // Arrange
         var userId = Guid.NewGuid();
         var lastSync = DateTime.UtcNow.AddDays(-1);
-        var syncCutoff = lastSync.AddDays(-90); // 90 days before last sync
 
-        // Existing DB has 3 measurements within sync window (all after cutoff)
-        var withinWindowDate1 = syncCutoff.AddDays(10).ToString("yyyy-MM-dd");
-        var withinWindowDate2 = syncCutoff.AddDays(20).ToString("yyyy-MM-dd"); // This will be deleted
-        var withinWindowDate3 = syncCutoff.AddDays(30).ToString("yyyy-MM-dd");
-
+        // Existing data will be completely replaced (merging is done in MeasurementSyncService)
         var existingMeasurements = new List<RawMeasurement>
         {
-            CreateTestRawMeasurement(withinWindowDate1, 70.0m), // Within window
-            CreateTestRawMeasurement(withinWindowDate2, 71.0m), // Within window - will be removed
-            CreateTestRawMeasurement(withinWindowDate3, 72.0m)  // Within window
+            CreateTestRawMeasurement("2024-01-01", 70.0m),
+            CreateTestRawMeasurement("2024-01-02", 71.0m),
+            CreateTestRawMeasurement("2024-01-03", 72.0m)
         };
 
         var existingDbData = new DbSourceData
@@ -228,12 +178,12 @@ public class SourceDataServiceTests : TestBase
             UpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o")
         };
 
-        // Provider now only reports 2 measurements (user deleted the middle one upstream)
+        // New measurements will completely replace the old ones
         var newMeasurements = new List<RawMeasurement>
         {
-            CreateTestRawMeasurement(withinWindowDate1, 70.0m), // Same
-            CreateTestRawMeasurement(withinWindowDate3, 72.0m)  // Same
-            // withinWindowDate2 is missing - should be removed
+            CreateTestRawMeasurement("2024-01-01", 70.0m),
+            CreateTestRawMeasurement("2024-01-03", 72.5m) // Updated weight
+            // 2024-01-02 is missing - this is fine, merging logic handles this upstream
         };
 
         var sourceData = new SourceData
@@ -249,77 +199,62 @@ public class SourceDataServiceTests : TestBase
         // Act
         await _sut.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
 
-        // Assert - Should replace measurements in sync window with provider data
+        // Assert - Should have exactly the new measurements
         _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbSourceData>(d =>
             d.Uid == userId &&
             d.Provider == "withings" &&
-            d.Measurements.Count == 2 && // Only 2 measurements now
-            d.Measurements.Any(m => m.Date == withinWindowDate1) &&
-            d.Measurements.Any(m => m.Date == withinWindowDate3) &&
-            !d.Measurements.Any(m => m.Date == withinWindowDate2))), Times.Once); // Deleted measurement should be gone
+            d.Measurements.Count == 2 &&
+            d.Measurements.Any(m => m.Date == "2024-01-01" && m.Weight == 70.0m) &&
+            d.Measurements.Any(m => m.Date == "2024-01-03" && m.Weight == 72.5m))), Times.Once);
     }
 
     [Fact]
-    public async Task UpdateSourceDataAsync_WithOldDataOutsideSyncWindow_PreservesOldData()
+    public async Task UpdateSourceDataAsync_WithMultipleProviders_UpdatesEachSeparately()
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow.AddDays(-1);
-        var syncCutoff = lastSync.AddDays(-90); // 90 days before last sync
 
-        // Existing DB has measurements both inside and outside sync window
-        var existingMeasurements = new List<RawMeasurement>
+        // Setup multiple source data updates
+        var sourceDataList = new List<SourceData>
         {
-            CreateTestRawMeasurement(syncCutoff.AddDays(-10).ToString("yyyy-MM-dd"), 65.0m), // OUTSIDE window - should keep
-            CreateTestRawMeasurement(syncCutoff.AddDays(-5).ToString("yyyy-MM-dd"), 66.0m),  // OUTSIDE window - should keep  
-            CreateTestRawMeasurement(syncCutoff.AddDays(5).ToString("yyyy-MM-dd"), 70.0m),   // INSIDE window - will be replaced
-            CreateTestRawMeasurement(syncCutoff.AddDays(10).ToString("yyyy-MM-dd"), 71.0m)   // INSIDE window - will be replaced
-        };
-
-        var existingDbData = new DbSourceData
-        {
-            Uid = userId,
-            Provider = "withings",
-            Measurements = existingMeasurements,
-            LastSync = lastSync.ToString("o"),
-            UpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o")
-        };
-
-        // Provider reports new data for sync window (replaces measurements within window)
-        var newMeasurements = new List<RawMeasurement>
-        {
-            CreateTestRawMeasurement(syncCutoff.AddDays(5).ToString("yyyy-MM-dd"), 70.5m),  // Updated weight
-            CreateTestRawMeasurement(syncCutoff.AddDays(12).ToString("yyyy-MM-dd"), 72.0m)  // New measurement
-            // Note: measurement at +10 days is gone (user deleted upstream)
-        };
-
-        var sourceData = new SourceData
-        {
-            Source = "withings",
-            LastUpdate = DateTime.UtcNow,
-            Measurements = newMeasurements
+            new SourceData
+            {
+                Source = "withings",
+                LastUpdate = DateTime.UtcNow,
+                Measurements = new List<RawMeasurement>
+                {
+                    CreateTestRawMeasurement("2024-01-01", 70.0m),
+                    CreateTestRawMeasurement("2024-01-02", 71.0m)
+                }
+            },
+            new SourceData
+            {
+                Source = "fitbit",
+                LastUpdate = DateTime.UtcNow,
+                Measurements = new List<RawMeasurement>
+                {
+                    CreateTestRawMeasurement("2024-01-01", 70.2m),
+                    CreateTestRawMeasurement("2024-01-03", 72.0m)
+                }
+            }
         };
 
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData> { existingDbData });
+            .ReturnsAsync(new List<DbSourceData>());
 
         // Act
-        await _sut.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
+        await _sut.UpdateSourceDataAsync(userId, sourceDataList);
 
-        // Assert - Should keep old measurements outside window + new measurements inside window
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbSourceData>(d =>
+        // Assert - Should create both provider records
+        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d =>
             d.Uid == userId &&
             d.Provider == "withings" &&
-            d.Measurements.Count == 4 && // 2 old + 2 new
-                                         // Old measurements outside sync window should be preserved
-            d.Measurements.Any(m => m.Weight == 65.0m) && // Old data kept
-            d.Measurements.Any(m => m.Weight == 66.0m) && // Old data kept
-                                                          // New measurements in sync window
-            d.Measurements.Any(m => m.Weight == 70.5m) && // Updated
-            d.Measurements.Any(m => m.Weight == 72.0m) && // New
-                                                          // Old measurements in sync window should be gone
-            !d.Measurements.Any(m => m.Weight == 70.0m) && // Original 70.0 replaced with 70.5
-            !d.Measurements.Any(m => m.Weight == 71.0m))), Times.Once); // Deleted upstream
+            d.Measurements.Count == 2)), Times.Once);
+
+        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d =>
+            d.Uid == userId &&
+            d.Provider == "fitbit" &&
+            d.Measurements.Count == 2)), Times.Once);
     }
 
     [Fact]
@@ -364,65 +299,6 @@ public class SourceDataServiceTests : TestBase
         _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d =>
             d.Provider == "fitbit" &&
             d.Measurements.Any(m => m.Date == "2024-01-15" && m.Weight == 70.1m))), Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdateSourceDataAsync_WithProviderReportingFewerMeasurements_ReplacesRangeCompletely()
-    {
-        // Test the core principle: Provider data is truth for the time range it reports
-
-        // Arrange
-        var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow.AddDays(-1);
-
-        // Existing DB has daily measurements for a week
-        var existingMeasurements = new List<RawMeasurement>
-        {
-            CreateTestRawMeasurement("2024-01-14", 70.0m),
-            CreateTestRawMeasurement("2024-01-15", 70.1m),
-            CreateTestRawMeasurement("2024-01-16", 70.2m),
-            CreateTestRawMeasurement("2024-01-17", 70.3m),
-            CreateTestRawMeasurement("2024-01-18", 70.4m),
-            CreateTestRawMeasurement("2024-01-19", 70.5m),
-            CreateTestRawMeasurement("2024-01-20", 70.6m)
-        };
-
-        var existingDbData = new DbSourceData
-        {
-            Uid = userId,
-            Provider = "withings",
-            Measurements = existingMeasurements,
-            LastSync = lastSync.ToString("o"),
-            UpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o")
-        };
-
-        // Provider now only reports 3 measurements (user deleted some upstream, or different sync range)
-        var newMeasurements = new List<RawMeasurement>
-        {
-            CreateTestRawMeasurement("2024-01-15", 70.1m), // Same
-            CreateTestRawMeasurement("2024-01-18", 70.4m), // Same
-            CreateTestRawMeasurement("2024-01-20", 70.6m)  // Same
-            // Missing: 2024-01-14, 2024-01-16, 2024-01-17, 2024-01-19
-        };
-
-        var sourceData = new SourceData
-        {
-            Source = "withings",
-            LastUpdate = DateTime.UtcNow,
-            Measurements = newMeasurements
-        };
-
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData> { existingDbData });
-
-        // Act
-        await _sut.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
-
-        // Assert - Should ONLY have the 3 measurements provider reported (within sync window)
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbSourceData>(d =>
-            d.Uid == userId &&
-            d.Provider == "withings" &&
-            d.Measurements.Count == 3)), Times.Once); // Only what provider reported
     }
 
     #endregion
