@@ -135,7 +135,7 @@ public class FitbitServiceTests : TestBase
         foreach (var (chunkStart, chunkEnd) in apiCalls)
         {
             var daysDiff = (chunkEnd - chunkStart).Days + 1; // +1 to include both start and end
-            daysDiff.Should().BeLessOrEqualTo(32);
+            daysDiff.Should().BeLessThanOrEqualTo(32);
         }
 
         // Verify chunks cover the entire range
@@ -398,7 +398,7 @@ public class FitbitServiceTests : TestBase
         foreach (var range in sortedRanges)
         {
             var days = (range.end - range.start).Days + 1;
-            days.Should().BeLessOrEqualTo(32);
+            days.Should().BeLessThanOrEqualTo(32);
         }
     }
 
