@@ -133,7 +133,7 @@ The frontend uses the following testing libraries:
 - **Vitest**: Test runner (faster alternative to Jest)
 - **React Testing Library**: Component testing
 - **@testing-library/user-event**: User interaction simulation
-- **MSW**: API mocking (when needed)
+- **MSW (Mock Service Worker)**: HTTP request mocking - **ALWAYS use MSW for API mocking**
 
 ### Running Frontend Tests
 
@@ -151,21 +151,48 @@ npm run test:ui       # Open Vitest UI
 ```
 apps/web/
 ├── src/
+│   ├── test/
+│   │   ├── setup.ts          # Global test setup
+│   │   ├── test-utils.tsx    # Custom render and utilities
+│   │   └── mocks/
+│   │       ├── server.ts     # MSW server setup
+│   │       └── handlers.ts   # MSW request handlers
 │   ├── components/
 │   │   └── ui/
 │   │       ├── Button.tsx
 │   │       └── Button.test.tsx
-│   ├── lib/
-│   │   └── hooks/
-│   │       ├── usePersistedState.ts
-│   │       └── usePersistedState.test.ts
-│   └── test/
-│       ├── setup.ts
-│       └── test-utils.tsx
+│   └── lib/
+│       └── feature/
+│           ├── component.tsx
+│           └── component.test.tsx  # Co-located tests
 └── vitest.config.ts
 ```
 
+### Test File Naming
+- Unit tests: `*.test.ts` or `*.test.tsx`
+- Integration tests: `*.integration.test.ts`
+- E2E tests: `*.e2e.test.ts` (if added later)
+
 ### Frontend Testing Patterns
+
+#### MSW (Mock Service Worker) Setup
+
+**IMPORTANT**: Always use MSW for mocking HTTP requests, not manual fetch mocking.
+
+```typescript
+// ❌ DON'T do this:
+global.fetch = vi.fn();
+
+// ✅ DO this:
+import { server } from '@/test/mocks/server';
+import { http, HttpResponse } from 'msw';
+
+server.use(
+  http.get('/api/endpoint', () => {
+    return HttpResponse.json({ data: 'test' });
+  })
+);
+```
 
 #### Component Testing
 
@@ -209,26 +236,88 @@ describe('usePersistedState', () => {
 });
 ```
 
+#### Testing with MSW
+
+```typescript
+describe('API Integration', () => {
+  it('should handle successful API call', async () => {
+    server.use(
+      http.get('/api/data', () => {
+        return HttpResponse.json({ value: 42 });
+      })
+    );
+
+    render(<MyComponent />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Value: 42')).toBeInTheDocument();
+    });
+  });
+
+  it('should handle API error', async () => {
+    server.use(
+      http.get('/api/data', () => {
+        return HttpResponse.json(
+          { error: 'Server error' },
+          { status: 500 }
+        );
+      })
+    );
+
+    render(<MyComponent />);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/error/i)).toBeInTheDocument();
+    });
+  });
+});
+```
+
 ### Frontend Best Practices
 
-1. **Test User Behavior**: Focus on how users interact with components
-2. **Avoid Implementation Details**: Don't test internal state or methods
-3. **Use Semantic Queries**: Prefer `getByRole`, `getByLabelText` over `getByTestId`
-4. **Mock Sparingly**: Only mock what's necessary (API calls, browser APIs)
+1. **Use MSW for All HTTP Mocking**: Always use MSW for mocking HTTP requests
+2. **Test User Behavior**: Focus on how users interact with components, not implementation details
+3. **Use Testing Utilities**: Always use the custom render function from `test-utils.tsx`
+4. **Use Semantic Queries**: Prefer `getByRole`, `getByLabelText` over `getByTestId`
 5. **Keep Tests Simple**: Each test should verify one behavior
+6. **Test Error States**: Always test error states and edge cases
+7. **Avoid Arbitrary Waits**: Use `waitFor` instead of arbitrary timeouts
 
 ## Test Coverage
 
 ### Current Coverage Status
 
-- **Backend**: 65% line coverage, 52% branch coverage (237 tests)
-- **Frontend**: Vitest infrastructure configured, minimal test coverage
+- **Backend**: 65% line coverage, 52% branch coverage (239 tests)
+- **Frontend**: 27.26% overall coverage, with excellent coverage in:
+  - Dashboard computations: 99.36%
+  - API layer: 96.87%
+  - Auth layer: 82.74%
 
 ### Coverage Goals
 
-- **Minimum Coverage**: 60% for critical paths
-- **Target Coverage**: 75%+ for business logic
-- **Focus Areas**: Services, custom hooks, utility functions
+- **Overall Target**: 75%
+- **Critical Business Logic**: 90%+
+- **API Layer**: 85%+ (already achieved)
+- **Components**: 70%+
+- **Utilities**: 90%+
+
+### Coverage Priorities
+
+1. **High Priority**
+   - Business logic (calculations, transformations)
+   - API error handling
+   - Critical user paths
+   - Data validation
+
+2. **Medium Priority**
+   - UI components with logic
+   - Form validation
+   - Navigation guards
+
+3. **Low Priority**
+   - Simple presentational components
+   - Third-party integrations
+   - Styling-only components
 
 ### Viewing Coverage Reports
 
@@ -351,14 +440,31 @@ it('submits form with valid data', async () => {
 
 ### Debugging Tests
 
+#### Frontend Debugging
 ```typescript
-// Frontend - use screen.debug()
+// Use screen.debug() to see current DOM
 it('renders correctly', () => {
   render(<Component />);
   screen.debug(); // Prints DOM to console
 });
 
-// Backend - use test output
+// Use Testing Playground
+it('finds elements', () => {
+  render(<Component />);
+  screen.logTestingPlaygroundURL(); // Opens in browser
+});
+
+// Focus on single test
+it.only('run only this test', () => {
+  // test code
+});
+
+// Skip coverage for faster debugging
+npm test -- --no-coverage
+```
+
+#### Backend Debugging
+```csharp
 [Fact]
 public void DebugTest()
 {
