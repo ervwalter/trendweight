@@ -5,11 +5,14 @@ import type { SourceMeasurement } from "../../core/interfaces";
  * Interpolates missing weight measurements between existing measurements
  */
 export function interpolateWeightMeasurements(sourceMeasurements: SourceMeasurement[]): SourceMeasurement[] {
+  // Sort measurements by date first to ensure correct interpolation
+  const sortedMeasurements = [...sourceMeasurements].sort((a, b) => a.date.toString().localeCompare(b.date.toString()));
+
   const missingDays: SourceMeasurement[] = [];
   let previous: SourceMeasurement | undefined = undefined;
 
-  for (let i = 0; i < sourceMeasurements.length; i++) {
-    const currentWeight = sourceMeasurements[i];
+  for (let i = 0; i < sortedMeasurements.length; i++) {
+    const currentWeight = sortedMeasurements[i];
 
     if (previous) {
       const daysBetween = previous.date.until(currentWeight.date, ChronoUnit.DAYS);
@@ -37,18 +40,21 @@ export function interpolateWeightMeasurements(sourceMeasurements: SourceMeasurem
   }
 
   // Add in the missing days and re-sort
-  return [...sourceMeasurements, ...missingDays].toSorted((a, b) => a.date.toString().localeCompare(b.date.toString()));
+  return [...sortedMeasurements, ...missingDays].toSorted((a, b) => a.date.toString().localeCompare(b.date.toString()));
 }
 
 /**
  * Interpolates missing fat measurements between existing measurements
  */
 export function interpolateFatMeasurements(fatSourceMeasurements: SourceMeasurement[]): SourceMeasurement[] {
+  // Sort measurements by date first to ensure correct interpolation
+  const sortedMeasurements = [...fatSourceMeasurements].sort((a, b) => a.date.toString().localeCompare(b.date.toString()));
+
   const missingFatDays: SourceMeasurement[] = [];
   let previous: SourceMeasurement | undefined = undefined;
 
-  for (let ndx = 0; ndx < fatSourceMeasurements.length; ndx++) {
-    const currentFat = fatSourceMeasurements[ndx];
+  for (let ndx = 0; ndx < sortedMeasurements.length; ndx++) {
+    const currentFat = sortedMeasurements[ndx];
 
     if (previous) {
       const daysBetween = previous.date.until(currentFat.date, ChronoUnit.DAYS);
@@ -78,5 +84,5 @@ export function interpolateFatMeasurements(fatSourceMeasurements: SourceMeasurem
     previous = currentFat;
   }
 
-  return [...fatSourceMeasurements, ...missingFatDays].toSorted((a, b) => a.date.toString().localeCompare(b.date.toString()));
+  return [...sortedMeasurements, ...missingFatDays].toSorted((a, b) => a.date.toString().localeCompare(b.date.toString()));
 }

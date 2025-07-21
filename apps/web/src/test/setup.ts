@@ -1,11 +1,19 @@
 import "@testing-library/jest-dom";
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach, vi, beforeAll, afterAll } from "vitest";
+import { server } from "./mocks/server";
 
-// Cleanup after each test case
+// Start MSW server before all tests
+beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+
+// Reset handlers after each test
 afterEach(() => {
+  server.resetHandlers();
   cleanup();
 });
+
+// Clean up after all tests
+afterAll(() => server.close());
 
 // Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {
@@ -35,3 +43,10 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
+
+// Mock CSS.supports for Highcharts
+if (!global.CSS) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  global.CSS = {} as any;
+}
+global.CSS.supports = vi.fn(() => false);

@@ -158,6 +158,7 @@ See ARCHITECTURE.md for detailed UI component documentation.
 6. **Error Messages** - Never expose exception details to users. Use correlation IDs instead.
 7. **Performance** - Module-level caching of formatters significantly improves performance.
 8. **UriBuilder Default Ports** - When using UriBuilder for HTTPS URLs, the default port 443 is included. Remove it to avoid URLs like `https://example.com:443/path`. Tests caught this bug!
+9. **Defensive Input Handling** - Functions should handle unsorted input gracefully. The interpolation functions now sort input data before processing to ensure correct results regardless of input order.
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
@@ -187,6 +188,13 @@ Keep this file focused on AI code generation guidance only.
 - **When you need to check if the repo is in a clean state before doing a commit, do 'npm run format && npm run check && npm run test' as a single Bash command from the top of the repo**
 
 ## Testing Guidelines
+
+### Frontend Testing with MSW
+**CRITICAL**: Always use MSW (Mock Service Worker) for HTTP mocking in frontend tests:
+- NEVER manually mock fetch: `global.fetch = vi.fn()` ❌
+- ALWAYS use MSW handlers: `server.use(http.get(...))` ✅
+- See `.claude/frontend-testing/TESTING.md` for detailed MSW usage patterns
+- MSW is already configured in the test setup
 
 ### Authentication Handler Testing
 **Important**: When testing authentication components, focus on testing the business logic we own rather than the framework integration:

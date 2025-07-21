@@ -34,9 +34,12 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  // Extract headers to handle them separately
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { headers: _customHeaders, ...optionsWithoutHeaders } = options || {};
   const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...optionsWithoutHeaders,
     headers,
-    ...options,
   });
 
   if (!response.ok) {
@@ -61,6 +64,11 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
     }
 
     throw new ApiError(response.status, errorMessage, errorCode, isRetryable);
+  }
+
+  // Handle 204 No Content responses
+  if (response.status === 204) {
+    return null as T;
   }
 
   return response.json();
