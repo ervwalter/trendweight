@@ -19,19 +19,17 @@ TrendWeight uses [Release Please](https://github.com/googleapis/release-please) 
 
 ### Configuration Files
 
-1. **`.github/workflows/release-please.yml`** - GitHub Action workflow
-2. **`release-please-config.json`** - Main configuration
-   - Contains `bootstrap-sha` pointing to the v2.0.0-alpha.1 tag
-   - This ensures Release Please only includes commits after that tag
-3. **`.release-please-manifest.json`** - Current version tracking
-4. **`VERSION`** - Simple version file for Docker builds and scripts
+1. **`.github/workflows/release.yml`** - GitHub Action workflow
+2. **`.github/release-config.json`** - Main configuration
+3. **`.github/release-manifest.json`** - Current version tracking
+4. **`version.txt`** - Simple version file for Docker builds and scripts
 
 ### Version Progression
 
-Versions follow standard semantic versioning patterns:
+Versions follow standard semantic versioning:
 - `fix:` commits → patch bumps (2.0.0 → 2.0.1)
 - `feat:` commits → minor bumps (2.0.1 → 2.1.0)
-- Breaking changes → minor bumps (due to `bump-minor-pre-major: true`)
+- Breaking changes (`feat!:` or `BREAKING CHANGE:`) → major bumps (2.0.0 → 3.0.0)
 
 ## Initial Setup (REQUIRED)
 
@@ -53,7 +51,7 @@ This is required because tags created with the default GITHUB_TOKEN don't trigge
 
 2. **Release Please creates/updates a PR** titled "chore(main): release X.Y.Z"
    - Updates `CHANGELOG.md` with categorized changes
-   - Bumps version in `VERSION` file
+   - Bumps version in `version.txt` file
    - Updates `apps/web/package.json` version
 
 3. **The PR stays open** and updates automatically as you push more commits
@@ -70,14 +68,16 @@ The project can be switched to prerelease mode when needed (e.g., for major vers
 
 ### Enabling Prerelease Mode
 
-To switch to prerelease versioning, update `release-please-config.json`:
+To switch to prerelease versioning, update `.github/release-config.json`:
 ```json
 {
-  "prerelease": true,
-  "prerelease-type": "alpha",  // or "beta", "rc", etc.
-  "versioning": "prerelease",
-  "bump-patch-for-minor-pre-major": true,
-  // ... rest of config
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "prerelease": true,
+      "prerelease-type": "alpha"  // or "beta", "rc", etc.
+    }
+  }
 }
 ```
 
@@ -94,18 +94,17 @@ In prerelease mode, ALL commits increment only the prerelease number:
 
 To return to stable versioning:
 
-1. **Update the configuration** in `release-please-config.json`:
+1. **Update the configuration** in `.github/release-config.json`:
    - Remove or set `prerelease: false`
-   - Remove `prerelease-type` and `versioning` fields
-   - Set `bump-patch-for-minor-pre-major: false` if you want standard semver behavior
+   - Remove `prerelease-type` field
 
 2. **Manually update the version files** to remove the prerelease suffix:
-   - Edit `.release-please-manifest.json`: Change `"3.0.0-alpha.X"` to `"3.0.0"`
-   - Edit `VERSION`: Change `3.0.0-alpha.X` to `3.0.0`
+   - Edit `.github/release-manifest.json`: Change `"3.0.0-alpha.X"` to `"3.0.0"`
+   - Edit `version.txt`: Change `3.0.0-alpha.X` to `3.0.0`
 
 3. **Commit the transition** (this will NOT create a Release Please PR):
    ```bash
-   git add release-please-config.json .release-please-manifest.json VERSION
+   git add .github/release-config.json .github/release-manifest.json version.txt
    git commit -m "chore: release 3.0.0"
    git push
    ```
@@ -121,30 +120,31 @@ After these steps, Release Please will handle future releases (3.0.1, 3.1.0, etc
 
 ## Commit Message Guidelines
 
-Use conventional commits with emoji prefixes (they work fine with Release Please):
+Use conventional commits format:
 
-- `✨ feat: add new feature` → Features section
-- `🐛 fix: resolve bug` → Bug Fixes section
-- `⚡️ perf: improve performance` → Performance section
-- `♻️ refactor: reorganize code` → Hidden from changelog
-- `📝 docs: update README` → Hidden from changelog
-- `🧪 test: add unit tests` → Hidden from changelog
+- `feat: add new feature` → Features section
+- `fix: resolve bug` → Fixes section
+- `perf: improve performance` → Performance Improvements section
+- `refactor: reorganize code` → Refactoring section
+- `docs: update README` → Documentation section
+- `test: add unit tests` → Tests section
+- `deps: update dependencies` → Dependencies section
 
 ## Manual Version Override
 
 If needed, you can manually set the next version:
 
-1. Update the `VERSION` file
-2. Update `.release-please-manifest.json`
+1. Update the `version.txt` file
+2. Update `.github/release-manifest.json`
 3. Commit with message: `chore: release X.Y.Z`
 
 ## Docker Integration
 
-The `VERSION` file can be used in your Docker build:
+The `version.txt` file can be used in your Docker build:
 
 ```dockerfile
-COPY VERSION /app/VERSION
-ARG VERSION=$(cat /app/VERSION)
+COPY version.txt /app/version.txt
+ARG VERSION=$(cat /app/version.txt)
 LABEL version=$VERSION
 ```
 
@@ -160,7 +160,7 @@ See the "Initial Setup" section above - you need a PAT with `repo` scope.
 
 ### Version not bumping correctly?
 - In prerelease mode: This is expected, only prerelease number increments
-- In stable mode: Check `bump-patch-for-minor-pre-major` setting
+- Check your configuration settings in `.github/release-config.json`
 
 ### Need to skip a release?
 Add `[skip-release]` to your commit message:
@@ -170,9 +170,7 @@ feat: work in progress [skip-release]
 
 ## Future Considerations
 
-1. **Major Version Bumps**: Currently disabled. To enable after v2.0.0:
-   - Remove `"bump-minor-pre-major": true` from config
-   - Use `feat!:` or `BREAKING CHANGE:` for major bumps
+1. **Major Version Bumps**: Use `feat!:` or `BREAKING CHANGE:` in commit messages
 
 2. **NPM Publishing**: Can be added to workflow:
    ```yaml
@@ -193,4 +191,4 @@ feat: work in progress [skip-release]
 
 - [Release Please Documentation](https://github.com/googleapis/release-please)
 - [Conventional Commits](https://www.conventionalcommits.org/)
-- [Our Release Config](./release-please-config.json)
+- [Our Release Config](./.github/release-config.json)

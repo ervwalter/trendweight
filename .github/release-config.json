@@ -3,12 +3,6 @@
   "packages": {
     ".": {
       "release-type": "simple",
-      "version-file": "VERSION",
-      "prerelease": false,
-      "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": false,
-      "include-v-in-tag": true,
-      "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
           "type": "json",
@@ -26,7 +20,7 @@
     },
     {
       "type": "fix",
-      "section": "Bug Fixes",
+      "section": "Fixes",
       "hidden": false
     },
     {
@@ -51,7 +45,7 @@
     },
     {
       "type": "refactor",
-      "section": "Code Refactoring",
+      "section": "Refactoring",
       "hidden": false
     },
     {
