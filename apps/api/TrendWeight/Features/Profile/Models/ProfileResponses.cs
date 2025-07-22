@@ -15,8 +15,6 @@ public class ProfileResponse
 /// </summary>
 public class UserProfileData
 {
-    public required string Uid { get; set; }
-    public required string Email { get; set; }
     public string? FirstName { get; set; }
     public string? GoalStart { get; set; }
     public decimal? GoalWeight { get; set; }
@@ -25,6 +23,7 @@ public class UserProfileData
     public bool UseMetric { get; set; }
     public bool ShowCalories { get; set; }
     public bool SharingEnabled { get; set; }
+    public string? SharingToken { get; set; }
     public bool IsMigrated { get; set; }
     public bool IsNewlyMigrated { get; set; }
 }

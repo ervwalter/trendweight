@@ -1,7 +1,7 @@
 import { useSuspenseQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { apiRequest, ApiError } from "./client";
 import type { ProfileResponse, ProviderLink, MeasurementsResponse } from "./types";
-import type { ProfileData, SettingsData, SharingData } from "../core/interfaces";
+import type { ProfileData, SharingData } from "../core/interfaces";
 import { getDemoData, getDemoProfile } from "../demo/demoData";
 
 // Query key helpers
@@ -15,6 +15,24 @@ export const queryKeys = {
   data: (sharingCode?: string) => createQueryKey(["data"] as const, sharingCode),
   providerLinks: (sharingCode?: string) => createQueryKey(["providerLinks"] as const, sharingCode),
   sharing: ["sharing"] as const,
+};
+
+// Helper function to transform ProfileResponse to ProfileData
+const selectProfileData = (data: ProfileResponse | null): ProfileData | null => {
+  if (!data) return null;
+  return {
+    firstName: data.user.firstName,
+    goalStart: data.user.goalStart,
+    goalWeight: data.user.goalWeight,
+    plannedPoundsPerWeek: data.user.plannedPoundsPerWeek,
+    dayStartOffset: data.user.dayStartOffset,
+    useMetric: data.user.useMetric,
+    showCalories: data.user.showCalories,
+    sharingToken: data.user.sharingToken,
+    sharingEnabled: data.user.sharingEnabled,
+    isMigrated: data.user.isMigrated,
+    isNewlyMigrated: data.user.isNewlyMigrated,
+  };
 };
 
 // Query options for reuse
@@ -33,6 +51,7 @@ export const queryOptions = {
         throw error;
       }
     },
+    select: selectProfileData,
   }),
   data: (sharingCode?: string) => ({
     queryKey: queryKeys.data(sharingCode),
@@ -60,36 +79,9 @@ export const queryOptions = {
   },
 };
 
-// Profile query (with suspense) - returns just ProfileData for dashboard
+// Profile query (with suspense) - returns ProfileData
 export function useProfile() {
-  return useSuspenseQuery({
-    ...queryOptions.profile(),
-    select: (data: ProfileResponse | null): ProfileData | null => {
-      if (!data) return null;
-      return {
-        firstName: data.user.firstName,
-        goalStart: data.user.goalStart,
-        goalWeight: data.user.goalWeight,
-        plannedPoundsPerWeek: data.user.plannedPoundsPerWeek,
-        dayStartOffset: data.user.dayStartOffset,
-        useMetric: data.user.useMetric,
-        showCalories: data.user.showCalories,
-        sharingToken: data.user.sharingToken,
-        sharingEnabled: data.user.sharingEnabled,
-      };
-    },
-  });
-}
-
-// Settings query - returns full SettingsData including email/uid
-export function useSettings() {
-  return useSuspenseQuery({
-    ...queryOptions.profile(),
-    select: (data: ProfileResponse | null): SettingsData | null => {
-      if (!data) return null;
-      return data.user;
-    },
-  });
+  return useSuspenseQuery(queryOptions.profile());
 }
 
 // Combined profile and measurement data query with suspense (loads in parallel)
@@ -101,15 +93,12 @@ export function useDashboardQueries(sharingCode?: string) {
       queryFn: async (): Promise<ProfileResponse> => {
         const demoProfile = getDemoProfile();
         return {
-          user: {
-            ...demoProfile,
-            uid: "demo",
-            email: "demo@example.com",
-          },
+          user: demoProfile,
           isMe: false,
           timestamp: new Date().toISOString(),
         };
       },
+      select: selectProfileData,
     },
     data: {
       queryKey: ["demo-data"] as const,
@@ -125,25 +114,7 @@ export function useDashboardQueries(sharingCode?: string) {
 
   // Always call the hook with consistent types
   const results = useSuspenseQueries({
-    queries: [
-      {
-        ...queryOptionsToUse.profile,
-        select: (data: ProfileResponse | null): ProfileData | null => {
-          if (!data) return null;
-          return {
-            firstName: data.user.firstName,
-            goalStart: data.user.goalStart,
-            goalWeight: data.user.goalWeight,
-            plannedPoundsPerWeek: data.user.plannedPoundsPerWeek,
-            dayStartOffset: data.user.dayStartOffset,
-            useMetric: data.user.useMetric,
-            showCalories: data.user.showCalories,
-            sharingToken: data.user.sharingToken,
-          };
-        },
-      },
-      queryOptionsToUse.data,
-    ],
+    queries: [queryOptionsToUse.profile, queryOptionsToUse.data],
   });
 
   const profileResult = results[0];

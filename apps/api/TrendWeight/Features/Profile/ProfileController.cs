@@ -111,39 +111,22 @@ public class ProfileController : ControllerBase
 
     private ActionResult<ProfileResponse> BuildProfileResponse(DbProfile user, bool isMe)
     {
-        // Map to ProfileData
-        var profileData = new ProfileData
-        {
-            FirstName = user.Profile.FirstName,
-            GoalStart = user.Profile.GoalStart,
-            GoalWeight = user.Profile.GoalWeight,
-            PlannedPoundsPerWeek = user.Profile.PlannedPoundsPerWeek,
-            DayStartOffset = user.Profile.DayStartOffset,
-            UseMetric = user.Profile.UseMetric,
-            ShowCalories = user.Profile.ShowCalories,
-            SharingToken = user.Profile.SharingToken,
-            SharingEnabled = user.Profile.SharingEnabled,
-            IsMigrated = user.Profile.IsMigrated,
-            IsNewlyMigrated = user.Profile.IsNewlyMigrated
-        };
-
         // Return profile data with metadata
         return Ok(new ProfileResponse
         {
             User = new UserProfileData
             {
-                Uid = user.Uid.ToString(),
-                Email = user.Email,
-                FirstName = profileData.FirstName,
-                GoalStart = profileData.GoalStart?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                GoalWeight = profileData.GoalWeight,
-                PlannedPoundsPerWeek = profileData.PlannedPoundsPerWeek,
-                DayStartOffset = profileData.DayStartOffset ?? 0,
-                UseMetric = profileData.UseMetric,
-                ShowCalories = profileData.ShowCalories ?? false,
-                SharingEnabled = profileData.SharingEnabled,
-                IsMigrated = profileData.IsMigrated,
-                IsNewlyMigrated = profileData.IsNewlyMigrated
+                FirstName = user.Profile.FirstName,
+                GoalStart = user.Profile.GoalStart?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                GoalWeight = user.Profile.GoalWeight,
+                PlannedPoundsPerWeek = user.Profile.PlannedPoundsPerWeek,
+                DayStartOffset = user.Profile.DayStartOffset ?? 0,
+                UseMetric = user.Profile.UseMetric,
+                ShowCalories = user.Profile.ShowCalories ?? false,
+                SharingEnabled = user.Profile.SharingEnabled,
+                SharingToken = user.Profile.SharingToken,
+                IsMigrated = user.Profile.IsMigrated,
+                IsNewlyMigrated = user.Profile.IsNewlyMigrated
             },
             IsMe = isMe,
             Timestamp = DateTime.UtcNow

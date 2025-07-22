@@ -1,13 +1,13 @@
 import type { UseFormRegister, FieldErrors, Control } from "react-hook-form";
 import { Controller } from "react-hook-form";
-import type { SettingsData } from "../../lib/core/interfaces";
+import type { ProfileData } from "../../lib/core/interfaces";
 import { ToggleButton } from "../ui/ToggleButton";
 import { ToggleButtonGroup } from "../ui/ToggleButtonGroup";
 
 interface BasicProfileSettingsProps {
-  register: UseFormRegister<SettingsData>;
-  errors: FieldErrors<SettingsData>;
-  control: Control<SettingsData>;
+  register: UseFormRegister<ProfileData>;
+  errors: FieldErrors<ProfileData>;
+  control: Control<ProfileData>;
 }
 
 /**

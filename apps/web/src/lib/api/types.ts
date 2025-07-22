@@ -1,8 +1,8 @@
-import type { SettingsData } from "../core/interfaces";
+import type { ProfileData } from "../core/interfaces";
 
 // Response structure from the profile API endpoint
 export interface ProfileResponse {
-  user: SettingsData;
+  user: ProfileData;
   timestamp: string;
   isMe?: boolean;
 }

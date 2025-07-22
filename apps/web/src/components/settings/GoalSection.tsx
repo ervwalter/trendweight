@@ -1,14 +1,14 @@
 import type { UseFormRegister, FieldErrors, UseFormWatch, Control } from "react-hook-form";
 import { Controller } from "react-hook-form";
-import type { SettingsData } from "../../lib/core/interfaces";
+import type { ProfileData } from "../../lib/core/interfaces";
 import { Select } from "../ui/Select";
 import { Heading } from "../ui/Heading";
 
 interface GoalSectionProps {
-  register: UseFormRegister<SettingsData>;
-  errors: FieldErrors<SettingsData>;
-  watch: UseFormWatch<SettingsData>;
-  control: Control<SettingsData>;
+  register: UseFormRegister<ProfileData>;
+  errors: FieldErrors<ProfileData>;
+  watch: UseFormWatch<ProfileData>;
+  control: Control<ProfileData>;
 }
 
 export function GoalSection({ register, errors, watch, control }: GoalSectionProps) {

@@ -10,15 +10,16 @@ vi.mock("../../lib/hooks/useNavigationGuard", () => ({
 }));
 
 // Mock API calls
-const mockSettingsData = {
-  displayName: "John Doe",
+const mockProfileData = {
+  firstName: "John Doe",
   useMetric: false,
   plannedPoundsPerWeek: 1.0,
   goalWeight: 180,
   goalStart: "2024-01-01",
-  resyncHealth: true,
-  userSlug: "johndoe",
-  isPublicProfile: true,
+  dayStartOffset: 0,
+  showCalories: false,
+  sharingEnabled: true,
+  sharingToken: "abc123",
 };
 
 const mockMutateAsync = vi.fn();
@@ -29,7 +30,7 @@ const mockUpdateProfile = {
 };
 
 vi.mock("../../lib/api/queries", () => ({
-  useSettings: () => ({ data: mockSettingsData }),
+  useProfile: () => ({ data: mockProfileData }),
 }));
 
 vi.mock("../../lib/api/mutations", () => ({
@@ -49,7 +50,7 @@ vi.mock("../ui/Button", () => ({
 vi.mock("./AdvancedSection", () => ({
   AdvancedSection: ({ register }: any) => (
     <div data-testid="advanced-section">
-      <input {...register("resyncHealth")} type="checkbox" data-testid="resync-health" />
+      <input {...register("showCalories")} type="checkbox" data-testid="show-calories" />
     </div>
   ),
 }));
@@ -79,7 +80,7 @@ vi.mock("./GoalSection", () => ({
 vi.mock("./ProfileSection", () => ({
   ProfileSection: ({ register }: any) => (
     <div data-testid="profile-section">
-      <input {...register("displayName")} data-testid="display-name" />
+      <input {...register("firstName")} data-testid="first-name" />
       <input
         {...register("useMetric")}
         type="checkbox"
@@ -125,7 +126,7 @@ describe("Settings", () => {
     render(<Settings />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("display-name")).toHaveValue("John Doe");
+      expect(screen.getByTestId("first-name")).toHaveValue("John Doe");
       expect(screen.getByTestId("goal-weight")).toHaveValue(180);
       expect(screen.getByTestId("goal-start")).toHaveValue("2024-01-01");
       expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
@@ -136,9 +137,9 @@ describe("Settings", () => {
     const user = userEvent.setup();
     render(<Settings />);
 
-    const displayNameInput = screen.getByTestId("display-name");
-    await user.clear(displayNameInput);
-    await user.type(displayNameInput, "Jane Doe");
+    const firstNameInput = screen.getByTestId("first-name");
+    await user.clear(firstNameInput);
+    await user.type(firstNameInput, "Jane Doe");
 
     expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
   });
@@ -150,9 +151,9 @@ describe("Settings", () => {
     const saveButton = screen.getByText("Save Settings");
     expect(saveButton).toBeDisabled();
 
-    const displayNameInput = screen.getByTestId("display-name");
-    await user.clear(displayNameInput);
-    await user.type(displayNameInput, "Jane Doe");
+    const firstNameInput = screen.getByTestId("first-name");
+    await user.clear(firstNameInput);
+    await user.type(firstNameInput, "Jane Doe");
 
     expect(saveButton).not.toBeDisabled();
     expect(saveButton).toHaveAttribute("data-variant", "primary");
@@ -162,17 +163,17 @@ describe("Settings", () => {
     const user = userEvent.setup();
     render(<Settings />);
 
-    const displayNameInput = screen.getByTestId("display-name");
-    await user.clear(displayNameInput);
-    await user.type(displayNameInput, "Jane Doe");
+    const firstNameInput = screen.getByTestId("first-name");
+    await user.clear(firstNameInput);
+    await user.type(firstNameInput, "Jane Doe");
 
     const saveButton = screen.getByText("Save Settings");
     await user.click(saveButton);
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
-        ...mockSettingsData,
-        displayName: "Jane Doe",
+        ...mockProfileData,
+        firstName: "Jane Doe",
       });
     });
   });
@@ -199,9 +200,9 @@ describe("Settings", () => {
 
   it("should handle metric data", async () => {
     // Start with metric data
-    mockSettingsData.useMetric = true;
-    mockSettingsData.goalWeight = 82;
-    mockSettingsData.plannedPoundsPerWeek = 0.5;
+    mockProfileData.useMetric = true;
+    mockProfileData.goalWeight = 82;
+    mockProfileData.plannedPoundsPerWeek = 0.5;
 
     render(<Settings />);
 
@@ -212,9 +213,9 @@ describe("Settings", () => {
     });
 
     // Reset for other tests
-    mockSettingsData.useMetric = false;
-    mockSettingsData.goalWeight = 180;
-    mockSettingsData.plannedPoundsPerWeek = 1.0;
+    mockProfileData.useMetric = false;
+    mockProfileData.goalWeight = 180;
+    mockProfileData.plannedPoundsPerWeek = 1.0;
   });
 
   it("should handle empty goal values", async () => {
@@ -246,8 +247,8 @@ describe("Settings", () => {
 
     render(<Settings />);
 
-    const displayNameInput = screen.getByTestId("display-name");
-    await user.type(displayNameInput, " Updated");
+    const firstNameInput = screen.getByTestId("first-name");
+    await user.type(firstNameInput, " Updated");
 
     const saveButton = screen.getByText("Save Settings");
     await user.click(saveButton);
@@ -264,8 +265,8 @@ describe("Settings", () => {
     const user = userEvent.setup();
     render(<Settings />);
 
-    const displayNameInput = screen.getByTestId("display-name");
-    await user.type(displayNameInput, " Updated");
+    const firstNameInput = screen.getByTestId("first-name");
+    await user.type(firstNameInput, " Updated");
 
     const saveButton = screen.getByText("Save Settings");
     await user.click(saveButton);
@@ -290,8 +291,8 @@ describe("Settings", () => {
 
     render(<Settings />);
 
-    const displayNameInput = screen.getByTestId("display-name");
-    await user.type(displayNameInput, " Updated");
+    const firstNameInput = screen.getByTestId("first-name");
+    await user.type(firstNameInput, " Updated");
 
     const saveButton = screen.getByText("Save Settings");
     await user.click(saveButton);
@@ -313,8 +314,8 @@ describe("Settings", () => {
 
     expect(mockNavigationGuard).toHaveBeenCalledWith(false);
 
-    const displayNameInput = screen.getByTestId("display-name");
-    await user.type(displayNameInput, " Updated");
+    const firstNameInput = screen.getByTestId("first-name");
+    await user.type(firstNameInput, " Updated");
 
     expect(mockNavigationGuard).toHaveBeenCalledWith(true);
   });
@@ -323,8 +324,8 @@ describe("Settings", () => {
     const user = userEvent.setup();
 
     // Set goal weight to 0
-    mockSettingsData.goalWeight = 0;
-    mockSettingsData.plannedPoundsPerWeek = 0;
+    mockProfileData.goalWeight = 0;
+    mockProfileData.plannedPoundsPerWeek = 0;
 
     render(<Settings />);
 
@@ -344,7 +345,7 @@ describe("Settings", () => {
     });
 
     // Reset for other tests
-    mockSettingsData.goalWeight = 180;
-    mockSettingsData.plannedPoundsPerWeek = 1.0;
+    mockProfileData.goalWeight = 180;
+    mockProfileData.plannedPoundsPerWeek = 1.0;
   });
 });

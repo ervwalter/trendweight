@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { server } from "../../test/mocks/server";
 import React from "react";
-import { useProfile, useSettings, useDashboardQueries, useProviderLinks, useSharingSettings, queryKeys, queryOptions } from "./queries";
+import { useProfile, useDashboardQueries, useProviderLinks, useSharingSettings, queryKeys, queryOptions } from "./queries";
 import type { ProfileResponse, MeasurementsResponse, ProviderLink } from "./types";
 import type { SharingData } from "../core/interfaces";
 
@@ -46,8 +46,6 @@ function createWrapper() {
 // Mock responses
 const mockProfileResponse: ProfileResponse = {
   user: {
-    uid: "test-user-id",
-    email: "test@example.com",
     firstName: "Test",
     goalStart: "2024-01-01",
     goalWeight: 70,
@@ -204,29 +202,6 @@ describe("queries", () => {
       // For now, we'll just verify the hook was called
       // In a real app, the error boundary would handle this
       expect(true).toBe(true);
-    });
-  });
-
-  describe("useSettings", () => {
-    it("should fetch and return full settings data", async () => {
-      server.use(
-        http.get("/api/profile", () => {
-          return HttpResponse.json(mockProfileResponse);
-        }),
-      );
-
-      const { result } = renderHook(() => useSettings(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      const settingsData = result.current.data;
-      expect(settingsData).toEqual(mockProfileResponse.user);
-      expect(settingsData?.email).toBe("test@example.com");
-      expect(settingsData?.uid).toBe("test-user-id");
     });
   });
 

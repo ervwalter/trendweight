@@ -52,8 +52,6 @@ describe("mutations", () => {
 
       const mockResponse: ProfileResponse = {
         user: {
-          uid: "test-user-id",
-          email: "test@example.com",
           firstName: "Updated Name",
           goalStart: "2024-01-01",
           goalWeight: 75,

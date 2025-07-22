@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm } from "react-hook-form";
 import { GoalSection } from "./GoalSection";
-import type { SettingsData } from "../../lib/core/interfaces";
+import type { ProfileData } from "../../lib/core/interfaces";
 
 // Mock Select component
 vi.mock("../ui/Select", () => ({
@@ -28,8 +28,8 @@ vi.mock("../ui/Select", () => ({
 }));
 
 // Test wrapper component
-function TestWrapper({ errors = {}, defaultValues = {} }: { errors?: any; defaultValues?: Partial<SettingsData> }) {
-  const { register, control, watch } = useForm<SettingsData>({
+function TestWrapper({ errors = {}, defaultValues = {} }: { errors?: any; defaultValues?: Partial<ProfileData> }) {
+  const { register, control, watch } = useForm<ProfileData>({
     defaultValues,
   });
 

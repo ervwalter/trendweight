@@ -1,12 +1,12 @@
 import { useState } from "react";
 import type { UseFormWatch } from "react-hook-form";
-import type { SettingsData } from "../../lib/core/interfaces";
+import type { ProfileData } from "../../lib/core/interfaces";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Heading } from "../ui/Heading";
 import { Button } from "../ui/Button";
 
 interface AccountManagementSectionProps {
-  watch: UseFormWatch<SettingsData>;
+  watch: UseFormWatch<ProfileData>;
 }
 
 export function AccountManagementSection({ watch }: AccountManagementSectionProps) {

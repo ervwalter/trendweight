@@ -48,8 +48,7 @@ public class ProfileControllerTests : TestBase
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<ProfileResponse>().Subject;
 
-        response.User.Uid.Should().Be(userId.ToString());
-        response.User.Email.Should().Be("test@example.com");
+        response.User.FirstName.Should().Be("Test User");
         response.IsMe.Should().Be(true);
     }
 
@@ -87,7 +86,7 @@ public class ProfileControllerTests : TestBase
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<ProfileResponse>().Subject;
 
-        response.User.Uid.Should().Be(userId.ToString());
+        response.User.FirstName.Should().Be("Test User");
         response.IsMe.Should().Be(true);
     }
 

@@ -5,7 +5,7 @@ import { BasicProfileSettings } from "../settings/BasicProfileSettings";
 import { useUpdateProfile } from "../../lib/api/mutations";
 import { shouldUseMetric, extractFirstName } from "../../lib/utils/locale";
 import { useAuth } from "../../lib/auth/useAuth";
-import type { SettingsData } from "../../lib/core/interfaces";
+import type { ProfileData } from "../../lib/core/interfaces";
 import { Heading } from "../ui/Heading";
 import { Button } from "../ui/Button";
 
@@ -20,7 +20,7 @@ export function InitialSetup() {
     control,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<SettingsData>({
+  } = useForm<ProfileData>({
     defaultValues: {
       firstName: "",
       useMetric: shouldUseMetric(),
@@ -39,7 +39,7 @@ export function InitialSetup() {
     }
   }, [session, setValue]);
 
-  const onSubmit = async (data: SettingsData) => {
+  const onSubmit = async (data: ProfileData) => {
     try {
       await updateProfile.mutateAsync(data);
       // Redirect to dashboard after successful profile creation

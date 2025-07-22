@@ -3,11 +3,11 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm } from "react-hook-form";
 import { BasicProfileSettings } from "./BasicProfileSettings";
-import type { SettingsData } from "../../lib/core/interfaces";
+import type { ProfileData } from "../../lib/core/interfaces";
 
 // Test wrapper component
-function TestWrapper({ errors = {}, defaultValues = {} }: { errors?: any; defaultValues?: Partial<SettingsData> }) {
-  const { register, control } = useForm<SettingsData>({
+function TestWrapper({ errors = {}, defaultValues = {} }: { errors?: any; defaultValues?: Partial<ProfileData> }) {
+  const { register, control } = useForm<ProfileData>({
     defaultValues,
   });
 

@@ -35,11 +35,6 @@ export interface ProfileData {
   showCalories?: boolean;
   sharingToken?: string;
   sharingEnabled?: boolean;
-}
-
-export interface SettingsData extends ProfileData {
-  uid: string;
-  email: string;
   isMigrated?: boolean;
   isNewlyMigrated?: boolean;
 }

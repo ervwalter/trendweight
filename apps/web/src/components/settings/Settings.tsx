@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useUpdateProfile } from "../../lib/api/mutations";
-import { useSettings } from "../../lib/api/queries";
-import type { SettingsData } from "../../lib/core/interfaces";
+import { useProfile } from "../../lib/api/queries";
+import type { ProfileData } from "../../lib/core/interfaces";
 import { useNavigationGuard } from "../../lib/hooks/useNavigationGuard";
 import { Button } from "../ui/Button";
 import { AdvancedSection } from "./AdvancedSection";
@@ -15,7 +15,7 @@ import { SettingsLayout } from "./SettingsLayout";
 import { SharingSection } from "./SharingSection";
 
 export function Settings() {
-  const { data: settingsData } = useSettings();
+  const { data: profileData } = useProfile();
   const updateProfile = useUpdateProfile();
 
   const {
@@ -26,14 +26,14 @@ export function Settings() {
     reset,
     control,
     formState: { errors, isDirty, isSubmitting },
-  } = useForm<SettingsData>();
+  } = useForm<ProfileData>();
 
-  // Update form when settings data loads
+  // Update form when profile data loads
   useEffect(() => {
-    if (settingsData) {
-      reset(settingsData);
+    if (profileData) {
+      reset(profileData);
     }
-  }, [settingsData, reset]);
+  }, [profileData, reset]);
 
   // Watch for unit changes and convert values
   useEffect(() => {
@@ -74,7 +74,7 @@ export function Settings() {
   // Warn user about unsaved changes when navigating away
   useNavigationGuard(isDirty);
 
-  const onSubmit = async (data: SettingsData) => {
+  const onSubmit = async (data: ProfileData) => {
     try {
       // Transform empty strings to undefined for optional fields
       // and handle NaN for number fields
