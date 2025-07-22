@@ -9,7 +9,6 @@
     "format": "dotnet format",
     "format:check": "dotnet format --verify-no-changes",
     "lint": "dotnet build --warnaserror",
-    "check": "npm run format:check && npm run lint",
     "clean": "find . -name 'bin' -type d -prune -exec rm -rf '{}' + && find . -name 'obj' -type d -prune -exec rm -rf '{}' +"
   }
 }

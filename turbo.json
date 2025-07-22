@@ -1,0 +1,82 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "**/bin/**", "**/obj/**", ".next/**", "*.tsbuildinfo", "src/routeTree.gen.ts"],
+      "env": [
+        "VITE_*",
+        "BUILD_*"
+      ]
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**", "**/coverage.cobertura.xml"],
+      "cache": false
+    },
+    "lint": {
+      "dependsOn": ["typecheck"],
+      "inputs": [
+        "**/*.js",
+        "**/*.jsx", 
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.cs",
+        "**/package.json",
+        "**/tsconfig.json",
+        "**/.eslintrc*",
+        "**/eslint.config.*",
+        "**/.prettierrc*",
+        "**/prettier.config.*",
+        "**/.editorconfig",
+        "**/*.csproj",
+        "**/*.sln"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": ["generate-routes"],
+      "inputs": [
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.d.ts",
+        "**/tsconfig.json",
+        "**/tsconfig.*.json",
+        "**/*.cs",
+        "**/*.csproj",
+        "**/*.sln",
+        "**/global.json"
+      ]
+    },
+    "generate-routes": {
+      "inputs": [
+        "src/routes/**/*.tsx"
+      ],
+      "outputs": ["src/routeTree.gen.ts"]
+    },
+    "format": {
+      "outputs": [],
+      "cache": false
+    },
+    "format:check": {
+      "inputs": [
+        "**/*.js",
+        "**/*.jsx",
+        "**/*.ts", 
+        "**/*.tsx",
+        "**/*.json",
+        "**/*.css",
+        "**/*.md",
+        "**/*.cs",
+        ".prettierrc*",
+        "prettier.config.*"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

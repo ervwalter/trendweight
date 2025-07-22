@@ -1,6 +1,7 @@
 {
   "name": "trendweight-monorepo",
   "private": true,
+  "packageManager": "npm@11.4.2",
   "workspaces": [
     "apps/api",
     "apps/web"
@@ -8,17 +9,15 @@
   "scripts": {
     "dev": "tmuxinator start",
     "dev:stop": "tmuxinator stop trendweight",
-    "dev:api": "npm run -w apps/api dev",
-    "dev:web": "npm run -w apps/web dev",
-    "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
-    "format": "npm run format --workspaces --if-present",
-    "format:check": "npm run format:check --workspaces --if-present",
-    "check": "npm run check --workspaces --if-present",
-    "clean": "npm run clean:deps && npm run clean:build",
-    "clean:deps": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
-    "clean:build": "find . \\( -name 'bin' -o -name 'obj' -o -name 'dist' \\) -type d -prune -exec rm -rf '{}' +",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "check": "turbo run typecheck lint",
+    "check:ci": "turbo run format:check typecheck lint",
+    "format": "turbo run format",
+    "fix": "turbo run format && turbo run typecheck lint",
+    "clean": "turbo run clean && npm run clean:root",
+    "clean:root": "rm -rf .turbo node_modules",
+    "clean:all": "npm run clean && find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
     "docker:build": "./scripts/docker-build.sh",
     "docker:run": "docker run --rm -p 8080:8080 --env-file .env trendweight:local",
     "install:all": "npm install --workspaces --include-workspace-root",
@@ -28,7 +27,8 @@
   },
   "devDependencies": {
     "husky": "9.1.7",
-    "lint-staged": "16.1.2"
+    "lint-staged": "16.1.2",
+    "turbo": "2.5.5"
   },
   "lint-staged": {
     "apps/web/**/*.{js,jsx,ts,tsx,json,css,md}": "prettier --write",

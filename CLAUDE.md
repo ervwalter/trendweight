@@ -23,12 +23,16 @@ If `trendweight-classic/` folder exists locally, it contains the legacy C# MVC a
 ```bash
 npm run dev       # Start both API and frontend in dev mode (uses tmuxinator)
 npm run dev:stop  # Stop the tmuxinator session
-npm run build     # Build both API and frontend
-npm run test      # Run all tests (currently just API)
-npm run check     # Run TypeScript and lint checks on frontend
+npm run build     # Build both API and frontend (with Turbo caching)
+npm run test      # Run all tests (with Turbo caching)
+npm run check     # Fast dev check - typecheck and lint only (NO format check)
+npm run check:ci  # Full CI check - includes format check
 npm run format    # Auto-format code in both API and frontend
-npm run clean     # Clean all build artifacts and dependencies
+npm run fix       # Format then check in one command
+npm run clean     # Clean all build artifacts, dependencies, and Turbo cache
 ```
+
+**Note**: We use Turborepo for intelligent caching. The second run of any command is near-instant if nothing changed.
 
 ### Development
 
@@ -238,9 +242,11 @@ Keep this file focused on AI code generation guidance only.
 ## Development Workflow
 
 ### Always Run Comprehensive Checks
-- When checking for code issues, always run 'npm run format && npm run check' from the top level folder of the repo
-- Do not attempt to be tactical and run subtasks in lower level folders
-- **When you need to check if the repo is in a clean state before doing a commit, do 'npm run format && npm run check && npm run test' as a single Bash command from the top of the repo**
+- When checking for code issues during development, run 'npm run check' from the top level folder of the repo (fast, skips format check)
+- For pre-commit or CI validation, run 'npm run check:ci' (includes format check)
+- Do not attempt to be tactical and run subtasks in lower level folders - Turborepo handles optimization
+- **When you need to check if the repo is in a clean state before doing a commit, do 'npm run format && npm run check:ci && npm run test' as a single Bash command from the top of the repo**
+- **Tip**: Run 'npm run fix' to format and check in one command during development
 
 ## Testing Guidelines
 

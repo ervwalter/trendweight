@@ -14,8 +14,8 @@ env:
   DO_IMAGE_NAME: ${{ secrets.DIGITALOCEAN_REGISTRY_NAME }}/trendweight
 
 jobs:
-  frontend-checks:
-    name: Frontend Checks
+  checks:
+    name: Build and Test
     runs-on: ubuntu-latest
     
     steps:
@@ -27,56 +27,45 @@ jobs:
         node-version: '22'
         cache: 'npm'
     
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: TypeScript check
-      working-directory: apps/web
-      run: npm run typecheck
-    
-    - name: Lint
-      working-directory: apps/web
-      run: npm run lint
-    
-    - name: Test
-      working-directory: apps/web
-      run: npm test -- --run
-    
-    - name: Test Coverage
-      working-directory: apps/web
-      run: npm run test:coverage
-    
-    - name: Upload coverage reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: frontend-coverage
-        path: apps/web/coverage/
-
-  backend-checks:
-    name: Backend Checks
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
     
-    - name: Restore dependencies
-      working-directory: apps/api
-      run: dotnet restore
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Setup Turbo Remote Cache
+      if: github.event_name != 'pull_request'
+      env:
+        TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+        TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      run: |
+        if [ -n "$TURBO_TOKEN" ] && [ -n "$TURBO_TEAM" ]; then
+          echo "TURBO_TOKEN=$TURBO_TOKEN" >> $GITHUB_ENV
+          echo "TURBO_TEAM=$TURBO_TEAM" >> $GITHUB_ENV
+        fi
+    
+    - name: Check formatting
+      run: npm run check:ci
     
     - name: Build
-      working-directory: apps/api
-      run: dotnet build --no-restore -c Release
+      run: npm run build
     
     - name: Test
-      working-directory: apps/api
-      run: dotnet test --no-build -c Release --verbosity normal --collect:"XPlat Code Coverage"
+      run: npm test
     
-    - name: Upload coverage reports
+    - name: Test Coverage (Frontend)
+      working-directory: apps/web
+      run: npm run test:coverage
+    
+    - name: Upload frontend coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-coverage
+        path: apps/web/coverage/
+    
+    - name: Upload backend coverage
       uses: actions/upload-artifact@v4
       with:
         name: backend-coverage
@@ -85,7 +74,7 @@ jobs:
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
-    needs: [frontend-checks, backend-checks]
+    needs: [checks]
     permissions:
       contents: read
       packages: write
