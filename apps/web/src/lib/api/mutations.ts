@@ -165,3 +165,19 @@ export function useExchangeWithingsToken() {
     },
   });
 }
+
+export function useCompleteMigration() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      apiRequest("/profile/complete-migration", {
+        method: "POST",
+      }),
+    onSuccess: async () => {
+      // Invalidate and refetch profile query to ensure the migration flag is updated
+      await queryClient.invalidateQueries({ queryKey: queryKeys.profile() });
+      await queryClient.refetchQueries({ queryKey: queryKeys.profile() });
+    },
+  });
+}

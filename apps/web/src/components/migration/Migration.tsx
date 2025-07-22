@@ -1,31 +1,19 @@
 import { Button } from "../ui/Button";
 import { Heading } from "../ui/Heading";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "../../lib/api/client";
-import { queryClient } from "../../lib/queryClient";
-import { queryKeys } from "../../lib/api/queries";
+import { useCompleteMigration } from "../../lib/api/mutations";
 import { useNavigate } from "@tanstack/react-router";
 
 export function Migration() {
   const navigate = useNavigate();
-
-  const completeMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("/profile/complete-migration", {
-        method: "POST",
-      });
-    },
-    onSuccess: async () => {
-      // Invalidate and refetch profile query to ensure the migration flag is updated
-      await queryClient.invalidateQueries({ queryKey: queryKeys.profile() });
-      await queryClient.refetchQueries({ queryKey: queryKeys.profile() });
-      // Navigate to dashboard, replacing history to prevent back navigation
-      navigate({ to: "/dashboard", replace: true });
-    },
-  });
+  const completeMutation = useCompleteMigration();
 
   const handleContinue = () => {
-    completeMutation.mutate();
+    completeMutation.mutate(undefined, {
+      onSuccess: () => {
+        // Navigate to dashboard, replacing history to prevent back navigation
+        navigate({ to: "/dashboard", replace: true });
+      },
+    });
   };
 
   return (
