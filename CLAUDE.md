@@ -81,6 +81,55 @@ See ARCHITECTURE.md for detailed UI component documentation.
 2. **Clear separation**: Keep UI components, business logic, and data access separate
 3. **Consistent naming**: Use PascalCase for components, camelCase for functions
 
+### CRITICAL: Route File Pattern (NO EXCEPTIONS)
+**This is an ABSOLUTE REQUIREMENT for ALL route files in `apps/web/src/routes/`:**
+
+Every route file MUST follow this exact minimal pattern without exception:
+
+```typescript
+import { createFileRoute } from "@tanstack/react-router";
+import { Layout } from "../components/Layout";
+import { ComponentName } from "../components/feature-folder/ComponentName";
+// Import any route-specific guards/loaders if needed
+
+export const Route = createFileRoute("/route-path")({
+  // Include loaders, guards, validateSearch ONLY if needed
+  beforeLoad: requireAuth, // Only if route needs auth
+  loader: async () => { /* route-specific data loading */ },
+  component: RouteNamePage,
+});
+
+function RouteNamePage() {
+  // Extract route params ONLY if needed
+  const { param } = Route.useParams(); // Only if route has params
+  
+  return (
+    <Layout title="Page Title" suspenseFallback={<CustomFallback />}>
+      <ComponentName param={param} />
+    </Layout>
+  );
+}
+```
+
+**MANDATORY RULES:**
+1. **Route files must be MINIMAL** - Only route definition and a single page component
+2. **NO business logic in routes** - All logic goes in feature components
+3. **NO hooks in routes** (except useParams for route params)
+4. **NO data fetching in routes** (except in the loader function)
+5. **NO UI markup beyond Layout wrapper** - All UI goes in feature components
+6. **Always use Layout component** with title prop
+7. **Extract ALL content to feature folders** under `apps/web/src/components/`
+8. **Feature folder naming** must match the route purpose (e.g., /settings → components/settings/)
+
+**Examples of VIOLATIONS (NEVER DO THIS):**
+- Using useState, useEffect, or other hooks in route files
+- Putting forms, buttons, or any UI elements directly in routes
+- Making API calls outside of the loader function
+- Having more than 30 lines in a route file
+- Creating multiple components in a route file
+
+If you see any route file that doesn't follow this pattern, it MUST be refactored immediately.
+
 ### When Generating TypeScript/React Code
 - Enable strict mode
 - Define interfaces for all data structures
@@ -106,10 +155,14 @@ See ARCHITECTURE.md for detailed UI component documentation.
 ## AI-Specific Instructions for Common Tasks
 
 ### Adding a New Route
-1. Create route file in `apps/web/src/routes/`
-2. TanStack Router will auto-generate route tree
-3. Add navigation link if needed
-4. Always use standard UI components (Button, Heading, etc.)
+**CRITICAL**: You MUST follow the minimal route pattern described above. NO EXCEPTIONS.
+
+1. Create minimal route file in `apps/web/src/routes/` following the EXACT pattern
+2. Create corresponding feature folder in `apps/web/src/components/`
+3. Extract ALL logic, UI, and hooks to the feature component
+4. TanStack Router will auto-generate route tree
+5. Add navigation link if needed
+6. Route file should NEVER exceed 30 lines
 
 ### Adding a New API Endpoint
 1. Create controller in appropriate Features folder
@@ -159,6 +212,7 @@ See ARCHITECTURE.md for detailed UI component documentation.
 7. **Performance** - Module-level caching of formatters significantly improves performance.
 8. **UriBuilder Default Ports** - When using UriBuilder for HTTPS URLs, the default port 443 is included. Remove it to avoid URLs like `https://example.com:443/path`. Tests caught this bug!
 9. **Defensive Input Handling** - Functions should handle unsorted input gracefully. The interpolation functions now sort input data before processing to ensure correct results regardless of input order.
+10. **Route File Pattern MANDATORY** - All route files were refactored to follow a minimal pattern. Route files must ONLY contain route definition and a single page component that renders Layout with a feature component. ALL business logic, hooks, and UI must be extracted to feature components. This pattern is now MANDATORY for all routes without exception.
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

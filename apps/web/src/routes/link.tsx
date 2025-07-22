@@ -1,11 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Layout } from "../components/Layout";
+import { Link } from "../components/link/Link";
 import { requireAuth } from "../lib/auth/authGuard";
-import { useEffect } from "react";
-import { pageTitle } from "../lib/utils/pageTitle";
-import { useSearch } from "@tanstack/react-router";
-import { ProviderList } from "../components/providers/ProviderList";
-import { useToast } from "../lib/hooks/useToast";
 import { ensureProfile } from "../lib/loaders/utils";
 
 export const Route = createFileRoute("/link")({
@@ -26,37 +22,9 @@ export const Route = createFileRoute("/link")({
 });
 
 function LinkPage() {
-  const search = useSearch({ from: "/link" });
-  const providerParam = search.provider;
-  const success = search.success;
-  const error = search.error;
-  const { showToast } = useToast();
-
-  // Show success or error messages based on query params
-  useEffect(() => {
-    if (success && providerParam) {
-      showToast({
-        title: "Connection Successful",
-        description: `Successfully connected ${providerParam === "fitbit" ? "Fitbit" : "Withings"} account!`,
-        variant: "success",
-      });
-    } else if (error && providerParam) {
-      showToast({
-        title: "Connection Failed",
-        description: `Failed to connect ${providerParam === "fitbit" ? "Fitbit" : "Withings"} account. Please try again.`,
-        variant: "error",
-      });
-    }
-  }, [success, error, providerParam, showToast]);
-
   return (
-    <>
-      <title>{pageTitle("Connect Your Scale")}</title>
-      <Layout>
-        <div>
-          <ProviderList variant="link" showHeader={true} />
-        </div>
-      </Layout>
-    </>
+    <Layout title="Connect Your Scale">
+      <Link />
+    </Layout>
   );
 }

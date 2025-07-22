@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Suspense } from "react";
 import Dashboard from "../components/dashboard/Dashboard";
 import DashboardPlaceholder from "../components/dashboard/DashboardPlaceholder";
 import { Layout } from "../components/Layout";
@@ -26,10 +25,8 @@ export const Route = createFileRoute("/u/$sharingCode")({
 function SharedDashboard() {
   const { sharingCode } = Route.useParams();
   return (
-    <Layout>
-      <Suspense fallback={<DashboardPlaceholder />}>
-        <Dashboard sharingCode={sharingCode} />
-      </Suspense>
+    <Layout suspenseFallback={<DashboardPlaceholder />}>
+      <Dashboard sharingCode={sharingCode} />
     </Layout>
   );
 }

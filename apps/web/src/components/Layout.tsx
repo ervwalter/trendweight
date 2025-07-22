@@ -1,10 +1,13 @@
 import { Suspense, type ReactNode } from "react";
-import { Header } from "./Header";
-import { Footer } from "./Footer";
+import { pageTitle } from "../lib/utils/pageTitle";
 import { Container } from "./Container";
+import { Footer } from "./Footer";
+import { Header } from "./Header";
 
 interface LayoutProps {
   children: ReactNode;
+  title?: string;
+  suspenseFallback?: ReactNode;
 }
 
 function LoadingFallback() {
@@ -15,14 +18,17 @@ function LoadingFallback() {
   );
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, title, suspenseFallback }: LayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <Container as="main" className="flex-grow py-4 md:py-6">
-        <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
-      </Container>
-      <Footer />
-    </div>
+    <>
+      <title>{pageTitle(title)}</title>
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <Container as="main" className="flex-grow py-4 md:py-6">
+          <Suspense fallback={suspenseFallback || <LoadingFallback />}>{children}</Suspense>
+        </Container>
+        <Footer />
+      </div>
+    </>
   );
 }
