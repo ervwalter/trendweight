@@ -90,11 +90,34 @@ In prerelease mode, ALL commits increment only the prerelease number:
 
 ### Returning to Stable Releases
 
+**Important**: Release Please cannot automatically remove prerelease suffixes. You must manually intervene.
+
 To return to stable versioning:
-1. Remove or set `prerelease: false`
-2. Remove `prerelease-type` and `versioning` fields
-3. Set `bump-patch-for-minor-pre-major: false` if you want standard semver behavior
-4. The next Release Please PR will propose the stable version (e.g., 3.0.0)
+
+1. **Update the configuration** in `release-please-config.json`:
+   - Remove or set `prerelease: false`
+   - Remove `prerelease-type` and `versioning` fields
+   - Set `bump-patch-for-minor-pre-major: false` if you want standard semver behavior
+
+2. **Manually update the version files** to remove the prerelease suffix:
+   - Edit `.release-please-manifest.json`: Change `"3.0.0-alpha.X"` to `"3.0.0"`
+   - Edit `VERSION`: Change `3.0.0-alpha.X` to `3.0.0`
+
+3. **Commit the transition** (this will NOT create a Release Please PR):
+   ```bash
+   git add release-please-config.json .release-please-manifest.json VERSION
+   git commit -m "chore: release 3.0.0"
+   git push
+   ```
+
+4. **Close any existing Release Please PR** that still has the alpha suffix
+
+5. **Manually create the GitHub release**:
+   - Go to GitHub → Releases → "Create a new release"
+   - Create tag `v3.0.0` when publishing
+   - Add release notes summarizing changes from all prerelease versions
+
+After these steps, Release Please will handle future releases (3.0.1, 3.1.0, etc.) automatically in stable mode.
 
 ## Commit Message Guidelines
 
