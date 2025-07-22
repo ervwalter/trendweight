@@ -12,7 +12,7 @@ TrendWeight is a web application for tracking weight trends by integrating with 
 
 ## Architecture Overview
 
-For detailed architecture documentation, see ARCHITECTURE.md. This file focuses on AI-specific instructions and code generation patterns.
+For detailed architecture documentation, see docs/ARCHITECTURE.md. This file focuses on AI-specific instructions and code generation patterns.
 
 ### Reference Implementation
 If `trendweight-classic/` folder exists locally, it contains the legacy C# MVC application for reference when implementing features or comparing with the live site. This folder is not part of the repository.
@@ -72,7 +72,7 @@ To view logs:
 - Use `Select` component instead of raw `<select>` tags
 - Use `Link` from TanStack Router for internal navigation
 
-See ARCHITECTURE.md for detailed UI component documentation.
+See docs/ARCHITECTURE.md for detailed UI component documentation.
 
 ## AI Code Generation Guidelines
 
@@ -229,9 +229,9 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 - Lessons learned that would help future AI instances
 
 Do NOT add:
-- General architectural information (belongs in ARCHITECTURE.md)
-- Feature documentation (belongs in ARCHITECTURE.md)
-- Setup instructions (belongs in README.md)
+- General architectural information (belongs in docs/ARCHITECTURE.md)
+- Feature documentation (belongs in docs/ARCHITECTURE.md)
+- Setup instructions (belongs in docs/README.md)
 
 Keep this file focused on AI code generation guidance only.
 
