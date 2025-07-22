@@ -14,7 +14,7 @@ TrendWeight uses [Release Please](https://github.com/googleapis/release-please) 
 
 ### Release Strategy
 - **Single release** for the entire monorepo (both web and API are released together)
-- **Alpha prerelease** mode during development (2.0.0-alpha.X)
+- **Stable release** mode using semantic versioning
 - **Conventional commits** drive the changelog generation
 
 ### Configuration Files
@@ -26,12 +26,12 @@ TrendWeight uses [Release Please](https://github.com/googleapis/release-please) 
 3. **`.release-please-manifest.json`** - Current version tracking
 4. **`VERSION`** - Simple version file for Docker builds and scripts
 
-### Version Progression During Alpha
+### Version Progression
 
-While in alpha mode, ALL commits increment only the prerelease number:
-- `feat:` → 2.0.0-alpha.1 → 2.0.0-alpha.2
-- `fix:` → 2.0.0-alpha.2 → 2.0.0-alpha.3
-- `feat!:` → 2.0.0-alpha.3 → 2.0.0-alpha.4 (no major bump)
+Versions follow standard semantic versioning patterns:
+- `fix:` commits → patch bumps (2.0.0 → 2.0.1)
+- `feat:` commits → minor bumps (2.0.1 → 2.1.0)
+- Breaking changes → minor bumps (due to `bump-minor-pre-major: true`)
 
 ## Initial Setup (REQUIRED)
 
@@ -51,7 +51,7 @@ This is required because tags created with the default GITHUB_TOKEN don't trigge
    fix: resolve login redirect issue
    ```
 
-2. **Release Please creates/updates a PR** titled "chore(main): release 2.0.0-alpha.2"
+2. **Release Please creates/updates a PR** titled "chore(main): release X.Y.Z"
    - Updates `CHANGELOG.md` with categorized changes
    - Bumps version in `VERSION` file
    - Updates `apps/web/package.json` version
@@ -59,37 +59,42 @@ This is required because tags created with the default GITHUB_TOKEN don't trigge
 3. **The PR stays open** and updates automatically as you push more commits
 
 4. **When you merge the PR**:
-   - Creates git tag `v2.0.0-alpha.2`
+   - Creates git tag `vX.Y.Z`
    - Creates GitHub release with changelog
    - Commits the updated files to main
    - Triggers CI workflow to build Docker images with `latest-release` tag
 
-## Transitioning from Alpha to Stable
+## Using Prerelease Mode
 
-When feature complete and ready to release 2.0.0:
+The project can be switched to prerelease mode when needed (e.g., for major version development, beta testing, or unstable features).
 
-### Step 1: Update Configuration
+### Enabling Prerelease Mode
 
-Edit `release-please-config.json`:
+To switch to prerelease versioning, update `release-please-config.json`:
 ```json
 {
-  "prerelease": false,  // Change from true
-  // Remove: "prerelease-type": "alpha",
-  "bump-patch-for-minor-pre-major": false,  // Change from true
+  "prerelease": true,
+  "prerelease-type": "alpha",  // or "beta", "rc", etc.
+  "versioning": "prerelease",
+  "bump-patch-for-minor-pre-major": true,
   // ... rest of config
 }
 ```
 
-### Step 2: Merge the Transition
+### Prerelease Version Progression
 
-The next Release Please PR will propose version `2.0.0` (without alpha). Merge it to release.
+In prerelease mode, ALL commits increment only the prerelease number:
+- `feat:` → 3.0.0-alpha.1 → 3.0.0-alpha.2
+- `fix:` → 3.0.0-alpha.2 → 3.0.0-alpha.3
+- `feat!:` → 3.0.0-alpha.3 → 3.0.0-alpha.4 (no major bump)
 
-### Step 3: Normal Versioning
+### Returning to Stable Releases
 
-After 2.0.0, versions will follow standard patterns:
-- `fix:` commits → patch bumps (2.0.0 → 2.0.1)
-- `feat:` commits → minor bumps (2.0.1 → 2.1.0)
-- Breaking changes → minor bumps (due to `bump-minor-pre-major: true`)
+To return to stable versioning:
+1. Remove or set `prerelease: false`
+2. Remove `prerelease-type` and `versioning` fields
+3. Set `bump-patch-for-minor-pre-major: false` if you want standard semver behavior
+4. The next Release Please PR will propose the stable version (e.g., 3.0.0)
 
 ## Commit Message Guidelines
 
@@ -131,8 +136,8 @@ LABEL version=$VERSION
 See the "Initial Setup" section above - you need a PAT with `repo` scope.
 
 ### Version not bumping correctly?
-- During alpha: This is expected, only prerelease number increments
-- After stable: Check `bump-patch-for-minor-pre-major` setting
+- In prerelease mode: This is expected, only prerelease number increments
+- In stable mode: Check `bump-patch-for-minor-pre-major` setting
 
 ### Need to skip a release?
 Add `[skip-release]` to your commit message:
