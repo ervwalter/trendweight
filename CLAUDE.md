@@ -43,18 +43,20 @@ npm run dev       # Start development server on http://localhost:5173
 npm run build     # Build for production
 npm run preview   # Preview production build
 npm run lint      # Run ESLint
-npm run check     # Run typecheck and lint
+npm run typecheck # Run TypeScript type checking
+npm run test      # Run tests
+npm run clean     # Clean build artifacts and generated files
 ```
 
 #### Backend (apps/api)
 ```bash
 cd apps/api
-dotnet build      # Build entire solution
-dotnet test       # Run all tests (when tests are added)
-
-cd apps/api/TrendWeight
-dotnet run        # Start API on http://localhost:5199
-dotnet watch      # Run with hot reload
+npm run dev       # Start API with hot reload (runs dotnet watch)
+npm run build     # Build entire solution (dotnet build)
+npm run test      # Run all tests (dotnet test)
+npm run lint      # Build with warnings as errors (dotnet build --warnaserror)
+npm run format    # Format code (dotnet format)
+npm run clean     # Clean build artifacts (bin/ and obj/ folders)
 ```
 
 ### Development Server Management
@@ -247,6 +249,19 @@ Keep this file focused on AI code generation guidance only.
 - Do not attempt to be tactical and run subtasks in lower level folders - Turborepo handles optimization
 - **When you need to check if the repo is in a clean state before doing a commit, do 'npm run format && npm run check:ci && npm run test' as a single Bash command from the top of the repo**
 - **Tip**: Run 'npm run fix' to format and check in one command during development
+
+### CRITICAL: TypeScript Error Prevention
+**You MUST run 'npm run check' after EVERY code change, not just tests!** Running only tests will miss:
+- TypeScript compilation errors
+- Type mismatches
+- Missing imports
+- ESLint violations
+
+**Workflow for code changes:**
+1. Make your changes
+2. Run `npm run check` to catch TypeScript/lint errors
+3. Run `npm test` to verify functionality
+4. Never assume tests passing means the code is correct - TypeScript might still have errors!
 
 ## Testing Guidelines
 
