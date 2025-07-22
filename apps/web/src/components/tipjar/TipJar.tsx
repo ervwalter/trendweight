@@ -1,3 +1,4 @@
+import { ExternalLink } from "../ui/ExternalLink";
 import { Heading } from "../ui/Heading";
 
 export function TipJar() {
@@ -24,25 +25,13 @@ export function TipJar() {
 
         <ul>
           <li>
-            Hosting via{" "}
-            <a href="https://www.digitalocean.com" className="text-brand-600 hover:text-brand-700">
-              Digital Ocean
-            </a>
-            : <strong>$25</strong>/month
+            Hosting via <ExternalLink href="https://www.digitalocean.com">Digital Ocean</ExternalLink>: <strong>$25</strong>/month
           </li>
           <li>
-            Database and authentication via{" "}
-            <a href="https://supabase.com" className="text-brand-600 hover:text-brand-700">
-              Supabase
-            </a>
-            : <strong>$25</strong>/month
+            Database and authentication via <ExternalLink href="https://supabase.com">Supabase</ExternalLink>: <strong>$25</strong>/month
           </li>
           <li>
-            Analytics via{" "}
-            <a href="https://plausible.io" className="text-brand-600 hover:text-brand-700">
-              Plausible
-            </a>
-            : <strong>~$10</strong>/month
+            Analytics via <ExternalLink href="https://plausible.io">Plausible</ExternalLink>: <strong>~$10</strong>/month
           </li>
         </ul>
 
@@ -88,7 +77,7 @@ export function TipJar() {
           src="https://github.com/sponsors/ervwalter/button"
           title="Sponsor ervwalter"
           height="32"
-          width="114"
+          width="116"
           style={{ border: 0, borderRadius: "6px" }}
         />
       </div>
@@ -102,16 +91,10 @@ export function TipJar() {
 
         <ul>
           <li>
-            Venmo:{" "}
-            <a href="https://venmo.com/code?user_id=2181966380138496050" className="text-brand-600 hover:text-brand-700">
-              ErvWalter
-            </a>
+            Venmo: <ExternalLink href="https://venmo.com/code?user_id=2181966380138496050">ErvWalter</ExternalLink>
           </li>
           <li>
-            PayPal:{" "}
-            <a href="https://paypal.me/erv" className="text-brand-600 hover:text-brand-700">
-              erv@ewal.net
-            </a>
+            PayPal: <ExternalLink href="https://paypal.me/erv">erv@ewal.net</ExternalLink>
           </li>
         </ul>
       </div>

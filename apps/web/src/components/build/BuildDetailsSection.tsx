@@ -1,3 +1,5 @@
+import { ExternalLink } from "../ui/ExternalLink";
+
 interface BuildDetailsSectionProps {
   environment: string;
   buildTime: string;
@@ -62,15 +64,7 @@ export function BuildDetailsSection({
 
         <div className="flex justify-between px-6 py-4">
           <span className="text-gray-600">Version</span>
-          <span className="font-medium">
-            {versionUrl ? (
-              <a href={versionUrl} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-700 underline">
-                {buildVersion}
-              </a>
-            ) : (
-              buildVersion
-            )}
-          </span>
+          <span className="font-medium">{versionUrl ? <ExternalLink href={versionUrl}>{buildVersion}</ExternalLink> : buildVersion}</span>
         </div>
 
         <div className="flex justify-between px-6 py-4">
@@ -81,13 +75,7 @@ export function BuildDetailsSection({
         <div className="flex justify-between px-6 py-4">
           <span className="text-gray-600">Commit</span>
           <span className="font-mono text-sm font-medium">
-            {commitUrl ? (
-              <a href={commitUrl} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-700 underline">
-                {buildCommit.substring(0, 7)}
-              </a>
-            ) : (
-              buildCommit
-            )}
+            {commitUrl ? <ExternalLink href={commitUrl}>{buildCommit.substring(0, 7)}</ExternalLink> : buildCommit}
           </span>
         </div>
 
@@ -95,9 +83,7 @@ export function BuildDetailsSection({
           <div className="flex justify-between px-6 py-4">
             <span className="text-gray-600">Repository</span>
             <span className="font-medium">
-              <a href={githubRepo} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-700 underline">
-                {buildRepo}
-              </a>
+              <ExternalLink href={githubRepo}>{buildRepo}</ExternalLink>
             </span>
           </div>
         )}

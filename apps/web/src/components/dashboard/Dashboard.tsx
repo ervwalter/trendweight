@@ -14,6 +14,7 @@ import { NoDataCard } from "./NoDataCard";
 import ProviderSyncErrors from "./ProviderSyncErrors";
 import RecentReadings from "./RecentReadings";
 import Stats from "./Stats";
+import { NewVersionNotice } from "../notices/NewVersionNotice";
 
 interface DashboardProps {
   sharingCode?: string;
@@ -51,6 +52,7 @@ const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
     <DashboardProvider data={dashboardData}>
       <div className="flex flex-col gap-4">
         <ProviderSyncErrors providerStatus={dashboardData.providerStatus} />
+        {dashboardData.isMe && dashboardData.profile.isMigrated && <NewVersionNotice />}
         <Buttons />
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-12">
           <div className="w-full md:w-[475px] lg:w-[650px] xl:w-[840px]">

@@ -141,6 +141,7 @@ If you see any route file that doesn't follow this pattern, it MUST be refactore
 - Use Suspense for async operations
 - Cache Intl formatters at module level for performance
 - Use TanStack Query for all API calls
+- Use `ExternalLink` component for all external URLs (includes icon and proper attributes)
 
 ### When Generating C# Code
 - Use feature folders for organization

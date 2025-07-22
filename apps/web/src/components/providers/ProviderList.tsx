@@ -7,6 +7,7 @@ import { useToast } from "../../lib/hooks/useToast";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Heading } from "../ui/Heading";
 import { Button } from "../ui/Button";
+import { ExternalLink } from "../ui/ExternalLink";
 
 // Simple date formatter for connection dates
 const connectionDateFormatter = new Intl.DateTimeFormat([], {
@@ -187,9 +188,9 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                 <div className="flex-1">
                   <p className="mb-3 text-sm text-gray-600 @sm:text-base">{provider.description}</p>
                   <p className="mb-3 text-sm text-gray-600 @sm:text-base">
-                    <a href={provider.linkUrl} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-700 font-medium">
+                    <ExternalLink href={provider.linkUrl} className="font-medium">
                       {provider.linkText}
-                    </a>
+                    </ExternalLink>
                   </p>
                   <p className="mb-4 text-xs text-gray-500 italic @sm:text-sm">{provider.note}</p>
                   {isConnected ? (

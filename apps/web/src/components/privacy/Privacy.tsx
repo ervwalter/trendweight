@@ -1,4 +1,5 @@
 import { Heading } from "../ui/Heading";
+import { ExternalLink } from "../ui/ExternalLink";
 
 export function Privacy() {
   return (
@@ -56,16 +57,9 @@ export function Privacy() {
         Analytics
       </Heading>
       <p>
-        We use{" "}
-        <a href="https://plausible.io/" className="text-brand-600 hover:text-brand-700 underline">
-          Plausible
-        </a>{" "}
-        for privacy-friendly analytics. Plausible doesn't use cookies, doesn't track you across websites, and doesn't collect any personal information. It just
-        helps us understand overall usage patterns. See their{" "}
-        <a href="https://plausible.io/data-policy" className="text-brand-600 hover:text-brand-700 underline">
-          privacy policy
-        </a>
-        .
+        We use <ExternalLink href="https://plausible.io/">Plausible</ExternalLink> for privacy-friendly analytics. Plausible doesn't use cookies, doesn't track
+        you across websites, and doesn't collect any personal information. It just helps us understand overall usage patterns. See their{" "}
+        <ExternalLink href="https://plausible.io/data-policy">privacy policy</ExternalLink>.
       </p>
 
       <Heading level={2} className="mt-6 mb-3">
@@ -74,21 +68,15 @@ export function Privacy() {
       <p>These services help TrendWeight work. They only receive the minimum information needed:</p>
       <ul className="mt-2 list-disc px-4">
         <li>
-          <a href="https://www.cloudflare.com/" className="text-brand-600 hover:text-brand-700 underline">
-            CloudFlare
-          </a>
+          <ExternalLink href="https://www.cloudflare.com/">CloudFlare</ExternalLink>
           {" - "}Delivers the website quickly and securely to your browser
         </li>
         <li>
-          <a href="https://www.digitalocean.com/" className="text-brand-600 hover:text-brand-700 underline">
-            Digital Ocean
-          </a>
+          <ExternalLink href="https://www.digitalocean.com/">Digital Ocean</ExternalLink>
           {" - "}Hosts the servers that run our application
         </li>
         <li>
-          <a href="https://supabase.com/" className="text-brand-600 hover:text-brand-700 underline">
-            Supabase
-          </a>
+          <ExternalLink href="https://supabase.com/">Supabase</ExternalLink>
           {" - "}Handles sign-in (email/Google/Microsoft/Apple) and stores your data securely
         </li>
       </ul>
@@ -96,15 +84,11 @@ export function Privacy() {
       <p className="mt-4 font-semibold">Connected Device Providers (if you use them):</p>
       <ul className="mt-2 list-disc px-4">
         <li>
-          <a href="https://withings.com/" className="text-brand-600 hover:text-brand-700 underline">
-            Withings
-          </a>
+          <ExternalLink href="https://withings.com/">Withings</ExternalLink>
           {" - "}We retrieve your weight data when you connect your account
         </li>
         <li>
-          <a href="https://www.fitbit.com/" className="text-brand-600 hover:text-brand-700 underline">
-            Fitbit
-          </a>
+          <ExternalLink href="https://www.fitbit.com/">Fitbit</ExternalLink>
           {" - "}We retrieve your weight data when you connect your account
         </li>
       </ul>

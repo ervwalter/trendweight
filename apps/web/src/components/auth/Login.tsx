@@ -11,6 +11,7 @@ import { AuthDivider } from "./AuthDivider";
 import { AuthError } from "./AuthError";
 import { PrivacyPolicyLink } from "./PrivacyPolicyLink";
 import { useAppleSignIn } from "../../lib/auth/useAppleSignIn";
+import { NewVersionNotice } from "../notices/NewVersionNotice";
 
 export function Login() {
   const navigate = useNavigate();
@@ -96,6 +97,7 @@ export function Login() {
 
   return (
     <div className="mx-auto max-w-md py-12">
+      <NewVersionNotice />
       <Heading level={1} className="text-center" display>
         Welcome
       </Heading>

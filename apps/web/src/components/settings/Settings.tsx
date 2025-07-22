@@ -13,6 +13,7 @@ import { GoalSection } from "./GoalSection";
 import { ProfileSection } from "./ProfileSection";
 import { SettingsLayout } from "./SettingsLayout";
 import { SharingSection } from "./SharingSection";
+import { NewVersionNotice } from "../notices/NewVersionNotice";
 
 export function Settings() {
   const { data: profileData } = useProfile();
@@ -93,6 +94,9 @@ export function Settings() {
 
   return (
     <SettingsLayout>
+      {/* New Version Notice */}
+      {profileData?.isMigrated && <NewVersionNotice />}
+
       {/* Settings Form Card */}
       <div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm">
         <form onSubmit={handleSubmit(onSubmit)}>

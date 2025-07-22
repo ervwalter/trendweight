@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { ExternalLink } from "../ui/ExternalLink";
 import { Heading } from "../ui/Heading";
 import { Question } from "./Question";
 
@@ -30,25 +31,13 @@ export function Faq() {
                 <p>
                   That said, I do recommend getting a smart scale. They are easy to setup and make it super easy to record your weight everyday. You just step
                   on the scale and your weight gets automatically uploaded. If you don't have one and want to buy one, you can find them on Amazon:{" "}
-                  <a href="https://amzn.to/2Rh8yH1" className="text-brand-600 hover:text-brand-700 underline">
-                    Withings Scales
-                  </a>{" "}
-                  or{" "}
-                  <a href="https://amzn.to/3uEWUnS" className="text-brand-600 hover:text-brand-700 underline">
-                    Fitbit Scales
-                  </a>
-                  . (p.s. I'm an Amazon affiliate and receive a small payment if you buy a scale with one of the links on this page)
+                  <ExternalLink href="https://amzn.to/2Rh8yH1">Withings Scales</ExternalLink> or{" "}
+                  <ExternalLink href="https://amzn.to/3uEWUnS">Fitbit Scales</ExternalLink>.
                 </p>
                 <p>
                   If you don't have a connected scale, just use either the{" "}
-                  <a href="https://www.withings.com/us/en/health-mate" className="text-brand-600 hover:text-brand-700 underline">
-                    Withings Health Mate
-                  </a>{" "}
-                  app or the{" "}
-                  <a href="https://www.fitbit.com/sg/app" className="text-brand-600 hover:text-brand-700 underline">
-                    Fitbit App
-                  </a>{" "}
-                  and enter your weight manually each day.
+                  <ExternalLink href="https://www.withings.com/us/en/health-mate">Withings Health Mate</ExternalLink> app or the{" "}
+                  <ExternalLink href="https://www.fitbit.com/sg/app">Fitbit App</ExternalLink> and enter your weight manually each day.
                 </p>
               </Question>
               <Question title="Is there a mobile app for TrendWeight?">
@@ -123,12 +112,9 @@ export function Faq() {
               </Question>
               <Question title="Is TrendWeight open source?">
                 <p>
-                  Yes. You can find the project on GitHub{" "}
-                  <a href="https://github.com/ervwalter/trendweight" className="text-brand-600 hover:text-brand-700 underline">
-                    here
-                  </a>
-                  . However, it's essentially a one-man show (me), and I'm pretty protective of the project—probably too overprotective. That said, if you have
-                  something you'd like to contribute, please reach out.
+                  Yes. You can find the project on GitHub <ExternalLink href="https://github.com/ervwalter/trendweight">here</ExternalLink>. However, it's
+                  essentially a one-man show (me), and I'm pretty protective of the project—probably too overprotective. That said, if you have something you'd
+                  like to contribute, please reach out.
                 </p>
               </Question>
               <Question title="I still have a question or a suggestion for a new feature.">
@@ -138,10 +124,7 @@ export function Faq() {
                     erv@ewal.net
                   </a>{" "}
                   and let me know. If you have a suggestion, you can also email that to me, or you can post your idea{" "}
-                  <a href="https://github.com/trendweight/trendweight/issues" className="text-brand-600 hover:text-brand-700 underline">
-                    here
-                  </a>
-                  .
+                  <ExternalLink href="https://github.com/trendweight/trendweight/issues">here</ExternalLink>.
                 </p>
               </Question>
             </dl>

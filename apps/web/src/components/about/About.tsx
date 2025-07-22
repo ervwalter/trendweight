@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { HiOutlineHeart, HiOutlineLightBulb, HiOutlineRss, HiOutlineShoppingCart } from "react-icons/hi";
 import { Heading } from "../ui/Heading";
 import { useAuth } from "../../lib/auth/useAuth";
+import { ExternalLink } from "../ui/ExternalLink";
 
 export function About() {
   const { isInitializing, user } = useAuth();
@@ -85,14 +86,10 @@ export function About() {
               </Heading>
               <ul className="mt-5 list-disc pl-4 text-base text-gray-500">
                 <li>
-                  <a href="https://amzn.to/2Rh8yH1" className="text-brand-600 hover:text-brand-700 underline">
-                    Withings Scales
-                  </a>
+                  <ExternalLink href="https://amzn.to/2Rh8yH1">Withings Scales</ExternalLink>
                 </li>
                 <li>
-                  <a href="https://amzn.to/3uEWUnS" className="text-brand-600 hover:text-brand-700 underline">
-                    Fitbit Scales
-                  </a>
+                  <ExternalLink href="https://amzn.to/3uEWUnS">Fitbit Scales</ExternalLink>
                 </li>
               </ul>
             </div>
@@ -109,19 +106,13 @@ export function About() {
               </Heading>
               <ul className="mt-5 list-disc pl-4 text-base text-gray-500">
                 <li>
-                  <a href="https://twitter.com/trendweight" className="text-brand-600 hover:text-brand-700 underline">
-                    Twitter
-                  </a>
+                  <ExternalLink href="https://twitter.com/trendweight">Twitter</ExternalLink>
                 </li>
                 <li>
-                  <a href="https://github.com/trendweight/trendweight/releases" className="text-brand-600 hover:text-brand-700 underline">
-                    Release Notes
-                  </a>
+                  <ExternalLink href="https://github.com/trendweight/trendweight/releases">Release Notes</ExternalLink>
                 </li>
                 <li>
-                  <a href="https://blog.trendweight.com" className="text-brand-600 hover:text-brand-700 underline">
-                    Blog
-                  </a>
+                  <ExternalLink href="https://blog.trendweight.com">Blog</ExternalLink>
                 </li>
               </ul>
             </div>
