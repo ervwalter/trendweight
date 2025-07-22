@@ -4,8 +4,6 @@ import { useAuth } from "./useAuth";
 import { AuthContext, type AuthContextType } from "./authContext";
 import type { ReactNode } from "react";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 describe("useAuth", () => {
   it("should throw error when used outside of AuthProvider", () => {
     // Capture console.error to avoid noise in test output

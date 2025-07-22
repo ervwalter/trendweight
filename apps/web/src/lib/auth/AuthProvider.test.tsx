@@ -7,8 +7,6 @@ import { authSuspenseManager } from "./authSuspense";
 import { router } from "../../router";
 import type { Session, User as SupabaseUser } from "@supabase/supabase-js";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // Mock the dependencies
 vi.mock("../supabase/client", () => ({
   supabase: {

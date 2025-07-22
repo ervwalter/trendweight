@@ -46,7 +46,6 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 
 // Mock CSS.supports for Highcharts
 if (!global.CSS) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   global.CSS = {} as any;
 }
 global.CSS.supports = vi.fn(() => false);

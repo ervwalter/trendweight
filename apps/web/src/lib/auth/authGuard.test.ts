@@ -3,8 +3,6 @@ import { requireAuth } from "./authGuard";
 import { redirect } from "@tanstack/react-router";
 import { supabase } from "../supabase/client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // Mock dependencies
 vi.mock("@tanstack/react-router", () => ({
   redirect: vi.fn(),
