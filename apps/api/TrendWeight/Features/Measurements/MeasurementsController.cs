@@ -4,7 +4,6 @@ using System.Security.Claims;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.Providers;
 using TrendWeight.Features.Measurements.Models;
-using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
 
 namespace TrendWeight.Features.Measurements;
@@ -100,6 +99,13 @@ public class MeasurementsController : ControllerBase
             if (user == null)
             {
                 _logger.LogWarning("User not found for sharing code: {SharingCode}", sharingCode);
+                return NotFound(new ErrorResponse { Error = "User not found" });
+            }
+
+            // Check if sharing is actually enabled
+            if (!user.Profile.SharingEnabled)
+            {
+                _logger.LogWarning("Sharing is disabled for sharing code: {SharingCode}", sharingCode);
                 return NotFound(new ErrorResponse { Error = "User not found" });
             }
 

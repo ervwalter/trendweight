@@ -184,7 +184,7 @@ public class ProfileControllerTests : TestBase
         // Assert
         result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("Sharing is disabled");
+            .Which.Error.Should().Be("User not found");
     }
 
     [Fact]

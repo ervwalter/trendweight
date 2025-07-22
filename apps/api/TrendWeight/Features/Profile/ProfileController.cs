@@ -95,7 +95,7 @@ public class ProfileController : ControllerBase
             if (!user.Profile.SharingEnabled)
             {
                 _logger.LogWarning("Sharing is disabled for sharing code: {SharingCode}", sharingCode);
-                return NotFound(new ErrorResponse { Error = "Sharing is disabled" });
+                return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
             // Always return isMe = false when using sharing code

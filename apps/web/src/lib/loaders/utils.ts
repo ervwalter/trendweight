@@ -6,7 +6,7 @@ import { queryOptions } from "../api/queries";
  * Ensures the user has a profile, redirecting to initial setup if not.
  * @param sharingCode - Optional sharing code for shared dashboards
  * @throws Redirect to /initial-setup if no profile exists (authenticated users)
- * @throws Redirect to / if sharing not enabled (shared dashboards)
+ * @throws Redirect to / if no profile exists (shared dashboards)
  */
 export async function ensureProfile(sharingCode?: string): Promise<void> {
   if (sharingCode) {
@@ -15,11 +15,11 @@ export async function ensureProfile(sharingCode?: string): Promise<void> {
       return;
     }
 
-    // For shared dashboards, check if sharing is enabled
+    // For shared dashboards, check if profile exists
     try {
       const profile = await queryClient.fetchQuery(queryOptions.profile(sharingCode));
 
-      if (!profile || !profile.user?.sharingEnabled) {
+      if (!profile) {
         throw redirect({ to: "/", replace: true });
       }
     } catch {
