@@ -1,5 +1,48 @@
 # Changelog
 
+## [2.1.0](https://github.com/ervwalter/trendweight/compare/v2.0.0...v2.1.0) (2025-07-23)
+
+
+### Features
+
+* add new version notice for migrated users ([ad17a1e](https://github.com/ervwalter/trendweight/commit/ad17a1e5fb590f27fdc6ba2c475f9caf1db21c73))
+* **api:** add legacy chart URL redirect handler ([831a620](https://github.com/ervwalter/trendweight/commit/831a620629e0521651bd284c7507444b302335e9))
+
+
+### Fixes
+
+* extract useCompleteMigration hook for better testability ([990e493](https://github.com/ervwalter/trendweight/commit/990e493a894dc6271e461562892fa027c092078d))
+* prevent information leakage in sharing code validation ([b6d60c8](https://github.com/ervwalter/trendweight/commit/b6d60c8f7b7af330de4e15be3dd514624cbe78d9))
+* update site links and improve responsive UI elements ([831a620](https://github.com/ervwalter/trendweight/commit/831a620629e0521651bd284c7507444b302335e9))
+
+
+### Documentation
+
+* simplify development workflow instructions ([3991048](https://github.com/ervwalter/trendweight/commit/39910488165691c2575c784aa7229cb6cc73e0f7))
+* update markdown file path references to docs folder ([47d1014](https://github.com/ervwalter/trendweight/commit/47d1014dd93764f5c74dd3f112669649bc24d628))
+* update release documentation to focus on current state ([b8a030d](https://github.com/ervwalter/trendweight/commit/b8a030d5799c181f17aa558da8c2686388873d14))
+
+
+### Refactoring
+
+* complete migration of static assets to public root ([0bd368b](https://github.com/ervwalter/trendweight/commit/0bd368b2dd0bbcf7afb483170108af101a3289aa))
+* create ExternalLink component for consistent external URLs ([ad17a1e](https://github.com/ervwalter/trendweight/commit/ad17a1e5fb590f27fdc6ba2c475f9caf1db21c73))
+* implement self-hosted analytics proxy ([3991048](https://github.com/ervwalter/trendweight/commit/39910488165691c2575c784aa7229cb6cc73e0f7))
+* reorganize documentation files ([3991048](https://github.com/ervwalter/trendweight/commit/39910488165691c2575c784aa7229cb6cc73e0f7))
+* reorganize public assets structure ([831a620](https://github.com/ervwalter/trendweight/commit/831a620629e0521651bd284c7507444b302335e9))
+* simplify frontend interfaces by consolidating ProfileData ([6fd74c1](https://github.com/ervwalter/trendweight/commit/6fd74c10b2056bdca18acbb6ac3515b42d4055d8))
+
+
+### Tests
+
+* add comprehensive frontend test coverage ([990e493](https://github.com/ervwalter/trendweight/commit/990e493a894dc6271e461562892fa027c092078d))
+* fix React act warnings and suppress expected console errors ([f172d36](https://github.com/ervwalter/trendweight/commit/f172d360558e0d9587b5ca10fe2931d0323c1eab))
+
+
+### Dependencies
+
+* update npm dependencies to v1.129.7 ([#260](https://github.com/ervwalter/trendweight/issues/260)) ([4f7b872](https://github.com/ervwalter/trendweight/commit/4f7b872f61ca20a272bee1af68e415463e6b4b54))
+
 ## [2.0.0-alpha.7](https://github.com/ervwalter/trendweight/compare/v2.0.0-alpha.6...v2.0.0-alpha.7) (2025-07-21)
 
 
