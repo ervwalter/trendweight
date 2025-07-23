@@ -55,16 +55,16 @@ RUN dotnet restore TrendWeight.sln
 RUN dotnet publish TrendWeight/TrendWeight.csproj -c Release -o /app/publish
 
 # Stage 3: Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 
 WORKDIR /app
 
 # Install curl for health checks
-RUN apk add --no-cache curl
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user and group
-RUN addgroup -g 1000 -S appgroup && \
-    adduser -u 1000 -S appuser -G appgroup
+RUN groupadd -g 1000 appgroup && \
+    useradd -u 1000 -g appgroup -m appuser
 
 # Copy published backend
 COPY --from=backend-build /app/publish .

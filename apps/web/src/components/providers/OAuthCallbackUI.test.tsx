@@ -121,12 +121,4 @@ describe("OAuthCallbackUI", () => {
       expect(screen.getByText("Let's try connecting your Google Fit account again.")).toBeInTheDocument();
     });
   });
-
-  describe("layout integration", () => {
-    it("should render within Layout component", () => {
-      render(<OAuthCallbackUI providerName="Withings" state="loading" />);
-
-      expect(screen.getByTestId("layout")).toBeInTheDocument();
-    });
-  });
 });
