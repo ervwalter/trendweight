@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.1.4](https://github.com/ervwalter/trendweight/compare/v2.1.3...v2.1.4) (2025-07-23)
+
+
+### Fixes
+
+* improve error handling across the application ([187fb7c](https://github.com/ervwalter/trendweight/commit/187fb7c4bd010fe72b74d0ade65d781ff7400b36))
+* **TipJar:** adjust iframe dimensions for better display ([abf6858](https://github.com/ervwalter/trendweight/commit/abf6858601b72aef63cb67202022e3093d8cddd0))
+
+
+### Performance Improvements
+
+* optimize static asset caching and build process ([9a7854e](https://github.com/ervwalter/trendweight/commit/9a7854e652effb910fdb25ba3acfb2f3c534add2))
+
+
+### Documentation
+
+* update contributing text ([1f9d27d](https://github.com/ervwalter/trendweight/commit/1f9d27d091ded43bbf80fc90fd9bd3f9896e110e))
+* update testing documentation with console suppression guidance ([187fb7c](https://github.com/ervwalter/trendweight/commit/187fb7c4bd010fe72b74d0ade65d781ff7400b36))
+
+
+### Refactoring
+
+* consolidate error display logic into ErrorUI component ([187fb7c](https://github.com/ervwalter/trendweight/commit/187fb7c4bd010fe72b74d0ade65d781ff7400b36))
+
+
+### Tests
+
+* improve test reliability with proper console mocking ([187fb7c](https://github.com/ervwalter/trendweight/commit/187fb7c4bd010fe72b74d0ade65d781ff7400b36))
+
+
+### Dependencies
+
+* update dependency @supabase/supabase-js to v2.52.1 ([#267](https://github.com/ervwalter/trendweight/issues/267)) ([5ea8028](https://github.com/ervwalter/trendweight/commit/5ea802895a194a6a73c1fc0ab184f657c9133a70))
+
 ## [2.1.3](https://github.com/ervwalter/trendweight/compare/v2.1.2...v2.1.3) (2025-07-23)
 
 
