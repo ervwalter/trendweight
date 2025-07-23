@@ -27,6 +27,12 @@ export default defineConfig({
           });
         },
       },
+      // Proxy Plausible Analytics script requests
+      "/js": {
+        target: "http://localhost:5199",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

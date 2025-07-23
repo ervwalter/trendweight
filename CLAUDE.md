@@ -244,11 +244,9 @@ Keep this file focused on AI code generation guidance only.
 ## Development Workflow
 
 ### Always Run Comprehensive Checks
-- When checking for code issues during development, run 'npm run check' from the top level folder of the repo (fast, skips format check)
-- For pre-commit or CI validation, run 'npm run check:ci' (includes format check)
+- When checking for code issues during development, run 'npm run check' from the top level folder of the repo (fast)
 - Do not attempt to be tactical and run subtasks in lower level folders - Turborepo handles optimization
 - **When you need to check if the repo is in a clean state before doing a commit, do 'npm run format && npm run check:ci && npm run test' as a single Bash command from the top of the repo**
-- **Tip**: Run 'npm run fix' to format and check in one command during development
 
 ### CRITICAL: TypeScript Error Prevention
 **You MUST run 'npm run check' after EVERY code change, not just tests!** Running only tests will miss:

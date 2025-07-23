@@ -22,7 +22,7 @@ export function NewVersionNotice({ onDismiss }: NewVersionNoticeProps) {
   };
 
   return (
-    <div className="bg-brand-50 mb-6 rounded-lg p-4">
+    <div className="bg-brand-50 mb-6 rounded-lg p-4 shadow-lg">
       <div className="flex items-start">
         <div className="flex-1">
           <p className="font-medium">Welcome to the new TrendWeight!</p>

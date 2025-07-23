@@ -33,6 +33,10 @@ builder.Services.AddSupabaseAuthentication(builder.Configuration);
 // Add TrendWeight services
 builder.Services.AddTrendWeightServices(builder.Configuration);
 
+// Add YARP reverse proxy
+builder.Services.AddReverseProxy()
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+
 // Add rate limiting
 builder.Services.AddRateLimiter(options =>
 {
@@ -154,6 +158,9 @@ app.UseHttpsRedirection();
 
 // Serve static files from wwwroot (for production container)
 app.UseStaticFiles();
+
+// Map reverse proxy endpoints (before rate limiting so they're not rate limited)
+app.MapReverseProxy();
 
 // Apply rate limiting only to API routes (after static files)
 app.UseRateLimiter();
