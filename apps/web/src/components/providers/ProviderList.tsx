@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { HiCheckCircle } from "react-icons/hi";
-import { useProviderLinks } from "../../lib/api/queries";
-import { useDisconnectProvider, useResyncProvider } from "../../lib/api/mutations";
 import { apiRequest } from "../../lib/api/client";
+import { useDisconnectProvider, useResyncProvider } from "../../lib/api/mutations";
+import { useProviderLinks } from "../../lib/api/queries";
 import { useToast } from "../../lib/hooks/useToast";
-import { ConfirmDialog } from "../ui/ConfirmDialog";
-import { Heading } from "../ui/Heading";
 import { Button } from "../ui/Button";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ExternalLink } from "../ui/ExternalLink";
+import { Heading } from "../ui/Heading";
 
 // Simple date formatter for connection dates
 const connectionDateFormatter = new Intl.DateTimeFormat([], {
@@ -26,7 +26,7 @@ const providers = [
     id: "withings",
     name: "Withings",
     displayName: "Withings Account",
-    logo: "/assets/withings-app.png",
+    logo: "/withings-app.png",
     linkUrl: "https://www.withings.com/us/en/scales",
     linkText: "Get a Withings scale",
     description:
@@ -37,7 +37,7 @@ const providers = [
     id: "fitbit",
     name: "Fitbit",
     displayName: "Fitbit Account",
-    logo: "/assets/fitbit-app.png",
+    logo: "/fitbit-app.png",
     linkUrl: "https://www.fitbit.com/global/us/products/scales",
     linkText: "Get a Fitbit Aria scale",
     description:

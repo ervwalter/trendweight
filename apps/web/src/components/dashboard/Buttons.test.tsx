@@ -31,10 +31,10 @@ describe("Buttons", () => {
   it("should render all time range buttons on desktop", () => {
     render(<Buttons />);
 
-    expect(screen.getByRole("radio", { name: "4 weeks" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "3 months" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "6 months" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "1 year" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /4 weeks/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /3 months/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /6 months/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /1 year/i })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "All" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Explore" })).toBeInTheDocument();
   });
@@ -43,7 +43,7 @@ describe("Buttons", () => {
     mockUseIsMobile.mockReturnValue(true);
     render(<Buttons />);
 
-    expect(screen.getByRole("radio", { name: "4 weeks" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /4 wk/i })).toBeInTheDocument();
     expect(screen.queryByRole("radio", { name: "Explore" })).not.toBeInTheDocument();
   });
 
@@ -60,7 +60,7 @@ describe("Buttons", () => {
     const user = userEvent.setup();
     render(<Buttons />);
 
-    const button = screen.getByRole("radio", { name: "3 months" });
+    const button = screen.getByRole("radio", { name: /3 months/i });
     await user.click(button);
     expect(mockSetTimeRange).toHaveBeenCalledWith("3m");
   });
@@ -111,7 +111,7 @@ describe("Buttons", () => {
 
     render(<Buttons />);
 
-    const selectedButton = screen.getByRole("radio", { name: "3 months" });
+    const selectedButton = screen.getByRole("radio", { name: /3 months/i });
     expect(selectedButton).toHaveAttribute("data-state", "on");
   });
 

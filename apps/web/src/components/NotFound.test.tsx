@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { NotFound } from "./NotFound";
 
 // Mock router components
@@ -51,7 +51,7 @@ describe("NotFound", () => {
 
     const image = screen.getByRole("img", { name: "alien abduction icon" });
     expect(image).toBeInTheDocument();
-    expect(image).toHaveAttribute("src", "/assets/taken.svg");
+    expect(image).toHaveAttribute("src", "/taken.svg");
     expect(image).toHaveAttribute("alt", "alien abduction icon");
   });
 

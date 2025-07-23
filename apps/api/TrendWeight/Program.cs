@@ -156,6 +156,25 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Handle legacy chart image URLs
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value;
+    if (path != null && path.StartsWith("/u/", StringComparison.OrdinalIgnoreCase))
+    {
+        var segments = path.Split('/');
+        // Check if it matches pattern /u/{id}/chart/{filename}.png
+        if (segments.Length >= 5 &&
+            segments[3].Equals("chart", StringComparison.OrdinalIgnoreCase) &&
+            segments[4].EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.Redirect("/chart-not-available.png", permanent: true);
+            return;
+        }
+    }
+    await next();
+});
+
 // Serve static files from wwwroot (for production container)
 app.UseStaticFiles();
 

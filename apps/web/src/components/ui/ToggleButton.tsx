@@ -10,7 +10,7 @@ export interface ToggleButtonProps {
 }
 
 export const ToggleButton = forwardRef<HTMLButtonElement, ToggleButtonProps>(({ value, children, className, variant = "default" }, ref) => {
-  const baseStyles = "px-3 py-1.5 text-sm font-medium transition-all focus:outline-none";
+  const baseStyles = "px-3 py-1.5 text-sm font-medium transition-all focus:outline-none whitespace-nowrap";
 
   const variantStyles = {
     default:

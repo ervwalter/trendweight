@@ -80,7 +80,7 @@ export function Faq() {
                     Settings
                   </Link>{" "}
                   page to find your private URL. You can also change your private URL at any time in case you gave your URL to someone and later decide you
-                  don't want them to see your stats anymore.
+                  don't want them to see your stats anymore. You can also disable sharing entirely if you prefer.
                 </p>
               </Question>
               <Question title="What is the math behind TrendWeight?">

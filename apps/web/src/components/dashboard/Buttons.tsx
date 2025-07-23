@@ -22,10 +22,22 @@ const Buttons = () => {
   return (
     <div className="flex flex-col-reverse gap-4 md:flex-row">
       <ToggleButtonGroup value={timeRange} onChange={(value) => setTimeRange(value as TimeRange)} defaultValue="4w" aria-label="Time Range">
-        <ToggleButton value="4w">4 weeks</ToggleButton>
-        <ToggleButton value="3m">3 months</ToggleButton>
-        <ToggleButton value="6m">6 months</ToggleButton>
-        <ToggleButton value="1y">1 year</ToggleButton>
+        <ToggleButton value="4w">
+          <span className="lg:hidden">4 wk</span>
+          <span className="hidden lg:inline">4 weeks</span>
+        </ToggleButton>
+        <ToggleButton value="3m">
+          <span className="lg:hidden">3 mo</span>
+          <span className="hidden lg:inline">3 months</span>
+        </ToggleButton>
+        <ToggleButton value="6m">
+          <span className="lg:hidden">6 mo</span>
+          <span className="hidden lg:inline">6 months</span>
+        </ToggleButton>
+        <ToggleButton value="1y">
+          <span className="lg:hidden">1 yr</span>
+          <span className="hidden lg:inline">1 year</span>
+        </ToggleButton>
         <ToggleButton value="all">All</ToggleButton>
         {!isMobile && <ToggleButton value="explore">Explore</ToggleButton>}
       </ToggleButtonGroup>

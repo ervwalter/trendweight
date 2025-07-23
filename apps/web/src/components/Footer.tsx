@@ -1,4 +1,4 @@
-import { FaTwitter, FaFacebook, FaGithub, FaRss } from "react-icons/fa";
+import { FaGithub, FaRss } from "react-icons/fa";
 import { Link } from "@tanstack/react-router";
 import { Container } from "./Container";
 
@@ -32,16 +32,10 @@ export function Footer() {
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm md:gap-4">
             <div className="flex items-center gap-2 md:gap-4">
-              <a href="https://twitter.com/trendweight" className="transition-colors hover:text-gray-600">
-                <FaTwitter />
-              </a>
-              <a href="https://facebook.com/trendweight" className="transition-colors hover:text-gray-600">
-                <FaFacebook />
-              </a>
-              <a href="https://github.com/trendweight" className="transition-colors hover:text-gray-600">
+              <a href="https://github.com/ervwalter/trendweight" className="transition-colors hover:text-gray-600">
                 <FaGithub />
               </a>
-              <a href="https://blog.trendweight.com" className="transition-colors hover:text-gray-600">
+              <a href="https://ewal.dev/series/trendweight" className="transition-colors hover:text-gray-600">
                 <FaRss />
               </a>
             </div>

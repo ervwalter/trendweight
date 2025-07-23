@@ -106,13 +106,10 @@ export function About() {
               </Heading>
               <ul className="mt-5 list-disc pl-4 text-base text-gray-500">
                 <li>
-                  <ExternalLink href="https://twitter.com/trendweight">Twitter</ExternalLink>
+                  <ExternalLink href="https://ewal.dev/series/trendweight">Blog</ExternalLink>
                 </li>
                 <li>
                   <ExternalLink href="https://github.com/trendweight/trendweight/releases">Release Notes</ExternalLink>
-                </li>
-                <li>
-                  <ExternalLink href="https://blog.trendweight.com">Blog</ExternalLink>
                 </li>
               </ul>
             </div>

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Container } from "./Container";
 import { pageTitle } from "../lib/utils/pageTitle";
+import { Container } from "./Container";
 import { Button } from "./ui/Button";
 
 export function NotFound() {
@@ -27,7 +27,7 @@ export function NotFound() {
                 </Button>
               </div>
             </div>
-            <img src="/assets/taken.svg" alt="alien abduction icon" className="h-auto w-full max-w-[200px] md:h-[150px] md:w-auto lg:h-[200px]" />
+            <img src="/taken.svg" alt="alien abduction icon" className="h-auto w-full max-w-[200px] md:h-[150px] md:w-auto lg:h-[200px]" />
           </div>
         </div>
       </Container>
