@@ -175,8 +175,27 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Serve static files from wwwroot (for production container)
-app.UseStaticFiles();
+// Use static files with custom caching rules for the SPA
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.File.Name;
+        var headers = ctx.Context.Response.Headers;
+        
+        // Check if this is a hashed asset (contains hash pattern like -aBc123De)
+        if (System.Text.RegularExpressions.Regex.IsMatch(path, @"-[a-zA-Z0-9_]{8,}\.(js|css)$"))
+        {
+            // Long-term immutable caching for hashed assets
+            headers.CacheControl = "public,max-age=31536000,immutable";
+        }
+        else
+        {
+            // Short cache for other static files (1 hour)
+            headers.CacheControl = "public,max-age=3600";
+        }
+    }
+});
 
 // Map reverse proxy endpoints (before rate limiting so they're not rate limited)
 app.MapReverseProxy();
@@ -196,7 +215,17 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "
 // For production, serve the SPA for any non-API routes
 if (!app.Environment.IsDevelopment())
 {
-    app.MapFallbackToFile("index.html");
+    // Custom fallback handler that sets no-cache headers
+    app.MapFallback(async context =>
+    {
+        context.Response.ContentType = "text/html";
+        context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+        context.Response.Headers.Pragma = "no-cache";
+        context.Response.Headers.Expires = "0";
+        
+        var indexPath = Path.Combine(app.Environment.WebRootPath, "index.html");
+        await context.Response.SendFileAsync(indexPath);
+    });
 }
 
 app.Run();

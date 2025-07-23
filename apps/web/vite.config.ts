@@ -1,11 +1,20 @@
 import tailwindcss from "@tailwindcss/vite";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import tanstackRouter from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [TanStackRouterVite(), react(), tailwindcss()],
+  plugins: [
+    tanstackRouter({
+      autoCodeSplitting: true,
+    }),
+    react(),
+    tailwindcss(),
+  ],
+  build: {
+    sourcemap: true,
+  },
   server: {
     host: true,
     allowedHosts: ["studio-1", "studio-1.elf-hadar.ts.net", ".local", "localhost", ""],

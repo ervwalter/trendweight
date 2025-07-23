@@ -50,6 +50,10 @@ WORKDIR /src
 # Copy backend source
 COPY apps/api/ ./
 
+# Copy frontend build to wwwroot BEFORE building the backend
+# This is required for MapStaticAssets() to work
+COPY --from=frontend-build /app/apps/web/dist ./TrendWeight/wwwroot
+
 # Restore and build
 RUN dotnet restore TrendWeight.sln
 RUN dotnet publish TrendWeight/TrendWeight.csproj -c Release -o /app/publish
@@ -66,11 +70,8 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 RUN groupadd -g 1000 appgroup && \
     useradd -u 1000 -g appgroup -m appuser
 
-# Copy published backend
+# Copy published backend (which now includes wwwroot with optimized static assets)
 COPY --from=backend-build /app/publish .
-
-# Copy frontend build to wwwroot
-COPY --from=frontend-build /app/apps/web/dist ./wwwroot
 
 # Change ownership of the app directory
 RUN chown -R appuser:appgroup /app

@@ -19,7 +19,7 @@
     "clean:root": "rm -rf .turbo node_modules",
     "clean:all": "npm run clean && find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
     "docker:build": "./scripts/docker-build.sh",
-    "docker:run": "docker run --rm -p 8080:8080 --env-file .env trendweight:local",
+    "docker:run": "./scripts/docker-run.sh",
     "install:all": "npm install --workspaces --include-workspace-root",
     "outdated": "npm outdated --workspaces --include-workspace-root",
     "update": "npm update --workspaces --include-workspace-root",
