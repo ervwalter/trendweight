@@ -208,6 +208,26 @@ If you see any route file that doesn't follow this pattern, it MUST be refactore
 9. **No CORS configuration** - Never add CORS to the API (Vite proxy handles it)
 10. **Performance** - Cache Intl formatters at module level, use React.memo where appropriate
 
+## Database Schema Management
+
+### Supabase Schema
+The complete database schema is documented in the repository:
+- **Schema SQL**: `apps/api/supabase/schema.sql` - Complete SQL script to recreate all tables, indexes, and RLS policies
+- **Schema Documentation**: `apps/api/supabase/SCHEMA.md` - Detailed documentation of table structures and data formats
+
+To set up a new Supabase instance:
+1. Create a new Supabase project
+2. Run the `schema.sql` file in the SQL editor
+3. Configure the API with the project credentials
+
+**Note**: All tables use RLS policies that deny direct access. Data access is only allowed through the API using the service role key.
+
+**IMPORTANT**: If you make any schema changes in Supabase (new tables, columns, indexes, etc.), you MUST:
+1. Use the MCP Supabase tools to query the updated schema
+2. Update `apps/api/supabase/schema.sql` with the changes
+3. Update `apps/api/supabase/SCHEMA.md` documentation accordingly
+4. Never make schema changes without updating these files
+
 ## Recent Lessons Learned (from Code Review)
 
 1. **Raw HTML Usage** - Several components were using raw HTML elements. Always check for and use our standard UI components.
