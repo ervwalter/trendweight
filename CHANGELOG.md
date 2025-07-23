@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.1.3](https://github.com/ervwalter/trendweight/compare/v2.1.2...v2.1.3) (2025-07-23)
+
+
+### Fixes
+
+* prevent font loading flicker for logo text ([077de97](https://github.com/ervwalter/trendweight/commit/077de97da5aca7b83997a9fad391bf0b374a6f5a))
+
+
+### Documentation
+
+* add database schema export for Supabase ([df369e5](https://github.com/ervwalter/trendweight/commit/df369e5278b3b2776d32a685a95a61a44def43fa))
+
+
+### Dependencies
+
+* update npm dependencies to v1.129.8 ([#265](https://github.com/ervwalter/trendweight/issues/265)) ([37d1f02](https://github.com/ervwalter/trendweight/commit/37d1f021c91c58e35ff4c4529e1ae4037f1d74a9))
+
 ## [2.1.2](https://github.com/ervwalter/trendweight/compare/v2.1.1...v2.1.2) (2025-07-23)
 
 
