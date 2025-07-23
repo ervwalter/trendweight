@@ -40,10 +40,13 @@ const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
       return <Navigate to="/" replace />;
     }
 
-    // For authenticated users with providers connected but no data, show waiting message
+    // For authenticated users with providers connected but no data
     return (
       <div className="py-8">
-        <NoDataCard />
+        <div className="mx-auto max-w-2xl space-y-4">
+          <ProviderSyncErrors providerStatus={dashboardData.providerStatus} />
+          <NoDataCard providerStatus={dashboardData.providerStatus} />
+        </div>
       </div>
     );
   }
