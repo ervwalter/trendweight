@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.5](https://github.com/ervwalter/trendweight/compare/v2.1.4...v2.1.5) (2025-07-23)
+
+
+### Dependencies
+
+* update domain in script tag for production environment ([cd72ea2](https://github.com/ervwalter/trendweight/commit/cd72ea254b379c44a1090380b080cf77bfcdf96e))
+
 ## [2.1.4](https://github.com/ervwalter/trendweight/compare/v2.1.3...v2.1.4) (2025-07-23)
 
 
