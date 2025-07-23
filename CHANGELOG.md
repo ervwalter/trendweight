@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.2](https://github.com/ervwalter/trendweight/compare/v2.1.1...v2.1.2) (2025-07-23)
+
+
+### Fixes
+
+* improve auth validation and error handling ([77be07a](https://github.com/ervwalter/trendweight/commit/77be07a3ecb9f6ce5f4100a918f4501bb7abd45d))
+* improve migration page messaging ([77be07a](https://github.com/ervwalter/trendweight/commit/77be07a3ecb9f6ce5f4100a918f4501bb7abd45d))
+* remove flaky retry logic from OAuth callbacks ([77be07a](https://github.com/ervwalter/trendweight/commit/77be07a3ecb9f6ce5f4100a918f4501bb7abd45d))
+* show provider sync errors when no measurement data exists ([db492e0](https://github.com/ervwalter/trendweight/commit/db492e045c9bdec8ee836d39941baecce700a9be))
+* simplify account deletion with CASCADE DELETE ([77be07a](https://github.com/ervwalter/trendweight/commit/77be07a3ecb9f6ce5f4100a918f4501bb7abd45d))
+* validate sessions on frontend startup ([77be07a](https://github.com/ervwalter/trendweight/commit/77be07a3ecb9f6ce5f4100a918f4501bb7abd45d))
+
 ## [2.1.1](https://github.com/ervwalter/trendweight/compare/v2.1.0...v2.1.1) (2025-07-23)
 
 
