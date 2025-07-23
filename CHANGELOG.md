@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.6](https://github.com/ervwalter/trendweight/compare/v2.1.5...v2.1.6) (2025-07-23)
+
+
+### Fixes
+
+* update PWA start_url to point to dashboard ([ab95320](https://github.com/ervwalter/trendweight/commit/ab95320a7a75731d1bdfa944660340125a085fe6))
+
 ## [2.1.5](https://github.com/ervwalter/trendweight/compare/v2.1.4...v2.1.5) (2025-07-23)
 
 
