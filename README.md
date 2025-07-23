@@ -38,22 +38,26 @@ For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
 ### Quick Start
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/trendweight/trendweight.git
    cd trendweight
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Copy `.env.example` to `.env` and configure your environment variables:
+
    ```bash
    cp .env.example .env
    ```
 
 4. Start the development servers:
+
    ```bash
    npm run dev
    ```
@@ -75,6 +79,7 @@ For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
 ### Docker
 
 Build and run with Docker:
+
 ```bash
 npm run docker:build
 npm run docker:run
@@ -85,6 +90,7 @@ npm run docker:run
 The application is designed to be deployed as a Docker container. The included Dockerfile creates a production-ready image that serves both the API and frontend.
 
 Build the Docker image:
+
 ```bash
 docker build -t trendweight:latest .
 ```
@@ -93,7 +99,7 @@ The container runs on port 8080 and requires environment variables for backend c
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome. However, it's essentially a one-man show (me), and I'm pretty protective of the project—probably too overprotective. That said, if you have something you'd like to contribute, please open an issue and let's discuss.
 
 ## License
 
