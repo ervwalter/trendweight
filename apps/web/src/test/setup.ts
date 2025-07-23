@@ -55,6 +55,7 @@ vi.mock("@/lib/supabase/client", () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
       signInWithEmail: vi.fn().mockResolvedValue({ data: { user: null, session: null }, error: null }),
       signInWithOAuth: vi.fn().mockResolvedValue({ data: { provider: null, url: null }, error: null }),
       signInWithOtp: vi.fn().mockResolvedValue({ data: { user: null, session: null }, error: null }),

@@ -314,32 +314,24 @@ public class ProfileServiceTests : TestBase
     }
 
     [Fact]
-    public async Task DeleteAccountAsync_DeletesAllUserData()
+    public async Task DeleteAccountAsync_DeletesAuthUserOnly_CascadeHandlesRest()
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var profile = CreateTestProfile(userId);
-
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(profile);
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(profile))
-            .Returns(Task.CompletedTask);
         _supabaseServiceMock.Setup(x => x.DeleteAuthUserAsync(userId))
             .ReturnsAsync(true);
-        _sourceDataServiceMock.Setup(x => x.DeleteAllSourceDataAsync(userId))
-            .Returns(Task.CompletedTask);
-        _providerLinkServiceMock.Setup(x => x.DeleteAllProviderLinksAsync(userId))
-            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _sut.DeleteAccountAsync(userId);
 
         // Assert
         result.Should().BeTrue();
-        _sourceDataServiceMock.Verify(x => x.DeleteAllSourceDataAsync(userId), Times.Once);
-        _providerLinkServiceMock.Verify(x => x.DeleteAllProviderLinksAsync(userId), Times.Once);
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(profile), Times.Once);
         _supabaseServiceMock.Verify(x => x.DeleteAuthUserAsync(userId), Times.Once);
+        // Verify that manual deletion methods are NOT called (CASCADE DELETE handles it)
+        _sourceDataServiceMock.Verify(x => x.DeleteAllSourceDataAsync(It.IsAny<Guid>()), Times.Never);
+        _providerLinkServiceMock.Verify(x => x.DeleteAllProviderLinksAsync(It.IsAny<Guid>()), Times.Never);
+        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<DbProfile>()), Times.Never);
+        _supabaseServiceMock.Verify(x => x.GetByIdAsync<DbProfile>(It.IsAny<Guid>()), Times.Never);
     }
 
     [Fact]
@@ -347,10 +339,6 @@ public class ProfileServiceTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var profile = CreateTestProfile(userId);
-
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(profile);
         _supabaseServiceMock.Setup(x => x.DeleteAuthUserAsync(userId))
             .ReturnsAsync(false);
 
@@ -359,6 +347,7 @@ public class ProfileServiceTests : TestBase
 
         // Assert
         result.Should().BeFalse();
+        _supabaseServiceMock.Verify(x => x.DeleteAuthUserAsync(userId), Times.Once);
     }
 
     private static DbProfile CreateTestProfile(Guid userId, string? sharingToken = null)

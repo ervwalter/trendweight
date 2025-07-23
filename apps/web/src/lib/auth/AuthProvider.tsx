@@ -133,13 +133,50 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   // Handle auth state changes
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(transformUser(session?.user || null));
-      setIsInitializing(false);
-      authSuspenseManager.setInitializing(false);
-    });
+    // Get initial session and validate it with the server
+    const initializeAuth = async () => {
+      try {
+        // First get the cached session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+          // If we have a session, validate it by calling getUser
+          // This will check with the server if the user still exists
+          const {
+            data: { user },
+            error,
+          } = await supabase.auth.getUser();
+
+          if (error || !user) {
+            // Token is invalid or user was deleted
+            console.warn("Session validation failed:", error?.message);
+            // Clear the invalid session
+            await supabase.auth.signOut();
+            setSession(null);
+            setUser(null);
+          } else {
+            // Session is valid
+            setSession(session);
+            setUser(transformUser(user));
+          }
+        } else {
+          // No session
+          setSession(null);
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        setSession(null);
+        setUser(null);
+      } finally {
+        setIsInitializing(false);
+        authSuspenseManager.setInitializing(false);
+      }
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const {

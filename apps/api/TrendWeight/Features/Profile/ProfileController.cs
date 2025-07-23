@@ -5,6 +5,7 @@ using System.Security.Claims;
 using TrendWeight.Common.Models;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Features.Profile.Services;
+using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 
 namespace TrendWeight.Features.Profile;
@@ -16,15 +17,18 @@ public class ProfileController : ControllerBase
 {
     private readonly IProfileService _profileService;
     private readonly ILegacyMigrationService _legacyMigrationService;
+    private readonly ISupabaseService _supabaseService;
     private readonly ILogger<ProfileController> _logger;
 
     public ProfileController(
         IProfileService profileService,
         ILegacyMigrationService legacyMigrationService,
+        ISupabaseService supabaseService,
         ILogger<ProfileController> logger)
     {
         _profileService = profileService;
         _legacyMigrationService = legacyMigrationService;
+        _supabaseService = supabaseService;
         _logger = logger;
     }
 
@@ -50,6 +54,21 @@ public class ProfileController : ControllerBase
 
             if (user == null)
             {
+                // First check if the auth user still exists
+                // This handles the case where a user deleted their account but still has a valid JWT
+                if (!Guid.TryParse(userId, out var userGuid))
+                {
+                    _logger.LogWarning("Invalid user ID format: {UserId}", userId);
+                    return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
+                }
+
+                var authUserExists = await _supabaseService.AuthUserExistsAsync(userGuid);
+                if (!authUserExists)
+                {
+                    _logger.LogWarning("Auth user no longer exists for UID: {UserId}", userId);
+                    return Unauthorized(new ErrorResponse { Error = "Authentication expired" });
+                }
+
                 // Check for legacy profile migration
                 var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
                 var migratedProfile = await _legacyMigrationService.CheckAndMigrateIfNeededAsync(userId, userEmail);
@@ -157,6 +176,20 @@ public class ProfileController : ControllerBase
             {
                 _logger.LogWarning("User email not found in authenticated user claims");
                 return Unauthorized(new ErrorResponse { Error = "User email not found" });
+            }
+
+            // Check if the auth user still exists before attempting to create/update profile
+            if (!Guid.TryParse(userId, out var userGuid))
+            {
+                _logger.LogWarning("Invalid user ID format: {UserId}", userId);
+                return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
+            }
+
+            var authUserExists = await _supabaseService.AuthUserExistsAsync(userGuid);
+            if (!authUserExists)
+            {
+                _logger.LogWarning("Auth user no longer exists for UID: {UserId}", userId);
+                return Unauthorized(new ErrorResponse { Error = "Authentication expired" });
             }
 
             // Use the service to update or create the profile

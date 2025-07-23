@@ -22,12 +22,20 @@ vi.mock("../../routes/oauth/fitbit/callback", () => ({
 
 // Mock the mutation
 const mockMutate = vi.fn();
+let mockStatus = "idle";
+let mockIsSuccess = false;
 let mockIsPending = false;
+let mockIsError = false;
+let mockError: Error | null = null;
 
 vi.mock("../../lib/api/mutations", () => ({
   useExchangeFitbitToken: () => ({
     mutate: mockMutate,
+    status: mockStatus,
+    isSuccess: mockIsSuccess,
     isPending: mockIsPending,
+    isError: mockIsError,
+    error: mockError,
   }),
 }));
 
@@ -49,7 +57,11 @@ describe("FitbitCallback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSearch = { code: undefined, state: undefined };
+    mockStatus = "idle";
+    mockIsSuccess = false;
     mockIsPending = false;
+    mockIsError = false;
+    mockError = null;
   });
 
   it("should show invalid state when no code or state provided", () => {
@@ -67,15 +79,7 @@ describe("FitbitCallback", () => {
 
     const ui = screen.getByTestId("oauth-callback-ui");
     expect(ui).toHaveTextContent("State: loading");
-    expect(ui).toHaveTextContent("Retry Count: 0");
-    expect(ui).toHaveTextContent("Max Retries: 2");
-    expect(mockMutate).toHaveBeenCalledWith(
-      { code: "abc123" },
-      expect.objectContaining({
-        onSuccess: expect.any(Function),
-        onError: expect.any(Function),
-      }),
-    );
+    expect(mockMutate).toHaveBeenCalledWith({ code: "abc123" });
   });
 
   it("should show loading state while mutation is pending", () => {
@@ -96,8 +100,6 @@ describe("FitbitCallback", () => {
     const ui = screen.getByTestId("oauth-callback-ui");
     expect(ui).toHaveTextContent("Provider: Fitbit");
     expect(ui).toHaveTextContent("State: invalid");
-    expect(ui).toHaveTextContent("Retry Count: 0");
-    expect(ui).toHaveTextContent("Max Retries: 2");
     expect(ui).not.toHaveTextContent("Error:");
     expect(ui).not.toHaveTextContent("Error Code:");
   });

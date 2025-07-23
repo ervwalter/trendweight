@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
 import { Route } from "../../routes/oauth/fitbit/callback";
 import { useExchangeFitbitToken } from "../../lib/api/mutations";
 import { ApiError } from "../../lib/api/client";
@@ -8,72 +8,45 @@ import { OAuthCallbackUI } from "./OAuthCallbackUI";
 export function FitbitCallback() {
   const navigate = useNavigate();
   const search = Route.useSearch() as { code?: string; state?: string };
-  const [error, setError] = useState<string | null>(null);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 2;
 
   const exchangeTokenMutation = useExchangeFitbitToken();
+  const { status, mutate, isSuccess, isPending, isError, error } = exchangeTokenMutation;
 
-  const handleTokenExchange = useCallback(() => {
-    if (search.code && search.state) {
-      exchangeTokenMutation.mutate(
-        { code: search.code },
-        {
-          onSuccess: () => {
-            setError(null); // Clear any previous error
-            setErrorCode(null);
-            setIsSuccess(true);
-            // Redirect to dashboard after 3 seconds
-            setTimeout(() => {
-              navigate({ to: "/dashboard" });
-            }, 3000);
-          },
-          onError: (error: Error) => {
-            // Check if this is a retryable error and we haven't exceeded retry limit
-            const isRetryable = error instanceof ApiError && error.isRetryable;
-            const errorCode = error instanceof ApiError ? error.errorCode : null;
-
-            if (isRetryable && retryCount < maxRetries) {
-              setRetryCount((prev) => prev + 1);
-              // Retry after a delay (exponential backoff)
-              setTimeout(
-                () => {
-                  handleTokenExchange();
-                },
-                Math.pow(2, retryCount) * 1000,
-              ); // 1s, 2s, 4s...
-            } else {
-              setError(error.message);
-              setErrorCode(errorCode || null);
-            }
-          },
-        },
-      );
+  // Redirect on success
+  useEffect(() => {
+    if (isSuccess) {
+      const timer = setTimeout(() => {
+        navigate({ to: "/dashboard" });
+      }, 3000);
+      return () => clearTimeout(timer);
     }
-  }, [search.code, search.state, exchangeTokenMutation, navigate, retryCount]);
+  }, [isSuccess, navigate]);
 
   useEffect(() => {
     // Handle initial OAuth callback from Fitbit
-    if (search.code && search.state && !exchangeTokenMutation.isPending && !isSuccess && !error) {
-      handleTokenExchange();
+    // Only run if we have a code and the mutation hasn't been called yet
+    if (search.code && search.state && status === "idle") {
+      mutate({ code: search.code });
     }
-  }, [search.code, search.state, exchangeTokenMutation.isPending, isSuccess, error, handleTokenExchange]);
+  }, [search.code, search.state, status, mutate]);
 
   // Determine UI state
   let uiState: "loading" | "success" | "error" | "invalid";
-  if (exchangeTokenMutation.isPending || (!isSuccess && !error && search.code)) {
+  if (isPending) {
     uiState = "loading";
   } else if (isSuccess) {
     uiState = "success";
-  } else if (error) {
+  } else if (isError) {
     uiState = "error";
+  } else if (search.code) {
+    // We have a code but haven't started the mutation yet
+    uiState = "loading";
   } else {
     uiState = "invalid";
   }
 
-  return (
-    <OAuthCallbackUI providerName="Fitbit" state={uiState} error={error || undefined} errorCode={errorCode} retryCount={retryCount} maxRetries={maxRetries} />
-  );
+  const errorMessage = error instanceof Error ? error.message : undefined;
+  const errorCode = error instanceof ApiError ? error.errorCode : null;
+
+  return <OAuthCallbackUI providerName="Fitbit" state={uiState} error={errorMessage} errorCode={errorCode} />;
 }

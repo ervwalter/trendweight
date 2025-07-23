@@ -12,6 +12,7 @@ vi.mock("../supabase/client", () => ({
   supabase: {
     auth: {
       getSession: vi.fn(),
+      getUser: vi.fn(),
       signInWithOtp: vi.fn(),
       signInWithOAuth: vi.fn(),
       signOut: vi.fn(),
@@ -71,6 +72,8 @@ describe("AuthProvider", () => {
         error: null,
       });
 
+      // No need to mock getUser since it won't be called without a session
+
       const unsubscribe = vi.fn();
       vi.mocked(supabase.auth.onAuthStateChange).mockReturnValue({
         data: { subscription: { unsubscribe } },
@@ -91,11 +94,17 @@ describe("AuthProvider", () => {
       expect(authSuspenseManager.setInitializing).toHaveBeenCalledWith(false);
     });
 
-    it("should initialize with user when session exists", async () => {
+    it("should initialize with user when session exists and is valid", async () => {
       const mockSession = createMockSession();
 
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: { session: mockSession },
+        error: null,
+      });
+
+      // Mock getUser to validate the session
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: mockSession.user },
         error: null,
       });
 
@@ -120,6 +129,45 @@ describe("AuthProvider", () => {
       });
       expect(result.current.session).toBe(mockSession);
       expect(result.current.isLoggedIn).toBe(true);
+    });
+
+    it("should clear session when user validation fails", async () => {
+      const mockSession = createMockSession();
+
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      });
+
+      // Mock getUser to fail validation (user deleted)
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: null },
+        error: { message: "User not found", name: "AuthError" } as any,
+      });
+
+      vi.mocked(supabase.auth.signOut).mockResolvedValue({
+        error: null,
+      });
+
+      const unsubscribe = vi.fn();
+      vi.mocked(supabase.auth.onAuthStateChange).mockReturnValue({
+        data: { subscription: { unsubscribe } },
+        error: null,
+      } as any);
+
+      const { result } = renderHook(() => useAuth(), {
+        wrapper: AuthProvider,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isInitializing).toBe(false);
+      });
+
+      // Should clear the invalid session
+      expect(supabase.auth.signOut).toHaveBeenCalled();
+      expect(result.current.user).toBeNull();
+      expect(result.current.session).toBeNull();
+      expect(result.current.isLoggedIn).toBe(false);
     });
 
     it("should clean up subscription on unmount", () => {
@@ -505,6 +553,12 @@ describe("AuthProvider", () => {
         error: null,
       });
 
+      // Mock getUser to validate the session
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: mockSession.user },
+        error: null,
+      });
+
       vi.mocked(supabase.auth.onAuthStateChange).mockImplementation((callback) => {
         authChangeCallback = callback;
         return {
@@ -592,6 +646,12 @@ describe("AuthProvider", () => {
         error: null,
       });
 
+      // Mock getUser to validate the session
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: mockSession.user },
+        error: null,
+      });
+
       vi.mocked(supabase.auth.onAuthStateChange).mockReturnValue({
         data: { subscription: { unsubscribe: vi.fn() } },
         error: null,
@@ -626,6 +686,12 @@ describe("AuthProvider", () => {
 
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: { session: mockSession },
+        error: null,
+      });
+
+      // Mock getUser to validate the session
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: mockSession.user },
         error: null,
       });
 

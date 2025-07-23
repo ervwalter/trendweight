@@ -243,31 +243,19 @@ public class ProfileService : IProfileService
         {
             _logger.LogInformation("Starting account deletion for user {UserId}", userId);
 
-            // 1. Delete all source data
-            await _sourceDataService.DeleteAllSourceDataAsync(userId);
-            _logger.LogInformation("Deleted all source data for user {UserId}", userId);
-
-            // 2. Delete all provider links
-            await _providerLinkService.DeleteAllProviderLinksAsync(userId);
-            _logger.LogInformation("Deleted all provider links for user {UserId}", userId);
-
-            // 3. Delete the user's profile
-            var profile = await GetByIdAsync(userId);
-            if (profile != null)
-            {
-                await _supabaseService.DeleteAsync<DbProfile>(profile);
-                _logger.LogInformation("Deleted profile for user {UserId}", userId);
-            }
-
-            // 4. Delete the user from Supabase Auth
+            // Delete the user from Supabase Auth
+            // CASCADE DELETE will automatically remove:
+            // - profiles record
+            // - provider_links records (via profiles cascade)
+            // - source_data records (via profiles cascade)
             var authDeleted = await _supabaseService.DeleteAuthUserAsync(userId);
             if (!authDeleted)
             {
-                _logger.LogError("Failed to delete auth user {UserId}, but other data was deleted", userId);
+                _logger.LogError("Failed to delete auth user {UserId}", userId);
                 return false;
             }
 
-            _logger.LogInformation("Successfully completed account deletion for user {UserId}", userId);
+            _logger.LogInformation("Successfully completed account deletion for user {UserId} (CASCADE DELETE handled related data)", userId);
             return true;
         }
         catch (Exception ex)

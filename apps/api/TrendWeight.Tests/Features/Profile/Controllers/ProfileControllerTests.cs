@@ -8,6 +8,7 @@ using TrendWeight.Features.Profile;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
 using TrendWeight.Features.Profile.Services;
+using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Tests.Fixtures;
 using Xunit;
@@ -18,6 +19,7 @@ public class ProfileControllerTests : TestBase
 {
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILegacyMigrationService> _migrationServiceMock;
+    private readonly Mock<ISupabaseService> _supabaseServiceMock;
     private readonly Mock<ILogger<ProfileController>> _loggerMock;
     private readonly ProfileController _sut;
 
@@ -25,8 +27,13 @@ public class ProfileControllerTests : TestBase
     {
         _profileServiceMock = new Mock<IProfileService>();
         _migrationServiceMock = new Mock<ILegacyMigrationService>();
+        _supabaseServiceMock = new Mock<ISupabaseService>();
         _loggerMock = new Mock<ILogger<ProfileController>>();
-        _sut = new ProfileController(_profileServiceMock.Object, _migrationServiceMock.Object, _loggerMock.Object);
+        _sut = new ProfileController(
+            _profileServiceMock.Object,
+            _migrationServiceMock.Object,
+            _supabaseServiceMock.Object,
+            _loggerMock.Object);
     }
 
     #region GetProfile Tests
@@ -75,6 +82,7 @@ public class ProfileControllerTests : TestBase
         var migratedProfile = CreateTestProfile(userId);
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
+        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(true); // Auth user exists
         _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId.ToString(), "test@example.com"))
             .ReturnsAsync(migratedProfile);
 
@@ -97,6 +105,7 @@ public class ProfileControllerTests : TestBase
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
+        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(true); // Auth user exists
         _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId.ToString(), "test@example.com"))
             .ReturnsAsync((DbProfile?)null);
 
@@ -107,6 +116,24 @@ public class ProfileControllerTests : TestBase
         result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Be("User not found");
+    }
+
+    [Fact]
+    public async Task GetProfile_WhenUserNotFoundAndAuthUserDeleted_ReturnsUnauthorized()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
+        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(false); // Auth user deleted
+
+        // Act
+        var result = await _sut.GetProfile();
+
+        // Assert
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>()
+            .Which.Value.Should().BeOfType<ErrorResponse>()
+            .Which.Error.Should().Be("Authentication expired");
     }
 
     [Fact]
@@ -224,6 +251,7 @@ public class ProfileControllerTests : TestBase
         updatedProfile.Profile.UseMetric = request.UseMetric.Value;
 
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(true); // Auth user exists
         _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request))
             .ReturnsAsync(updatedProfile);
 
@@ -281,6 +309,7 @@ public class ProfileControllerTests : TestBase
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
         var request = new UpdateProfileRequest { FirstName = "Test" };
+        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(true); // Auth user exists
         _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()))
             .ThrowsAsync(new Exception("Database error"));
 

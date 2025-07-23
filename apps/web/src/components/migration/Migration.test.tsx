@@ -60,10 +60,20 @@ describe("Migration", () => {
     renderMigration();
 
     expect(screen.getByText("Welcome Back!")).toBeInTheDocument();
-    expect(
-      screen.getByText("We've successfully migrated your profile from classic TrendWeight. Your settings and provider connections have been preserved."),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Your historical data will sync shortly. This may take a few minutes depending on how much data you have.")).toBeInTheDocument();
+
+    // Check for new version notice (first message)
+    expect(screen.getByText(/TrendWeight has been updated with modern code and new features/)).toBeInTheDocument();
+    expect(screen.getByText("See what's new")).toBeInTheDocument();
+
+    // Check for migration message
+    expect(screen.getByText(/Your account has been migrated from classic TrendWeight/)).toBeInTheDocument();
+
+    // Check for data sync message
+    expect(screen.getByText(/Your historical data will sync shortly/)).toBeInTheDocument();
+
+    // Check for contact info message
+    expect(screen.getByText(/If you encounter any issues, please don't hesitate to use the contact link/)).toBeInTheDocument();
+
     expect(screen.getByText("Continue to Dashboard")).toBeInTheDocument();
   });
 
@@ -182,8 +192,8 @@ describe("Migration", () => {
     const container = screen.getByText("Welcome Back!").closest(".rounded-lg");
     expect(container).toHaveClass("border", "border-gray-200", "bg-white", "shadow-sm");
 
-    // Check for info box styling
+    // Check for data sync box styling - only this one has brand colors
     const infoBox = screen.getByText(/Your historical data will sync shortly/).closest(".rounded-lg");
-    expect(infoBox).toHaveClass("bg-blue-50", "p-4");
+    expect(infoBox).toHaveClass("bg-brand-50", "p-4");
   });
 });
