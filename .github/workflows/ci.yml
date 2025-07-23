@@ -35,16 +35,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Setup Turbo Remote Cache
-        if: github.event_name != 'pull_request'
-        env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-        run: |
-          if [ -n "$TURBO_TOKEN" ] && [ -n "$TURBO_TEAM" ]; then
-            echo "TURBO_TOKEN=$TURBO_TOKEN" >> $GITHUB_ENV
-            echo "TURBO_TEAM=$TURBO_TEAM" >> $GITHUB_ENV
-          fi
+      - name: Restore Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
 
       - name: Lint / Typecheck
         run: npm run check:ci
