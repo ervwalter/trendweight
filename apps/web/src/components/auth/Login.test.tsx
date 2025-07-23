@@ -157,6 +157,9 @@ describe("Login", () => {
   });
 
   it("should handle email submission error", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     const user = userEvent.setup();
     mockSendLoginEmail.mockRejectedValue(new Error("Network error"));
 
@@ -175,6 +178,8 @@ describe("Login", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("Failed to send login email. Please try again.");
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should not submit email form with empty email", async () => {
@@ -249,6 +254,9 @@ describe("Login", () => {
   });
 
   it("should handle social login errors", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     const user = userEvent.setup();
     mockSignInWithGoogle.mockRejectedValue(new Error("Auth failed"));
 
@@ -260,6 +268,8 @@ describe("Login", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("Failed to sign in with google. Please try again.");
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should navigate to custom redirect after successful login", async () => {

@@ -91,6 +91,9 @@ describe("AppleCallback", () => {
   });
 
   it("should handle error response from Apple", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     window.location.hash = "#error=user_cancelled";
 
     render(<AppleCallback />);
@@ -100,9 +103,14 @@ describe("AppleCallback", () => {
       expect(screen.getByText("Apple authentication failed: user_cancelled")).toBeInTheDocument();
       expect(screen.getByText("Back to Log In")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should handle missing id_token", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     window.location.hash = "#state=test-state";
     sessionStorage.setItem("apple_auth_state", "test-state");
 
@@ -112,9 +120,14 @@ describe("AppleCallback", () => {
       expect(screen.getByText("Sign In Failed")).toBeInTheDocument();
       expect(screen.getByText("No ID token received from Apple")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should handle CSRF protection - missing state", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     window.location.hash = "#id_token=test-token&state=test-state";
     // No saved state in sessionStorage
 
@@ -124,9 +137,14 @@ describe("AppleCallback", () => {
       expect(screen.getByText("Sign In Failed")).toBeInTheDocument();
       expect(screen.getByText("Invalid state parameter - possible CSRF attack")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should handle CSRF protection - mismatched state", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     window.location.hash = "#id_token=test-token&state=test-state";
     sessionStorage.setItem("apple_auth_state", "different-state");
 
@@ -136,9 +154,14 @@ describe("AppleCallback", () => {
       expect(screen.getByText("Sign In Failed")).toBeInTheDocument();
       expect(screen.getByText("Invalid state parameter - possible CSRF attack")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should handle Supabase sign in error", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     window.location.hash = "#id_token=test-token&state=test-state";
     sessionStorage.setItem("apple_auth_state", "test-state");
 
@@ -152,9 +175,14 @@ describe("AppleCallback", () => {
       expect(screen.getByText("Sign In Failed")).toBeInTheDocument();
       expect(screen.getByText("Invalid token")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should handle unexpected errors", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     window.location.hash = "#id_token=test-token&state=test-state";
     sessionStorage.setItem("apple_auth_state", "test-state");
 
@@ -166,5 +194,7 @@ describe("AppleCallback", () => {
       expect(screen.getByText("Sign In Failed")).toBeInTheDocument();
       expect(screen.getByText("An unexpected error occurred")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 });

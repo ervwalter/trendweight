@@ -76,6 +76,9 @@ describe("Verify", () => {
       error: null as string | null,
     };
 
+    // Mock the async call to prevent it from executing during initial render
+    vi.mocked(supabase.auth.getSession).mockImplementation(() => new Promise(() => {}));
+
     render(<Verify />);
 
     expect(screen.getByText("Verifying...")).toBeInTheDocument();
@@ -102,6 +105,9 @@ describe("Verify", () => {
   });
 
   it("should handle verification error from getSession", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockLoaderData = {
       token: "abc123",
       isOAuth: false,
@@ -120,6 +126,8 @@ describe("Verify", () => {
       expect(screen.getByText("Invalid or expired login link. Please try logging in again.")).toBeInTheDocument();
       expect(screen.getByText("Return to login")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should try exchangeCodeForSession when no session from getSession", async () => {
@@ -148,6 +156,9 @@ describe("Verify", () => {
   });
 
   it("should handle exchangeCodeForSession error", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockLoaderData = {
       token: "abc123",
       isOAuth: false,
@@ -169,6 +180,8 @@ describe("Verify", () => {
     await waitFor(() => {
       expect(screen.getByText("Invalid or expired login link. Please try logging in again.")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should handle OAuth flow", async () => {
@@ -217,6 +230,9 @@ describe("Verify", () => {
   });
 
   it("should handle unexpected errors gracefully", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockLoaderData = {
       token: "abc123",
       isOAuth: false,
@@ -230,6 +246,8 @@ describe("Verify", () => {
     await waitFor(() => {
       expect(screen.getByText("An unexpected error occurred. Please try logging in again.")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should show invalid login link when no token and no OAuth", () => {
@@ -246,6 +264,9 @@ describe("Verify", () => {
   });
 
   it("should not start verification if already has error", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockLoaderData = {
       token: "abc123",
       isOAuth: false,
@@ -267,5 +288,7 @@ describe("Verify", () => {
       expect(screen.getByText("Verification Failed")).toBeInTheDocument();
       expect(screen.getByText("Invalid or expired login link. Please try logging in again.")).toBeInTheDocument();
     });
+
+    consoleErrorSpy.mockRestore();
   });
 });

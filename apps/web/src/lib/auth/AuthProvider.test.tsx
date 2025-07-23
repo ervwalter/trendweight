@@ -224,6 +224,9 @@ describe("AuthProvider", () => {
     });
 
     it("should throw error when login email fails", async () => {
+      // Suppress expected console.error for this test
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
       const mockError = new Error("Failed to send email");
       vi.mocked(supabase.auth.signInWithOtp).mockResolvedValue({
         data: null,
@@ -253,6 +256,8 @@ describe("AuthProvider", () => {
           await result.current.sendLoginEmail("test@example.com");
         }),
       ).rejects.toThrow("Failed to send email");
+
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -360,6 +365,9 @@ describe("AuthProvider", () => {
     });
 
     it("should handle Apple sign-in errors", async () => {
+      // Suppress expected console.error for this test
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
       const mockError = new Error("Apple sign-in failed");
       mockAppleID.auth.signIn.mockRejectedValue(mockError);
 
@@ -379,6 +387,8 @@ describe("AuthProvider", () => {
 
       expect(sessionStorage.getItem("apple_auth_state")).toBeNull();
       expect(sessionStorage.getItem("apple_auth_redirect")).toBeNull();
+
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -416,6 +426,9 @@ describe("AuthProvider", () => {
     });
 
     it("should handle missing session error", async () => {
+      // Suppress expected console.error for this test
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
       vi.mocked(supabase.auth.signOut).mockResolvedValue({
         error: { message: "Auth session missing!" } as any,
       });
@@ -451,9 +464,14 @@ describe("AuthProvider", () => {
 
       expect(router.navigate).toHaveBeenCalledWith({ to: "/" });
       expect(reloadSpy).toHaveBeenCalled();
+
+      consoleErrorSpy.mockRestore();
     });
 
     it("should throw error for other sign out errors", async () => {
+      // Suppress expected console.error for this test
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
       const mockError = new Error("Network error");
       vi.mocked(supabase.auth.signOut).mockResolvedValue({
         error: mockError as any,
@@ -472,6 +490,8 @@ describe("AuthProvider", () => {
           await result.current.signOut();
         }),
       ).rejects.toThrow("Network error");
+
+      consoleErrorSpy.mockRestore();
     });
   });
 

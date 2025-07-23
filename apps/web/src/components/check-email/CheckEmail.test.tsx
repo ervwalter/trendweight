@@ -103,6 +103,7 @@ describe("CheckEmail", () => {
 
   it("should handle resend button click", async () => {
     window.location.search = "?email=test@example.com";
+    mockSendLoginEmail.mockResolvedValue(undefined);
 
     render(<CheckEmail />);
 
@@ -112,7 +113,10 @@ describe("CheckEmail", () => {
     });
 
     const resendButton = screen.getByText("Send again");
-    fireEvent.click(resendButton);
+
+    await act(async () => {
+      fireEvent.click(resendButton);
+    });
 
     expect(mockSendLoginEmail).toHaveBeenCalledWith("test@example.com");
   });
@@ -132,7 +136,7 @@ describe("CheckEmail", () => {
     expect(mockSendLoginEmail).not.toHaveBeenCalled();
   });
 
-  it("should disable button while sending", () => {
+  it("should disable button while sending", async () => {
     window.location.search = "?email=test@example.com";
     mockSendLoginEmail.mockImplementation(() => new Promise(() => {})); // Never resolves
 
@@ -144,7 +148,10 @@ describe("CheckEmail", () => {
     });
 
     const resendButton = screen.getByText("Send again");
-    fireEvent.click(resendButton);
+
+    await act(async () => {
+      fireEvent.click(resendButton);
+    });
 
     expect(resendButton).toBeDisabled();
     expect(resendButton).toHaveTextContent("Sending...");

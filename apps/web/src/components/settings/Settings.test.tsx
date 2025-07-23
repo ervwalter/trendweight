@@ -242,6 +242,9 @@ describe("Settings", () => {
   });
 
   it("should show error message on save failure", async () => {
+    // Suppress expected console.error for this test
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     const user = userEvent.setup();
     mockMutateAsync.mockRejectedValue(new Error("Network error"));
 
@@ -259,6 +262,8 @@ describe("Settings", () => {
     });
 
     expect(screen.getByText("Failed to save settings. Please try again.")).toBeInTheDocument();
+
+    consoleErrorSpy.mockRestore();
   });
 
   it("should show success message after saving", async () => {

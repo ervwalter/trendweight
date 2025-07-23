@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProviderList } from "./ProviderList";
 import { useProviderLinks } from "../../lib/api/queries";
@@ -119,6 +119,9 @@ describe("ProviderList", () => {
     });
 
     it("should handle connect error", async () => {
+      // Suppress expected console.error for this test
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
       const user = userEvent.setup();
       vi.mocked(apiRequest).mockRejectedValue(new Error("Network error"));
 
@@ -133,6 +136,8 @@ describe("ProviderList", () => {
           variant: "error",
         });
       });
+
+      consoleErrorSpy.mockRestore();
     });
 
     it("should handle resync action", async () => {
@@ -205,8 +210,10 @@ describe("ProviderList", () => {
       );
 
       // Simulate success callback
-      const successCallback = mockDisconnectMutate.mock.calls[0][1].onSuccess;
-      successCallback();
+      await act(async () => {
+        const successCallback = mockDisconnectMutate.mock.calls[0][1].onSuccess;
+        successCallback();
+      });
 
       expect(mockShowToast).toHaveBeenCalledWith({
         title: "Disconnected",
@@ -303,8 +310,10 @@ describe("ProviderList", () => {
       await user.click(confirmButton!);
 
       // Simulate error callback
-      const errorCallback = mockDisconnectMutate.mock.calls[0][1].onError;
-      errorCallback();
+      await act(async () => {
+        const errorCallback = mockDisconnectMutate.mock.calls[0][1].onError;
+        errorCallback();
+      });
 
       expect(mockShowToast).toHaveBeenCalledWith({
         title: "Disconnect Failed",
