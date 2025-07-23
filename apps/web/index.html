@@ -15,6 +15,27 @@
     <meta name="apple-mobile-web-app-title" content="TrendWeight" />
     <meta name="theme-color" content="#3468b1" />
     
+    <!-- Critical font-face declarations to prevent FOUT -->
+    <style>
+      /* Preload font-face for logo font (Zilla Slab) - block to prevent flicker */
+      @font-face {
+        font-family: 'Zilla Slab';
+        font-style: normal;
+        font-display: block;
+        font-weight: 400;
+        src: url('@fontsource/zilla-slab/files/zilla-slab-latin-400-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF;
+      }
+      @font-face {
+        font-family: 'Zilla Slab';
+        font-style: normal;
+        font-display: block;
+        font-weight: 700;
+        src: url('@fontsource/zilla-slab/files/zilla-slab-latin-700-normal.woff2') format('woff2');
+        unicode-range: U+0000-00FF;
+      }
+    </style>
+    
     <script defer data-domain="trendweight.dev" src="/js/script.js" data-api="/api/event"></script>
     <title>TrendWeight</title>
   </head>
