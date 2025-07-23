@@ -5,42 +5,35 @@ import { ChangelogSection } from "./ChangelogSection";
 import { BuildDetailsSection } from "./BuildDetailsSection";
 import { BrowserInfoSection } from "./BrowserInfoSection";
 import { QuickActionsSection } from "./QuickActionsSection";
-import { formatBuildTime } from "../../lib/build/formatters";
 import { getBrowserInfo } from "../../lib/build/browser-info";
-import { getDebugInfo, getMailtoLink } from "../../lib/build/debug-info";
+import { getDebugInfo, getBuildInfo } from "../../lib/utils/debug-info";
 import { useChangelog } from "../../lib/build/use-changelog";
 
 export function Build() {
   const [copied, setCopied] = useState(false);
 
-  const environment = import.meta.env.MODE || "development";
-  const buildTime = import.meta.env.VITE_BUILD_TIME || "Not available";
-  const buildCommit = import.meta.env.VITE_BUILD_COMMIT || "Not available";
-  const buildBranch = import.meta.env.VITE_BUILD_BRANCH || "Not available";
-  const buildVersion = import.meta.env.VITE_BUILD_VERSION || "Not available";
+  const buildInfo = getBuildInfo();
   const buildRepo = import.meta.env.VITE_BUILD_REPO || "";
 
   const githubRepo = buildRepo ? `https://github.com/${buildRepo}` : null;
-  const isTag = buildVersion.startsWith("v") || (!buildVersion.startsWith("build-") && buildVersion !== "Not available" && buildVersion !== "local");
-  const commitUrl = githubRepo && buildCommit !== "Not available" ? `${githubRepo}/commit/${buildCommit}` : null;
-  const versionUrl = githubRepo && buildVersion !== "Not available" && buildVersion !== "local" && isTag ? `${githubRepo}/releases/tag/${buildVersion}` : null;
+  const isTag =
+    buildInfo.buildVersion.startsWith("v") ||
+    (!buildInfo.buildVersion.startsWith("build-") && buildInfo.buildVersion !== "Not available" && buildInfo.buildVersion !== "local");
+  const commitUrl = githubRepo && buildInfo.buildCommit !== "Not available" ? `${githubRepo}/commit/${buildInfo.buildCommit}` : null;
+  const versionUrl =
+    githubRepo && buildInfo.buildVersion !== "Not available" && buildInfo.buildVersion !== "local" && isTag
+      ? `${githubRepo}/releases/tag/${buildInfo.buildVersion}`
+      : null;
 
-  const formattedTime = formatBuildTime(buildTime);
-  const buildTimeInfo = typeof formattedTime === "object" ? formattedTime : null;
   const systemInfo = getBrowserInfo();
-  const { changelog, loadingChangelog } = useChangelog(buildVersion, buildRepo, isTag, githubRepo);
+  const { changelog, loadingChangelog } = useChangelog(buildInfo.buildVersion, buildRepo, isTag, githubRepo);
 
-  const buildInfo = {
-    environment,
-    buildVersion,
-    buildBranch,
-    buildCommit,
-    buildTime,
-    buildTimeInfo,
-  };
+  const debugInfo = getDebugInfo(); // No error, just system info
 
-  const debugInfo = getDebugInfo(buildInfo, systemInfo);
-  const mailtoLink = getMailtoLink(debugInfo);
+  // Build the mailto link with custom subject and preamble
+  const subject = encodeURIComponent("TrendWeight Support Request");
+  const body = encodeURIComponent("Please describe your issue here:\n\n\n\n" + "--- System Information (Please keep this) ---\n" + debugInfo);
+  const mailtoLink = `mailto:erv@ewal.net?subject=${subject}&body=${body}`;
 
   const copyToClipboard = async () => {
     try {
@@ -64,18 +57,18 @@ export function Build() {
           support.
         </p>
 
-        <ChangelogSection changelog={changelog} loadingChangelog={loadingChangelog} buildVersion={buildVersion} />
+        <ChangelogSection changelog={changelog} loadingChangelog={loadingChangelog} buildVersion={buildInfo.buildVersion} />
 
         <QuickActionsSection onCopyClick={copyToClipboard} copied={copied} mailtoLink={mailtoLink} />
 
         <BuildDetailsSection
-          environment={environment}
-          buildTime={buildTime}
-          buildTimeInfo={buildTimeInfo}
-          buildVersion={buildVersion}
+          environment={buildInfo.environment}
+          buildTime={buildInfo.buildTime}
+          buildTimeInfo={buildInfo.buildTimeInfo}
+          buildVersion={buildInfo.buildVersion}
           versionUrl={versionUrl}
-          buildBranch={buildBranch}
-          buildCommit={buildCommit}
+          buildBranch={buildInfo.buildBranch}
+          buildCommit={buildInfo.buildCommit}
           commitUrl={commitUrl}
           buildRepo={buildRepo}
           githubRepo={githubRepo}

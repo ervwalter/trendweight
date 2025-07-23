@@ -153,7 +153,6 @@ apps/web/
 ├── src/
 │   ├── test/
 │   │   ├── setup.ts          # Global test setup
-│   │   ├── test-utils.tsx    # Custom render and utilities
 │   │   └── mocks/
 │   │       ├── server.ts     # MSW server setup
 │   │       └── handlers.ts   # MSW request handlers
@@ -194,11 +193,33 @@ server.use(
 );
 ```
 
+#### Console Suppression for Expected Errors
+
+When writing tests that intentionally trigger errors or warnings, suppress console output to keep test results clean:
+
+```typescript
+it('handles error gracefully', async () => {
+  // Suppress expected console.error for this test
+  const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  
+  // Code that triggers an error
+  render(<ComponentThatThrows />);
+  
+  // Assertions...
+  expect(screen.getByText(/error/i)).toBeInTheDocument();
+  
+  // Always restore console at the end
+  consoleErrorSpy.mockRestore();
+});
+```
+
+Use the same pattern for `console.warn` when testing code that logs warnings. This pattern should only be applied to specific tests that expect errors/warnings, not globally.
+
 #### Component Testing
 
 ```typescript
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@/test/test-utils';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Button } from './Button';
 
@@ -277,7 +298,7 @@ describe('API Integration', () => {
 
 1. **Use MSW for All HTTP Mocking**: Always use MSW for mocking HTTP requests
 2. **Test User Behavior**: Focus on how users interact with components, not implementation details
-3. **Use Testing Utilities**: Always use the custom render function from `test-utils.tsx`
+3. **Use React Testing Library**: Use the standard render function from `@testing-library/react`
 4. **Use Semantic Queries**: Prefer `getByRole`, `getByLabelText` over `getByTestId`
 5. **Keep Tests Simple**: Each test should verify one behavior
 6. **Test Error States**: Always test error states and edge cases

@@ -11,7 +11,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant = "primary", size = "md", asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button";
 
-  const baseStyles = "inline-flex items-center justify-center font-medium transition-colors rounded-md disabled:opacity-50 disabled:pointer-events-none";
+  const baseStyles =
+    "inline-flex items-center justify-center font-medium transition-colors rounded-md disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap";
 
   const variantStyles = {
     primary: "bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800",

@@ -283,6 +283,20 @@ Keep this file focused on AI code generation guidance only.
 
 ## Testing Guidelines
 
+### Console Suppression in Tests
+When writing tests that intentionally trigger errors or warnings, suppress console output to keep test output clean:
+
+```typescript
+// Suppress expected console.error for this test
+const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+// ... test code that triggers errors ...
+
+consoleErrorSpy.mockRestore();
+```
+
+Use the same pattern for `console.warn` when testing code that logs warnings. Apply this pattern only to specific tests that expect errors/warnings, not globally.
+
 ### Frontend Testing with MSW
 **CRITICAL**: Always use MSW (Mock Service Worker) for HTTP mocking in frontend tests:
 - NEVER manually mock fetch: `global.fetch = vi.fn()` ❌

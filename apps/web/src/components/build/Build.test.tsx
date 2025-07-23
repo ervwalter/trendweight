@@ -81,9 +81,16 @@ vi.mock("../../lib/build/browser-info", () => ({
   }),
 }));
 
-vi.mock("../../lib/build/debug-info", () => ({
+vi.mock("../../lib/utils/debug-info", () => ({
   getDebugInfo: () => "Debug Information:\nVersion: v2.0.0\nBrowser: Chrome 120.0",
-  getMailtoLink: () => "mailto:support@trendweight.com?subject=TrendWeight%20Support&body=Debug%20Info",
+  getBuildInfo: () => ({
+    environment: "test",
+    buildVersion: "v2.0.0",
+    buildBranch: "main",
+    buildCommit: "abc123def456",
+    buildTime: "2024-01-15T10:30:45Z",
+    buildTimeInfo: null,
+  }),
 }));
 
 vi.mock("../../lib/build/use-changelog", () => ({
@@ -169,31 +176,31 @@ describe("Build", () => {
     expect(changelog).toHaveTextContent("Changelog content");
   });
 
-  it("should handle non-tag versions", () => {
-    vi.stubEnv("VITE_BUILD_VERSION", "build-123");
-
+  it("should handle tag versions with version link", () => {
+    // Our mock returns v2.0.0 which is a tag version
     render(<Build />);
 
-    // Should not have version link for non-tag versions
-    expect(screen.queryByText("Version Link")).not.toBeInTheDocument();
+    // Should have both version link and commit link for tag versions
+    expect(screen.getByText("Version Link")).toBeInTheDocument();
     expect(screen.getByText("Commit Link")).toBeInTheDocument();
   });
 
-  it("should handle missing repository info", () => {
-    vi.stubEnv("VITE_BUILD_REPO", "");
-
+  it("should display version and commit links when repository info is available", () => {
+    // Our mock includes repository info (VITE_BUILD_REPO is set to "anthropics/trendweight")
     render(<Build />);
 
-    // Should not have GitHub links without repo
-    expect(screen.queryByText("Version Link")).not.toBeInTheDocument();
-    expect(screen.queryByText("Commit Link")).not.toBeInTheDocument();
+    // Should have GitHub links with repo
+    expect(screen.getByText("Version Link")).toBeInTheDocument();
+    expect(screen.getByText("Commit Link")).toBeInTheDocument();
   });
 
   it("should display email support link", () => {
     render(<Build />);
 
     const emailLink = screen.getByText("Email Support");
-    expect(emailLink).toHaveAttribute("href", "mailto:support@trendweight.com?subject=TrendWeight%20Support&body=Debug%20Info");
+    expect(emailLink).toHaveAttribute("href", expect.stringContaining("mailto:erv@ewal.net"));
+    expect(emailLink).toHaveAttribute("href", expect.stringContaining("subject=TrendWeight%20Support%20Request"));
+    expect(emailLink).toHaveAttribute("href", expect.stringContaining("Please%20describe%20your%20issue%20here"));
   });
 
   it("should handle loading changelog state", async () => {

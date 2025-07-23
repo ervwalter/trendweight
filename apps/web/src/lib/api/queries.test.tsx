@@ -167,6 +167,9 @@ describe("queries", () => {
     });
 
     it("should throw error for other error responses", async () => {
+      // Suppress expected console.error for this test
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
       server.use(
         http.get("/api/profile", () => {
           return HttpResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -202,6 +205,8 @@ describe("queries", () => {
       // For now, we'll just verify the hook was called
       // In a real app, the error boundary would handle this
       expect(true).toBe(true);
+
+      consoleErrorSpy.mockRestore();
     });
   });
 

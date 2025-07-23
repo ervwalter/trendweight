@@ -9,8 +9,12 @@ import { BackgroundQueryProgress } from "./lib/progress/BackgroundQueryProgress"
 import { ProgressManager } from "./lib/progress/ProgressManager";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastContextProvider } from "./components/ui/ToastProvider";
+import { setupVersionSkewHandler } from "./lib/version-skew/setupVersionSkewHandler";
 import "@bprogress/core/css";
 import "./lib/progress/progress.css";
+
+// Set up version skew handling
+setupVersionSkewHandler();
 
 function App() {
   return (

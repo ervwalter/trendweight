@@ -132,6 +132,9 @@ describe("AuthProvider", () => {
     });
 
     it("should clear session when user validation fails", async () => {
+      // Suppress expected console.warn for this test
+      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
       const mockSession = createMockSession();
 
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
@@ -168,6 +171,8 @@ describe("AuthProvider", () => {
       expect(result.current.user).toBeNull();
       expect(result.current.session).toBeNull();
       expect(result.current.isLoggedIn).toBe(false);
+
+      consoleWarnSpy.mockRestore();
     });
 
     it("should clean up subscription on unmount", () => {
@@ -442,8 +447,15 @@ describe("AuthProvider", () => {
 
   describe("signOut", () => {
     beforeEach(() => {
+      const mockSession = createMockSession();
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: createMockSession() },
+        data: { session: mockSession },
+        error: null,
+      });
+
+      // Mock getUser to return valid user so session validation passes
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: mockSession.user },
         error: null,
       });
 

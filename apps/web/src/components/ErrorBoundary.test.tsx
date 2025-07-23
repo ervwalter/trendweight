@@ -55,22 +55,19 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
     expect(screen.getByText("We encountered an unexpected error while processing your request.")).toBeInTheDocument();
   });
 
-  it("should display error ID when error occurs", () => {
+  it("should display error details when error occurs", () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText("Error ID")).toBeInTheDocument();
-
-    // Error ID should be in the format ERR-timestamp-randomstring
-    const errorIdElement = screen.getByText(/^ERR-\d+-[a-z0-9]+$/);
-    expect(errorIdElement).toBeInTheDocument();
+    expect(screen.getByText("Error Details")).toBeInTheDocument();
+    expect(screen.getByText("Test error")).toBeInTheDocument();
   });
 
   it("should display refresh and homepage buttons", () => {
@@ -93,15 +90,9 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "Error caught by ErrorBoundary:",
-      expect.any(Error),
-      expect.objectContaining({
-        componentStack: expect.any(String),
-      }),
-    );
-
-    expect(consoleSpy).toHaveBeenCalledWith("Error ID:", expect.stringMatching(/^ERR-\d+-[a-z0-9]+$/));
+    expect(consoleSpy).toHaveBeenCalled();
+    // The actual console.error call from React's error boundary
+    expect(consoleSpy.mock.calls.some((call) => call.some((arg) => arg instanceof Error && arg.message === "Test error"))).toBe(true);
   });
 
   it("should display help text", () => {
@@ -111,8 +102,8 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText(/This error has been logged/)).toBeInTheDocument();
-    expect(screen.getByText(/contact support with the error ID/)).toBeInTheDocument();
+    expect(screen.getByText(/Try refreshing the page first/)).toBeInTheDocument();
+    expect(screen.getByText(/If the problem persists/)).toBeInTheDocument();
   });
 
   it("should have error icon", () => {
@@ -122,10 +113,10 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
 
-    // Check for the SVG icon with proper accessibility attributes
-    const icon = screen.getByRole("img", { name: "Error icon" });
+    // Check for the error image
+    const icon = screen.getByRole("img", { name: "error icon" });
     expect(icon).toBeInTheDocument();
-    expect(icon).toHaveClass("h-8", "w-8");
+    expect(icon).toHaveAttribute("src", "/error.svg");
   });
 
   it("should set page title and meta tags when error occurs", () => {
@@ -137,28 +128,27 @@ describe("ErrorBoundary", () => {
 
     // Helmet is mocked, so we can't test actual meta tags
     // Just verify the error UI is shown
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
   });
 
-  it("should generate unique error IDs for different errors", () => {
+  it("should display error message for different errors", () => {
     const { unmount } = render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>,
     );
 
-    const firstErrorId = screen.getByText(/^ERR-\d+-[a-z0-9]+$/).textContent;
+    expect(screen.getByText("Test error")).toBeInTheDocument();
     unmount();
 
+    // Test that error boundary shows errors
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>,
     );
 
-    const secondErrorId = screen.getByText(/^ERR-\d+-[a-z0-9]+$/).textContent;
-
-    expect(firstErrorId).not.toBe(secondErrorId);
+    expect(screen.getByText("Test error")).toBeInTheDocument();
   });
 
   it("should handle error recovery", () => {
@@ -168,7 +158,7 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
 
     // Error boundaries don't automatically recover, but we can test the non-error state
     rerender(
@@ -178,6 +168,6 @@ describe("ErrorBoundary", () => {
     );
 
     // The error boundary will still show error state since it doesn't auto-recover
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
   });
 });

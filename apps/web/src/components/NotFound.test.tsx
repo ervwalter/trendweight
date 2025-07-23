@@ -77,7 +77,7 @@ describe("NotFound", () => {
 
     const branding = screen.getByText("TrendWeight");
     expect(branding).toHaveClass("text-brand-600");
-    expect(branding).toHaveClass("font-serif");
+    expect(branding).toHaveClass("font-logo");
     expect(branding).toHaveClass("text-4xl");
     expect(branding).toHaveClass("font-bold");
     expect(branding).toHaveClass("md:text-5xl");
@@ -89,17 +89,17 @@ describe("NotFound", () => {
     const image = screen.getByRole("img", { name: "alien abduction icon" });
     expect(image).toHaveClass("h-auto");
     expect(image).toHaveClass("w-full");
-    expect(image).toHaveClass("max-w-[200px]");
-    expect(image).toHaveClass("md:h-[150px]");
-    expect(image).toHaveClass("md:w-auto");
-    expect(image).toHaveClass("lg:h-[200px]");
+    expect(image).toHaveClass("max-w-[250px]");
+    expect(image).toHaveClass("md:max-w-[200px]");
+    expect(image).toHaveClass("lg:max-w-[240px]");
+    expect(image).toHaveClass("xl:max-w-[280px]");
   });
 
   it("should have proper layout structure", () => {
     const { container } = render(<NotFound />);
 
     // Check for proper flex layout
-    const flexContainer = container.querySelector(".flex.flex-col.items-start.space-y-8");
+    const flexContainer = container.querySelector(".flex.flex-col.items-start.space-y-4");
     expect(flexContainer).toBeInTheDocument();
     expect(flexContainer).toHaveClass("md:flex-row", "md:items-center");
 
