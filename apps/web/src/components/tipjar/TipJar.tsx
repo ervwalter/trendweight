@@ -76,8 +76,8 @@ export function TipJar() {
         <iframe
           src="https://github.com/sponsors/ervwalter/button"
           title="Sponsor ervwalter"
-          height="32"
-          width="116"
+          height="34"
+          width="160"
           style={{ border: 0, borderRadius: "6px" }}
         />
       </div>
