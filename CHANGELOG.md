@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1](https://github.com/ervwalter/trendweight/compare/v2.1.0...v2.1.1) (2025-07-23)
+
+
+### Fixes
+
+* remove Layout wrapper from OAuthCallbackUI component ([7004760](https://github.com/ervwalter/trendweight/commit/70047604bcfc0e459e4d69f29547853e32a7e335))
+* switch Docker runtime from Alpine to Debian for SQL Server support ([7004760](https://github.com/ervwalter/trendweight/commit/70047604bcfc0e459e4d69f29547853e32a7e335))
+
 ## [2.1.0](https://github.com/ervwalter/trendweight/compare/v2.0.0...v2.1.0) (2025-07-23)
 
 
