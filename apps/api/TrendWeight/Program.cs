@@ -182,7 +182,7 @@ app.UseStaticFiles(new StaticFileOptions
     {
         var path = ctx.File.Name;
         var headers = ctx.Context.Response.Headers;
-        
+
         // Check if this is a hashed asset (contains hash pattern like -aBc123De)
         if (System.Text.RegularExpressions.Regex.IsMatch(path, @"-[a-zA-Z0-9_]{8,}\.(js|css)$"))
         {
@@ -222,7 +222,7 @@ if (!app.Environment.IsDevelopment())
         context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
         context.Response.Headers.Pragma = "no-cache";
         context.Response.Headers.Expires = "0";
-        
+
         var indexPath = Path.Combine(app.Environment.WebRootPath, "index.html");
         await context.Response.SendFileAsync(indexPath);
     });

@@ -185,15 +185,28 @@ If you see any route file that doesn't follow this pattern, it MUST be refactore
 
 ### Commit Message Guidelines
 **CRITICAL RULE: NO EMOJIS IN COMMIT MESSAGES**
-- Use conventional commit format: `type: description`
+- Use conventional commit format: `type: description` or `type(scope): description`
 - Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert
+- **Scopes**: Use scopes when changes are specific to particular features or areas. These are just examples - use whatever scope best describes the area of change:
+  - Frontend examples: `auth`, `dashboard`, `settings`, `profile`, `charts`, `navigation`
+  - Backend examples: `withings-sync`, `fitbit-sync`, `weight-service`, `user-service`, `oauth`
+  - Infrastructure examples: `docker`, `ci`, `deps`, `config`
+  - Component examples: `button`, `modal`, `form`, `layout`
 - Never use emojis (no ✨, 🐛, 📝, etc.)
 - Keep first line under 72 characters
 - Use present tense, imperative mood
-- Examples:
+- Examples without scope (general/cross-cutting changes):
   - `feat: add user authentication system`
   - `fix: resolve memory leak in rendering process`
   - `refactor: extract common validation logic into helpers`
+- Examples with scope (feature-specific changes):
+  - `feat(auth): add Apple sign-in provider`
+  - `fix(dashboard): correct weight trend calculation`
+  - `style(settings): improve form layout on mobile`
+  - `refactor(withings-sync): consolidate webhook handling`
+  - `test(weight-service): add interpolation edge cases`
+  - `perf(charts): optimize data point rendering`
+  - `fix(oauth): handle token refresh errors gracefully`
 
 ## Important AI Code Generation Notes
 

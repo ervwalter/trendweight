@@ -30,9 +30,5 @@
     "lint-staged": "16.1.2",
     "turbo": "2.5.5"
   },
-  "lint-staged": {
-    "apps/web/**/*.{js,jsx,ts,tsx,json,css,md}": "prettier --write",
-    "apps/api/**/*.cs": "cd apps/api && dotnet format --include"
-  },
   "version": "2.0.0-alpha.1"
 }
