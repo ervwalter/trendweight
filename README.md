@@ -25,7 +25,7 @@ A web application for tracking weight trends by integrating with smart scales fr
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth with JWT
 
-For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
+For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Getting Started
 
@@ -95,7 +95,7 @@ Build the Docker image:
 docker build -t trendweight:latest .
 ```
 
-The container runs on port 8080 and requires environment variables for backend configuration. See [ARCHITECTURE.md](ARCHITECTURE.md) for deployment details.
+The container runs on port 8080 and requires environment variables for backend configuration. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for deployment details.
 
 ## Contributing
 
