@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.7](https://github.com/ervwalter/trendweight/compare/v2.1.6...v2.1.7) (2025-07-24)
+
+
+### Fixes
+
+* Fix architecture link ([#271](https://github.com/ervwalter/trendweight/issues/271)) ([344341e](https://github.com/ervwalter/trendweight/commit/344341eb1cf343619f07f83e114c0f4accaa10ce))
+* update ShowCalories to true for legacy profile migration ([c104bdc](https://github.com/ervwalter/trendweight/commit/c104bdc2c0e78472793fefd261ed13d81f967257))
+
 ## [2.1.6](https://github.com/ervwalter/trendweight/compare/v2.1.5...v2.1.6) (2025-07-23)
 
 
