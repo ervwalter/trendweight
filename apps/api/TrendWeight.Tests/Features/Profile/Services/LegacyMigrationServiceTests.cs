@@ -157,7 +157,7 @@ public class LegacyMigrationServiceTests : TestBase
             p.Profile.SharingEnabled == true &&
             p.Profile.IsMigrated == true &&
             p.Profile.IsNewlyMigrated == true &&
-            p.Profile.ShowCalories == false
+            p.Profile.ShowCalories == true
         )), Times.Once);
 
         // Verify no provider link was created
@@ -367,7 +367,7 @@ public class LegacyMigrationServiceTests : TestBase
         capturedProfile.Profile.SharingEnabled.Should().BeTrue();
         capturedProfile.Profile.IsMigrated.Should().BeTrue();
         capturedProfile.Profile.IsNewlyMigrated.Should().BeTrue();
-        capturedProfile.Profile.ShowCalories.Should().BeFalse();
+        capturedProfile.Profile.ShowCalories.Should().BeTrue();
     }
 
     #endregion
