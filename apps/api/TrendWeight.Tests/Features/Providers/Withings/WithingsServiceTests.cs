@@ -590,6 +590,45 @@ public class WithingsServiceTests : TestBase
     }
 
     [Fact]
+    public async Task GetMeasurementsAsync_With503InvalidRefreshToken_ThrowsProviderAuthException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var token = CreateValidToken();
+        var providerLink = new DbProviderLink
+        {
+            Provider = "withings",
+            Token = token
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
+            .ReturnsAsync(providerLink);
+
+        // Setup response with 503 status and "invalid refresh_token" message
+        var errorResponse = new WithingsResponse<WithingsGetMeasuresResponse>
+        {
+            Status = 503,
+            Error = "Invalid Params: invalid refresh_token"
+        };
+
+        _httpMessageHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK) // Withings returns 200 with error in body
+            {
+                Content = new StringContent(JsonSerializer.Serialize(errorResponse), Encoding.UTF8, "application/json")
+            });
+
+        // Act & Assert
+        await _sut.Invoking(x => x.GetMeasurementsAsync(userId, true))
+            .Should().ThrowAsync<ProviderAuthException>()
+            .WithMessage("*invalid refresh_token*");
+    }
+
+    [Fact]
     public async Task GetMeasurementsAsync_WithDateRange_PassesCorrectStartTimestamp()
     {
         // Arrange

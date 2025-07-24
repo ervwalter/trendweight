@@ -135,9 +135,12 @@ public class WithingsService : ProviderServiceBase, IWithingsService
 
             // Check for auth-related errors
             // Withings uses status 401 for invalid token
+            // Withings also uses status 503 with "invalid refresh_token" message
             if (withingsResponse?.Status == 401 ||
                 withingsResponse?.Error?.Contains("invalid_token", StringComparison.OrdinalIgnoreCase) == true ||
-                withingsResponse?.Error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true)
+                withingsResponse?.Error?.Contains("invalid refresh_token", StringComparison.OrdinalIgnoreCase) == true ||
+                withingsResponse?.Error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true ||
+                (withingsResponse?.Status == 503 && withingsResponse?.Error?.Contains("invalid", StringComparison.OrdinalIgnoreCase) == true))
             {
                 throw new ProviderAuthException(
                     "withings",
@@ -244,9 +247,12 @@ public class WithingsService : ProviderServiceBase, IWithingsService
 
             // Check for auth-related errors
             // Withings uses status 401 for invalid token
+            // Withings also uses status 503 with "invalid refresh_token" message
             if (withingsResponse?.Status == 401 ||
                 withingsResponse?.Error?.Contains("invalid_token", StringComparison.OrdinalIgnoreCase) == true ||
-                withingsResponse?.Error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true)
+                withingsResponse?.Error?.Contains("invalid refresh_token", StringComparison.OrdinalIgnoreCase) == true ||
+                withingsResponse?.Error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true ||
+                (withingsResponse?.Status == 503 && withingsResponse?.Error?.Contains("invalid", StringComparison.OrdinalIgnoreCase) == true))
             {
                 throw new ProviderAuthException(
                     "withings",
@@ -359,9 +365,12 @@ public class WithingsService : ProviderServiceBase, IWithingsService
 
             // Check for auth-related errors
             // Withings uses status 401 for invalid token
+            // Withings also uses status 503 with "invalid refresh_token" message
             if (withingsResponse?.Status == 401 ||
                 withingsResponse?.Error?.Contains("invalid_token", StringComparison.OrdinalIgnoreCase) == true ||
-                withingsResponse?.Error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true)
+                withingsResponse?.Error?.Contains("invalid refresh_token", StringComparison.OrdinalIgnoreCase) == true ||
+                withingsResponse?.Error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true ||
+                (withingsResponse?.Status == 503 && withingsResponse?.Error?.Contains("invalid", StringComparison.OrdinalIgnoreCase) == true))
             {
                 throw new ProviderAuthException(
                     "withings",
