@@ -1,28 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { Verify } from "./Verify";
-import { supabase } from "../../lib/supabase/client";
 
 // Mock dependencies
-vi.mock("../../lib/supabase/client", () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn(),
-      exchangeCodeForSession: vi.fn(),
-    },
-  },
-}));
-
-// Create a variable to control the mock
+const mockNavigate = vi.fn();
 let mockIsLoggedIn = false;
+let mockIsInitializing = false;
+let mockUser: { email: string } | null = null;
 
 vi.mock("../../lib/auth/useAuth", () => ({
   useAuth: () => ({
     isLoggedIn: mockIsLoggedIn,
+    isInitializing: mockIsInitializing,
+    user: mockUser,
   }),
 }));
 
-const mockNavigate = vi.fn();
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => mockNavigate,
   Link: ({ children, to, ...props }: any) => (
@@ -34,13 +27,11 @@ vi.mock("@tanstack/react-router", () => ({
 
 // Create a variable to hold the mock return value
 let mockLoaderData: {
-  token: string | null;
-  isOAuth: boolean;
-  error: string | null;
+  errorCode: string | null;
+  errorDescription: string | null;
 } = {
-  token: null,
-  isOAuth: false,
-  error: null,
+  errorCode: null,
+  errorDescription: null,
 };
 
 // Mock the route to provide loader data
@@ -53,242 +44,126 @@ vi.mock("../../routes/auth.verify", () => ({
 describe("Verify", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mocks to default values
     mockIsLoggedIn = false;
+    mockIsInitializing = false;
+    mockUser = null;
     mockLoaderData = {
-      token: null,
-      isOAuth: false,
-      error: null,
-    };
-    // Reset window.location for each test
-    delete (window as any).location;
-    (window as any).location = {
-      href: "http://localhost:3000/auth/verify",
-      search: "",
-      hash: "",
+      errorCode: null,
+      errorDescription: null,
     };
   });
 
-  it("should show verifying state initially when token is present", async () => {
-    mockLoaderData = {
-      token: "abc123",
-      isOAuth: false,
-      error: null as string | null,
-    };
-
-    // Mock the async call to prevent it from executing during initial render
-    vi.mocked(supabase.auth.getSession).mockImplementation(() => new Promise(() => {}));
+  it("should show verifying state when auth is initializing", () => {
+    mockIsInitializing = true;
 
     render(<Verify />);
 
     expect(screen.getByText("Verifying...")).toBeInTheDocument();
-    expect(screen.getByText("Please wait while we verify your login link.")).toBeInTheDocument();
+    expect(screen.getByText("Please wait while we verify your login.")).toBeInTheDocument();
   });
 
-  it("should handle successful verification with session", async () => {
-    mockLoaderData = {
-      token: "abc123",
-      isOAuth: false,
-      error: null as string | null,
-    };
-
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: { user: { id: "123" } } as any },
-      error: null,
-    });
+  it("should show verifying state when not logged in and no error", () => {
+    mockIsLoggedIn = false;
+    mockIsInitializing = false;
 
     render(<Verify />);
 
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard" });
-    });
+    expect(screen.getByText("Verifying...")).toBeInTheDocument();
+    expect(screen.getByText("Please wait while we verify your login.")).toBeInTheDocument();
   });
 
-  it("should handle verification error from getSession", async () => {
-    // Suppress expected console.error for this test
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    mockLoaderData = {
-      token: "abc123",
-      isOAuth: false,
-      error: null as string | null,
-    };
-
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: null },
-      error: { message: "Invalid token" } as any,
-    });
-
-    render(<Verify />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Verification Failed")).toBeInTheDocument();
-      expect(screen.getByText("Invalid or expired login link. Please try logging in again.")).toBeInTheDocument();
-      expect(screen.getByText("Return to login")).toBeInTheDocument();
-    });
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  it("should try exchangeCodeForSession when no session from getSession", async () => {
-    mockLoaderData = {
-      token: "abc123",
-      isOAuth: false,
-      error: null as string | null,
-    };
-
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: null },
-      error: null,
-    });
-
-    vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValue({
-      data: { session: { user: { id: "123" } } as any, user: {} as any },
-      error: null,
-    });
-
-    render(<Verify />);
-
-    await waitFor(() => {
-      expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith("http://localhost:3000/auth/verify");
-      expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard" });
-    });
-  });
-
-  it("should handle exchangeCodeForSession error", async () => {
-    // Suppress expected console.error for this test
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    mockLoaderData = {
-      token: "abc123",
-      isOAuth: false,
-      error: null as string | null,
-    };
-
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: null },
-      error: null,
-    });
-
-    vi.mocked(supabase.auth.exchangeCodeForSession).mockResolvedValue({
-      data: { session: null, user: null },
-      error: { message: "Exchange failed" } as any,
-    });
-
-    render(<Verify />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Invalid or expired login link. Please try logging in again.")).toBeInTheDocument();
-    });
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  it("should handle OAuth flow", async () => {
-    mockLoaderData = {
-      token: null,
-      isOAuth: true,
-      error: null,
-    };
-
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: { user: { id: "123" } } as any },
-      error: null,
-    });
-
-    render(<Verify />);
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard" });
-    });
-  });
-
-  it("should display error from loader data", () => {
-    mockLoaderData = {
-      token: null,
-      isOAuth: false,
-      error: "Access denied",
-    };
-
-    render(<Verify />);
-
-    expect(screen.getByText("Verification Failed")).toBeInTheDocument();
-    expect(screen.getByText("Access denied")).toBeInTheDocument();
-  });
-
-  it("should redirect if user is already logged in", () => {
+  it("should redirect to dashboard when logged in", async () => {
     mockIsLoggedIn = true;
-    mockLoaderData = {
-      token: null,
-      isOAuth: false,
-      error: null,
-    };
-
-    render(<Verify />);
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard" });
-  });
-
-  it("should handle unexpected errors gracefully", async () => {
-    // Suppress expected console.error for this test
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    mockLoaderData = {
-      token: "abc123",
-      isOAuth: false,
-      error: null as string | null,
-    };
-
-    vi.mocked(supabase.auth.getSession).mockRejectedValue(new Error("Network error"));
+    mockIsInitializing = false;
+    mockUser = { email: "test@example.com" };
 
     render(<Verify />);
 
     await waitFor(() => {
-      expect(screen.getByText("An unexpected error occurred. Please try logging in again.")).toBeInTheDocument();
+      expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard" });
     });
-
-    consoleErrorSpy.mockRestore();
   });
 
-  it("should show invalid login link when no token and no OAuth", () => {
+  it("should not redirect when there is an error", () => {
+    mockIsLoggedIn = true;
+    mockIsInitializing = false;
     mockLoaderData = {
-      token: null,
-      isOAuth: false,
-      error: null,
+      errorCode: "access_denied",
+      errorDescription: "User denied access",
+    };
+
+    render(<Verify />);
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.getByText("Verification Failed")).toBeInTheDocument();
+    expect(screen.getByText("User denied access")).toBeInTheDocument();
+  });
+
+  it("should display error with description when both error code and description are present", () => {
+    mockLoaderData = {
+      errorCode: "unauthorized_client",
+      errorDescription: "Email link is invalid or has expired",
     };
 
     render(<Verify />);
 
     expect(screen.getByText("Verification Failed")).toBeInTheDocument();
-    expect(screen.getByText("Invalid login link")).toBeInTheDocument();
+    expect(screen.getByText("Email link is invalid or has expired")).toBeInTheDocument();
+    expect(screen.getByText("Error code: unauthorized_client")).toBeInTheDocument();
+    expect(screen.getByText("Return to login")).toBeInTheDocument();
   });
 
-  it("should not start verification if already has error", async () => {
-    // Suppress expected console.error for this test
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
+  it("should display error code when no description is present", () => {
     mockLoaderData = {
-      token: "abc123",
-      isOAuth: false,
-      error: "Previous error",
+      errorCode: "server_error",
+      errorDescription: null,
     };
-
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: null },
-      error: { message: "Invalid token" } as any,
-    });
 
     render(<Verify />);
 
-    // Initially shows verifying state even with error in loader data
+    expect(screen.getByText("Verification Failed")).toBeInTheDocument();
+    expect(screen.getByText("server_error")).toBeInTheDocument();
+    expect(screen.queryByText(/Error code:/)).not.toBeInTheDocument();
+  });
+
+  it("should wait for auth initialization before redirecting", () => {
+    mockIsLoggedIn = true;
+    mockIsInitializing = true; // Still initializing
+
+    render(<Verify />);
+
+    // Should not redirect while initializing
+    expect(mockNavigate).not.toHaveBeenCalled();
     expect(screen.getByText("Verifying...")).toBeInTheDocument();
+  });
 
-    // The component will still attempt verification despite the error in loader data
+  it("should handle transition from not logged in to logged in", async () => {
+    const { rerender } = render(<Verify />);
+
+    // Initially not logged in
+    expect(screen.getByText("Verifying...")).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+
+    // Simulate login completion
+    mockIsLoggedIn = true;
+    mockIsInitializing = false;
+    mockUser = { email: "test@example.com" };
+
+    rerender(<Verify />);
+
     await waitFor(() => {
-      expect(screen.getByText("Verification Failed")).toBeInTheDocument();
-      expect(screen.getByText("Invalid or expired login link. Please try logging in again.")).toBeInTheDocument();
+      expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard" });
     });
+  });
 
-    consoleErrorSpy.mockRestore();
+  it("should return null when logged in (edge case after redirect)", () => {
+    mockIsLoggedIn = true;
+    mockIsInitializing = false;
+
+    const { container } = render(<Verify />);
+
+    // The component should redirect, but if for some reason it renders after that,
+    // it should return null
+    expect(container.firstChild).toBeNull();
   });
 });
