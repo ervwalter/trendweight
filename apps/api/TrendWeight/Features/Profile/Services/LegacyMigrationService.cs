@@ -75,7 +75,7 @@ public class LegacyMigrationService : ILegacyMigrationService
                 GoalWeight = legacyProfile.GoalWeight,
                 PlannedPoundsPerWeek = legacyProfile.PlannedPoundsPerWeek,
                 DayStartOffset = legacyProfile.DayStartOffset,
-                ShowCalories = false, // Default value
+                ShowCalories = true, // it was on in the old site
                 SharingToken = legacyProfile.PrivateUrlKey, // Use existing sharing token
                 SharingEnabled = true, // Always enabled in legacy app
                 IsMigrated = true,

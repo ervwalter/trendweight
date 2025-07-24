@@ -367,7 +367,7 @@ public class LegacyMigrationServiceTests : TestBase
         capturedProfile.Profile.SharingEnabled.Should().BeTrue();
         capturedProfile.Profile.IsMigrated.Should().BeTrue();
         capturedProfile.Profile.IsNewlyMigrated.Should().BeTrue();
-        capturedProfile.Profile.ShowCalories.Should().BeFalse();
+        capturedProfile.Profile.ShowCalories.Should().BeTrue();
     }
 
     #endregion
