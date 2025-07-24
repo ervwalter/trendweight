@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.1.7](https://github.com/ervwalter/trendweight/compare/v2.1.6...v2.1.7) (2025-07-24)
+
+
+### Fixes
+
+* Fix architecture link ([#271](https://github.com/ervwalter/trendweight/issues/271)) ([344341e](https://github.com/ervwalter/trendweight/commit/344341eb1cf343619f07f83e114c0f4accaa10ce))
+* simplify auth verification flow to prevent race conditions ([8359ea2](https://github.com/ervwalter/trendweight/commit/8359ea2a5deb3cc7cbb002443130a4cd08e823b9))
+* update ShowCalories to true for legacy profile migration ([adf0aa8](https://github.com/ervwalter/trendweight/commit/adf0aa87ddd845541e4950c027b68cbd153751f4))
+* **withings:** detect invalid refresh token errors with status 503 ([2957189](https://github.com/ervwalter/trendweight/commit/2957189a5ce8d9241bb0afcaa48b957801c31178))
+
+
+### Tests
+
+* add test case for 503 invalid refresh token error ([2957189](https://github.com/ervwalter/trendweight/commit/2957189a5ce8d9241bb0afcaa48b957801c31178))
+
 ## [2.1.6](https://github.com/ervwalter/trendweight/compare/v2.1.5...v2.1.6) (2025-07-23)
 
 
