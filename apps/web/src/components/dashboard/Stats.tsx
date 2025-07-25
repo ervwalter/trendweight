@@ -55,7 +55,7 @@ const Stats = () => {
               )}
             </>
           ))}
-        {showCalories && ppw && ppw <= 0 && (
+        {showCalories && ppw !== undefined && ppw <= 0 && (
           <>
             <li className="mt-4">
               {isMe ? "You are" : "They are"} burning <strong>{formatNumber(caloriesPerDay)} cal/day</strong> {weightSlope > 0 ? "less" : "more"} than{" "}
