@@ -1,0 +1,23 @@
+name: Update Contributors
+on: workflow_dispatch # manual button
+permissions:
+  contents: read # BLOCKS pushes
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate table
+        id: generate
+        uses: akhilmhdh/contributors-readme-action@v2.3.10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true # don’t mark job failed
+
+      - name: Show diff
+        if: always()
+        run: |
+          echo '--------- README diff ---------'
+          git --no-pager diff README.md || true

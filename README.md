@@ -97,16 +97,15 @@ docker build -t trendweight:latest .
 
 The container runs on port 8080 and requires environment variables for backend configuration. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for deployment details.
 
-## Contributing
-
-Contributions are welcome. However, it's essentially a one-man show (me), and I'm pretty protective of the project—probably too overprotective. That said, if you have something you'd like to contribute, please open an issue and let's discuss.
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Acknowledgments
+## Contributing
 
-- Original TrendWeight concept by Erv Walter
-- Built with modern open-source technologies
-- Community contributions and feedback
+Contributions are welcome. However, it's essentially a one-man show (me), and I'm pretty protective of the project—probably too overprotective. That said, if you have something you'd like to contribute, please open an issue and let's discuss.
+
+## Contributors
+
+<!-- readme: contributors -start -->
+<!-- readme: contributors -end -->
