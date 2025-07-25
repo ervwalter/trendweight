@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Login } from "./Login";
 
@@ -56,7 +56,7 @@ vi.mock("./SocialLoginButtons", () => ({
 }));
 
 vi.mock("./OtpLogin", () => ({
-  OtpLogin: ({ from }: any) => (
+  OtpLogin: () => (
     <div data-testid="otp-login-form">
       <form data-testid="email-login-form">
         <input type="email" data-testid="email-input" />

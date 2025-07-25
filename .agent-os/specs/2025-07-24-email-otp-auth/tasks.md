@@ -23,20 +23,20 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 2.7 Ensure smooth transition between states
   - [x] 2.8 Verify all tests pass
 
-- [ ] 3. Update auth context and session handling
-  - [ ] 3.1 Write tests for OTP session processing
-  - [ ] 3.2 Ensure auth context handles OTP login sessions
-  - [ ] 3.3 Verify token storage works with OTP flow
-  - [ ] 3.4 Test that existing OAuth flows remain unaffected
-  - [ ] 3.5 Verify all tests pass
+- [x] 3. Update auth context and session handling
+  - [x] 3.1 Write tests for OTP session processing
+  - [x] 3.2 Ensure auth context handles OTP login sessions
+  - [x] 3.3 Verify token storage works with OTP flow
+  - [x] 3.4 Test that existing OAuth flows remain unaffected
+  - [x] 3.5 Verify all tests pass
 
-- [ ] 4. Add comprehensive error handling
-  - [ ] 4.1 Write tests for error scenarios
-  - [ ] 4.2 Handle rate limit errors (60-second cooldown)
-  - [ ] 4.3 Handle invalid OTP errors with clear messaging
-  - [ ] 4.4 Handle expired OTP errors
-  - [ ] 4.5 Add retry functionality where appropriate
-  - [ ] 4.6 Verify all tests pass
+- [x] 4. Add comprehensive error handling
+  - [x] 4.1 Write tests for error scenarios
+  - [x] 4.2 Handle rate limit errors (60-second cooldown)
+  - [x] 4.3 Handle invalid OTP errors with clear messaging
+  - [x] 4.4 Handle expired OTP errors
+  - [x] 4.5 Add retry functionality where appropriate
+  - [x] 4.6 Verify all tests pass
 
 - [ ] 5. End-to-end testing and cleanup
   - [ ] 5.1 Test complete OTP login flow manually
