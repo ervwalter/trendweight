@@ -48,13 +48,13 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 5.7 Make success message persist longer or until user interaction
   - [x] 5.8 Verify all UI changes work correctly
 
-- [ ] 6. End-to-end testing and cleanup
-  - [ ] 6.1 Test complete OTP login flow manually
-  - [ ] 6.2 Verify OAuth flows still work correctly
-  - [ ] 6.3 Test with various email providers
-  - [ ] 6.4 Test cross-device authentication flow (read code on one device, enter on another)
-  - [ ] 6.5 Remove any references to magic links in UI
-  - [ ] 6.6 Update any relevant documentation
-  - [ ] 6.7 Apply template change to production (add {{ .Token }} as footnote)
-  - [ ] 6.8 Verify OTP codes appear in emails
-  - [ ] 6.9 Clean up email template formatting after verification
+- [x] 6. End-to-end testing and cleanup
+  - [x] 6.1 Test complete OTP login flow manually
+  - [x] 6.2 Verify OAuth flows still work correctly
+  - [x] 6.3 Test with various email providers
+  - [x] 6.4 Test cross-device authentication flow (read code on one device, enter on another)
+  - [x] 6.5 Remove any references to magic links in UI
+  - [x] 6.6 Update any relevant documentation
+  - [x] 6.7 Apply template change to production (add {{ .Token }} as footnote)
+  - [x] 6.8 Verify OTP codes appear in emails
+  - [x] 6.9 Clean up email template formatting after verification
