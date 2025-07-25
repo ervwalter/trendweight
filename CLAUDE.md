@@ -17,68 +17,12 @@ For detailed architecture documentation, see docs/ARCHITECTURE.md. This file foc
 ### Reference Implementation
 If `trendweight-classic/` folder exists locally, it contains the legacy C# MVC application for reference when implementing features or comparing with the live site. This folder is not part of the repository.
 
-## Essential Commands
+## Quick Reference
 
-### Monorepo Commands (from root)
-```bash
-npm run dev       # Start both API and frontend in dev mode (uses tmuxinator)
-npm run dev:stop  # Stop the tmuxinator session
-npm run build     # Build both API and frontend (with Turbo caching)
-npm run test      # Run all tests (with Turbo caching)
-npm run check     # Fast dev check - typecheck and lint only (NO format check)
-npm run check:ci  # Full CI check - includes format check
-npm run format    # Auto-format code in both API and frontend
-npm run fix       # Format then check in one command
-npm run clean     # Clean all build artifacts, dependencies, and Turbo cache
-```
+For essential commands and development setup, see:
+- **Development Guide:** @.agent-os/product/development-guide.md
+- **Best Practices:** @.agent-os/product/dev-best-practices.md
 
-**Note**: We use Turborepo for intelligent caching. The second run of any command is near-instant if nothing changed.
-
-### Development
-
-#### Frontend (apps/web) - uses npm
-```bash
-cd apps/web
-npm run dev       # Start development server on http://localhost:5173
-npm run build     # Build for production
-npm run preview   # Preview production build
-npm run lint      # Run ESLint
-npm run typecheck # Run TypeScript type checking
-npm run test      # Run tests
-npm run clean     # Clean build artifacts and generated files
-```
-
-#### Backend (apps/api)
-```bash
-cd apps/api
-npm run dev       # Start API with hot reload (runs dotnet watch)
-npm run build     # Build entire solution (dotnet build)
-npm run test      # Run all tests (dotnet test)
-npm run lint      # Build with warnings as errors (dotnet build --warnaserror)
-npm run format    # Format code (dotnet format)
-npm run clean     # Clean build artifacts (bin/ and obj/ folders)
-```
-
-### Development Server Management
-
-The project uses tmuxinator for managing development servers. When you run `npm run dev`, it:
-1. Starts the backend API server on port 5199
-2. Starts the frontend Vite server on port 5173
-3. Creates log files in the `logs/` directory
-
-To view logs:
-- `tail -f logs/backend.log` for backend logs
-- `tail -f logs/frontend.log` for frontend logs
-
-## UI Components and Styling
-
-**IMPORTANT**: Always use the standard UI components from our component library:
-- Use `Button` component instead of raw `<button>` tags
-- Use `Heading` component instead of raw `<h1>`, `<h2>`, etc.
-- Use `Select` component instead of raw `<select>` tags
-- Use `Link` from TanStack Router for internal navigation
-
-See docs/ARCHITECTURE.md for detailed UI component documentation.
 
 ## AI Code Generation Guidelines
 
@@ -183,63 +127,15 @@ If you see any route file that doesn't follow this pattern, it MUST be refactore
 3. Update TypeScript interfaces if needed
 4. Remember all timestamps are stored as ISO 8601 strings
 
-### Commit Message Guidelines
-**CRITICAL RULE: NO EMOJIS IN COMMIT MESSAGES**
-- Use conventional commit format: `type: description` or `type(scope): description`
-- Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert
-- **Scopes**: Use scopes when changes are specific to particular features or areas. These are just examples - use whatever scope best describes the area of change:
-  - Frontend examples: `auth`, `dashboard`, `settings`, `profile`, `charts`, `navigation`
-  - Backend examples: `withings-sync`, `fitbit-sync`, `weight-service`, `user-service`, `oauth`
-  - Infrastructure examples: `docker`, `ci`, `deps`, `config`
-  - Component examples: `button`, `modal`, `form`, `layout`
-- Never use emojis (no ✨, 🐛, 📝, etc.)
-- Keep first line under 72 characters
-- Use present tense, imperative mood
-- Examples without scope (general/cross-cutting changes):
-  - `feat: add user authentication system`
-  - `fix: resolve memory leak in rendering process`
-  - `refactor: extract common validation logic into helpers`
-- Examples with scope (feature-specific changes):
-  - `feat(auth): add Apple sign-in provider`
-  - `fix(dashboard): correct weight trend calculation`
-  - `style(settings): improve form layout on mobile`
-  - `refactor(withings-sync): consolidate webhook handling`
-  - `test(weight-service): add interpolation edge cases`
-  - `perf(charts): optimize data point rendering`
-  - `fix(oauth): handle token refresh errors gracefully`
 
 ## Important AI Code Generation Notes
 
-1. **Never store secrets in code** - Always use environment variables
-2. **Always handle errors gracefully** - Show user-friendly messages with correlation IDs
-3. **Test on mobile** - The app must be fully responsive
-4. **Keep accessibility in mind** - Use semantic HTML and ARIA labels
-5. **Use standard UI components** - Never use raw HTML elements when standard components exist
-6. **Follow existing patterns** - Match the codebase style and conventions
-7. **Service Layer Pattern** - Controllers must be thin, all logic in services
-8. **Database considerations** - All timestamps stored as ISO 8601 strings, all weights in kg
-9. **No CORS configuration** - Never add CORS to the API (Vite proxy handles it)
-10. **Performance** - Cache Intl formatters at module level, use React.memo where appropriate
+1. **Use standard UI components** - Never use raw HTML elements when standard components exist (Button, Heading, Select, etc.)
+2. **Follow the route file pattern** - Routes must be minimal, all logic in feature components
+3. **No CORS configuration** - Never add CORS to the API (Vite proxy handles it)
+4. **Database timestamps** - Always store as ISO 8601 strings, weights in kg
+5. **Check TypeScript compilation** - Run `npm run check` after code changes, not just tests
 
-## Database Schema Management
-
-### Supabase Schema
-The complete database schema is documented in the repository:
-- **Schema SQL**: `apps/api/TrendWeight/supabase/schema.sql` - Complete SQL script to recreate all tables, indexes, and RLS policies
-- **Schema Documentation**: `apps/api/TrendWeight/supabase/SCHEMA.md` - Detailed documentation of table structures and data formats
-
-To set up a new Supabase instance:
-1. Create a new Supabase project
-2. Run the `schema.sql` file in the SQL editor
-3. Configure the API with the project credentials
-
-**Note**: All tables use RLS policies that deny direct access. Data access is only allowed through the API using the service role key.
-
-**IMPORTANT**: If you make any schema changes in Supabase (new tables, columns, indexes, etc.), you MUST:
-1. Use the MCP Supabase tools to query the updated schema
-2. Update `apps/api/TrendWeight/supabase/schema.sql` with the changes
-3. Update `apps/api/TrendWeight/supabase/SCHEMA.md` documentation accordingly
-4. Never make schema changes without updating these files
 
 ## Recent Lessons Learned (from Code Review)
 
@@ -275,6 +171,20 @@ Do NOT add:
 Keep this file focused on AI code generation guidance only.
 
 ## Development Workflow
+
+### MANDATORY: Pre-Commit Checks
+**CRITICAL REQUIREMENT**: Before EVERY commit, you MUST run the following from the root directory:
+```bash
+npm run format && npm run check:ci && npm run test
+```
+
+This ensures:
+- Code is properly formatted
+- TypeScript compiles without errors
+- ESLint rules pass
+- All tests pass
+
+**NEVER skip this step!** The project uses Turborepo for optimization, so always run commands from the root.
 
 ### Always Run Comprehensive Checks
 - When checking for code issues during development, run 'npm run check' from the top level folder of the repo (fast)
@@ -337,6 +247,8 @@ Example: For Supabase authentication, we created `ISupabaseTokenService` to test
 ### Development Standards
 - **Code Style:** @~/.agent-os/standards/code-style.md
 - **Best Practices:** @~/.agent-os/standards/best-practices.md
+- **Project-Specific Practices:** @.agent-os/product/dev-best-practices.md
+- **Development Guide:** @.agent-os/product/development-guide.md
 
 ### Project Management
 - **Active Specs:** @.agent-os/specs/

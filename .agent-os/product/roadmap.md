@@ -1,7 +1,7 @@
 # Product Roadmap
 
-> Last Updated: 2025-01-24
-> Version: 1.0.0
+> Last Updated: 2025-01-25
+> Version: 1.1.0
 > Status: Active Development
 
 ## Phase 0: Already Completed
@@ -24,112 +24,78 @@ The following features have been implemented:
 - [x] PWA manifest for mobile installation
 - [x] Comprehensive test coverage
 
-## Phase 1: Enhanced Legacy Support (Current)
+## Phase 1: Onboarding & Data Management (2 weeks)
 
-**Goal:** Improve migration experience for users from classic TrendWeight
+**Goal:** Improve first-time user experience and data visibility control
+**Success Criteria:** 80% of new users successfully configure their start date during onboarding
+
+### Must-Have Features
+
+- [ ] Improved onboarding UI - Ask about Start Date right up front `S`
+- [ ] Hide data before start date - New setting to filter old measurements `S`
+- [ ] Better loading indicators - Replace skeleton with progress for long syncs `M`
+
+### Should-Have Features
+
+- [ ] Sync status details - Show which provider is syncing and progress `S`
+
+### Dependencies
+
+- None - can begin immediately
+
+## Phase 2: Enhanced Legacy Support (1 month)
+
+**Goal:** Complete migration support for users from classic TrendWeight
 **Success Criteria:** 90% of legacy users successfully migrated with historical data
 
 ### Must-Have Features
 
 - [ ] Legacy data provider - Import historical measurements from old SQL Server `M`
-- [ ] Enhanced migration wizard - Better UX for account linking `S`
-- [ ] Data validation - Ensure imported data integrity `S`
-
-### Should-Have Features
-
-- [ ] Migration status dashboard - Show progress of data import `S`
-- [ ] Rollback capability - Allow users to undo migration if needed `M`
 
 ### Dependencies
 
 - Access to legacy SQL Server database
-- User consent for data migration
 
-## Phase 2: User Experience Improvements (Next)
+## Phase 3: Admin Tools & Observability (1 month)
 
-**Goal:** Enhance the user experience based on feedback
-**Success Criteria:** Reduced support tickets, improved user satisfaction
-
-### Must-Have Features
-
-- [ ] Hide data before start date - New setting to filter old measurements `S`
-- [ ] Better loading indicators - Replace skeleton with progress for long syncs `M`
-- [ ] Sync status details - Show which provider is syncing and progress `S`
-- [ ] Error recovery - Better handling of sync failures with retry options `M`
-
-### Should-Have Features
-
-- [ ] Batch operations - Select multiple measurements to hide/delete `M`
-- [ ] Sync scheduling - Allow users to control when syncs happen `L`
-
-### Dependencies
-
-- User feedback on current pain points
-
-## Phase 3: Data Analysis Features
-
-**Goal:** Provide deeper insights into weight trends
-**Success Criteria:** Users report better understanding of their progress
+**Goal:** Improve operational visibility and debugging capabilities
+**Success Criteria:** 90% reduction in time to diagnose user issues
 
 ### Must-Have Features
 
-- [ ] Trend predictions - Show projected weight based on current trend `L`
-- [ ] Pattern detection - Identify weekly/monthly patterns `L`
-- [ ] Milestone notifications - Alert when goals are reached `M`
-- [ ] Advanced statistics - More detailed analysis options `M`
+- [ ] User roles system - Flag admin users for special functionality `M`
+- [ ] Admin stats dashboard - Active users, connections by provider, etc. `M`
+- [ ] Backend error logging - OpenTelemetry-based logging system `L`
+- [ ] Client error logging - Privacy-respecting browser error tracking `M`
 
 ### Should-Have Features
 
-- [ ] Custom date ranges - Analyze specific time periods `S`
-- [ ] Comparison views - Compare different time periods side-by-side `M`
-- [ ] Export improvements - More format options (JSON, etc.) `S`
+- [ ] Admin user search - Find users by email/username `S`
+- [ ] Admin sync debugging - View detailed sync logs for users `M`
 
 ### Dependencies
 
-- Sufficient historical data for meaningful analysis
+- OpenTelemetry service selection (e.g., Honeycomb, DataDog)
+- Privacy policy update for error logging
 
-## Phase 4: Platform Expansion
+## Phase 4: IFTTT Integration (2 months)
 
-**Goal:** Support more devices and integrations
-**Success Criteria:** Increased user base from new platforms
+**Goal:** Enable third-party integrations through IFTTT
+**Success Criteria:** Successful weight data import from 5+ different IFTTT sources
 
 ### Must-Have Features
 
-- [ ] Apple Health integration - Sync weight from iOS devices `XL`
-- [ ] Google Fit integration - Sync weight from Android devices `XL`
-- [ ] Garmin scale support - Add another popular scale brand `L`
-- [ ] Mobile app - Native iOS/Android apps `XL`
+- [ ] OAuth 2.0 server implementation - TrendWeight as OAuth provider for IFTTT `L`
+- [ ] IFTTT provider implementation - New provider type for weight readings `L`
+- [ ] API endpoints for IFTTT - Weight data submission endpoints `M`
+- [ ] IFTTT channel configuration - Setup and documentation `M`
 
 ### Should-Have Features
 
-- [ ] Webhook API - Allow other apps to push data `L`
-- [ ] IFTTT integration - Automation support `M`
-- [ ] Shortcuts support - iOS/Android quick actions `M`
+- [ ] Rate limiting for IFTTT API - Prevent abuse `S`
+- [ ] Webhook notifications - Alert users of new IFTTT data `S`
 
 ### Dependencies
 
-- API rate limits and partnership agreements
-- Mobile development resources
-
-## Phase 5: Premium Features
-
-**Goal:** Sustainable monetization through optional premium tier
-**Success Criteria:** 5% conversion to premium
-
-### Must-Have Features
-
-- [ ] Advanced analytics - Detailed body composition trends `L`
-- [ ] Multiple goals - Track different objectives simultaneously `M`
-- [ ] Data backup - Personal data export automation `M`
-- [ ] Priority support - Faster response times `S`
-
-### Should-Have Features
-
-- [ ] Custom themes - Personalization options `S`
-- [ ] API access - Personal data API for power users `L`
-- [ ] Family accounts - Track multiple people `XL`
-
-### Dependencies
-
-- Payment processing integration
-- Clear value proposition for premium tier
+- IFTTT partnership approval
+- OAuth server security review
