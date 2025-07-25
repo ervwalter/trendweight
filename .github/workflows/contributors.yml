@@ -1,7 +1,8 @@
 name: Update Contributors
 on: workflow_dispatch # manual button
 permissions:
-  contents: read # BLOCKS pushes
+  contents: write
+  pull-requests: write
 
 jobs:
   preview:
