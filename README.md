@@ -107,5 +107,5 @@ Contributions are welcome. However, it's essentially a one-man show (me), and I'
 
 ## Contributors
 
-<!-- readme: contributors,ervwalter/-,renovate-bot/-,bots/- -start -->
-<!-- readme: contributors,ervwalter/-,renovate-bot/-,bots/- -end -->
+<!-- readme: contributors,ervwalter/-,renovate-bot/- -start -->
+<!-- readme: contributors,ervwalter/-,renovate-bot/- -end -->
