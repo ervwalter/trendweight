@@ -226,46 +226,6 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     };
   }, []);
 
-  // Add periodic session refresh check
-  useEffect(() => {
-    if (!session) return;
-
-    // Check every 5 minutes if we need to refresh the token
-    const interval = setInterval(
-      async () => {
-        try {
-          const {
-            data: { session: currentSession },
-            error,
-          } = await supabase.auth.getSession();
-
-          if (currentSession && !error) {
-            const expiresAt = currentSession.expires_at! * 1000;
-            const now = Date.now();
-            const minutesUntilExpiry = (expiresAt - now) / (1000 * 60);
-
-            // Refresh if less than 10 minutes until expiry
-            if (minutesUntilExpiry < 10) {
-              console.log(`Token expiring in ${minutesUntilExpiry.toFixed(1)} minutes, refreshing...`);
-              const { data, error: refreshError } = await supabase.auth.refreshSession();
-
-              if (refreshError) {
-                console.error("Failed to refresh session:", refreshError);
-              } else if (data.session) {
-                console.log("Session refreshed successfully");
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error checking session expiry:", error);
-        }
-      },
-      5 * 60 * 1000,
-    ); // Check every 5 minutes
-
-    return () => clearInterval(interval);
-  }, [session]);
-
   const value: AuthContextType = {
     user,
     session,
