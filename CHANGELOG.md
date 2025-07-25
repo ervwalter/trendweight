@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.2](https://github.com/ervwalter/trendweight/compare/v2.2.1...v2.2.2) (2025-07-25)
+
+
+### Fixes
+
+* **auth:** remove proactive token refresh to prevent false revocations ([6a69268](https://github.com/ervwalter/trendweight/commit/6a6926873148cee7ef59f05d2a7d058a106a5267))
+
 ## [2.2.1](https://github.com/ervwalter/trendweight/compare/v2.2.0...v2.2.1) (2025-07-25)
 
 
