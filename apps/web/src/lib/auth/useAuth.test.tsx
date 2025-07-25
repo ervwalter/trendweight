@@ -39,10 +39,12 @@ describe("useAuth", () => {
       } as any,
       isInitializing: false,
       isLoggedIn: true,
-      sendLoginEmail: vi.fn(),
+      sendOtpCode: vi.fn(),
+      verifyOtpCode: vi.fn(),
       signInWithGoogle: vi.fn(),
       signInWithMicrosoft: vi.fn(),
       signInWithApple: vi.fn(),
+      signInWithAppleToken: vi.fn(),
       signOut: vi.fn(),
     };
 
@@ -65,10 +67,12 @@ describe("useAuth", () => {
       session: null,
       isInitializing: false,
       isLoggedIn: false,
-      sendLoginEmail: vi.fn(),
+      sendOtpCode: vi.fn(),
+      verifyOtpCode: vi.fn(),
       signInWithGoogle: vi.fn(),
       signInWithMicrosoft: vi.fn(),
       signInWithApple: vi.fn(),
+      signInWithAppleToken: vi.fn(),
       signOut: vi.fn(),
     };
 
@@ -87,10 +91,12 @@ describe("useAuth", () => {
       session: null,
       isInitializing: true,
       isLoggedIn: false,
-      sendLoginEmail: vi.fn(),
+      sendOtpCode: vi.fn(),
+      verifyOtpCode: vi.fn(),
       signInWithGoogle: vi.fn(),
       signInWithMicrosoft: vi.fn(),
       signInWithApple: vi.fn(),
+      signInWithAppleToken: vi.fn(),
       signOut: vi.fn(),
     };
 

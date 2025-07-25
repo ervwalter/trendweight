@@ -8,14 +8,12 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => mockNavigate,
 }));
 
-// Mock supabase
-const mockSignInWithIdToken = vi.fn();
-vi.mock("../../lib/supabase/client", () => ({
-  supabase: {
-    auth: {
-      signInWithIdToken: (params: any) => mockSignInWithIdToken(params),
-    },
-  },
+// Mock auth hook
+const mockSignInWithAppleToken = vi.fn();
+vi.mock("../../lib/auth/useAuth", () => ({
+  useAuth: () => ({
+    signInWithAppleToken: mockSignInWithAppleToken,
+  }),
 }));
 
 // Mock Heading component
@@ -43,7 +41,7 @@ describe("AppleCallback", () => {
     sessionStorage.setItem("apple_auth_state", "test-state");
 
     // Mock a pending promise to keep it in processing state
-    mockSignInWithIdToken.mockImplementation(() => new Promise(() => {}));
+    mockSignInWithAppleToken.mockImplementation(() => new Promise(() => {}));
 
     render(<AppleCallback />);
 
@@ -56,15 +54,12 @@ describe("AppleCallback", () => {
     sessionStorage.setItem("apple_auth_state", "test-state");
     sessionStorage.setItem("apple_auth_redirect", "/settings");
 
-    mockSignInWithIdToken.mockResolvedValue({ error: null });
+    mockSignInWithAppleToken.mockResolvedValue(undefined);
 
     render(<AppleCallback />);
 
     await waitFor(() => {
-      expect(mockSignInWithIdToken).toHaveBeenCalledWith({
-        provider: "apple",
-        token: "test-token",
-      });
+      expect(mockSignInWithAppleToken).toHaveBeenCalledWith("test-token");
       expect(mockNavigate).toHaveBeenCalledWith({ to: "/settings" });
     });
 
@@ -77,15 +72,12 @@ describe("AppleCallback", () => {
     window.location.search = "?id_token=test-token&state=test-state";
     sessionStorage.setItem("apple_auth_state", "test-state");
 
-    mockSignInWithIdToken.mockResolvedValue({ error: null });
+    mockSignInWithAppleToken.mockResolvedValue(undefined);
 
     render(<AppleCallback />);
 
     await waitFor(() => {
-      expect(mockSignInWithIdToken).toHaveBeenCalledWith({
-        provider: "apple",
-        token: "test-token",
-      });
+      expect(mockSignInWithAppleToken).toHaveBeenCalledWith("test-token");
       expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard" }); // Default redirect
     });
   });
@@ -165,9 +157,7 @@ describe("AppleCallback", () => {
     window.location.hash = "#id_token=test-token&state=test-state";
     sessionStorage.setItem("apple_auth_state", "test-state");
 
-    mockSignInWithIdToken.mockResolvedValue({
-      error: new Error("Invalid token"),
-    });
+    mockSignInWithAppleToken.mockRejectedValue(new Error("Invalid token"));
 
     render(<AppleCallback />);
 
@@ -186,7 +176,7 @@ describe("AppleCallback", () => {
     window.location.hash = "#id_token=test-token&state=test-state";
     sessionStorage.setItem("apple_auth_state", "test-state");
 
-    mockSignInWithIdToken.mockRejectedValue("Network error");
+    mockSignInWithAppleToken.mockRejectedValue("Network error");
 
     render(<AppleCallback />);
 

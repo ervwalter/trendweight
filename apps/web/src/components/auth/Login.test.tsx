@@ -18,14 +18,12 @@ vi.mock("../../routes/login", () => ({
 }));
 
 // Mock auth functions
-const mockSendLoginEmail = vi.fn();
 const mockSignInWithGoogle = vi.fn();
 const mockSignInWithMicrosoft = vi.fn();
 const mockSignInWithApple = vi.fn();
 
 vi.mock("../../lib/auth/useAuth", () => ({
   useAuth: () => ({
-    sendLoginEmail: mockSendLoginEmail,
     signInWithGoogle: mockSignInWithGoogle,
     signInWithMicrosoft: mockSignInWithMicrosoft,
     signInWithApple: mockSignInWithApple,

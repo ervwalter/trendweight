@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Turnstile } from "@marsidev/react-turnstile";
-import { supabase } from "../../lib/supabase/client";
+import { useAuth } from "../../lib/auth/useAuth";
 import { Button } from "../ui/Button";
 import { Heading } from "../ui/Heading";
 import { AuthError } from "./AuthError";
@@ -15,6 +15,7 @@ interface OtpLoginProps {
 
 export function OtpLogin({ from, onBack }: OtpLoginProps) {
   const navigate = useNavigate();
+  const { sendOtpCode, verifyOtpCode } = useAuth();
   const [stage, setStage] = useState<AuthStage>("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -54,42 +55,32 @@ export function OtpLogin({ from, onBack }: OtpLoginProps) {
     setError("");
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          captchaToken,
-        },
-      });
+      await sendOtpCode(email, captchaToken);
 
-      if (error) {
-        // Handle rate limit error specifically
-        if (error.message?.includes("rate limit")) {
-          setError("Please wait 60 seconds before requesting another code.");
-        } else {
-          setError(error.message || "Failed to send login code. Please try again.");
-        }
-        setCaptchaToken(undefined);
-      } else {
-        // Move to OTP stage
-        setStage("otp");
-        setOtp(""); // Clear any previous OTP
-        setResendCooldown(60); // Start cooldown for resend
+      // Success - move to OTP stage
+      setStage("otp");
+      setOtp(""); // Clear any previous OTP
+      setResendCooldown(60); // Start cooldown for resend
 
-        // Start cooldown timer
-        cooldownTimerRef.current = setInterval(() => {
-          setResendCooldown((prev) => {
-            if (prev <= 1) {
-              clearInterval(cooldownTimerRef.current);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      }
+      // Start cooldown timer
+      cooldownTimerRef.current = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(cooldownTimerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     } catch (err) {
       console.error("Error sending OTP:", err);
-      setError("Failed to send login code. Please try again.");
+      // Handle rate limit error specifically
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes("rate limit")) {
+        setError("Please wait 60 seconds before requesting another code.");
+      } else {
+        setError(errorMessage || "Failed to send login code. Please try again.");
+      }
       setCaptchaToken(undefined);
     } finally {
       setIsSubmitting(false);
@@ -104,27 +95,22 @@ export function OtpLogin({ from, onBack }: OtpLoginProps) {
     setError("");
 
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: "email",
-      });
+      const session = await verifyOtpCode(email, otp);
 
-      if (error) {
-        if (error.message?.includes("expired")) {
-          setError("This code has expired. Please request a new one.");
-        } else if (error.message?.includes("Invalid")) {
-          setError("Invalid code. Please check and try again.");
-        } else {
-          setError(error.message || "Failed to verify code. Please try again.");
-        }
-      } else if (data.session) {
+      if (session) {
         // Success - navigate to dashboard or intended destination
         navigate({ to: from || "/dashboard" });
       }
     } catch (err) {
       console.error("Error verifying OTP:", err);
-      setError("Failed to verify code. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes("expired")) {
+        setError("This code has expired. Please request a new one.");
+      } else if (errorMessage.includes("Invalid")) {
+        setError("Invalid code. Please check and try again.");
+      } else {
+        setError(errorMessage || "Failed to verify code. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -136,38 +122,30 @@ export function OtpLogin({ from, onBack }: OtpLoginProps) {
     setOtp("");
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-        },
-      });
+      await sendOtpCode(email);
 
-      if (error) {
-        if (error.message?.includes("rate limit")) {
-          setError("Please wait 60 seconds before requesting another code.");
-        } else {
-          setError(error.message || "Failed to send new code. Please try again.");
-        }
-      } else {
-        // Show success message and start cooldown
-        setSuccessMessage("New code sent! Check your email.");
-        setResendCooldown(60);
+      // Success - show message and start cooldown
+      setSuccessMessage("New code sent! Check your email.");
+      setResendCooldown(60);
 
-        // Start cooldown timer
-        cooldownTimerRef.current = setInterval(() => {
-          setResendCooldown((prev) => {
-            if (prev <= 1) {
-              clearInterval(cooldownTimerRef.current);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      }
+      // Start cooldown timer
+      cooldownTimerRef.current = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(cooldownTimerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     } catch (err) {
       console.error("Error resending OTP:", err);
-      setError("Failed to send new code. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes("rate limit")) {
+        setError("Please wait 60 seconds before requesting another code.");
+      } else {
+        setError(errorMessage || "Failed to send new code. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }

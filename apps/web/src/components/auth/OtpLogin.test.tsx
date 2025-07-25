@@ -2,16 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { OtpLogin } from "./OtpLogin";
-import { supabase } from "../../lib/supabase/client";
 
-// Mock Supabase client
-vi.mock("../../lib/supabase/client", () => ({
-  supabase: {
-    auth: {
-      signInWithOtp: vi.fn(),
-      verifyOtp: vi.fn(),
-    },
-  },
+// Mock auth hook
+const mockSendOtpCode = vi.fn();
+const mockVerifyOtpCode = vi.fn();
+
+vi.mock("../../lib/auth/useAuth", () => ({
+  useAuth: () => ({
+    sendOtpCode: mockSendOtpCode,
+    verifyOtpCode: mockVerifyOtpCode,
+  }),
 }));
 
 // Mock Turnstile component
@@ -60,10 +60,7 @@ describe("OtpLogin", () => {
   it("shows OTP input after email submission", async () => {
     const user = userEvent.setup();
 
-    vi.mocked(supabase.auth.signInWithOtp).mockResolvedValueOnce({
-      data: {},
-      error: null,
-    } as any);
+    mockSendOtpCode.mockResolvedValueOnce(undefined);
 
     render(<OtpLogin onBack={mockOnBack} />);
 
@@ -83,17 +80,11 @@ describe("OtpLogin", () => {
   it("handles OTP verification successfully", async () => {
     const user = userEvent.setup();
 
-    vi.mocked(supabase.auth.signInWithOtp).mockResolvedValueOnce({
-      data: {},
-      error: null,
-    } as any);
+    mockSendOtpCode.mockResolvedValueOnce(undefined);
 
-    vi.mocked(supabase.auth.verifyOtp).mockResolvedValueOnce({
-      data: {
-        user: { id: "123", email: "test@example.com" },
-        session: { access_token: "token", refresh_token: "refresh" },
-      },
-      error: null,
+    mockVerifyOtpCode.mockResolvedValueOnce({
+      access_token: "token",
+      refresh_token: "refresh",
     } as any);
 
     render(<OtpLogin onBack={mockOnBack} />);
@@ -120,15 +111,9 @@ describe("OtpLogin", () => {
   it("shows error for invalid OTP", async () => {
     const user = userEvent.setup();
 
-    vi.mocked(supabase.auth.signInWithOtp).mockResolvedValueOnce({
-      data: {},
-      error: null,
-    } as any);
+    mockSendOtpCode.mockResolvedValueOnce(undefined);
 
-    vi.mocked(supabase.auth.verifyOtp).mockResolvedValueOnce({
-      data: null,
-      error: { message: "Invalid OTP" },
-    } as any);
+    mockVerifyOtpCode.mockRejectedValueOnce(new Error("Invalid OTP"));
 
     render(<OtpLogin onBack={mockOnBack} />);
 
@@ -154,10 +139,7 @@ describe("OtpLogin", () => {
   it("handles rate limit error", async () => {
     const user = userEvent.setup();
 
-    vi.mocked(supabase.auth.signInWithOtp).mockResolvedValueOnce({
-      data: null,
-      error: { message: "Email rate limit exceeded" },
-    } as any);
+    mockSendOtpCode.mockRejectedValueOnce(new Error("Email rate limit exceeded"));
 
     render(<OtpLogin onBack={mockOnBack} />);
 
@@ -174,10 +156,7 @@ describe("OtpLogin", () => {
   it("allows resending OTP after cooldown", async () => {
     const user = userEvent.setup();
 
-    vi.mocked(supabase.auth.signInWithOtp).mockResolvedValue({
-      data: {},
-      error: null,
-    } as any);
+    mockSendOtpCode.mockResolvedValue(undefined);
 
     render(<OtpLogin onBack={mockOnBack} />);
 
@@ -204,10 +183,7 @@ describe("OtpLogin", () => {
   it("allows changing email", async () => {
     const user = userEvent.setup();
 
-    vi.mocked(supabase.auth.signInWithOtp).mockResolvedValueOnce({
-      data: {},
-      error: null,
-    } as any);
+    mockSendOtpCode.mockResolvedValueOnce(undefined);
 
     render(<OtpLogin onBack={mockOnBack} />);
 
@@ -231,10 +207,7 @@ describe("OtpLogin", () => {
   it("validates OTP format", async () => {
     const user = userEvent.setup();
 
-    vi.mocked(supabase.auth.signInWithOtp).mockResolvedValueOnce({
-      data: {},
-      error: null,
-    } as any);
+    mockSendOtpCode.mockResolvedValueOnce(undefined);
 
     render(<OtpLogin onBack={mockOnBack} />);
 

@@ -1,10 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase/client";
+import { useAuth } from "../../lib/auth/useAuth";
 import { Heading } from "../ui/Heading";
 
 export function AppleCallback() {
   const navigate = useNavigate();
+  const { signInWithAppleToken } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(true);
 
@@ -35,14 +36,7 @@ export function AppleCallback() {
         }
 
         // Sign in with Supabase using the ID token
-        const { error: signInError } = await supabase.auth.signInWithIdToken({
-          provider: "apple",
-          token: idToken,
-        });
-
-        if (signInError) {
-          throw signInError;
-        }
+        await signInWithAppleToken(idToken);
 
         // Get the redirect destination
         const redirectTo = sessionStorage.getItem("apple_auth_redirect") || "/dashboard";
@@ -61,7 +55,7 @@ export function AppleCallback() {
     };
 
     handleCallback();
-  }, [navigate]);
+  }, [navigate, signInWithAppleToken]);
 
   if (isProcessing) {
     return (

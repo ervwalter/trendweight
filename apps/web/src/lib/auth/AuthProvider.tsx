@@ -22,24 +22,33 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     };
   };
 
-  // Send login email
-  const sendLoginEmail = async (email: string, captchaToken?: string) => {
+  // OTP authentication methods
+  const sendOtpCode = async (email: string, captchaToken?: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/auth/verify`,
         captchaToken,
       },
     });
 
     if (error) {
-      console.error("Error sending login email:", error);
+      throw error;
+    }
+  };
+
+  const verifyOtpCode = async (email: string, token: string): Promise<Session | null> => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: "email",
+    });
+
+    if (error) {
       throw error;
     }
 
-    // Store email for later verification
-    window.localStorage.setItem("emailForSignIn", email);
+    return data.session;
   };
 
   // Social sign-in methods
@@ -131,6 +140,18 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
+  // Apple token sign-in
+  const signInWithAppleToken = async (idToken: string) => {
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: "apple",
+      token: idToken,
+    });
+
+    if (error) {
+      throw error;
+    }
+  };
+
   // Handle auth state changes
   useEffect(() => {
     // Get initial session and validate it with the server
@@ -201,10 +222,12 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     session,
     isInitializing,
     isLoggedIn: !!user,
-    sendLoginEmail,
+    sendOtpCode,
+    verifyOtpCode,
     signInWithGoogle,
     signInWithMicrosoft,
     signInWithApple,
+    signInWithAppleToken,
     signOut,
   };
 

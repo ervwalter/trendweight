@@ -12,10 +12,12 @@ export interface AuthContextType {
   session: Session | null;
   isInitializing: boolean;
   isLoggedIn: boolean;
-  sendLoginEmail: (email: string, captchaToken?: string) => Promise<void>;
+  sendOtpCode: (email: string, captchaToken?: string) => Promise<void>;
+  verifyOtpCode: (email: string, token: string) => Promise<Session | null>;
   signInWithGoogle: () => Promise<void>;
   signInWithMicrosoft: () => Promise<void>;
   signInWithApple: () => Promise<void>;
+  signInWithAppleToken: (idToken: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
