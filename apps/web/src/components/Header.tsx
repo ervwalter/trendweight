@@ -26,7 +26,7 @@ export function Header() {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="bg-brand-500 text-white">
+    <header className="bg-brand-500 text-white print:hidden">
       <Container>
         <nav className="flex items-stretch justify-between">
           <div className="flex items-center gap-2 py-3">

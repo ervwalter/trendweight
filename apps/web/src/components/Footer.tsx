@@ -21,7 +21,7 @@ export function Footer() {
   // Otherwise falls back to 'dev'
 
   return (
-    <footer className="py-4">
+    <footer className="py-4 print:hidden">
       <Container>
         <div className="flex flex-col gap-4 text-gray-400 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2 text-sm">

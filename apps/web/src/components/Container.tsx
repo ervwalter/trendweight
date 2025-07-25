@@ -16,6 +16,7 @@ export function Container({ children, className, as: Component = "div" }: Contai
         "md:max-w-[768px] md:px-4",
         "lg:max-w-[1024px] lg:px-4",
         "xl:max-w-[1280px] xl:px-4",
+        "print:max-w-none print:px-0",
         className,
       )}
     >

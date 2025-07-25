@@ -20,7 +20,7 @@ const Buttons = () => {
   }, [isMobile, timeRange, setTimeRange]);
 
   return (
-    <div className="flex flex-col-reverse gap-4 md:flex-row">
+    <div className="flex flex-col-reverse gap-4 md:flex-row print:hidden">
       <ToggleButtonGroup value={timeRange} onChange={(value) => setTimeRange(value as TimeRange)} defaultValue="4w" aria-label="Time Range">
         <ToggleButton value="4w">
           <span className="lg:hidden">4 wk</span>
