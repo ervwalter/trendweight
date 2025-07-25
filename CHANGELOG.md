@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.2.1](https://github.com/ervwalter/trendweight/compare/v2.2.0...v2.2.1) (2025-07-25)
+
+
+### Fixes
+
+* correct database schema file paths in CLAUDE.md ([97b3dc0](https://github.com/ervwalter/trendweight/commit/97b3dc09573e61416a1d0d8aaea577e6007028d6))
+* improve authentication session persistence ([1929464](https://github.com/ervwalter/trendweight/commit/19294641d406cf6f837fc197848a4afdd875edf2))
+* Remove stray "0" in Overall Weight Statistics ([#278](https://github.com/ervwalter/trendweight/issues/278)) ([8f45541](https://github.com/ervwalter/trendweight/commit/8f45541016d49ad6201ffecf634b40f41c54cddd))
+
+
+### Documentation
+
+* integrate Agent OS documentation framework ([97b3dc0](https://github.com/ervwalter/trendweight/commit/97b3dc09573e61416a1d0d8aaea577e6007028d6))
+* reorganize CLAUDE.md content into Agent OS structure ([9020345](https://github.com/ervwalter/trendweight/commit/902034585e7d68a701fb6ff6d675703ca9fd0aec))
+* update contributing section and add contributors workflow ([13d5723](https://github.com/ervwalter/trendweight/commit/13d57232136615d7b9468463c2cd282568e654e7))
+
+
+### Refactoring
+
+* maintain auth encapsulation and remove orphaned magic link code ([3c3a5e0](https://github.com/ervwalter/trendweight/commit/3c3a5e069a15f5275c0847c736dce0272026097b))
+
 ## [2.2.0](https://github.com/ervwalter/trendweight/compare/v2.1.7...v2.2.0) (2025-07-25)
 
 
