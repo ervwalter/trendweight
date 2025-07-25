@@ -2,6 +2,8 @@ name: Update Contributors
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "0 6 * * *" # daily at 06:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -16,6 +18,7 @@ jobs:
         uses: akhilmhdh/contributors-readme-action@v2.3.10
         with:
           auto_detect_branch_protection: false
-          commit_message: "chore(contributor): contrib-readme-action has updated readme"
+          commit_message: "chore(contributor): update contributors"
+          pr_title_on_protected: "chore(contributor): update contributors"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

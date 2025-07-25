@@ -107,18 +107,5 @@ Contributions are welcome. However, it's essentially a one-man show (me), and I'
 
 ## Contributors
 
-<!-- readme: contributors,ervwalter/-,renovate-bot/- -start -->
-<table>
-	<tbody>
-		<tr>
-            <td align="center">
-                <a href="https://github.com/MitjaBezensek">
-                    <img src="https://avatars.githubusercontent.com/u/2523721?v=4" width="100;" alt="MitjaBezensek"/>
-                    <br />
-                    <sub><b>Mitja Bezenšek</b></sub>
-                </a>
-            </td>
-		</tr>
-	<tbody>
-</table>
-<!-- readme: contributors,ervwalter/-,renovate-bot/- -end -->
+<!-- readme: contributors,collaborators,ervwalter/-,renovate-bot/- -start -->
+<!-- readme: contributors,collaborators,ervwalter/-,renovate-bot/- -end -->
