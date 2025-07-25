@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.3](https://github.com/ervwalter/trendweight/compare/v2.2.2...v2.2.3) (2025-07-25)
+
+
+### Fixes
+
+* resolve highcharts chart rendering issues when printing ([304c1c4](https://github.com/ervwalter/trendweight/commit/304c1c4eedd27b81b335e0437e0de2fd8e50c6c8)), closes [#272](https://github.com/ervwalter/trendweight/issues/272)
+
 ## [2.2.2](https://github.com/ervwalter/trendweight/compare/v2.2.1...v2.2.2) (2025-07-25)
 
 
