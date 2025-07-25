@@ -38,13 +38,23 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 4.5 Add retry functionality where appropriate
   - [x] 4.6 Verify all tests pass
 
-- [ ] 5. End-to-end testing and cleanup
-  - [ ] 5.1 Test complete OTP login flow manually
-  - [ ] 5.2 Verify OAuth flows still work correctly
-  - [ ] 5.3 Test with various email providers
-  - [ ] 5.4 Test cross-device authentication flow (read code on one device, enter on another)
-  - [ ] 5.5 Remove any references to magic links in UI
-  - [ ] 5.6 Update any relevant documentation
-  - [ ] 5.7 Apply template change to production (add {{ .Token }} as footnote)
-  - [ ] 5.8 Verify OTP codes appear in emails
-  - [ ] 5.9 Clean up email template formatting after verification
+- [ ] 5. Fix OTP UI issues
+  - [ ] 5.1 Move OtpLogin component out of Login component to avoid showing Welcome header
+  - [ ] 5.2 Add back button as top element in email stage (no Welcome header above)
+  - [ ] 5.3 Add descriptive message under "Sign in with Email" header
+  - [ ] 5.4 Update OTP stage message to be more direct about sending code
+  - [ ] 5.5 Add proper cooldown timer for "Send new code" button
+  - [ ] 5.6 Style success message differently from error messages
+  - [ ] 5.7 Make success message persist longer or until user interaction
+  - [ ] 5.8 Verify all UI changes work correctly
+
+- [ ] 6. End-to-end testing and cleanup
+  - [ ] 6.1 Test complete OTP login flow manually
+  - [ ] 6.2 Verify OAuth flows still work correctly
+  - [ ] 6.3 Test with various email providers
+  - [ ] 6.4 Test cross-device authentication flow (read code on one device, enter on another)
+  - [ ] 6.5 Remove any references to magic links in UI
+  - [ ] 6.6 Update any relevant documentation
+  - [ ] 6.7 Apply template change to production (add {{ .Token }} as footnote)
+  - [ ] 6.8 Verify OTP codes appear in emails
+  - [ ] 6.9 Clean up email template formatting after verification
