@@ -131,24 +131,11 @@ describe("AuthProvider", () => {
       expect(result.current.isLoggedIn).toBe(true);
     });
 
-    it("should clear session when user validation fails", async () => {
-      // Suppress expected console.warn for this test
-      const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
+    it("should trust cached session without validation", async () => {
       const mockSession = createMockSession();
 
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: { session: mockSession },
-        error: null,
-      });
-
-      // Mock getUser to fail validation (user deleted)
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
-        data: { user: null },
-        error: { message: "User not found", name: "AuthError" } as any,
-      });
-
-      vi.mocked(supabase.auth.signOut).mockResolvedValue({
         error: null,
       });
 
@@ -166,13 +153,15 @@ describe("AuthProvider", () => {
         expect(result.current.isInitializing).toBe(false);
       });
 
-      // Should clear the invalid session
-      expect(supabase.auth.signOut).toHaveBeenCalled();
-      expect(result.current.user).toBeNull();
-      expect(result.current.session).toBeNull();
-      expect(result.current.isLoggedIn).toBe(false);
-
-      consoleWarnSpy.mockRestore();
+      // Should trust the cached session without calling getUser
+      expect(supabase.auth.getUser).not.toHaveBeenCalled();
+      expect(result.current.user).toEqual({
+        uid: mockSession.user.id,
+        email: mockSession.user.email,
+        displayName: mockSession.user.user_metadata?.name || null,
+      });
+      expect(result.current.session).toEqual(mockSession);
+      expect(result.current.isLoggedIn).toBe(true);
     });
 
     it("should clean up subscription on unmount", () => {

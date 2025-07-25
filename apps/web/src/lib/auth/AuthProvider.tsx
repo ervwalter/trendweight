@@ -110,8 +110,8 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       if (error) {
         console.error("Error signing out:", error);
 
-        // If the error is about missing session, force clear everything
-        if (error.message === "Auth session missing!") {
+        // If the error is about missing session or network issues, force clear everything locally
+        if (error.message === "Auth session missing!" || error.message.includes("network") || error.message.includes("fetch")) {
           // Clear all Supabase localStorage items to force a clean state
           const keysToRemove = [];
           for (let i = 0; i < localStorage.length; i++) {
@@ -136,6 +136,16 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       }
     } catch (error) {
       console.error("Error during sign out:", error);
+
+      // Even if signOut fails due to network, clear local state
+      if (error instanceof Error && (error.message.includes("network") || error.message.includes("fetch"))) {
+        // Clear local auth state even if server request failed
+        setUser(null);
+        setSession(null);
+        router.navigate({ to: "/" });
+        return;
+      }
+
       throw error;
     }
   };
@@ -154,34 +164,18 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   // Handle auth state changes
   useEffect(() => {
-    // Get initial session and validate it with the server
+    // Get initial session from local storage
     const initializeAuth = async () => {
       try {
-        // First get the cached session
+        // Get the cached session
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
         if (session) {
-          // If we have a session, validate it by calling getUser
-          // This will check with the server if the user still exists
-          const {
-            data: { user },
-            error,
-          } = await supabase.auth.getUser();
-
-          if (error || !user) {
-            // Token is invalid or user was deleted
-            console.warn("Session validation failed:", error?.message);
-            // Clear the invalid session
-            await supabase.auth.signOut();
-            setSession(null);
-            setUser(null);
-          } else {
-            // Session is valid
-            setSession(session);
-            setUser(transformUser(user));
-          }
+          // Trust the cached session - Supabase will handle refresh if needed
+          setSession(session);
+          setUser(transformUser(session.user));
         } else {
           // No session
           setSession(null);
@@ -203,6 +197,16 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event:", event, "Session valid:", !!session);
+
+      // Log session expiration info for debugging
+      if (session) {
+        const expiresAt = new Date(session.expires_at! * 1000);
+        const now = new Date();
+        const hoursUntilExpiry = (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+        console.log(`Session expires at: ${expiresAt.toLocaleString()}, Hours until expiry: ${hoursUntilExpiry.toFixed(2)}`);
+      }
+
       setSession(session);
       setUser(transformUser(session?.user || null));
 
@@ -210,12 +214,57 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
       if (event === "SIGNED_OUT") {
         router.navigate({ to: "/" });
       }
+
+      // Log token refresh events
+      if (event === "TOKEN_REFRESHED") {
+        console.log("Token refreshed successfully");
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Add periodic session refresh check
+  useEffect(() => {
+    if (!session) return;
+
+    // Check every 5 minutes if we need to refresh the token
+    const interval = setInterval(
+      async () => {
+        try {
+          const {
+            data: { session: currentSession },
+            error,
+          } = await supabase.auth.getSession();
+
+          if (currentSession && !error) {
+            const expiresAt = currentSession.expires_at! * 1000;
+            const now = Date.now();
+            const minutesUntilExpiry = (expiresAt - now) / (1000 * 60);
+
+            // Refresh if less than 10 minutes until expiry
+            if (minutesUntilExpiry < 10) {
+              console.log(`Token expiring in ${minutesUntilExpiry.toFixed(1)} minutes, refreshing...`);
+              const { data, error: refreshError } = await supabase.auth.refreshSession();
+
+              if (refreshError) {
+                console.error("Failed to refresh session:", refreshError);
+              } else if (data.session) {
+                console.log("Session refreshed successfully");
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error checking session expiry:", error);
+        }
+      },
+      5 * 60 * 1000,
+    ); // Check every 5 minutes
+
+    return () => clearInterval(interval);
+  }, [session]);
 
   const value: AuthContextType = {
     user,

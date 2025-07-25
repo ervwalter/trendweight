@@ -139,7 +139,7 @@ describe("AuthProvider OTP Integration", () => {
     });
   });
 
-  it("handles OTP session expiration", async () => {
+  it("handles OTP session without server validation", async () => {
     const mockExpiredSession = {
       access_token: "expired-token",
       refresh_token: "expired-refresh",
@@ -155,28 +155,19 @@ describe("AuthProvider OTP Integration", () => {
       error: null,
     } as any);
 
-    // Mock user validation fails (token expired)
-    vi.mocked(supabase.auth.getUser).mockResolvedValueOnce({
-      data: { user: null },
-      error: { message: "Token has expired" },
-    } as any);
-
-    // Mock signOut
-    vi.mocked(supabase.auth.signOut).mockResolvedValueOnce({
-      error: null,
-    } as any);
-
     render(
       <AuthProvider>
         <TestComponent />
       </AuthProvider>,
     );
 
-    // Should be logged out after failed validation
+    // Should trust the cached session without calling getUser
     await waitFor(() => {
-      expect(screen.getByTestId("is-logged-in")).toHaveTextContent("logged-out");
-      expect(screen.getByTestId("user-id")).toHaveTextContent("no-user");
-      expect(vi.mocked(supabase.auth.signOut)).toHaveBeenCalled();
+      expect(screen.getByTestId("is-logged-in")).toHaveTextContent("logged-in");
+      expect(screen.getByTestId("user-id")).toHaveTextContent("user-789");
+      expect(screen.getByTestId("user-email")).toHaveTextContent("expired@example.com");
+      expect(vi.mocked(supabase.auth.getUser)).not.toHaveBeenCalled();
+      expect(vi.mocked(supabase.auth.signOut)).not.toHaveBeenCalled();
     });
   });
 
