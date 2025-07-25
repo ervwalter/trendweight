@@ -225,8 +225,8 @@ If you see any route file that doesn't follow this pattern, it MUST be refactore
 
 ### Supabase Schema
 The complete database schema is documented in the repository:
-- **Schema SQL**: `apps/api/supabase/schema.sql` - Complete SQL script to recreate all tables, indexes, and RLS policies
-- **Schema Documentation**: `apps/api/supabase/SCHEMA.md` - Detailed documentation of table structures and data formats
+- **Schema SQL**: `apps/api/TrendWeight/supabase/schema.sql` - Complete SQL script to recreate all tables, indexes, and RLS policies
+- **Schema Documentation**: `apps/api/TrendWeight/supabase/SCHEMA.md` - Detailed documentation of table structures and data formats
 
 To set up a new Supabase instance:
 1. Create a new Supabase project
@@ -237,8 +237,8 @@ To set up a new Supabase instance:
 
 **IMPORTANT**: If you make any schema changes in Supabase (new tables, columns, indexes, etc.), you MUST:
 1. Use the MCP Supabase tools to query the updated schema
-2. Update `apps/api/supabase/schema.sql` with the changes
-3. Update `apps/api/supabase/SCHEMA.md` documentation accordingly
+2. Update `apps/api/TrendWeight/supabase/schema.sql` with the changes
+3. Update `apps/api/TrendWeight/supabase/SCHEMA.md` documentation accordingly
 4. Never make schema changes without updating these files
 
 ## Recent Lessons Learned (from Code Review)
@@ -325,4 +325,37 @@ Use the same pattern for `console.warn` when testing code that logs warnings. Ap
 - Trust that the framework integration works as documented
 
 Example: For Supabase authentication, we created `ISupabaseTokenService` to test JWT validation and claims mapping logic separately from the authentication handler.
+
+## Agent OS Documentation
+
+### Product Context
+- **Mission & Vision:** @.agent-os/product/mission.md
+- **Technical Architecture:** @.agent-os/product/tech-stack.md
+- **Development Roadmap:** @.agent-os/product/roadmap.md
+- **Decision History:** @.agent-os/product/decisions.md
+
+### Development Standards
+- **Code Style:** @~/.agent-os/standards/code-style.md
+- **Best Practices:** @~/.agent-os/standards/best-practices.md
+
+### Project Management
+- **Active Specs:** @.agent-os/specs/
+- **Spec Planning:** Use `@~/.agent-os/instructions/create-spec.md`
+- **Tasks Execution:** Use `@~/.agent-os/instructions/execute-tasks.md`
+
+## Workflow Instructions
+
+When asked to work on this codebase:
+
+1. **First**, check @.agent-os/product/roadmap.md for current priorities
+2. **Then**, follow the appropriate instruction file:
+   - For new features: @.agent-os/instructions/create-spec.md
+   - For tasks execution: @.agent-os/instructions/execute-tasks.md
+3. **Always**, adhere to the standards in the files listed above
+
+## Important Notes
+
+- Product-specific files in `.agent-os/product/` override any global standards
+- User's specific instructions override (or amend) instructions found in `.agent-os/specs/...`
+- Always adhere to established patterns, code style, and best practices documented above.
 ```
