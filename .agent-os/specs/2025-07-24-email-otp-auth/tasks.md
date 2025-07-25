@@ -7,12 +7,11 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 
 ## Tasks
 
-- [ ] 1. Update Supabase email templates for OTP
-  - [ ] 1.1 Configure OTP email template in Supabase dashboard
-  - [ ] 1.2 Add clear subject line "Your TrendWeight login code"
-  - [ ] 1.3 Format email body with prominent {{ .Token }} display
-  - [ ] 1.4 Include 1-hour expiration notice
-  - [ ] 1.5 Test email delivery and formatting
+- [x] 1. Prepare Supabase email template change (Deploy Last)
+  - [x] 1.1 Document template change: Add {{ .Token }} as footnote to existing magic link template
+  - [x] 1.2 Create deployment notes for last-minute template update
+  - [x] 1.3 Plan for proper template formatting after initial verification
+  - [x] 1.4 Note: Template will be updated in production AFTER code deployment
 
 - [ ] 2. Update login component for OTP flow
   - [ ] 2.1 Write tests for email input and OTP input states
@@ -43,6 +42,9 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [ ] 5.1 Test complete OTP login flow manually
   - [ ] 5.2 Verify OAuth flows still work correctly
   - [ ] 5.3 Test with various email providers
-  - [ ] 5.4 Ensure corporate email scanners don't trigger OTP
+  - [ ] 5.4 Test cross-device authentication flow (read code on one device, enter on another)
   - [ ] 5.5 Remove any references to magic links in UI
   - [ ] 5.6 Update any relevant documentation
+  - [ ] 5.7 Apply template change to production (add {{ .Token }} as footnote)
+  - [ ] 5.8 Verify OTP codes appear in emails
+  - [ ] 5.9 Clean up email template formatting after verification
