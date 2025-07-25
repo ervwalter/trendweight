@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.2.0](https://github.com/ervwalter/trendweight/compare/v2.1.7...v2.2.0) (2025-07-25)
+
+
+### Features
+
+* implement OTP authentication via email instead of magic links ([#275](https://github.com/ervwalter/trendweight/issues/275)) ([b970555](https://github.com/ervwalter/trendweight/commit/b9705557941ef7eeadbdc8b65aa29bc0edd84bdd))
+
+
+### Fixes
+
+* correct database schema file paths in CLAUDE.md ([b970555](https://github.com/ervwalter/trendweight/commit/b9705557941ef7eeadbdc8b65aa29bc0edd84bdd))
+
+
+### Dependencies
+
+* update npm dependencies ([#270](https://github.com/ervwalter/trendweight/issues/270)) ([09c88f9](https://github.com/ervwalter/trendweight/commit/09c88f940e04b8afd73f381601ebd5831153e1bd))
+
 ## [2.1.7](https://github.com/ervwalter/trendweight/compare/v2.1.6...v2.1.7) (2025-07-24)
 
 
