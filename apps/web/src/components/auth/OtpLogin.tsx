@@ -8,16 +8,24 @@ import { AuthError } from "./AuthError";
 
 type AuthStage = "email" | "otp";
 
-export function OtpLogin({ from }: { from?: string }) {
+interface OtpLoginProps {
+  from?: string;
+  onBack: () => void;
+}
+
+export function OtpLogin({ from, onBack }: OtpLoginProps) {
   const navigate = useNavigate();
   const [stage, setStage] = useState<AuthStage>("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string>();
+  const [resendCooldown, setResendCooldown] = useState(0);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const otpInputRef = useRef<HTMLInputElement>(null);
+  const cooldownTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -66,6 +74,18 @@ export function OtpLogin({ from }: { from?: string }) {
         // Move to OTP stage
         setStage("otp");
         setOtp(""); // Clear any previous OTP
+        setResendCooldown(60); // Start cooldown for resend
+
+        // Start cooldown timer
+        cooldownTimerRef.current = setInterval(() => {
+          setResendCooldown((prev) => {
+            if (prev <= 1) {
+              clearInterval(cooldownTimerRef.current);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
       }
     } catch (err) {
       console.error("Error sending OTP:", err);
@@ -130,10 +150,20 @@ export function OtpLogin({ from }: { from?: string }) {
           setError(error.message || "Failed to send new code. Please try again.");
         }
       } else {
-        setError(""); // Clear any previous errors
-        // Show success message briefly
-        setError("New code sent! Check your email.");
-        setTimeout(() => setError(""), 3000);
+        // Show success message and start cooldown
+        setSuccessMessage("New code sent! Check your email.");
+        setResendCooldown(60);
+
+        // Start cooldown timer
+        cooldownTimerRef.current = setInterval(() => {
+          setResendCooldown((prev) => {
+            if (prev <= 1) {
+              clearInterval(cooldownTimerRef.current);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
       }
     } catch (err) {
       console.error("Error resending OTP:", err);
@@ -147,7 +177,12 @@ export function OtpLogin({ from }: { from?: string }) {
     setStage("email");
     setOtp("");
     setError("");
+    setSuccessMessage("");
     setCaptchaToken(undefined);
+    if (cooldownTimerRef.current) {
+      clearInterval(cooldownTimerRef.current);
+    }
+    setResendCooldown(0);
   };
 
   const handleOtpChange = (value: string) => {
@@ -157,12 +192,26 @@ export function OtpLogin({ from }: { from?: string }) {
     setOtp(numericValue.slice(0, 6));
   };
 
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) {
+        clearInterval(cooldownTimerRef.current);
+      }
+    };
+  }, []);
+
   if (stage === "email") {
     return (
       <div className="mx-auto max-w-md">
-        <Heading level={2} className="mb-6 text-center">
+        <Button onClick={onBack} variant="ghost" size="sm" className="mb-6 -ml-2">
+          ← Back to login options
+        </Button>
+
+        <Heading level={2} className="mb-2 text-center">
           Sign in with Email
         </Heading>
+        <p className="mb-6 text-center text-gray-600">Enter your email to log in to your account or create a new one</p>
 
         {error && <AuthError error={error} />}
 
@@ -215,9 +264,10 @@ export function OtpLogin({ from }: { from?: string }) {
         Enter Your Code
       </Heading>
 
-      <p className="mb-6 text-center text-gray-600">Enter the 6-digit code sent to {email}</p>
+      <p className="mb-6 text-center text-gray-600">We sent a 6-digit code to {email}. Enter it below to continue.</p>
 
       {error && <AuthError error={error} />}
+      {successMessage && <div className="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-green-700">{successMessage}</div>}
 
       <form onSubmit={handleOtpSubmit} className="space-y-4">
         <div>
@@ -250,8 +300,13 @@ export function OtpLogin({ from }: { from?: string }) {
           <button type="button" onClick={handleChangeEmail} disabled={isSubmitting} className="text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50">
             Change email
           </button>
-          <button type="button" onClick={handleResendCode} disabled={isSubmitting} className="text-brand-600 hover:text-brand-700 text-sm disabled:opacity-50">
-            Send new code
+          <button
+            type="button"
+            onClick={handleResendCode}
+            disabled={isSubmitting || resendCooldown > 0}
+            className="text-brand-600 hover:text-brand-700 text-sm disabled:opacity-50"
+          >
+            {resendCooldown > 0 ? `Send new code (${resendCooldown}s)` : "Send new code"}
           </button>
         </div>
       </form>

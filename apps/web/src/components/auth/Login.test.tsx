@@ -56,8 +56,9 @@ vi.mock("./SocialLoginButtons", () => ({
 }));
 
 vi.mock("./OtpLogin", () => ({
-  OtpLogin: () => (
+  OtpLogin: ({ onBack }: { onBack: () => void }) => (
     <div data-testid="otp-login-form">
+      <button onClick={onBack}>Back to login options</button>
       <form data-testid="email-login-form">
         <input type="email" data-testid="email-input" />
         <button type="submit">Continue</button>
@@ -108,7 +109,7 @@ describe("Login", () => {
     await user.click(emailButton);
 
     expect(screen.getByTestId("email-login-form")).toBeInTheDocument();
-    expect(screen.getByText("← Back to login options")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome")).not.toBeInTheDocument(); // Welcome header should not be shown
   });
 
   it("should hide email form when back button is clicked", async () => {
@@ -120,7 +121,7 @@ describe("Login", () => {
     expect(screen.getByTestId("email-login-form")).toBeInTheDocument();
 
     // Go back
-    await user.click(screen.getByText("← Back to login options"));
+    await user.click(screen.getByText("Back to login options"));
     expect(screen.queryByTestId("email-login-form")).not.toBeInTheDocument();
     expect(screen.getByTestId("social-login-buttons")).toBeInTheDocument();
   });
@@ -226,7 +227,7 @@ describe("Login", () => {
     await user.type(emailInput, "test@example.com");
 
     // Go back
-    await user.click(screen.getByText("← Back to login options"));
+    await user.click(screen.getByText("Back to login options"));
 
     // Show email form again
     await user.click(screen.getByText("Continue with Email"));

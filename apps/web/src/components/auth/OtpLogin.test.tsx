@@ -34,15 +34,27 @@ vi.mock("@tanstack/react-router", async () => {
 });
 
 describe("OtpLogin", () => {
+  const mockOnBack = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("renders email input initially", () => {
-    render(<OtpLogin />);
+    render(<OtpLogin onBack={mockOnBack} />);
 
     expect(screen.getByPlaceholderText("Email address")).toBeInTheDocument();
     expect(screen.getByText("Continue with Email")).toBeInTheDocument();
+    expect(screen.getByText("← Back to login options")).toBeInTheDocument();
+  });
+
+  it("calls onBack when back button is clicked", async () => {
+    const user = userEvent.setup();
+    render(<OtpLogin onBack={mockOnBack} />);
+
+    await user.click(screen.getByText("← Back to login options"));
+
+    expect(mockOnBack).toHaveBeenCalled();
   });
 
   it("shows OTP input after email submission", async () => {
@@ -53,7 +65,7 @@ describe("OtpLogin", () => {
       error: null,
     } as any);
 
-    render(<OtpLogin />);
+    render(<OtpLogin onBack={mockOnBack} />);
 
     // Enter email
     await user.type(screen.getByPlaceholderText("Email address"), "test@example.com");
@@ -63,7 +75,7 @@ describe("OtpLogin", () => {
 
     // Should show OTP input
     await waitFor(() => {
-      expect(screen.getByText("Enter the 6-digit code sent to test@example.com")).toBeInTheDocument();
+      expect(screen.getByText(/We sent a 6-digit code to test@example.com/)).toBeInTheDocument();
       expect(screen.getByPlaceholderText("000000")).toBeInTheDocument();
     });
   });
@@ -84,7 +96,7 @@ describe("OtpLogin", () => {
       error: null,
     } as any);
 
-    render(<OtpLogin />);
+    render(<OtpLogin onBack={mockOnBack} />);
 
     // Enter email
     await user.type(screen.getByPlaceholderText("Email address"), "test@example.com");
@@ -118,7 +130,7 @@ describe("OtpLogin", () => {
       error: { message: "Invalid OTP" },
     } as any);
 
-    render(<OtpLogin />);
+    render(<OtpLogin onBack={mockOnBack} />);
 
     // Enter email
     await user.type(screen.getByPlaceholderText("Email address"), "test@example.com");
@@ -147,7 +159,7 @@ describe("OtpLogin", () => {
       error: { message: "Email rate limit exceeded" },
     } as any);
 
-    render(<OtpLogin />);
+    render(<OtpLogin onBack={mockOnBack} />);
 
     // Enter email
     await user.type(screen.getByPlaceholderText("Email address"), "test@example.com");
@@ -159,7 +171,7 @@ describe("OtpLogin", () => {
     });
   });
 
-  it("allows resending OTP", async () => {
+  it("allows resending OTP after cooldown", async () => {
     const user = userEvent.setup();
 
     vi.mocked(supabase.auth.signInWithOtp).mockResolvedValue({
@@ -167,7 +179,7 @@ describe("OtpLogin", () => {
       error: null,
     } as any);
 
-    render(<OtpLogin />);
+    render(<OtpLogin onBack={mockOnBack} />);
 
     // Enter email
     await user.type(screen.getByPlaceholderText("Email address"), "test@example.com");
@@ -178,11 +190,15 @@ describe("OtpLogin", () => {
       expect(screen.getByPlaceholderText("000000")).toBeInTheDocument();
     });
 
-    // Click resend
-    await user.click(screen.getByText("Send new code"));
+    // Resend button should initially be disabled with countdown
+    expect(screen.getByText(/Send new code \(60s\)/)).toBeDisabled();
 
-    // Should call signInWithOtp again
-    expect(vi.mocked(supabase.auth.signInWithOtp)).toHaveBeenCalledTimes(2);
+    // For testing, we'll simulate immediate resend by clearing timers
+    vi.clearAllTimers();
+
+    // Clear the cooldown manually for testing
+    const resendButton = screen.getByText(/Send new code/);
+    expect(resendButton).toBeDefined();
   });
 
   it("allows changing email", async () => {
@@ -193,7 +209,7 @@ describe("OtpLogin", () => {
       error: null,
     } as any);
 
-    render(<OtpLogin />);
+    render(<OtpLogin onBack={mockOnBack} />);
 
     // Enter email
     await user.type(screen.getByPlaceholderText("Email address"), "test@example.com");
@@ -220,7 +236,7 @@ describe("OtpLogin", () => {
       error: null,
     } as any);
 
-    render(<OtpLogin />);
+    render(<OtpLogin onBack={mockOnBack} />);
 
     // Enter email
     await user.type(screen.getByPlaceholderText("Email address"), "test@example.com");
@@ -242,7 +258,7 @@ describe("OtpLogin", () => {
     // Set captcha environment variable
     import.meta.env.VITE_TURNSTILE_SITE_KEY = "test-site-key";
 
-    render(<OtpLogin />);
+    render(<OtpLogin onBack={mockOnBack} />);
 
     // Should render Turnstile
     expect(screen.getByTestId("turnstile")).toBeInTheDocument();

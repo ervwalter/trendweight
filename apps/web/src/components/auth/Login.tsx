@@ -57,15 +57,16 @@ export function Login() {
   return (
     <div className="mx-auto max-w-md py-12">
       <NewVersionNotice />
-      <Heading level={1} className="text-center" display>
-        Welcome
-      </Heading>
-      <p className="mb-8 text-center text-gray-600">Log in to your account or create a new one</p>
 
       {error && <AuthError error={error} />}
 
       {!showEmailForm ? (
         <>
+          <Heading level={1} className="text-center" display>
+            Welcome
+          </Heading>
+          <p className="mb-8 text-center text-gray-600">Log in to your account or create a new one</p>
+
           <SocialLoginButtons onSocialLogin={handleSocialLogin} />
           <AuthDivider />
           <Button onClick={() => setShowEmailForm(true)} variant="secondary" size="lg" className="w-full justify-start gap-4">
@@ -74,21 +75,13 @@ export function Login() {
           </Button>
         </>
       ) : (
-        <>
-          <Button
-            onClick={() => {
-              setShowEmailForm(false);
-              setError("");
-            }}
-            variant="ghost"
-            size="sm"
-            className="mb-6 -ml-2"
-          >
-            ← Back to login options
-          </Button>
-
-          <OtpLogin from={from} />
-        </>
+        <OtpLogin
+          from={from}
+          onBack={() => {
+            setShowEmailForm(false);
+            setError("");
+          }}
+        />
       )}
 
       <PrivacyPolicyLink />
