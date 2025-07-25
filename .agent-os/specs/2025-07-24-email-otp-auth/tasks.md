@@ -13,15 +13,15 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.3 Plan for proper template formatting after initial verification
   - [x] 1.4 Note: Template will be updated in production AFTER code deployment
 
-- [ ] 2. Update login component for OTP flow
-  - [ ] 2.1 Write tests for email input and OTP input states
-  - [ ] 2.2 Add state management for OTP flow stages
-  - [ ] 2.3 Implement email submission with signInWithOtp
-  - [ ] 2.4 Create OTP input UI that appears after email sent
-  - [ ] 2.5 Implement OTP verification with verifyOtp
-  - [ ] 2.6 Add proper error handling for all edge cases
-  - [ ] 2.7 Ensure smooth transition between states
-  - [ ] 2.8 Verify all tests pass
+- [x] 2. Update login component for OTP flow
+  - [x] 2.1 Write tests for email input and OTP input states
+  - [x] 2.2 Add state management for OTP flow stages
+  - [x] 2.3 Implement email submission with signInWithOtp
+  - [x] 2.4 Create OTP input UI that appears after email sent
+  - [x] 2.5 Implement OTP verification with verifyOtp
+  - [x] 2.6 Add proper error handling for all edge cases
+  - [x] 2.7 Ensure smooth transition between states
+  - [x] 2.8 Verify all tests pass
 
 - [ ] 3. Update auth context and session handling
   - [ ] 3.1 Write tests for OTP session processing

@@ -55,8 +55,15 @@ vi.mock("./SocialLoginButtons", () => ({
   ),
 }));
 
-vi.mock("./EmailLoginForm", () => ({
-  EmailLoginForm: vi.fn(),
+vi.mock("./OtpLogin", () => ({
+  OtpLogin: ({ from }: any) => (
+    <div data-testid="otp-login-form">
+      <form data-testid="email-login-form">
+        <input type="email" data-testid="email-input" />
+        <button type="submit">Continue</button>
+      </form>
+    </div>
+  ),
 }));
 
 vi.mock("./AuthDivider", () => ({
@@ -75,25 +82,12 @@ vi.mock("../../lib/auth/useAppleSignIn", () => ({
   useAppleSignIn: () => {},
 }));
 
-// Import EmailLoginForm after mocking
-import { EmailLoginForm } from "./EmailLoginForm";
-
 describe("Login", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSearch.from = undefined;
     sessionStorage.clear();
     import.meta.env.VITE_TURNSTILE_SITE_KEY = "";
-
-    // Reset EmailLoginForm mock
-    vi.mocked(EmailLoginForm).mockImplementation(({ email, onEmailChange, onSubmit, isSubmitting }: any) => (
-      <form onSubmit={onSubmit} data-testid="email-login-form">
-        <input type="email" value={email} onChange={(e) => onEmailChange(e.target.value)} disabled={isSubmitting} data-testid="email-input" />
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Sending..." : "Continue"}
-        </button>
-      </form>
-    ));
   });
 
   it("should render welcome message and social login buttons", () => {
@@ -129,71 +123,6 @@ describe("Login", () => {
     await user.click(screen.getByText("← Back to login options"));
     expect(screen.queryByTestId("email-login-form")).not.toBeInTheDocument();
     expect(screen.getByTestId("social-login-buttons")).toBeInTheDocument();
-  });
-
-  it("should handle email submission successfully", async () => {
-    const user = userEvent.setup();
-    mockSendLoginEmail.mockResolvedValue(undefined);
-
-    render(<Login />);
-
-    // Show email form
-    await user.click(screen.getByText("Continue with Email"));
-
-    // Fill and submit form
-    const emailInput = screen.getByTestId("email-input");
-    await user.type(emailInput, "test@example.com");
-
-    const form = screen.getByTestId("email-login-form");
-    fireEvent.submit(form);
-
-    await waitFor(() => {
-      expect(mockSendLoginEmail).toHaveBeenCalledWith("test@example.com", undefined);
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: "/check-email",
-        search: { email: "test@example.com" },
-      });
-    });
-  });
-
-  it("should handle email submission error", async () => {
-    // Suppress expected console.error for this test
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    const user = userEvent.setup();
-    mockSendLoginEmail.mockRejectedValue(new Error("Network error"));
-
-    render(<Login />);
-
-    // Show email form
-    await user.click(screen.getByText("Continue with Email"));
-
-    // Fill and submit form
-    const emailInput = screen.getByTestId("email-input");
-    await user.type(emailInput, "test@example.com");
-
-    const form = screen.getByTestId("email-login-form");
-    fireEvent.submit(form);
-
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Failed to send login email. Please try again.");
-    });
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  it("should not submit email form with empty email", async () => {
-    const user = userEvent.setup();
-    render(<Login />);
-
-    // Show email form
-    await user.click(screen.getByText("Continue with Email"));
-
-    // Submit empty form
-    const form = screen.getByTestId("email-login-form");
-    fireEvent.submit(form);
-
-    expect(mockSendLoginEmail).not.toHaveBeenCalled();
   });
 
   it("should handle Google sign in", async () => {
@@ -285,29 +214,6 @@ describe("Login", () => {
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith({ to: "/settings" });
     });
-  });
-
-  it("should require captcha when configured", async () => {
-    const user = userEvent.setup();
-    import.meta.env.VITE_TURNSTILE_SITE_KEY = "test-key";
-
-    // Mock EmailLoginForm to simulate captcha requirement
-    vi.mocked(EmailLoginForm).mockImplementation(({ onCaptchaSuccess }: any) => (
-      <div data-testid="email-form-with-captcha">
-        <button onClick={() => onCaptchaSuccess("test-token")}>Complete Captcha</button>
-      </div>
-    ));
-
-    render(<Login />);
-
-    // Show email form
-    await user.click(screen.getByText("Continue with Email"));
-
-    const captchaButton = screen.getByText("Complete Captcha");
-    await user.click(captchaButton);
-
-    // The component should have the captcha token set
-    expect(screen.getByTestId("email-form-with-captcha")).toBeInTheDocument();
   });
 
   it("should clear form state when toggling between views", async () => {
