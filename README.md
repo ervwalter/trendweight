@@ -107,7 +107,7 @@ Contributions are welcome. However, it's essentially a one-man show (me), and I'
 
 ## Contributors
 
-<!-- readme: contributors,collaborators,ervwalter/-,renovate-bot/- -start -->
+<!-- readme: contributors,ervwalter/-,renovate-bot/- -start -->
 <table>
 	<tbody>
 		<tr>
@@ -121,4 +121,4 @@ Contributions are welcome. However, it's essentially a one-man show (me), and I'
 		</tr>
 	<tbody>
 </table>
-<!-- readme: contributors,collaborators,ervwalter/-,renovate-bot/- -end -->
+<!-- readme: contributors,ervwalter/-,renovate-bot/- -end -->
