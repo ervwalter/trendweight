@@ -3,13 +3,13 @@
 This is the API specification for the spec detailed in @.agent-os/specs/2025-07-26-legacy-data-provider/spec.md
 
 > Created: 2025-07-26
-> Version: 2.0.0
+> Version: 3.0.0
 
 ## No New Endpoints Required
 
-The legacy data provider feature uses existing API endpoints. All functionality is integrated into the existing profile and data retrieval flows.
+The legacy data provider feature uses existing API endpoints. All functionality works through the standard IProviderService implementation.
 
-## Existing Endpoints Affected
+## Existing Endpoints - No Special Handling Needed
 
 ### GET /api/profile
 
@@ -27,37 +27,47 @@ The legacy data provider feature uses existing API endpoints. All functionality 
 
 ### GET /api/providers/links
 
-**Changes:** Returns "legacy" provider in the list when present
-- Provider string: "legacy"
-- Shows connection date (when data was imported)
-- Filters out providers where token.deleted = true
+**No Changes Required:** Works automatically through standard provider handling
+- LegacyService registered as a provider
+- Shows "legacy" provider when present
+- LegacyService.HasActiveProviderLinkAsync() handles disabled state
 
 ### DELETE /api/providers/{provider}
 
-**Changes:** Special handling when provider = "legacy"
-- Currently validates provider must be "withings" or "fitbit" - needs update
-- For legacy: skip ProviderIntegrationService (no IProviderService impl)
-- Deletes source_data row
-- Updates provider_links token to `{"deleted": true}`
-- Frontend shows enhanced warning requiring "DELETE" confirmation
+**No Special Handling Required:** Works through IProviderService
+- Routes to LegacyService.RemoveProviderLinkAsync()
+- Legacy service handles soft delete internally
+- No controller modifications needed
+
+### POST /api/providers/sync
+
+**No Special Handling Required:** Works through ProviderIntegrationService
+- LegacyService.SyncMeasurementsAsync() returns success (no-op)
+- No errors or special cases
+
+### GET /api/data
+
+**No Special Handling Required:** Works through standard provider flow
+- ProviderIntegrationService includes legacy when active
+- LegacyService.GetMeasurementsAsync() returns data when enabled
+- Respects disabled state automatically
 
 ## Service Implementation
 
-### ProvidersController
+### LegacyService (NEW)
 
-**Modified Methods:**
-- `DisconnectProvider()` - Add special handling for "legacy" provider
-- `GetProviderLinks()` - Filter out providers where token.deleted = true
+**Implements:** IProviderService
+
+**Key Methods:**
+- `HasActiveProviderLinkAsync()` - Returns true only if link exists AND not disabled
+- `GetMeasurementsAsync()` - Returns data only when enabled
+- `RemoveProviderLinkAsync()` - Sets disabled flag instead of deleting
+- `SyncMeasurementsAsync()` - No-op, returns success
 
 ### ProfileController
 
 **Modified Methods:**
-- `GetProfile()` - After successfully loading profile, checks if user has IsMigrated flag but no legacy provider link
-
-### MeasurementSyncService
-
-**Modified Methods:**
-- `GetMeasurementsForUserAsync()` - Skip sync attempts for "legacy" provider
+- `GetProfile()` - After successfully loading profile, checks if user has IsMigrated flag but no legacy provider link (link doesn't exist at all)
 
 ### LegacyMigrationService
 
@@ -74,17 +84,20 @@ The legacy data provider feature uses existing API endpoints. All functionality 
 ### Profile Load Flow
 1. User requests profile via GET /api/profile
 2. After loading existing profile, check if IsMigrated = true
-3. If legacy provider link missing or deleted, import data synchronously
-4. Return complete profile with all data
+3. If legacy provider link missing (doesn't exist), import data synchronously
+4. If legacy provider link exists (enabled or disabled), skip import
+5. Return complete profile with all data
 
-### Provider List Flow
-1. User requests providers via GET /api/providers/links
-2. Filter out any providers where token.deleted = true
-3. Return filtered list
+### Provider Operations Flow
+1. All provider operations go through standard IProviderService interface
+2. ProviderIntegrationService handles discovery and routing
+3. LegacyService handles legacy-specific behavior internally
+4. No special cases in controllers or other services
 
-### Deletion Flow
-1. User requests DELETE /api/providers/legacy
-2. Frontend shows special warning for legacy provider
-3. Backend deletes source_data but keeps provider_links with token.deleted = true
+### Enable/Disable Flow
+1. User toggles legacy data in settings
+2. Frontend calls DELETE /api/providers/legacy
+3. LegacyService.RemoveProviderLinkAsync() sets disabled flag
+4. Data hidden but preserved for re-enabling
 
 No new error codes or response formats - uses existing patterns.

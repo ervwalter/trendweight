@@ -3,7 +3,7 @@
 This is the database schema implementation for the spec detailed in @.agent-os/specs/2025-07-26-legacy-data-provider/spec.md
 
 > Created: 2025-07-26
-> Version: 2.0.0
+> Version: 3.0.0
 
 ## No Schema Changes Required
 
@@ -15,11 +15,13 @@ The legacy data provider feature uses existing database tables without modificat
 Stores the connection to legacy data (same as other providers):
 - `uid`: References the user
 - `provider`: Set to "legacy" (string)
-- `token`: JSONB object - `{}` initially, `{"deleted": true}` after deletion
+- `token`: JSONB object for storing state
+  - `{}` or `null`: Provider is enabled
+  - `{"disabled": true}`: Provider is disabled (data hidden)
 - `update_reason`: Set to "legacy_import"
 - `updated_at`: Timestamp when legacy data was imported
 
-Note: When user deletes legacy data, source_data row is deleted but provider_links row remains with token.deleted = true to prevent re-import.
+Note: When user disables legacy data, both provider_links and source_data rows are KEPT. The token field is updated to track enabled/disabled state.
 
 ### source_data
 Stores all legacy measurements in a single JSON document:
@@ -28,6 +30,8 @@ Stores all legacy measurements in a single JSON document:
 - `measurements`: JSONB array of all measurements
 - `last_sync`: Timestamp when data was imported
 - `updated_at`: Timestamp when data was imported
+
+Note: Source data is NEVER deleted, only the provider link state changes
 
 ## Data Format
 

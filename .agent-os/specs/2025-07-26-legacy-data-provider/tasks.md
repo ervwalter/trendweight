@@ -29,30 +29,56 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 3.4 Update GetProviderLinks to filter out providers where token.deleted = true
   - [x] 3.5 Verify all tests pass
 
-- [ ] 4. Update Frontend Provider Display Components
-  - [ ] 4.1 Write tests for legacy provider display name mapping
-  - [ ] 4.2 Add "legacy" → "Legacy Data" mapping to provider display components
-  - [ ] 4.3 Add description text for legacy provider in settings
-  - [ ] 4.4 Hide legacy provider when token.deleted = true
+- [ ] 4. Fix Legacy Import Detection Logic
+  - [ ] 4.1 Fix LegacyMigrationService to only import if link doesn't exist at all
+  - [ ] 4.2 Remove incorrect check for deleted flag in import logic
+  - [ ] 4.3 Update tests to verify import only happens when link is missing
+  - [ ] 4.4 Verify import is skipped when link exists (regardless of disabled state)
   - [ ] 4.5 Verify all tests pass
 
-- [ ] 5. Implement Legacy Provider Deletion UI
-  - [ ] 5.1 Write tests for enhanced deletion warning dialog
-  - [ ] 5.2 Create special deletion confirmation for legacy provider
-  - [ ] 5.3 Require user to type "DELETE" to confirm
-  - [ ] 5.4 Only show enhanced deletion in settings (not link flow)
-  - [ ] 5.5 Verify all tests pass
+- [ ] 5. Implement LegacyService Provider
+  - [ ] 5.1 Write tests for LegacyService implementing IProviderService
+  - [ ] 5.2 Create LegacyService with proper interface implementation
+  - [ ] 5.3 Implement GetMeasurementsAsync to return data only when enabled
+  - [ ] 5.4 Implement HasActiveProviderLinkAsync to check disabled state
+  - [ ] 5.5 Implement RemoveProviderLinkAsync to set disabled flag (not delete)
+  - [ ] 5.6 Implement SyncMeasurementsAsync as no-op returning success
+  - [ ] 5.7 Register LegacyService in DI container
+  - [ ] 5.8 Verify all tests pass
 
-- [ ] 6. Add Legacy Provider to Download/Export
-  - [ ] 6.1 Write tests for legacy provider in download functionality
-  - [ ] 6.2 Add "legacy" to download provider options
-  - [ ] 6.3 Display as "Legacy Data" in download UI
-  - [ ] 6.4 Hide from download if token.deleted = true
-  - [ ] 6.5 Verify all tests pass
+- [ ] 6. Refactor Backend to Use LegacyService
+  - [ ] 6.1 Update ProvidersController to remove special legacy handling
+  - [ ] 6.2 Update MeasurementSyncService to remove special legacy handling
+  - [ ] 6.3 Update deletion logic to keep source_data (soft delete only)
+  - [ ] 6.4 Update GetProviderLinks to use HasActiveProviderLinkAsync
+  - [ ] 6.5 Verify provider integration works through standard flow
+  - [ ] 6.6 Verify all tests pass
 
-- [ ] 7. Integration Testing
-  - [ ] 7.1 Test new user account creation with legacy email match
-  - [ ] 7.2 Test existing migrated user getting legacy data on profile load
-  - [ ] 7.3 Test legacy provider deletion and prevention of re-import
-  - [ ] 7.4 Test download functionality with legacy data
-  - [ ] 7.5 Verify all integration scenarios work correctly
+- [ ] 7. Update Frontend Provider Display Components
+  - [ ] 7.1 Write tests for legacy provider display name mapping
+  - [ ] 7.2 Add "legacy" → "Legacy Data" mapping to provider display components
+  - [ ] 7.3 Add description text for legacy provider in settings
+  - [ ] 7.4 Show enable/disable toggle instead of delete button
+  - [ ] 7.5 Verify all tests pass
+
+- [ ] 8. Implement Legacy Provider Enable/Disable UI
+  - [ ] 8.1 Write tests for enable/disable toggle functionality
+  - [ ] 8.2 Create toggle component for legacy provider
+  - [ ] 8.3 Show current state clearly (Enabled/Disabled)
+  - [ ] 8.4 Update provider disconnect to use soft delete
+  - [ ] 8.5 Verify all tests pass
+
+- [ ] 9. Add Legacy Provider to Download/Export
+  - [ ] 9.1 Write tests for legacy provider in download functionality
+  - [ ] 9.2 Add "legacy" to download provider options
+  - [ ] 9.3 Display as "Legacy Data" in download UI
+  - [ ] 9.4 Only show when HasActiveProviderLinkAsync returns true
+  - [ ] 9.5 Verify all tests pass
+
+- [ ] 10. Integration Testing
+  - [ ] 10.1 Test new user account creation with legacy email match
+  - [ ] 10.2 Test existing migrated user getting legacy data on profile load
+  - [ ] 10.3 Test legacy provider disable/enable functionality
+  - [ ] 10.4 Test data visibility changes when toggling state
+  - [ ] 10.5 Test download functionality respects enabled state
+  - [ ] 10.6 Verify all integration scenarios work correctly

@@ -3,17 +3,29 @@
 This is the tests coverage details for the spec detailed in @.agent-os/specs/2025-07-26-legacy-data-provider/spec.md
 
 > Created: 2025-07-26
-> Version: 2.0.0
+> Version: 3.0.0
 
 ## Test Coverage
 
 ### Unit Tests
 
-**UserService (Extended Tests)**
-- Test detection of missing legacy provider link for migrated users
-- Test skip import when legacy provider link already exists
-- Test successful creation of provider link and source_data
-- Test handling of users with no legacy data
+**LegacyService (NEW)**
+- Test implements IProviderService interface correctly
+- Test GetAuthorizationUrl throws NotSupportedException
+- Test ExchangeAuthorizationCodeAsync returns false
+- Test GetMeasurementsAsync returns data when enabled
+- Test GetMeasurementsAsync returns null when disabled
+- Test SyncMeasurementsAsync always returns success (no-op)
+- Test HasActiveProviderLinkAsync returns true when enabled
+- Test HasActiveProviderLinkAsync returns false when disabled (token.disabled = true)
+- Test RemoveProviderLinkAsync sets disabled flag (doesn't delete data)
+
+**ProviderIntegrationService**
+- Test LegacyService is discovered and registered automatically
+- Test GetProviderService("legacy") returns LegacyService instance
+- Test GetActiveProvidersAsync includes legacy when enabled
+- Test GetActiveProvidersAsync excludes legacy when disabled
+- Test SyncAllProvidersAsync handles legacy provider (no-op)
 
 **ImportLegacyMeasurementsAsync**
 - Test weight conversion from lb to kg (UseMetric = false in legacy profile)
@@ -25,12 +37,12 @@ This is the tests coverage details for the spec detailed in @.agent-os/specs/202
 - Test empty measurements handling
 
 **Provider Display**
-- Test "Legacy Data" appears in provider list when token.deleted != true
-- Test provider hidden when token.deleted = true
+- Test "Legacy Data" appears in provider list when enabled
+- Test provider hidden when disabled (HasActiveProviderLinkAsync returns false)
 - Test provider shows as non-syncable
-- Test provider deletion updates token to {"deleted": true}
-- Test provider deletion removes source_data but keeps provider_links
-- Test deleted provider no longer appears in settings or download
+- Test provider disable sets token to {"disabled": true}
+- Test provider enable removes disabled flag or sets {"disabled": false}
+- Test source_data NEVER deleted (soft delete only)
 
 ### Integration Tests
 

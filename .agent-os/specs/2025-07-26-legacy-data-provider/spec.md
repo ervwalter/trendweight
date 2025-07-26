@@ -6,7 +6,7 @@
 
 ## Overview
 
-Implement a legacy data provider that automatically and invisibly imports historical weight measurements from the classic TrendWeight SQL Server database during the profile migration process.
+Implement a legacy data provider that automatically and invisibly imports historical weight measurements from the classic TrendWeight SQL Server database during the profile migration process. The legacy provider will implement the standard IProviderService interface to maintain architectural consistency.
 
 ## User Stories
 
@@ -30,32 +30,41 @@ When loading a profile with IsMigrated = true but no legacy provider link:
 3. Imports all historical measurements
 4. Returns the complete profile with legacy data included
 
+### Legacy Data Management
+
+As a user with legacy data, I want to be able to disable/enable my historical data visibility without permanently losing it.
+
+When managing legacy data in settings:
+1. Can disable legacy data (hides from charts/exports)
+2. Can re-enable previously disabled data
+3. Clear indication of current status (enabled/disabled)
+
 ## Spec Scope
 
-1. **Legacy Provider Type** - Add "legacy" as a new provider type alongside "withings" and "fitbit"
+1. **Legacy Provider Service** - Implement IProviderService for legacy provider with custom behavior
 2. **Synchronous Data Import** - Import measurements during profile operations
 3. **Unit Conversion** - Convert weights to kg based on legacy profile's UseMetric field
 4. **Timestamp Handling** - Extract local date/time from legacy Timestamp field
-5. **Provider Link Management** - Non-syncable, deletable with permanent deletion warning
-6. **Deletion Handling** - Delete data but mark provider as deleted to prevent re-import
-7. **Download Support** - Include legacy data in export (only if not deleted)
-8. **Settings Display** - Show description explaining what Legacy Data is
+5. **Provider Link Management** - Non-syncable provider with disable/enable functionality
+6. **Soft Deletion** - Mark as disabled but preserve data for potential re-enabling
+7. **Download Support** - Include legacy data in export (only if enabled)
+8. **Settings Display** - Show enable/disable toggle with description
 
 ## Out of Scope
 
 - User notifications or UI for import progress
-- Ability to re-import legacy data after deletion
-- New API endpoints (uses existing profile endpoints)
+- OAuth flow for legacy provider (not applicable)
+- New API endpoints (uses existing provider endpoints)
 - New database tables (uses existing provider_links and source_data)
-- Sync functionality for legacy provider
+- Actual sync functionality (returns success no-op)
 
 ## Expected Deliverable
 
 1. New legacy users get profile and data migrated automatically on account creation
-2. Existing migrated users get data imported on next profile load (unless previously deleted)
-3. "Legacy Data" provider appears in settings with description (non-syncable, deletable with warning)
-4. Legacy data available in download/export functionality (only if not deleted)
-5. Deleted legacy data prevents re-import but allows users to know they had legacy data
+2. Existing migrated users get data imported on next profile load (unless previously disabled)
+3. "Legacy Data" provider appears in settings with enable/disable toggle
+4. Legacy data available in download/export functionality (only if enabled)
+5. Disabled legacy data can be re-enabled at any time
 
 ## Spec Documentation
 
