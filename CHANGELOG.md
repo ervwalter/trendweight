@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.3.0](https://github.com/ervwalter/trendweight/compare/v2.2.3...v2.3.0) (2025-07-26)
+
+
+### Features
+
+* Add option to hide weight data before start date and include start date in onboarding ([#286](https://github.com/ervwalter/trendweight/issues/286)) ([b2cce4b](https://github.com/ervwalter/trendweight/commit/b2cce4b17ee6cd1fee6acc2d959f9ed9afdbc9af))
+
+
+### Fixes
+
+* **auth:** clear react-query caches on sign out to prevent stale data ([f0837cb](https://github.com/ervwalter/trendweight/commit/f0837cbed36170a5abee778f8996c10908f92ab7))
+
+
+### Dependencies
+
+* update dependency microsoft.data.sqlclient to 6.1.0 ([#285](https://github.com/ervwalter/trendweight/issues/285)) ([fde006b](https://github.com/ervwalter/trendweight/commit/fde006bc259e8ffc56fd799be08f7366933e615e))
+* update npm dependencies to v9.32.0 ([#281](https://github.com/ervwalter/trendweight/issues/281)) ([7c2ca11](https://github.com/ervwalter/trendweight/commit/7c2ca11b8f1509694fd57d0aa0ce8d028adeba4b))
+
 ## [2.2.3](https://github.com/ervwalter/trendweight/compare/v2.2.2...v2.2.3) (2025-07-25)
 
 
