@@ -17,4 +17,5 @@ public class ProfileData
     public bool SharingEnabled { get; set; }
     public bool IsMigrated { get; set; }
     public bool IsNewlyMigrated { get; set; }
+    public bool HideDataBeforeStart { get; set; }
 }
