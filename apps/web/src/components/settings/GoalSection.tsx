@@ -36,25 +36,11 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
     <div className="border-b border-gray-200 p-6">
       <Heading level={2}>Goal Settings</Heading>
       <p className="mb-6 text-sm text-gray-600">
-        If you provide some details on your weight loss goals, your dashboard will include statistics on how closely you are following your plan.
+        Set a goal weight and plan to track your progress. Your dashboard will show whether you're ahead or behind schedule.
       </p>
 
       <div className="space-y-4">
         <div>
-          <label htmlFor="goalStart" className="mb-1 block text-sm font-medium text-gray-700">
-            Start Date
-          </label>
-          <input
-            id="goalStart"
-            type="date"
-            {...register("goalStart")}
-            max={new Date().toISOString().split("T")[0]}
-            className="focus:ring-brand-500 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:outline-none md:w-64"
-          />
-          <p className="mt-1 text-sm text-gray-500">The baseline date for measuring progress toward your goal.</p>
-        </div>
-
-        <div className="mt-6">
           <label htmlFor="goalWeight" className="mb-1 block text-sm font-medium text-gray-700">
             Goal Weight ({weightUnit})
           </label>

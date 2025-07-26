@@ -37,6 +37,7 @@ export interface ProfileData {
   sharingEnabled?: boolean;
   isMigrated?: boolean;
   isNewlyMigrated?: boolean;
+  hideDataBeforeStart?: boolean;
 }
 
 export interface SharingData {

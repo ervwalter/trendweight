@@ -58,6 +58,16 @@ vi.mock("../settings/BasicProfileSettings", () => ({
   ),
 }));
 
+// Mock StartDateSettings
+vi.mock("../settings/StartDateSettings", () => ({
+  StartDateSettings: ({ register }: any) => (
+    <div data-testid="start-date-settings">
+      <input {...register("goalStart")} type="date" data-testid="goal-start" />
+      <input {...register("hideDataBeforeStart")} type="checkbox" data-testid="hide-data-before-start" />
+    </div>
+  ),
+}));
+
 describe("InitialSetup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -75,6 +85,7 @@ describe("InitialSetup", () => {
     expect(screen.getByText("Welcome to TrendWeight!")).toBeInTheDocument();
     expect(screen.getByText("Let's set up your profile to get started.")).toBeInTheDocument();
     expect(screen.getByTestId("basic-profile-settings")).toBeInTheDocument();
+    expect(screen.getByTestId("start-date-settings")).toBeInTheDocument();
     expect(screen.getByText("Continue")).toBeInTheDocument();
   });
 
@@ -144,6 +155,14 @@ describe("InitialSetup", () => {
     await user.clear(firstNameInput);
     await user.type(firstNameInput, "Jane");
 
+    // Set start date
+    const startDateInput = screen.getByTestId("goal-start");
+    await user.type(startDateInput, "2024-01-01");
+
+    // Toggle hide data before start
+    const hideDataCheckbox = screen.getByTestId("hide-data-before-start");
+    await user.click(hideDataCheckbox);
+
     const submitButton = screen.getByText("Continue");
     await user.click(submitButton);
 
@@ -151,6 +170,8 @@ describe("InitialSetup", () => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
         firstName: "Jane",
         useMetric: false,
+        goalStart: "2024-01-01",
+        hideDataBeforeStart: true,
       });
       expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard", replace: true });
     });
@@ -272,6 +293,8 @@ describe("InitialSetup", () => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
         firstName: "John",
         useMetric: true,
+        goalStart: "",
+        hideDataBeforeStart: false,
       });
     });
   });

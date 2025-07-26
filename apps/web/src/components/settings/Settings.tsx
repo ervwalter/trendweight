@@ -11,6 +11,7 @@ import { DangerZoneSection } from "./DangerZoneSection";
 import { DownloadSection } from "./DownloadSection";
 import { GoalSection } from "./GoalSection";
 import { ProfileSection } from "./ProfileSection";
+import { ProgressTrackingSection } from "./ProgressTrackingSection";
 import { SettingsLayout } from "./SettingsLayout";
 import { SharingSection } from "./SharingSection";
 import { NewVersionNotice } from "../notices/NewVersionNotice";
@@ -101,6 +102,7 @@ export function Settings() {
       <div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm">
         <form onSubmit={handleSubmit(onSubmit)}>
           <ProfileSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} />
+          <ProgressTrackingSection register={register} watch={watch} control={control} />
           <GoalSection register={register} errors={errors} watch={watch} control={control} />
           <AdvancedSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} />
 

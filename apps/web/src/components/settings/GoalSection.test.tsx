@@ -37,13 +37,10 @@ function TestWrapper({ errors = {}, defaultValues = {} }: { errors?: any; defaul
 }
 
 describe("GoalSection", () => {
-  const today = new Date().toISOString().split("T")[0];
-
   it("should render all form fields", () => {
     render(<TestWrapper />);
 
     expect(screen.getByText("Goal Settings")).toBeInTheDocument();
-    expect(screen.getByLabelText("Start Date")).toBeInTheDocument();
     expect(screen.getByLabelText("Goal Weight (lbs)")).toBeInTheDocument();
     expect(screen.getByText("My Plan")).toBeInTheDocument();
   });
@@ -51,13 +48,12 @@ describe("GoalSection", () => {
   it("should show description text", () => {
     render(<TestWrapper />);
 
-    expect(screen.getByText(/If you provide some details on your weight loss goals/)).toBeInTheDocument();
+    expect(screen.getByText(/Set a goal weight and plan to track your progress/)).toBeInTheDocument();
   });
 
-  it("should show helper text for each field", () => {
+  it("should show helper text for goal fields", () => {
     render(<TestWrapper />);
 
-    expect(screen.getByText("The baseline date for measuring progress toward your goal.")).toBeInTheDocument();
     expect(screen.getByText("The weight you are working toward achieving.")).toBeInTheDocument();
     expect(screen.getByText("Your planned rate of weight change. This helps track if you're ahead or behind schedule.")).toBeInTheDocument();
   });
@@ -78,23 +74,14 @@ describe("GoalSection", () => {
     render(
       <TestWrapper
         defaultValues={{
-          goalStart: "2024-01-01",
           goalWeight: 150,
           plannedPoundsPerWeek: -1,
         }}
       />,
     );
 
-    expect(screen.getByLabelText("Start Date")).toHaveValue("2024-01-01");
     expect(screen.getByLabelText("Goal Weight (lbs)")).toHaveValue(150);
     expect(screen.getByTestId("select")).toHaveValue("-1");
-  });
-
-  it("should limit start date to today", () => {
-    render(<TestWrapper />);
-
-    const startDateInput = screen.getByLabelText("Start Date");
-    expect(startDateInput).toHaveAttribute("max", today);
   });
 
   it("should show validation error for goal weight", () => {
@@ -118,17 +105,6 @@ describe("GoalSection", () => {
     await user.type(goalWeightInput, "145.5");
 
     expect(goalWeightInput).toHaveValue(145.5);
-  });
-
-  it("should allow selecting a date", async () => {
-    const user = userEvent.setup();
-    render(<TestWrapper />);
-
-    const startDateInput = screen.getByLabelText("Start Date");
-    await user.clear(startDateInput);
-    await user.type(startDateInput, "2024-01-15");
-
-    expect(startDateInput).toHaveValue("2024-01-15");
   });
 
   it("should update units dynamically when useMetric changes", () => {

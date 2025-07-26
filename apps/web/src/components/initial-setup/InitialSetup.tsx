@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { useEffect } from "react";
 import { BasicProfileSettings } from "../settings/BasicProfileSettings";
+import { StartDateSettings } from "../settings/StartDateSettings";
 import { useUpdateProfile } from "../../lib/api/mutations";
 import { shouldUseMetric, extractFirstName } from "../../lib/utils/locale";
 import { useAuth } from "../../lib/auth/useAuth";
@@ -19,11 +20,13 @@ export function InitialSetup() {
     handleSubmit,
     control,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ProfileData>({
     defaultValues: {
       firstName: "",
       useMetric: shouldUseMetric(),
+      hideDataBeforeStart: false,
     },
   });
 
@@ -57,10 +60,15 @@ export function InitialSetup() {
           <p className="mt-2 text-gray-600">Let's set up your profile to get started.</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
           <BasicProfileSettings register={register} errors={errors} control={control} />
 
-          <div className="mt-6 flex items-center justify-between">
+          <div>
+            <h2 className="mb-4 text-lg font-medium text-gray-900">Progress Tracking (Optional)</h2>
+            <StartDateSettings register={register} control={control} watch={watch} />
+          </div>
+
+          <div className="flex items-center justify-between">
             <div>{updateProfile.isError && <p className="text-sm text-red-600">Failed to create profile. Please try again.</p>}</div>
             <Button type="submit" disabled={isSubmitting} variant="primary">
               {isSubmitting ? "Creating Profile..." : "Continue"}
