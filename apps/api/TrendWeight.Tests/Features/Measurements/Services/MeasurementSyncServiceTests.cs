@@ -299,6 +299,75 @@ public class MeasurementSyncServiceTests : TestBase
     }
 
     [Fact]
+    public async Task GetMeasurementsForUserAsync_WithLegacyProvider_SkipsRefresh()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var activeProviders = new List<string> { "legacy" };
+        var lastSync = DateTime.UtcNow.AddMinutes(-60); // Old data, but legacy should never refresh
+        var existingData = new List<SourceData>
+        {
+            CreateTestSourceData("legacy")
+        };
+
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "legacy"))
+            .ReturnsAsync(lastSync);
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+            .ReturnsAsync(existingData);
+
+        // Act
+        var result = await _sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Data.Should().HaveCount(1);
+        result.ProviderStatus.Should().ContainKey("legacy");
+        result.ProviderStatus["legacy"].Success.Should().BeTrue();
+
+        // Verify no refresh was attempted for legacy provider
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("legacy"), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetMeasurementsForUserAsync_WithMixedProviders_SkipsLegacyButRefreshesOthers()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var activeProviders = new List<string> { "withings", "legacy" };
+        var lastSync = DateTime.UtcNow.AddMinutes(-10); // Stale data
+        var existingData = new List<SourceData>();
+
+        var mockProviderService = new Mock<IProviderService>();
+        mockProviderService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = "withings",
+                Success = true,
+                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement() }
+            });
+
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
+            .ReturnsAsync(lastSync);
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+            .ReturnsAsync(existingData);
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
+            .Returns(mockProviderService.Object);
+
+        // Act
+        var result = await _sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.ProviderStatus.Should().HaveCount(2);
+        result.ProviderStatus["withings"].Success.Should().BeTrue();
+        result.ProviderStatus["legacy"].Success.Should().BeTrue();
+
+        // Verify only withings was refreshed, not legacy
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("withings"), Times.Once);
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("legacy"), Times.Never);
+    }
+
+    [Fact]
     public async Task GetMeasurementsForUserAsync_WithUnknownProvider_RecordsFailureStatus()
     {
         // Arrange
@@ -549,6 +618,28 @@ public class MeasurementSyncServiceTests : TestBase
     #endregion
 
     #region ResyncProviderAsync Tests
+
+    [Fact]
+    public async Task ResyncProviderAsync_WithLegacyProvider_ReturnsFailure()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = "legacy";
+
+        // Act
+        var result = await _sut.ResyncProviderAsync(userId, provider, useMetric: true);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Provider.Should().Be("legacy");
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(ProviderSyncError.Unknown);
+        result.Message.Should().Contain("Legacy provider cannot be resynced");
+
+        // Verify no operations were performed
+        _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("legacy"), Times.Never);
+    }
 
     [Fact]
     public async Task ResyncProviderAsync_WithValidProvider_ClearsDataAndRefreshes()

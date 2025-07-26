@@ -53,6 +53,17 @@ public class MeasurementSyncService : IMeasurementSyncService
             // Check each provider's last sync time and resync flag
             foreach (var provider in activeProviders)
             {
+                // Skip legacy provider - it never needs refresh
+                if (provider == "legacy")
+                {
+                    _logger.LogInformation("Provider {Provider} is legacy, skipping refresh", provider);
+                    providerStatus[provider] = new ProviderSyncStatus
+                    {
+                        Success = true
+                    };
+                    continue;
+                }
+
                 // Check last sync time for this provider
                 var lastSync = await _sourceDataService.GetLastSyncTimeAsync(userId, provider);
                 var needsRefresh = lastSync == null || (now - lastSync.Value).TotalSeconds > _cacheDurationSeconds;
@@ -221,6 +232,19 @@ public class MeasurementSyncService : IMeasurementSyncService
     {
         try
         {
+            // Legacy provider cannot be resynced
+            if (provider == "legacy")
+            {
+                _logger.LogWarning("Attempted to resync legacy provider for user {UserId}", userId);
+                return new ProviderSyncResult
+                {
+                    Provider = provider,
+                    Success = false,
+                    Error = ProviderSyncError.Unknown,
+                    Message = "Legacy provider cannot be resynced"
+                };
+            }
+
             // Clear existing source data for this provider
             await _sourceDataService.ClearSourceDataAsync(userId, provider);
             _logger.LogInformation("Cleared source data for {Provider} for user {UserId}", provider, userId);

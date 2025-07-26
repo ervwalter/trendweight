@@ -59,14 +59,16 @@ public class ProvidersController : ControllerBase
             // Get all provider links for the user
             var providerLinks = await _providerLinkService.GetAllForUserAsync(userGuid);
 
-            // Transform to response format
-            var response = providerLinks.Select(link => new ProviderLinkResponse
-            {
-                Provider = link.Provider,
-                ConnectedAt = link.UpdatedAt,
-                UpdateReason = link.UpdateReason,
-                HasToken = link.Token != null && link.Token.Count > 0
-            }).ToList();
+            // Filter out providers marked as deleted and transform to response format
+            var response = providerLinks
+                .Where(link => link.Token == null || !link.Token.TryGetValue("deleted", out var deleted) || !(bool)deleted)
+                .Select(link => new ProviderLinkResponse
+                {
+                    Provider = link.Provider,
+                    ConnectedAt = link.UpdatedAt,
+                    UpdateReason = link.UpdateReason,
+                    HasToken = link.Token != null && link.Token.Count > 0
+                }).ToList();
 
             return Ok(response);
         }
@@ -89,7 +91,7 @@ public class ProvidersController : ControllerBase
         {
             // Validate provider
             provider = provider.ToLowerInvariant();
-            if (provider != "withings" && provider != "fitbit")
+            if (provider != "withings" && provider != "fitbit" && provider != "legacy")
             {
                 return BadRequest(new ErrorResponse { Error = "Invalid provider. Must be 'withings' or 'fitbit'" });
             }
@@ -109,22 +111,37 @@ public class ProvidersController : ControllerBase
                 return NotFound(new ErrorResponse { Error = $"No {provider} connection found" });
             }
 
-            // Get provider service to handle disconnection (includes source data cleanup)
-            var providerService = _providerIntegrationService.GetProviderService(provider);
-            if (providerService == null)
+            // Special handling for legacy provider
+            if (provider == "legacy")
             {
-                return BadRequest(new ErrorResponse { Error = $"Provider service not found for: {provider}" });
-            }
+                // Delete source data for legacy provider
+                await _sourceDataService.DeleteSourceDataAsync(userGuid, provider);
 
-            // Remove provider link
-            var success = await providerService.RemoveProviderLinkAsync(userGuid);
-            if (!success)
+                // Update provider link to mark as deleted instead of removing
+                existingLink.Token = existingLink.Token ?? new Dictionary<string, object>();
+                existingLink.Token["deleted"] = true;
+                existingLink.UpdatedAt = DateTime.UtcNow.ToString("O");
+                await _providerLinkService.UpdateAsync(existingLink);
+            }
+            else
             {
-                return StatusCode(500, new ErrorResponse { Error = $"Failed to disconnect {provider}" });
-            }
+                // Get provider service to handle disconnection (includes source data cleanup)
+                var providerService = _providerIntegrationService.GetProviderService(provider);
+                if (providerService == null)
+                {
+                    return BadRequest(new ErrorResponse { Error = $"Provider service not found for: {provider}" });
+                }
 
-            // Also delete the source data for this provider
-            await _sourceDataService.DeleteSourceDataAsync(userGuid, provider);
+                // Remove provider link
+                var success = await providerService.RemoveProviderLinkAsync(userGuid);
+                if (!success)
+                {
+                    return StatusCode(500, new ErrorResponse { Error = $"Failed to disconnect {provider}" });
+                }
+
+                // Also delete the source data for this provider
+                await _sourceDataService.DeleteSourceDataAsync(userGuid, provider);
+            }
 
             _logger.LogInformation("Disconnected {Provider} and cleared source data for user {UserId}", provider, userId);
             return Ok(new ProviderOperationResponse { Message = $"{provider} disconnected successfully" });
@@ -217,14 +234,16 @@ public class ProvidersController : ControllerBase
             // Get all provider links for the user
             var providerLinks = await _providerLinkService.GetAllForUserAsync(user.Uid);
 
-            // Transform to response format
-            var response = providerLinks.Select(link => new ProviderLinkResponse
-            {
-                Provider = link.Provider,
-                ConnectedAt = link.UpdatedAt,
-                UpdateReason = link.UpdateReason,
-                HasToken = link.Token != null && link.Token.Count > 0
-            }).ToList();
+            // Filter out providers marked as deleted and transform to response format
+            var response = providerLinks
+                .Where(link => link.Token == null || !link.Token.TryGetValue("deleted", out var deleted) || !(bool)deleted)
+                .Select(link => new ProviderLinkResponse
+                {
+                    Provider = link.Provider,
+                    ConnectedAt = link.UpdatedAt,
+                    UpdateReason = link.UpdateReason,
+                    HasToken = link.Token != null && link.Token.Count > 0
+                }).ToList();
 
             return Ok(response);
         }

@@ -7,12 +7,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 
 ## Tasks
 
-- [ ] 1. Add Legacy Provider Support to Backend
-  - [ ] 1.1 Write tests for legacy provider validation in ProvidersController
-  - [ ] 1.2 Update ProvidersController disconnect validation to allow "legacy"
-  - [ ] 1.3 Update MeasurementSyncService to skip "legacy" provider during sync
-  - [ ] 1.4 Ensure ProviderIntegrationService handles missing provider service for "legacy"
-  - [ ] 1.5 Verify all tests pass
+- [x] 1. Add Legacy Provider Support to Backend
+  - [x] 1.1 Write tests for legacy provider validation in ProvidersController
+  - [x] 1.2 Update ProvidersController disconnect validation to allow "legacy"
+  - [x] 1.3 Update MeasurementSyncService to skip "legacy" provider during sync
+  - [x] 1.4 Ensure ProviderIntegrationService handles missing provider service for "legacy"
+  - [x] 1.5 Verify all tests pass
 
 - [ ] 2. Implement Legacy Data Import in LegacyMigrationService
   - [ ] 2.1 Write tests for ImportLegacyMeasurementsAsync method
