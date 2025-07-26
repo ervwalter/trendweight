@@ -14,20 +14,20 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.4 Ensure ProviderIntegrationService handles missing provider service for "legacy"
   - [x] 1.5 Verify all tests pass
 
-- [ ] 2. Implement Legacy Data Import in LegacyMigrationService
-  - [ ] 2.1 Write tests for ImportLegacyMeasurementsAsync method
-  - [ ] 2.2 Add ImportLegacyMeasurementsAsync to LegacyMigrationService
-  - [ ] 2.3 Update ProfileController.GetProfile to check for legacy data after loading profile
-  - [ ] 2.4 Update MigrateLegacyProfileAsync to import measurements for new users
-  - [ ] 2.5 Implement weight conversion using legacy profile's UseMetric setting
-  - [ ] 2.6 Verify all tests pass
+- [x] 2. Implement Legacy Data Import in LegacyMigrationService
+  - [x] 2.1 Write tests for ImportLegacyMeasurementsAsync method
+  - [x] 2.2 Add ImportLegacyMeasurementsAsync to LegacyMigrationService
+  - [x] 2.3 Update ProfileController.GetProfile to check for legacy data after loading profile
+  - [x] 2.4 Update MigrateLegacyProfileAsync to import measurements for new users
+  - [x] 2.5 Implement weight conversion using legacy profile's UseMetric setting
+  - [x] 2.6 Verify all tests pass
 
-- [ ] 3. Add Legacy Provider Deletion Handling
-  - [ ] 3.1 Write tests for special legacy provider deletion behavior
-  - [ ] 3.2 Update ProvidersController.DisconnectProvider to handle legacy differently
-  - [ ] 3.3 For legacy: delete source_data but update provider_links token to {"deleted": true}
-  - [ ] 3.4 Update GetProviderLinks to filter out providers where token.deleted = true
-  - [ ] 3.5 Verify all tests pass
+- [x] 3. Add Legacy Provider Deletion Handling
+  - [x] 3.1 Write tests for special legacy provider deletion behavior
+  - [x] 3.2 Update ProvidersController.DisconnectProvider to handle legacy differently
+  - [x] 3.3 For legacy: delete source_data but update provider_links token to {"deleted": true}
+  - [x] 3.4 Update GetProviderLinks to filter out providers where token.deleted = true
+  - [x] 3.5 Verify all tests pass
 
 - [ ] 4. Update Frontend Provider Display Components
   - [ ] 4.1 Write tests for legacy provider display name mapping

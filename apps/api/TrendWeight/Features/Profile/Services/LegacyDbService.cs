@@ -68,4 +68,46 @@ public class LegacyDbService : ILegacyDbService
             return null;
         }
     }
+
+    /// <inheritdoc />
+    public async Task<List<LegacyMeasurement>> GetMeasurementsByEmailAsync(string email)
+    {
+        // Skip if no connection string configured
+        if (string.IsNullOrEmpty(_connectionString))
+        {
+            _logger.LogDebug("Legacy database connection string not configured, skipping measurement retrieval");
+            return new List<LegacyMeasurement>();
+        }
+
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            const string query = @"
+                SELECT 
+                    sm.UserId,
+                    sm.GroupId,
+                    sm.Timestamp,
+                    sm.Date,
+                    sm.Weight,
+                    sm.FatRatio
+                FROM SourceMeasurements sm
+                JOIN Memberships m ON sm.UserId = m.UserId
+                WHERE m.Email = @Email
+                ORDER BY sm.Timestamp";
+
+            var measurements = await connection.QueryAsync<LegacyMeasurement>(query, new { Email = email });
+            var measurementList = measurements.ToList();
+
+            _logger.LogInformation("Found {Count} legacy measurements for email {Email}", measurementList.Count, email);
+
+            return measurementList;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving legacy measurements for email {Email}", email);
+            return new List<LegacyMeasurement>();
+        }
+    }
 }

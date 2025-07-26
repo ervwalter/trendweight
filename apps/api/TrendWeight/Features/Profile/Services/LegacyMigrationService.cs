@@ -1,3 +1,6 @@
+using System.Globalization;
+using TrendWeight.Features.Measurements;
+using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Infrastructure.DataAccess.Models;
@@ -9,20 +12,26 @@ public class LegacyMigrationService : ILegacyMigrationService
     private readonly IProfileService _profileService;
     private readonly ILegacyDbService _legacyDbService;
     private readonly IProviderLinkService _providerLinkService;
+    private readonly ISourceDataService _sourceDataService;
     private readonly ILogger<LegacyMigrationService> _logger;
 
     // Expired token marker - 1 hour duration for a token received at Unix timestamp 0
     private const int EXPIRED_TOKEN_EXPIRES_IN = 3600;
 
+    // Pounds to kilograms conversion factor
+    private const decimal POUNDS_TO_KG = 0.453592m;
+
     public LegacyMigrationService(
         IProfileService profileService,
         ILegacyDbService legacyDbService,
         IProviderLinkService providerLinkService,
+        ISourceDataService sourceDataService,
         ILogger<LegacyMigrationService> logger)
     {
         _profileService = profileService;
         _legacyDbService = legacyDbService;
         _providerLinkService = providerLinkService;
+        _sourceDataService = sourceDataService;
         _logger = logger;
     }
 
@@ -94,6 +103,9 @@ public class LegacyMigrationService : ILegacyMigrationService
             await MigrateProviderLinkAsync(userGuid, legacyProfile);
         }
 
+        // Migrate legacy measurements for the new user
+        await MigrateLegacyMeasurementsAsync(userGuid, email);
+
         return profile;
     }
 
@@ -122,6 +134,94 @@ public class LegacyMigrationService : ILegacyMigrationService
 
         await _providerLinkService.StoreProviderLinkAsync(userId, providerName, expiredToken);
         _logger.LogInformation("Migrated {Provider} OAuth token for user {UserId}", providerName, userId);
+    }
+
+    /// <summary>
+    /// Migrate legacy measurements for an existing migrated user
+    /// </summary>
+    /// <param name="userId">Supabase UID</param>
+    /// <param name="userEmail">User's email address</param>
+    /// <returns>True if measurements were migrated, false otherwise</returns>
+    public async Task<bool> MigrateLegacyMeasurementsAsync(Guid userId, string userEmail)
+    {
+        // Find legacy profile to get UseMetric setting
+        var legacyProfile = await _legacyDbService.FindProfileByEmailAsync(userEmail);
+        if (legacyProfile == null)
+        {
+            _logger.LogInformation("No legacy profile found for email {Email}", userEmail);
+            return false;
+        }
+
+        // Get all legacy measurements
+        var measurements = await _legacyDbService.GetMeasurementsByEmailAsync(userEmail);
+        if (measurements.Count == 0)
+        {
+            _logger.LogInformation("No legacy measurements found for email {Email}", userEmail);
+            return false;
+        }
+
+        _logger.LogInformation("Found {Count} legacy measurements for email {Email}", measurements.Count, userEmail);
+
+        // Convert measurements to source data format
+        var rawMeasurements = measurements.Select(m => new RawMeasurement
+        {
+            Date = m.Timestamp.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            Time = m.Timestamp.ToString("HH:mm:ss", CultureInfo.InvariantCulture),
+            // Convert weight to kg if legacy profile was in pounds
+            Weight = legacyProfile.UseMetric ? m.Weight : m.Weight * POUNDS_TO_KG,
+            FatRatio = m.FatRatio
+        }).ToList();
+
+        // Create source data entry
+        var sourceData = new List<SourceData>
+        {
+            new SourceData
+            {
+                Source = "legacy",
+                LastUpdate = DateTime.UtcNow,
+                Measurements = rawMeasurements
+            }
+        };
+
+        // Save source data
+        await _sourceDataService.UpdateSourceDataAsync(userId, sourceData);
+
+        // Create provider link for legacy data
+        await _providerLinkService.StoreProviderLinkAsync(userId, "legacy", new Dictionary<string, object>());
+
+        _logger.LogInformation("Successfully imported {Count} legacy measurements for user {UserId}", measurements.Count, userId);
+        return true;
+    }
+
+    /// <summary>
+    /// Check if legacy data needs to be migrated for an existing migrated user
+    /// </summary>
+    /// <param name="userId">Supabase UID</param>
+    /// <param name="userEmail">User's email address</param>
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync(Guid userId, string? userEmail)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return;
+            }
+
+            // Check if legacy provider link exists
+            var legacyLink = await _providerLinkService.GetProviderLinkAsync(userId, "legacy");
+
+            // Import if link is missing or not marked as deleted
+            if (legacyLink == null || legacyLink.Token?.GetValueOrDefault("deleted") as bool? != true)
+            {
+                _logger.LogInformation("Importing legacy data for existing migrated user {UserId}", userId);
+                await MigrateLegacyMeasurementsAsync(userId, userEmail);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Don't fail the profile load if legacy import fails
+            _logger.LogError(ex, "Error checking/importing legacy data for user {UserId}", userId);
+        }
     }
 }
 
