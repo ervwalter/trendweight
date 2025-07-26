@@ -11,6 +11,7 @@ import { DangerZoneSection } from "./DangerZoneSection";
 import { DownloadSection } from "./DownloadSection";
 import { GoalSection } from "./GoalSection";
 import { ProfileSection } from "./ProfileSection";
+import { ProgressTrackingSection } from "./ProgressTrackingSection";
 import { SettingsLayout } from "./SettingsLayout";
 import { SharingSection } from "./SharingSection";
 import { NewVersionNotice } from "../notices/NewVersionNotice";
@@ -85,8 +86,9 @@ export function Settings() {
         goalWeight: isNaN(data.goalWeight as number) ? undefined : data.goalWeight,
       };
 
-      await updateProfile.mutateAsync(cleanedData);
-      reset(cleanedData); // Reset form state to mark as clean
+      const response = await updateProfile.mutateAsync(cleanedData);
+      // Reset form state with the actual response data to mark as clean
+      reset(response.user);
     } catch (error) {
       console.error("Failed to update settings:", error);
     }
@@ -101,6 +103,7 @@ export function Settings() {
       <div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm">
         <form onSubmit={handleSubmit(onSubmit)}>
           <ProfileSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} />
+          <ProgressTrackingSection register={register} watch={watch} control={control} />
           <GoalSection register={register} errors={errors} watch={watch} control={control} />
           <AdvancedSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} />
 

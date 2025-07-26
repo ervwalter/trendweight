@@ -162,6 +162,7 @@ public class ProfileServiceTests : TestBase
         _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbProfile>()), Times.Once);
     }
 
+
     [Fact]
     public async Task UpdateOrCreateProfileAsync_WhenProfileExists_UpdatesProfile()
     {
@@ -348,6 +349,36 @@ public class ProfileServiceTests : TestBase
         // Assert
         result.Should().BeFalse();
         _supabaseServiceMock.Verify(x => x.DeleteAuthUserAsync(userId), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProfileData_WhenHideDataBeforeStartMissing_DefaultsToFalse()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var dbProfile = new DbProfile
+        {
+            Uid = userId,
+            Email = "test@example.com",
+            Profile = new ProfileData
+            {
+                FirstName = "Test",
+                UseMetric = false,
+                // HideDataBeforeStart is not set - simulating old data
+            },
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            UpdatedAt = DateTime.UtcNow.ToString("o")
+        };
+
+        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
+            .ReturnsAsync(dbProfile);
+
+        // Act
+        var result = await _sut.GetByIdAsync(userId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Profile.HideDataBeforeStart.Should().BeFalse();
     }
 
     private static DbProfile CreateTestProfile(Guid userId, string? sharingToken = null)

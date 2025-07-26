@@ -82,6 +82,7 @@ public class ProfileService : IProfileService
                     PlannedPoundsPerWeek = request.PlannedPoundsPerWeek,
                     DayStartOffset = request.DayStartOffset,
                     ShowCalories = request.ShowCalories,
+                    HideDataBeforeStart = request.HideDataBeforeStart ?? false,
                     SharingToken = await GenerateUniqueShareTokenAsync()
                 },
                 CreatedAt = DateTime.UtcNow.ToString("o"),
@@ -105,6 +106,7 @@ public class ProfileService : IProfileService
             profile.Profile.DayStartOffset = request.DayStartOffset;
             profile.Profile.UseMetric = request.UseMetric ?? profile.Profile.UseMetric;
             profile.Profile.ShowCalories = request.ShowCalories;
+            profile.Profile.HideDataBeforeStart = request.HideDataBeforeStart ?? profile.Profile.HideDataBeforeStart;
 
             // Update timestamp
             profile.UpdatedAt = DateTime.UtcNow.ToString("o");
