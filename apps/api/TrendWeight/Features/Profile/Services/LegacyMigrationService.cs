@@ -210,8 +210,8 @@ public class LegacyMigrationService : ILegacyMigrationService
             // Check if legacy provider link exists
             var legacyLink = await _providerLinkService.GetProviderLinkAsync(userId, "legacy");
 
-            // Import if link is missing or not marked as deleted
-            if (legacyLink == null || legacyLink.Token?.GetValueOrDefault("deleted") as bool? != true)
+            // Import only if link doesn't exist at all
+            if (legacyLink == null)
             {
                 _logger.LogInformation("Importing legacy data for existing migrated user {UserId}", userId);
                 await MigrateLegacyMeasurementsAsync(userId, userEmail);

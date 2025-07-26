@@ -29,12 +29,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 3.4 Update GetProviderLinks to filter out providers where token.deleted = true
   - [x] 3.5 Verify all tests pass
 
-- [ ] 4. Fix Legacy Import Detection Logic
-  - [ ] 4.1 Fix LegacyMigrationService to only import if link doesn't exist at all
-  - [ ] 4.2 Remove incorrect check for deleted flag in import logic
-  - [ ] 4.3 Update tests to verify import only happens when link is missing
-  - [ ] 4.4 Verify import is skipped when link exists (regardless of disabled state)
-  - [ ] 4.5 Verify all tests pass
+- [x] 4. Fix Legacy Import Detection Logic
+  - [x] 4.1 Fix LegacyMigrationService to only import if link doesn't exist at all
+  - [x] 4.2 Remove incorrect check for deleted flag in import logic
+  - [x] 4.3 Update tests to verify import only happens when link is missing
+  - [x] 4.4 Verify import is skipped when link exists (regardless of disabled state)
+  - [x] 4.5 Verify all tests pass
 
 - [ ] 5. Implement LegacyService Provider
   - [ ] 5.1 Write tests for LegacyService implementing IProviderService

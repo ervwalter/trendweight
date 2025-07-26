@@ -827,6 +827,170 @@ public class LegacyMigrationServiceTests : TestBase
 
     #endregion
 
+    #region CheckAndMigrateLegacyDataIfNeededAsync Tests
+
+    [Fact]
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync_WhenNoEmail_DoesNotImport()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        // Act
+        await _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, null);
+
+        // Assert
+        _providerLinkServiceMock.Verify(x => x.GetProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+        _legacyDbServiceMock.Verify(x => x.FindProfileByEmailAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync_WhenEmptyEmail_DoesNotImport()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        // Act
+        await _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, "");
+
+        // Assert
+        _providerLinkServiceMock.Verify(x => x.GetProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+        _legacyDbServiceMock.Verify(x => x.FindProfileByEmailAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync_WhenNoLegacyLink_ImportsData()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var legacyUserId = Guid.NewGuid();
+        var legacyProfile = new LegacyProfile { UserId = legacyUserId, UseMetric = true };
+        var measurements = new List<LegacyMeasurement>
+        {
+            new LegacyMeasurement
+            {
+                UserId = legacyUserId,
+                GroupId = 1,
+                Timestamp = new DateTime(2024, 1, 15, 8, 30, 0),
+                Date = new DateTime(2024, 1, 15),
+                Weight = 75.5m,
+                FatRatio = null
+            }
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ReturnsAsync((DbProviderLink?)null);
+        _legacyDbServiceMock.Setup(x => x.FindProfileByEmailAsync(email))
+            .ReturnsAsync(legacyProfile);
+        _legacyDbServiceMock.Setup(x => x.GetMeasurementsByEmailAsync(email))
+            .ReturnsAsync(measurements);
+
+        // Act
+        await _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, email);
+
+        // Assert
+        _legacyDbServiceMock.Verify(x => x.GetMeasurementsByEmailAsync(email), Times.Once);
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
+            userId, "legacy", It.IsAny<Dictionary<string, object>>(), It.IsAny<string>()), Times.Once);
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
+            userId, It.IsAny<List<SourceData>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync_WhenLegacyLinkExists_SkipsImport()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var existingLink = new DbProviderLink
+        {
+            Uid = userId,
+            Provider = "legacy",
+            Token = new Dictionary<string, object>()
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ReturnsAsync(existingLink);
+
+        // Act
+        await _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, email);
+
+        // Assert
+        _legacyDbServiceMock.Verify(x => x.FindProfileByEmailAsync(It.IsAny<string>()), Times.Never);
+        _legacyDbServiceMock.Verify(x => x.GetMeasurementsByEmailAsync(It.IsAny<string>()), Times.Never);
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync_WhenLegacyLinkExistsWithDeletedFlag_SkipsImport()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var existingLink = new DbProviderLink
+        {
+            Uid = userId,
+            Provider = "legacy",
+            Token = new Dictionary<string, object> { { "deleted", true } }
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ReturnsAsync(existingLink);
+
+        // Act
+        await _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, email);
+
+        // Assert
+        _legacyDbServiceMock.Verify(x => x.FindProfileByEmailAsync(It.IsAny<string>()), Times.Never);
+        _legacyDbServiceMock.Verify(x => x.GetMeasurementsByEmailAsync(It.IsAny<string>()), Times.Never);
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync_WhenLegacyLinkExistsWithDisabledFlag_SkipsImport()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var existingLink = new DbProviderLink
+        {
+            Uid = userId,
+            Provider = "legacy",
+            Token = new Dictionary<string, object> { { "disabled", true } }
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ReturnsAsync(existingLink);
+
+        // Act
+        await _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, email);
+
+        // Assert
+        _legacyDbServiceMock.Verify(x => x.FindProfileByEmailAsync(It.IsAny<string>()), Times.Never);
+        _legacyDbServiceMock.Verify(x => x.GetMeasurementsByEmailAsync(It.IsAny<string>()), Times.Never);
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync_WhenExceptionOccurs_DoesNotThrow()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ThrowsAsync(new Exception("Test exception"));
+
+        // Act
+        var act = () => _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, email);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+        _legacyDbServiceMock.Verify(x => x.FindProfileByEmailAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private static LegacyProfile CreateTestLegacyProfile(string email)
