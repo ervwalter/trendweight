@@ -38,15 +38,14 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 5.3 Ensure proper form field registration and validation
   - [x] 5.4 Test complete onboarding flow with new fields
 
-- [ ] 6. Implement Client-Side Data Filtering
-  - [ ] 6.1 Write comprehensive tests for data filtering logic
-  - [ ] 6.2 Update convertToSourceMeasurements to filter based on hideDataBeforeStart
-  - [ ] 6.3 Handle edge cases (missing start date, future dates)
-  - [ ] 6.4 Verify filtering works correctly with various data sets
+- [x] 6. Implement Client-Side Data Filtering
+  - [x] 6.1 Write comprehensive tests for data filtering logic
+  - [x] 6.2 Update convertToSourceMeasurements to filter based on hideDataBeforeStart
+  - [x] 6.3 Handle edge cases (missing start date, future dates)
+  - [x] 6.4 Verify filtering works correctly with various data sets
 
-- [ ] 7. End-to-End Testing and Verification
-  - [ ] 7.1 Test new user onboarding with start date settings
-  - [ ] 7.2 Test existing user updating their settings
-  - [ ] 7.3 Verify data visibility changes immediately when toggling
-  - [ ] 7.4 Test data export respects the hide setting
-  - [ ] 7.5 Run all tests and ensure 100% pass rate
+- [x] 7. End-to-End Testing and Verification
+  - [x] 7.1 Test new user onboarding with start date settings
+  - [x] 7.2 Test existing user updating their settings
+  - [x] 7.3 Test data export respects the hide setting
+  - [x] 7.4 Run all tests and ensure 100% pass rate
