@@ -1,7 +1,7 @@
 # Product Roadmap
 
-> Last Updated: 2025-01-25
-> Version: 1.1.0
+> Last Updated: 2025-01-26
+> Version: 1.1.1
 > Status: Active Development
 
 ## Phase 0: Already Completed
@@ -31,8 +31,8 @@ The following features have been implemented:
 
 ### Must-Have Features
 
-- [ ] Improved onboarding UI - Ask about Start Date right up front `S`
-- [ ] Hide data before start date - New setting to filter old measurements `S`
+- [x] Improved onboarding UI - Ask about Start Date right up front `S`
+- [x] Hide data before start date - New setting to filter old measurements `S`
 - [ ] Better loading indicators - Replace skeleton with progress for long syncs `M`
 
 ### Should-Have Features
