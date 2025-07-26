@@ -5,6 +5,7 @@ import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { authSuspenseManager } from "./authSuspense";
 import { AuthContext, type AuthContextType, type User } from "./authContext";
 import { router } from "../../router";
+import { queryClient } from "../queryClient";
 
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -122,6 +123,9 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
           }
           keysToRemove.forEach((key) => localStorage.removeItem(key));
 
+          // Clear all react-query caches to prevent stale data
+          queryClient.clear();
+
           // Clear local state and navigate
           setUser(null);
           setSession(null);
@@ -134,11 +138,17 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
         throw error;
       }
+
+      // Success - clear all react-query caches to prevent stale data
+      queryClient.clear();
     } catch (error) {
       console.error("Error during sign out:", error);
 
       // Even if signOut fails due to network, clear local state
       if (error instanceof Error && (error.message.includes("network") || error.message.includes("fetch"))) {
+        // Clear all react-query caches to prevent stale data
+        queryClient.clear();
+
         // Clear local auth state even if server request failed
         setUser(null);
         setSession(null);
