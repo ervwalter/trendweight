@@ -387,5 +387,301 @@ describe("conversion", () => {
       const expectedWeight = 75.123456789 * 2.20462262;
       expect(result[0].weight).toBeCloseTo(expectedWeight, 6);
     });
+
+    describe("data filtering with hideDataBeforeStart", () => {
+      it("should not filter data when hideDataBeforeStart is false", () => {
+        const data: SourceData[] = [
+          {
+            source: "withings",
+            lastUpdate: "2024-01-20T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-10",
+                time: "08:00:00",
+                weight: 75,
+              },
+              {
+                date: "2024-01-15",
+                time: "08:00:00",
+                weight: 74.5,
+              },
+              {
+                date: "2024-01-20",
+                time: "08:00:00",
+                weight: 74,
+              },
+            ],
+          },
+        ];
+
+        const profileWithStartDate: ProfileData = {
+          ...defaultProfile,
+          goalStart: "2024-01-15",
+          hideDataBeforeStart: false,
+        };
+
+        const result = convertToSourceMeasurements(data, profileWithStartDate);
+
+        expect(result).toHaveLength(3);
+        expect(result[0].date.toString()).toBe("2024-01-10");
+        expect(result[1].date.toString()).toBe("2024-01-15");
+        expect(result[2].date.toString()).toBe("2024-01-20");
+      });
+
+      it("should filter data before start date when hideDataBeforeStart is true", () => {
+        const data: SourceData[] = [
+          {
+            source: "withings",
+            lastUpdate: "2024-01-20T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-10",
+                time: "08:00:00",
+                weight: 75,
+              },
+              {
+                date: "2024-01-15",
+                time: "08:00:00",
+                weight: 74.5,
+              },
+              {
+                date: "2024-01-20",
+                time: "08:00:00",
+                weight: 74,
+              },
+            ],
+          },
+        ];
+
+        const profileWithHideData: ProfileData = {
+          ...defaultProfile,
+          goalStart: "2024-01-15",
+          hideDataBeforeStart: true,
+        };
+
+        const result = convertToSourceMeasurements(data, profileWithHideData);
+
+        expect(result).toHaveLength(2);
+        expect(result[0].date.toString()).toBe("2024-01-15");
+        expect(result[1].date.toString()).toBe("2024-01-20");
+      });
+
+      it("should include data on the start date when filtering", () => {
+        const data: SourceData[] = [
+          {
+            source: "fitbit",
+            lastUpdate: "2024-01-15T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-14",
+                time: "23:59:59",
+                weight: 75,
+              },
+              {
+                date: "2024-01-15",
+                time: "00:00:00",
+                weight: 74.8,
+              },
+              {
+                date: "2024-01-15",
+                time: "08:00:00",
+                weight: 74.5,
+              },
+            ],
+          },
+        ];
+
+        const profileWithHideData: ProfileData = {
+          ...defaultProfile,
+          goalStart: "2024-01-15",
+          hideDataBeforeStart: true,
+        };
+
+        const result = convertToSourceMeasurements(data, profileWithHideData);
+
+        expect(result).toHaveLength(2);
+        expect(result[0].date.toString()).toBe("2024-01-15");
+        expect(result[1].date.toString()).toBe("2024-01-15");
+      });
+
+      it("should not filter when goalStart is not set", () => {
+        const data: SourceData[] = [
+          {
+            source: "withings",
+            lastUpdate: "2024-01-20T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-10",
+                time: "08:00:00",
+                weight: 75,
+              },
+              {
+                date: "2024-01-20",
+                time: "08:00:00",
+                weight: 74,
+              },
+            ],
+          },
+        ];
+
+        const profileWithoutStartDate: ProfileData = {
+          ...defaultProfile,
+          goalStart: undefined,
+          hideDataBeforeStart: true,
+        };
+
+        const result = convertToSourceMeasurements(data, profileWithoutStartDate);
+
+        expect(result).toHaveLength(2);
+      });
+
+      it("should filter based on adjusted date after dayStartOffset", () => {
+        const data: SourceData[] = [
+          {
+            source: "withings",
+            lastUpdate: "2024-01-15T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-15",
+                time: "02:00:00", // 2 AM, will be adjusted to previous day
+                weight: 75,
+              },
+              {
+                date: "2024-01-15",
+                time: "06:00:00", // 6 AM, stays on same day
+                weight: 74.5,
+              },
+            ],
+          },
+        ];
+
+        const profileWithOffsetAndFilter: ProfileData = {
+          ...defaultProfile,
+          dayStartOffset: 4, // Day starts at 4 AM
+          goalStart: "2024-01-15",
+          hideDataBeforeStart: true,
+        };
+
+        const result = convertToSourceMeasurements(data, profileWithOffsetAndFilter);
+
+        // First measurement should be filtered out as it's adjusted to 2024-01-14
+        expect(result).toHaveLength(1);
+        expect(result[0].date.toString()).toBe("2024-01-15");
+        expect(result[0].weight).toBe(74.5);
+      });
+
+      it("should handle empty string goalStart as no filtering", () => {
+        const data: SourceData[] = [
+          {
+            source: "withings",
+            lastUpdate: "2024-01-20T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-10",
+                time: "08:00:00",
+                weight: 75,
+              },
+              {
+                date: "2024-01-20",
+                time: "08:00:00",
+                weight: 74,
+              },
+            ],
+          },
+        ];
+
+        const profileWithEmptyStartDate: ProfileData = {
+          ...defaultProfile,
+          goalStart: "",
+          hideDataBeforeStart: true,
+        };
+
+        const result = convertToSourceMeasurements(data, profileWithEmptyStartDate);
+
+        expect(result).toHaveLength(2);
+      });
+
+      it("should filter data from multiple sources correctly", () => {
+        const data: SourceData[] = [
+          {
+            source: "withings",
+            lastUpdate: "2024-01-20T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-10",
+                time: "08:00:00",
+                weight: 75,
+              },
+              {
+                date: "2024-01-16",
+                time: "08:00:00",
+                weight: 74.5,
+              },
+            ],
+          },
+          {
+            source: "fitbit",
+            lastUpdate: "2024-01-20T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-12",
+                time: "09:00:00",
+                weight: 74.8,
+              },
+              {
+                date: "2024-01-18",
+                time: "09:00:00",
+                weight: 74.2,
+              },
+            ],
+          },
+        ];
+
+        const profileWithHideData: ProfileData = {
+          ...defaultProfile,
+          goalStart: "2024-01-15",
+          hideDataBeforeStart: true,
+        };
+
+        const result = convertToSourceMeasurements(data, profileWithHideData);
+
+        expect(result).toHaveLength(2);
+        expect(result[0].date.toString()).toBe("2024-01-16");
+        expect(result[0].source).toBe("withings");
+        expect(result[1].date.toString()).toBe("2024-01-18");
+        expect(result[1].source).toBe("fitbit");
+      });
+
+      it("should handle future start date by filtering all current data", () => {
+        const data: SourceData[] = [
+          {
+            source: "withings",
+            lastUpdate: "2024-01-20T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-10",
+                time: "08:00:00",
+                weight: 75,
+              },
+              {
+                date: "2024-01-20",
+                time: "08:00:00",
+                weight: 74,
+              },
+            ],
+          },
+        ];
+
+        const profileWithFutureDate: ProfileData = {
+          ...defaultProfile,
+          goalStart: "2024-02-01",
+          hideDataBeforeStart: true,
+        };
+
+        const result = convertToSourceMeasurements(data, profileWithFutureDate);
+
+        expect(result).toHaveLength(0);
+      });
+    });
   });
 });

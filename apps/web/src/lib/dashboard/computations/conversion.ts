@@ -9,7 +9,8 @@ export function convertToSourceMeasurements(data: SourceData[], profile: Profile
   const useMetric = profile.useMetric || false;
   const conversionFactor = useMetric ? 1 : 2.20462262;
 
-  return data
+  // Convert all measurements first
+  let allMeasurements = data
     .map((sourceData) => {
       if (!sourceData.measurements) {
         return [];
@@ -32,4 +33,12 @@ export function convertToSourceMeasurements(data: SourceData[], profile: Profile
       });
     })
     .flat();
+
+  // Filter if needed
+  if (profile.hideDataBeforeStart && profile.goalStart && profile.goalStart.trim() !== "") {
+    const startDate = LocalDate.parse(profile.goalStart);
+    allMeasurements = allMeasurements.filter((measurement) => !measurement.date.isBefore(startDate));
+  }
+
+  return allMeasurements;
 }
