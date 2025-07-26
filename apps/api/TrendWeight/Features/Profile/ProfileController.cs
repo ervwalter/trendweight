@@ -142,6 +142,7 @@ public class ProfileController : ControllerBase
                 DayStartOffset = user.Profile.DayStartOffset ?? 0,
                 UseMetric = user.Profile.UseMetric,
                 ShowCalories = user.Profile.ShowCalories ?? false,
+                HideDataBeforeStart = user.Profile.HideDataBeforeStart,
                 SharingEnabled = user.Profile.SharingEnabled,
                 SharingToken = user.Profile.SharingToken,
                 IsMigrated = user.Profile.IsMigrated,

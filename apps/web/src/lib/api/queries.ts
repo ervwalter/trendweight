@@ -28,6 +28,7 @@ const selectProfileData = (data: ProfileResponse | null): ProfileData | null => 
     dayStartOffset: data.user.dayStartOffset,
     useMetric: data.user.useMetric,
     showCalories: data.user.showCalories,
+    hideDataBeforeStart: data.user.hideDataBeforeStart,
     sharingToken: data.user.sharingToken,
     sharingEnabled: data.user.sharingEnabled,
     isMigrated: data.user.isMigrated,

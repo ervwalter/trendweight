@@ -86,8 +86,9 @@ export function Settings() {
         goalWeight: isNaN(data.goalWeight as number) ? undefined : data.goalWeight,
       };
 
-      await updateProfile.mutateAsync(cleanedData);
-      reset(cleanedData); // Reset form state to mark as clean
+      const response = await updateProfile.mutateAsync(cleanedData);
+      // Reset form state with the actual response data to mark as clean
+      reset(response.user);
     } catch (error) {
       console.error("Failed to update settings:", error);
     }

@@ -12,17 +12,25 @@ interface UpdateProfileData {
   dayStartOffset?: number;
   useMetric?: boolean;
   showCalories?: boolean;
+  hideDataBeforeStart?: boolean;
 }
 
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UpdateProfileData) =>
-      apiRequest<ProfileResponse>("/profile", {
+    mutationFn: (data: UpdateProfileData) => {
+      // Transform empty strings to undefined for proper API handling
+      const cleanedData = {
+        ...data,
+        goalStart: data.goalStart === "" ? undefined : data.goalStart,
+      };
+
+      return apiRequest<ProfileResponse>("/profile", {
         method: "PUT",
-        body: JSON.stringify(data),
-      }),
+        body: JSON.stringify(cleanedData),
+      });
+    },
     onSuccess: (data) => {
       // Update the cache with the new data
       queryClient.setQueryData(queryKeys.profile(), data);

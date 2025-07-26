@@ -22,6 +22,7 @@ public class UserProfileData
     public int DayStartOffset { get; set; }
     public bool UseMetric { get; set; }
     public bool ShowCalories { get; set; }
+    public bool HideDataBeforeStart { get; set; }
     public bool SharingEnabled { get; set; }
     public string? SharingToken { get; set; }
     public bool IsMigrated { get; set; }
