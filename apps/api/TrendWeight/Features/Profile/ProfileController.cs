@@ -49,6 +49,14 @@ public class ProfileController : ControllerBase
                 return Unauthorized(new ErrorResponse { Error = "User ID not found" });
             }
 
+            // Parse user ID and get email for potential legacy operations
+            if (!Guid.TryParse(userId, out var userGuid))
+            {
+                _logger.LogWarning("Invalid user ID format: {UserId}", userId);
+                return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
+            }
+            var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+
             // Get user from Supabase by UID
             var user = await _profileService.GetByIdAsync(userId);
 
@@ -56,12 +64,6 @@ public class ProfileController : ControllerBase
             {
                 // First check if the auth user still exists
                 // This handles the case where a user deleted their account but still has a valid JWT
-                if (!Guid.TryParse(userId, out var userGuid))
-                {
-                    _logger.LogWarning("Invalid user ID format: {UserId}", userId);
-                    return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
-                }
-
                 var authUserExists = await _supabaseService.AuthUserExistsAsync(userGuid);
                 if (!authUserExists)
                 {
@@ -70,16 +72,21 @@ public class ProfileController : ControllerBase
                 }
 
                 // Check for legacy profile migration
-                var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
                 var migratedProfile = await _legacyMigrationService.CheckAndMigrateIfNeededAsync(userId, userEmail);
 
                 if (migratedProfile != null)
                 {
+                    // Legacy profile was found and migrated (includes data import)
                     return BuildProfileResponse(migratedProfile, isMe: true);
                 }
 
                 _logger.LogWarning("User document not found for Supabase UID: {UserId}", userId);
                 return NotFound(new ErrorResponse { Error = "User not found" });
+            }
+            else if (user.Profile.IsMigrated == true)
+            {
+                // Check if we need to migrate legacy data for existing migrated users
+                await _legacyMigrationService.CheckAndMigrateLegacyDataIfNeededAsync(userGuid, userEmail);
             }
 
             return BuildProfileResponse(user, isMe: true);

@@ -73,13 +73,14 @@ public class SourceDataService : ISourceDataService
     }
 
     /// <inheritdoc />
-    public async Task<List<FeatureSourceData>?> GetSourceDataAsync(Guid userId)
+    public async Task<List<FeatureSourceData>?> GetSourceDataAsync(Guid userId, List<string> activeProviders)
     {
         try
         {
-            // Get all source data for the user
+            // Get source data only for active providers
             var sourceDataList = await _supabaseService.QueryAsync<DbSourceData>(q =>
-                q.Where(sd => sd.Uid == userId));
+                q.Filter("uid", Supabase.Postgrest.Constants.Operator.Equals, userId.ToString())
+                 .Filter("provider", Supabase.Postgrest.Constants.Operator.In, activeProviders.Cast<object>().ToList()));
 
             if (sourceDataList.Count == 0)
             {
@@ -109,7 +110,7 @@ public class SourceDataService : ISourceDataService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting source data for user {Uid}", userId);
+            _logger.LogError(ex, "Error getting source data for user {Uid} with providers {Providers}", userId, string.Join(", ", activeProviders));
             throw;
         }
     }

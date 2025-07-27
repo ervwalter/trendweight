@@ -85,7 +85,7 @@ public class MeasurementSyncServiceTests : TestBase
         var activeProviders = new List<string>();
         var existingData = new List<SourceData>();
 
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
 
         // Act
@@ -111,7 +111,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync(lastSync);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
 
         // Act
@@ -151,7 +151,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync(lastSync);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -192,7 +192,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync((DateTime?)null); // Never synced
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -238,7 +238,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
             .ReturnsAsync((DateTime?)null); // Both need refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(withingsServiceMock.Object);
@@ -279,7 +279,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync((DateTime?)null); // Needs refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -299,6 +299,103 @@ public class MeasurementSyncServiceTests : TestBase
     }
 
     [Fact]
+    public async Task GetMeasurementsForUserAsync_WithLegacyProvider_RefreshesButReturnsNoOp()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var activeProviders = new List<string> { "legacy" };
+        var lastSync = DateTime.UtcNow.AddMinutes(-60); // Old data, triggers refresh
+        var existingData = new List<SourceData>
+        {
+            CreateTestSourceData("legacy")
+        };
+
+        // Mock legacy service to return no-op success
+        var mockLegacyService = new Mock<IProviderService>();
+        mockLegacyService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = "legacy",
+                Success = true,
+                Message = "Legacy data does not require sync"
+            });
+
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "legacy"))
+            .ReturnsAsync(lastSync);
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
+            .ReturnsAsync(existingData);
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
+            .Returns(mockLegacyService.Object);
+
+        // Act
+        var result = await _sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Data.Should().HaveCount(1);
+        result.ProviderStatus.Should().ContainKey("legacy");
+        result.ProviderStatus["legacy"].Success.Should().BeTrue();
+
+        // Verify refresh was attempted through standard flow
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("legacy"), Times.Once);
+        mockLegacyService.Verify(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetMeasurementsForUserAsync_WithMixedProviders_SkipsLegacyButRefreshesOthers()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var activeProviders = new List<string> { "withings", "legacy" };
+        var lastSync = DateTime.UtcNow.AddMinutes(-10); // Stale data
+        var existingData = new List<SourceData>();
+
+        var mockProviderService = new Mock<IProviderService>();
+        mockProviderService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = "withings",
+                Success = true,
+                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement() }
+            });
+
+        // Mock legacy service
+        var mockLegacyService = new Mock<IProviderService>();
+        mockLegacyService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = "legacy",
+                Success = true,
+                Message = "Legacy data does not require sync"
+            });
+
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
+            .ReturnsAsync(lastSync);
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
+            .ReturnsAsync(existingData);
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
+            .Returns(mockProviderService.Object);
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
+            .Returns(mockLegacyService.Object);
+
+        // Act
+        var result = await _sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.ProviderStatus.Should().HaveCount(2);
+        result.ProviderStatus["withings"].Success.Should().BeTrue();
+        result.ProviderStatus["legacy"].Success.Should().BeTrue();
+
+        // Verify both providers were refreshed through standard flow
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("withings"), Times.Once);
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("legacy"), Times.Once);
+
+        // Verify legacy service returned no-op success
+        mockLegacyService.Verify(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()), Times.Once);
+    }
+
+    [Fact]
     public async Task GetMeasurementsForUserAsync_WithUnknownProvider_RecordsFailureStatus()
     {
         // Arrange
@@ -308,7 +405,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "unknown"))
             .ReturnsAsync((DateTime?)null); // Needs refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("unknown"))
             .Returns((IProviderService?)null);
@@ -359,7 +456,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync((DateTime?)null); // Needs refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData); // Return existing data
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -451,7 +548,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
             .ReturnsAsync((DateTime?)null); // Both need refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(withingsServiceMock.Object);
@@ -513,7 +610,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync(lastSync);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -549,6 +646,44 @@ public class MeasurementSyncServiceTests : TestBase
     #endregion
 
     #region ResyncProviderAsync Tests
+
+    [Fact]
+    public async Task ResyncProviderAsync_WithLegacyProvider_ReturnsSuccess()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = "legacy";
+
+        // Mock legacy service
+        var mockLegacyService = new Mock<IProviderService>();
+        mockLegacyService.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = "legacy",
+                Success = true,
+                Message = "Legacy data does not require sync"
+            });
+
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
+            .Returns(mockLegacyService.Object);
+
+        // Setup source data service
+        _sourceDataServiceMock.Setup(x => x.ClearSourceDataAsync(userId, provider))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.ResyncProviderAsync(userId, provider, useMetric: true);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Provider.Should().Be("legacy");
+        result.Success.Should().BeTrue();
+        result.Message.Should().Be("Legacy data does not require sync");
+
+        // Verify operations were performed in correct order
+        _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(userId, provider), Times.Once);
+        mockLegacyService.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once);
+    }
 
     [Fact]
     public async Task ResyncProviderAsync_WithValidProvider_ClearsDataAndRefreshes()
@@ -690,7 +825,7 @@ public class MeasurementSyncServiceTests : TestBase
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
             .ReturnsAsync(lastSyncTime);
 
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
             .ReturnsAsync(existingSourceData);
 
         // Act
@@ -730,7 +865,7 @@ public class MeasurementSyncServiceTests : TestBase
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
             .ReturnsAsync((DateTime?)null);
 
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
             .ReturnsAsync(new List<SourceData>());
 
         // Act
@@ -787,7 +922,7 @@ public class MeasurementSyncServiceTests : TestBase
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
             .ReturnsAsync((DateTime?)null); // No last sync = full sync
 
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
             .ReturnsAsync(existingSourceData);
 
         // Act

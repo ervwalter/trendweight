@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import type { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import type { FC, ReactNode } from "react";
-import { supabase } from "../supabase/client";
-import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
-import { authSuspenseManager } from "./authSuspense";
-import { AuthContext, type AuthContextType, type User } from "./authContext";
+import { useEffect, useState } from "react";
 import { router } from "../../router";
 import { queryClient } from "../queryClient";
+import { supabase } from "../supabase/client";
+import { AuthContext, type AuthContextType, type User } from "./authContext";
+import { authSuspenseManager } from "./authSuspense";
 
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -106,7 +106,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   // Sign out
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: "local" });
 
       if (error) {
         console.error("Error signing out:", error);

@@ -32,6 +32,7 @@ export interface ProviderLink {
   connectedAt: string;
   updateReason?: string;
   hasToken: boolean;
+  isDisabled?: boolean;
 }
 
 // Provider sync status

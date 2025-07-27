@@ -60,13 +60,15 @@ public class ProvidersController : ControllerBase
             var providerLinks = await _providerLinkService.GetAllForUserAsync(userGuid);
 
             // Transform to response format
-            var response = providerLinks.Select(link => new ProviderLinkResponse
-            {
-                Provider = link.Provider,
-                ConnectedAt = link.UpdatedAt,
-                UpdateReason = link.UpdateReason,
-                HasToken = link.Token != null && link.Token.Count > 0
-            }).ToList();
+            var response = providerLinks
+                .Select(link => new ProviderLinkResponse
+                {
+                    Provider = link.Provider,
+                    ConnectedAt = link.UpdatedAt,
+                    UpdateReason = link.UpdateReason,
+                    HasToken = link.Token != null && link.Token.Count > 0,
+                    IsDisabled = link.Provider == "legacy" && link.Token?.GetValueOrDefault("disabled") as bool? == true
+                }).ToList();
 
             return Ok(response);
         }
@@ -89,7 +91,7 @@ public class ProvidersController : ControllerBase
         {
             // Validate provider
             provider = provider.ToLowerInvariant();
-            if (provider != "withings" && provider != "fitbit")
+            if (provider != "withings" && provider != "fitbit" && provider != "legacy")
             {
                 return BadRequest(new ErrorResponse { Error = "Invalid provider. Must be 'withings' or 'fitbit'" });
             }
@@ -109,24 +111,21 @@ public class ProvidersController : ControllerBase
                 return NotFound(new ErrorResponse { Error = $"No {provider} connection found" });
             }
 
-            // Get provider service to handle disconnection (includes source data cleanup)
+            // Get provider service to handle disconnection
             var providerService = _providerIntegrationService.GetProviderService(provider);
             if (providerService == null)
             {
                 return BadRequest(new ErrorResponse { Error = $"Provider service not found for: {provider}" });
             }
 
-            // Remove provider link
+            // Remove provider link (for legacy, this will soft delete)
             var success = await providerService.RemoveProviderLinkAsync(userGuid);
             if (!success)
             {
                 return StatusCode(500, new ErrorResponse { Error = $"Failed to disconnect {provider}" });
             }
 
-            // Also delete the source data for this provider
-            await _sourceDataService.DeleteSourceDataAsync(userGuid, provider);
-
-            _logger.LogInformation("Disconnected {Provider} and cleared source data for user {UserId}", provider, userId);
+            _logger.LogInformation("Disconnected {Provider} for user {UserId}", provider, userId);
             return Ok(new ProviderOperationResponse { Message = $"{provider} disconnected successfully" });
         }
         catch (Exception ex)
@@ -196,6 +195,53 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
+    /// Enables a disabled legacy provider
+    /// </summary>
+    /// <param name="provider">The provider to enable (must be 'legacy')</param>
+    /// <returns>Success or error response</returns>
+    [HttpPost("{provider}/enable")]
+    public async Task<ActionResult<ProviderOperationResponse>> EnableProvider(string provider)
+    {
+        try
+        {
+            // Validate provider - only legacy can be enabled
+            provider = provider.ToLowerInvariant();
+            if (provider != "legacy")
+            {
+                return BadRequest(new ErrorResponse { Error = "Only legacy provider can be enabled" });
+            }
+
+            // Get user ID from authenticated user claim
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+            {
+                _logger.LogWarning("User ID not found or invalid in authenticated user claims");
+                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
+            }
+
+            // Get legacy service and enable the provider
+            var legacyService = _providerIntegrationService.GetProviderService(provider) as LegacyService;
+            if (legacyService == null)
+            {
+                return BadRequest(new ErrorResponse { Error = "Legacy service not available" });
+            }
+
+            var success = await legacyService.EnableProviderLinkAsync(userGuid);
+            if (!success)
+            {
+                return NotFound(new ErrorResponse { Error = $"No {provider} connection found" });
+            }
+
+            return Ok(new ProviderOperationResponse { Message = $"{provider} enabled successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error enabling provider {Provider} for user", provider);
+            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
+        }
+    }
+
+    /// <summary>
     /// Gets provider links for a user via sharing code (no authentication required)
     /// </summary>
     /// <param name="sharingCode">The sharing code</param>
@@ -218,13 +264,15 @@ public class ProvidersController : ControllerBase
             var providerLinks = await _providerLinkService.GetAllForUserAsync(user.Uid);
 
             // Transform to response format
-            var response = providerLinks.Select(link => new ProviderLinkResponse
-            {
-                Provider = link.Provider,
-                ConnectedAt = link.UpdatedAt,
-                UpdateReason = link.UpdateReason,
-                HasToken = link.Token != null && link.Token.Count > 0
-            }).ToList();
+            var response = providerLinks
+                .Select(link => new ProviderLinkResponse
+                {
+                    Provider = link.Provider,
+                    ConnectedAt = link.UpdatedAt,
+                    UpdateReason = link.UpdateReason,
+                    HasToken = link.Token != null && link.Token.Count > 0,
+                    IsDisabled = link.Provider == "legacy" && link.Token?.GetValueOrDefault("disabled") as bool? == true
+                }).ToList();
 
             return Ok(response);
         }

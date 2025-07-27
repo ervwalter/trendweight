@@ -21,7 +21,7 @@ export function Download() {
   const { data: providerLinks } = useProviderLinks();
   const { readings, profile } = useScaleReadingsData(viewType, sortNewestFirst);
 
-  const connectedProviders = providerLinks?.filter((link) => link.hasToken) || [];
+  const connectedProviders = providerLinks?.filter((link) => link.hasToken && !link.isDisabled) || [];
 
   // Paginate data
   const totalPages = Math.ceil(readings.length / itemsPerPage);

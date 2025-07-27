@@ -13,6 +13,7 @@ import {
   useDeleteAccount,
   useExchangeFitbitToken,
   useExchangeWithingsToken,
+  useEnableProvider,
 } from "./mutations";
 import { queryKeys } from "./queries";
 import type { ProfileResponse } from "./types";
@@ -200,6 +201,71 @@ describe("mutations", () => {
 
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({
         queryKey: queryKeys.providerLinks(),
+      });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+        queryKey: queryKeys.data(),
+      });
+    });
+  });
+
+  describe("useEnableProvider", () => {
+    it("should enable provider successfully", async () => {
+      const provider = "legacy";
+
+      server.use(
+        http.post(`/api/providers/${provider}/enable`, () => {
+          return HttpResponse.json({ message: "legacy enabled successfully" });
+        }),
+      );
+
+      const { result } = renderHook(() => useEnableProvider(), {
+        wrapper: createWrapper(),
+      });
+
+      act(() => {
+        result.current.mutate(provider);
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+    });
+
+    it("should invalidate queries on success", async () => {
+      const provider = "legacy";
+
+      server.use(
+        http.post(`/api/providers/${provider}/enable`, () => {
+          return HttpResponse.json({ message: "legacy enabled successfully" });
+        }),
+      );
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+
+      const invalidateQueriesSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+
+      const { result } = renderHook(() => useEnableProvider(), { wrapper });
+
+      act(() => {
+        result.current.mutate(provider);
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+        queryKey: queryKeys.providerLinks(),
+      });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+        queryKey: queryKeys.data(),
       });
     });
   });

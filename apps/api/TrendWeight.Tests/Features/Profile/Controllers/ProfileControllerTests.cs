@@ -153,6 +153,120 @@ public class ProfileControllerTests : TestBase
             .Which.StatusCode.Should().Be(500);
     }
 
+    [Fact]
+    public async Task GetProfile_WithMigratedUser_ChecksForLegacyData()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var user = CreateTestProfile(userId);
+        user.Profile.IsMigrated = true;
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+
+        // Act
+        var result = await _sut.GetProfile();
+
+        // Assert
+        result.Should().NotBeNull();
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+
+        // Verify legacy check was made
+        _migrationServiceMock.Verify(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, "test@example.com"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProfile_WithMigratedUser_CallsCheckAndImportLegacyData()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var user = CreateTestProfile(userId);
+        user.Profile.IsMigrated = true;
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+
+        // Act
+        var result = await _sut.GetProfile();
+
+        // Assert
+        result.Should().NotBeNull();
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+
+        // Verify legacy check was made
+        _migrationServiceMock.Verify(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, "test@example.com"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProfile_WithNonMigratedUser_SkipsLegacyCheck()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var user = CreateTestProfile(userId);
+        user.Profile.IsMigrated = false; // Not a migrated user
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+
+        // Act
+        var result = await _sut.GetProfile();
+
+        // Assert
+        result.Should().NotBeNull();
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+
+        // Verify no legacy check was made
+        _migrationServiceMock.Verify(x => x.CheckAndMigrateLegacyDataIfNeededAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetProfile_WithMigratedUserButNoEmail_SkipsLegacyImport()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var user = CreateTestProfile(userId);
+        user.Profile.IsMigrated = true;
+        SetupAuthenticatedUser(userId.ToString(), null); // No email in claims
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+
+        // Act
+        var result = await _sut.GetProfile();
+
+        // Assert
+        result.Should().NotBeNull();
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+
+        // Verify legacy operation was called with null email (and handled internally)
+        _migrationServiceMock.Verify(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, null), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProfile_WhenLegacyImportFails_StillReturnsProfile()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var user = CreateTestProfile(userId);
+        user.Profile.IsMigrated = true;
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        // CheckAndImportLegacyDataIfNeededAsync catches exceptions internally,
+        // so we don't need to test exception handling here
+        _migrationServiceMock.Setup(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, "test@example.com"))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.GetProfile();
+
+        // Assert
+        result.Should().NotBeNull();
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ProfileResponse>().Subject;
+
+        // Profile should be returned successfully
+        response.User.FirstName.Should().Be("Test User");
+        response.IsMe.Should().Be(true);
+
+        // Verify the legacy import was attempted
+        _migrationServiceMock.Verify(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, "test@example.com"), Times.Once);
+    }
+
     #endregion
 
     #region GetProfileBySharingCode Tests

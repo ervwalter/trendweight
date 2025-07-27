@@ -2,6 +2,7 @@ import { ToggleButton } from "../ui/ToggleButton";
 import { ToggleButtonGroup } from "../ui/ToggleButtonGroup";
 import type { ViewType } from "./types";
 import type { ProviderLink } from "../../lib/api/types";
+import { getProviderDisplayName } from "../../lib/utils/providerDisplay";
 
 interface ViewToggleButtonsProps {
   viewType: ViewType;
@@ -10,14 +11,22 @@ interface ViewToggleButtonsProps {
 }
 
 export function ViewToggleButtons({ viewType, onViewChange, providerLinks }: ViewToggleButtonsProps) {
-  const connectedProviders = providerLinks.filter((link) => link.hasToken);
+  const connectedProviders = providerLinks.filter((link) => link.hasToken && !link.isDisabled);
+
+  // Sort providers to ensure legacy is always last
+  const sortedProviders = [...connectedProviders].sort((a, b) => {
+    if (a.provider === "legacy") return 1;
+    if (b.provider === "legacy") return -1;
+    return 0;
+  });
 
   return (
     <ToggleButtonGroup value={viewType} onChange={onViewChange} defaultValue="computed" aria-label="View Type">
       <ToggleButton value="computed">Computed Values</ToggleButton>
-      {connectedProviders.map((provider) => (
+      {sortedProviders.map((provider) => (
         <ToggleButton key={provider.provider} value={provider.provider}>
-          {provider.provider.charAt(0).toUpperCase() + provider.provider.slice(1)} Data
+          {getProviderDisplayName(provider.provider)}
+          {provider.provider !== "legacy" && " Data"}
         </ToggleButton>
       ))}
     </ToggleButtonGroup>

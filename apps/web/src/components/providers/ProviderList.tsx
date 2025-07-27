@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { HiCheckCircle } from "react-icons/hi";
 import { apiRequest } from "../../lib/api/client";
-import { useDisconnectProvider, useResyncProvider } from "../../lib/api/mutations";
+import { useDisconnectProvider, useResyncProvider, useEnableProvider } from "../../lib/api/mutations";
 import { useProviderLinks } from "../../lib/api/queries";
 import { useToast } from "../../lib/hooks/useToast";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ExternalLink } from "../ui/ExternalLink";
 import { Heading } from "../ui/Heading";
+import { getProviderDisplayName, getOAuthProviders } from "../../lib/utils/providerDisplay";
 
 // Simple date formatter for connection dates
 const connectionDateFormatter = new Intl.DateTimeFormat([], {
@@ -21,31 +22,6 @@ interface ProviderListProps {
   showHeader?: boolean;
 }
 
-const providers = [
-  {
-    id: "withings",
-    name: "Withings",
-    displayName: "Withings Account",
-    logo: "/withings-app.png",
-    linkUrl: "https://www.withings.com/us/en/scales",
-    linkText: "Get a Withings scale",
-    description:
-      "Withings creates beautifully designed, easy-to-use smart scales that automatically sync your weight measurements to their Health Mate app. Track your weight, body composition, and long-term trends to achieve your health goals.",
-    note: "TrendWeight will automatically import your daily weight measurements from Withings. You can also manually enter weights in the Health Mate app if you don't have a smart scale.",
-  },
-  {
-    id: "fitbit",
-    name: "Fitbit",
-    displayName: "Fitbit Account",
-    logo: "/fitbit-app.png",
-    linkUrl: "https://www.fitbit.com/global/us/products/scales",
-    linkText: "Get a Fitbit Aria scale",
-    description:
-      "Fitbit's ecosystem helps you stay motivated and reach your goals with smart scales that measure weight and body fat percentage. Your stats sync automatically to the Fitbit app where you can see trends, log food, and track activity.",
-    note: "TrendWeight will automatically import your daily weight measurements from Fitbit. You can also manually log weights in the Fitbit app or website if you don't have an Aria scale.",
-  },
-];
-
 export function ProviderList({ variant = "link", showHeader = true }: ProviderListProps) {
   const { data: providerLinks } = useProviderLinks();
   const { showToast } = useToast();
@@ -53,8 +29,10 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
 
   const disconnectMutation = useDisconnectProvider();
   const resyncMutation = useResyncProvider();
+  const enableMutation = useEnableProvider();
 
   const connectedProviders = new Set(providerLinks?.map((link) => link.provider) || []);
+  const oauthProviders = getOAuthProviders();
 
   const handleConnect = async (providerId: string) => {
     try {
@@ -100,7 +78,8 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
       )}
 
       <div className={`@container ${containerClasses}`}>
-        {providers.map((provider) => {
+        {/* First show regular providers */}
+        {oauthProviders.map((provider) => {
           const isConnected = connectedProviders.has(provider.id);
           const providerLink = providerLinks?.find((link) => link.provider === provider.id);
 
@@ -187,11 +166,13 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                 </div>
                 <div className="flex-1">
                   <p className="mb-3 text-sm text-gray-600 @sm:text-base">{provider.description}</p>
-                  <p className="mb-3 text-sm text-gray-600 @sm:text-base">
-                    <ExternalLink href={provider.linkUrl} className="font-medium">
-                      {provider.linkText}
-                    </ExternalLink>
-                  </p>
+                  {provider.linkUrl && provider.linkText && (
+                    <p className="mb-3 text-sm text-gray-600 @sm:text-base">
+                      <ExternalLink href={provider.linkUrl} className="font-medium">
+                        {provider.linkText}
+                      </ExternalLink>
+                    </p>
+                  )}
                   <p className="mb-4 text-xs text-gray-500 italic @sm:text-sm">{provider.note}</p>
                   {isConnected ? (
                     <div className="flex flex-col gap-2 @sm:flex-row">
@@ -241,6 +222,109 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
             </div>
           );
         })}
+
+        {/* Show legacy provider if it exists */}
+        {providerLinks?.some((link) => link.provider === "legacy") && (
+          <>
+            {(() => {
+              const legacyLink = providerLinks.find((link) => link.provider === "legacy");
+              if (!legacyLink) return null;
+
+              const isDisabled = legacyLink.isDisabled || false;
+
+              if (variant === "settings") {
+                // Compact layout for settings page
+                return (
+                  <div key="legacy" className="rounded-lg border border-gray-200 p-4">
+                    <div className="flex flex-col space-y-4">
+                      {/* Header section */}
+                      <div className="flex flex-col space-y-3 @sm:flex-row @sm:items-center @sm:justify-between @sm:space-y-0">
+                        <div className="flex items-center space-x-3">
+                          <img src="/legacy-logo.png" alt="Legacy Data" className="h-10 w-10" />
+                          <div>
+                            <Heading level={3} className="text-gray-900">
+                              {getProviderDisplayName("legacy")}
+                            </Heading>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 self-end @sm:self-auto">
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              if (isDisabled) {
+                                // Enable the legacy provider
+                                enableMutation.mutate("legacy", {
+                                  onSuccess: () => {
+                                    showToast({
+                                      title: "Legacy Data Enabled",
+                                      description: "Your historical data is now visible in charts and exports.",
+                                      variant: "success",
+                                    });
+                                  },
+                                  onError: () => {
+                                    showToast({
+                                      title: "Enable Failed",
+                                      description: "Failed to enable legacy data. Please try again.",
+                                      variant: "error",
+                                    });
+                                  },
+                                });
+                              } else {
+                                // Disable the legacy provider
+                                disconnectMutation.mutate("legacy", {
+                                  onSuccess: () => {
+                                    showToast({
+                                      title: "Legacy Data Disabled",
+                                      description: "Your historical data is now hidden from charts and exports.",
+                                      variant: "success",
+                                    });
+                                  },
+                                  onError: () => {
+                                    showToast({
+                                      title: "Disable Failed",
+                                      description: "Failed to disable legacy data. Please try again.",
+                                      variant: "error",
+                                    });
+                                  },
+                                });
+                              }
+                            }}
+                            disabled={enableMutation.isPending || disconnectMutation.isPending}
+                            variant={isDisabled ? "primary" : "destructive"}
+                            size="sm"
+                          >
+                            {enableMutation.isPending || disconnectMutation.isPending
+                              ? isDisabled
+                                ? "Enabling..."
+                                : "Disabling..."
+                              : isDisabled
+                                ? "Enable"
+                                : "Disable"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Description and note - always visible for legacy */}
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">
+                          Historical weight data imported from classic TrendWeight. This data was migrated from your previous account and provides your complete
+                          weight history.
+                        </p>
+                        <p className="text-xs text-gray-500 italic">
+                          This data cannot be synced or updated. You can enable or disable its visibility in your charts and exports.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Full layout for link page (legacy provider shouldn't appear here, but handle just in case)
+              return null;
+            })()}
+          </>
+        )}
       </div>
 
       <ConfirmDialog

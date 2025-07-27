@@ -329,7 +329,7 @@ public class SourceDataServiceTests : TestBase
             .ReturnsAsync(dbData);
 
         // Act
-        var result = await _sut.GetSourceDataAsync(userId);
+        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings" });
 
         // Assert
         result.Should().NotBeNull();
@@ -350,7 +350,7 @@ public class SourceDataServiceTests : TestBase
             .ReturnsAsync(new List<DbSourceData>());
 
         // Act
-        var result = await _sut.GetSourceDataAsync(userId);
+        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings", "fitbit" });
 
         // Assert
         result.Should().NotBeNull();
@@ -388,7 +388,7 @@ public class SourceDataServiceTests : TestBase
             .ReturnsAsync(dbData);
 
         // Act
-        var result = await _sut.GetSourceDataAsync(userId);
+        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings", "fitbit" });
 
         // Assert
         result.Should().NotBeNull();
@@ -419,7 +419,7 @@ public class SourceDataServiceTests : TestBase
             .ReturnsAsync(dbData);
 
         // Act
-        var result = await _sut.GetSourceDataAsync(userId);
+        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings" });
 
         // Assert
         result.Should().NotBeNull();
@@ -437,9 +437,63 @@ public class SourceDataServiceTests : TestBase
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
         // Act & Assert
-        await _sut.Invoking(x => x.GetSourceDataAsync(userId))
+        await _sut.Invoking(x => x.GetSourceDataAsync(userId, new List<string> { "withings" }))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Database error");
+    }
+
+    [Fact]
+    public async Task GetSourceDataAsync_WithActiveProvidersFilter_ReturnsOnlyRequestedProviders()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var lastSync = DateTime.UtcNow;
+
+        var dbData = new List<DbSourceData>
+        {
+            new()
+            {
+                Uid = userId,
+                Provider = "withings",
+                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-01", 70.0m) },
+                LastSync = lastSync.ToString("o"),
+                UpdatedAt = DateTime.UtcNow.ToString("o")
+            },
+            new()
+            {
+                Uid = userId,
+                Provider = "fitbit",
+                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-02", 71.0m) },
+                LastSync = lastSync.ToString("o"),
+                UpdatedAt = DateTime.UtcNow.ToString("o")
+            },
+            new()
+            {
+                Uid = userId,
+                Provider = "legacy",
+                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-03", 72.0m) },
+                LastSync = lastSync.ToString("o"),
+                UpdatedAt = DateTime.UtcNow.ToString("o")
+            }
+        };
+
+        // Return only the requested providers
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
+            .ReturnsAsync((Action<ISupabaseTable<DbSourceData, RealtimeChannel>> queryBuilder) =>
+            {
+                // Simulate filtering - only return withings and fitbit, not legacy
+                return dbData.Where(d => d.Provider == "withings" || d.Provider == "fitbit").ToList();
+            });
+
+        // Act - Request only withings and fitbit (legacy is disabled)
+        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings", "fitbit" });
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().HaveCount(2);
+        result!.Should().Contain(s => s.Source == "withings");
+        result.Should().Contain(s => s.Source == "fitbit");
+        result.Should().NotContain(s => s.Source == "legacy"); // Legacy should not be included
     }
 
     #endregion

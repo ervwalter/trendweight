@@ -66,6 +66,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFitbitService>(sp => sp.GetRequiredService<FitbitService>());
         services.AddScoped<IProviderService>(sp => sp.GetRequiredService<FitbitService>());
 
+        // Register Legacy service
+        services.AddScoped<LegacyService>();
+        services.AddScoped<IProviderService>(sp => sp.GetRequiredService<LegacyService>());
+
         // Register provider integration orchestrator
         services.AddScoped<IProviderIntegrationService, ProviderIntegrationService>();
 

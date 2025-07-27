@@ -17,3 +17,16 @@ public class LegacyProfile
     public string? DeviceType { get; set; }
     public string? FitbitRefreshToken { get; set; }
 }
+
+/// <summary>
+/// Legacy TrendWeight measurement from MSSQL database
+/// </summary>
+public class LegacyMeasurement
+{
+    public Guid UserId { get; set; }
+    public int GroupId { get; set; }
+    public DateTime Timestamp { get; set; }
+    public DateTime Date { get; set; }
+    public decimal Weight { get; set; }
+    public decimal? FatRatio { get; set; }
+}

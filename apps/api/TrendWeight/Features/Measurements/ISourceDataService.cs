@@ -14,9 +14,11 @@ public interface ISourceDataService
     Task UpdateSourceDataAsync(Guid userId, List<SourceData> data);
 
     /// <summary>
-    /// Gets all source data for a user
+    /// Gets source data for specific providers only
     /// </summary>
-    Task<List<SourceData>?> GetSourceDataAsync(Guid userId);
+    /// <param name="userId">User's Supabase UID</param>
+    /// <param name="activeProviders">List of active provider names to include</param>
+    Task<List<SourceData>?> GetSourceDataAsync(Guid userId, List<string> activeProviders);
 
     /// <summary>
     /// Get the last sync time for a specific provider
