@@ -710,7 +710,7 @@ public class LegacyMigrationServiceTests : TestBase
         _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
             userId,
             "legacy",
-            It.Is<Dictionary<string, object>>(d => d.Count == 0),
+            It.Is<Dictionary<string, object>>(d => d.Count == 1 && d.ContainsKey("disabled") && d["disabled"].Equals(false)),
             It.IsAny<string>()),
             Times.Once);
     }
