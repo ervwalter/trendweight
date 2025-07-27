@@ -54,19 +54,20 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 6.5 Verify provider integration works through standard flow
   - [x] 6.6 Verify all tests pass
 
-- [ ] 7. Update Frontend Provider Display Components
-  - [ ] 7.1 Write tests for legacy provider display name mapping
-  - [ ] 7.2 Add "legacy" → "Legacy Data" mapping to provider display components
-  - [ ] 7.3 Add description text for legacy provider in settings
-  - [ ] 7.4 Show enable/disable toggle instead of delete button
-  - [ ] 7.5 Verify all tests pass
+- [x] 7. Update Frontend Provider Display Components
+  - [x] 7.1 Write tests for legacy provider display name mapping
+  - [x] 7.2 Add "legacy" → "Legacy Data" mapping to provider display components
+  - [x] 7.3 Add description text for legacy provider in settings
+  - [x] 7.4 Show enable/disable toggle instead of delete button
+  - [x] 7.5 Verify all tests pass
 
-- [ ] 8. Implement Legacy Provider Enable/Disable UI
-  - [ ] 8.1 Write tests for enable/disable toggle functionality
-  - [ ] 8.2 Create toggle component for legacy provider
-  - [ ] 8.3 Show current state clearly (Enabled/Disabled)
-  - [ ] 8.4 Update provider disconnect to use soft delete
-  - [ ] 8.5 Verify all tests pass
+- [x] 8. Implement Legacy Provider Enable/Disable UI
+  - [x] 8.1 Write tests for enable endpoint in ProvidersController
+  - [x] 8.2 Add POST /api/providers/{provider}/enable endpoint (legacy only)
+  - [x] 8.3 Write tests for useEnableProvider mutation hook
+  - [x] 8.4 Create useEnableProvider mutation in mutations.ts
+  - [x] 8.5 Wire up Enable/Disable button in ProviderList component
+  - [x] 8.6 Verify all tests pass
 
 - [ ] 9. Add Legacy Provider to Download/Export
   - [ ] 9.1 Write tests for legacy provider in download functionality

@@ -79,4 +79,25 @@ public class LegacyService : IProviderService
         _logger.LogInformation("Legacy provider disabled for user {UserId}", userId);
         return true;
     }
+
+    /// <summary>
+    /// Enables the legacy provider by clearing the disabled flag
+    /// </summary>
+    public virtual async Task<bool> EnableProviderLinkAsync(Guid userId)
+    {
+        var link = await _providerLinkService.GetProviderLinkAsync(userId, ProviderName);
+        if (link == null)
+        {
+            _logger.LogWarning("Attempted to enable non-existent legacy provider link for user {UserId}", userId);
+            return false;
+        }
+
+        // Update token to clear disabled flag
+        var updatedToken = new Dictionary<string, object>(link.Token ?? new Dictionary<string, object>());
+        updatedToken["disabled"] = false;
+
+        await _providerLinkService.StoreProviderLinkAsync(userId, ProviderName, updatedToken, "User enabled legacy data");
+        _logger.LogInformation("Legacy provider enabled for user {UserId}", userId);
+        return true;
+    }
 }

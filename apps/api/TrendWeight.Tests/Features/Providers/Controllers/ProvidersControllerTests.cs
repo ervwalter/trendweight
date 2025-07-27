@@ -365,6 +365,131 @@ public class ProvidersControllerTests : TestBase
 
     #endregion
 
+    #region EnableProvider Tests
+
+    [Fact]
+    public async Task EnableProvider_WithLegacyProvider_ReturnsSuccess()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var legacyService = new Mock<LegacyService>(_providerLinkServiceMock.Object, new Mock<ILogger<LegacyService>>().Object);
+        legacyService.Setup(x => x.EnableProviderLinkAsync(userId))
+            .ReturnsAsync(true);
+
+        SetupAuthenticatedUser(userId.ToString());
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
+            .Returns(legacyService.Object);
+
+        // Act
+        var result = await _sut.EnableProvider("legacy");
+
+        // Assert
+        result.Should().NotBeNull();
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
+        response.Message.Should().Be("legacy enabled successfully");
+
+        legacyService.Verify(x => x.EnableProviderLinkAsync(userId), Times.Once);
+    }
+
+    [Fact]
+    public async Task EnableProvider_WithNonLegacyProvider_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        SetupAuthenticatedUser(userId.ToString());
+
+        // Act
+        var result = await _sut.EnableProvider("withings");
+
+        // Assert
+        result.Should().NotBeNull();
+        var badResult = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        var response = badResult.Value.Should().BeOfType<ErrorResponse>().Subject;
+        response.Error.Should().Be("Only legacy provider can be enabled");
+    }
+
+    [Fact]
+    public async Task EnableProvider_WithNonExistentLink_ReturnsNotFound()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var legacyService = new Mock<LegacyService>(_providerLinkServiceMock.Object, new Mock<ILogger<LegacyService>>().Object);
+        legacyService.Setup(x => x.EnableProviderLinkAsync(userId))
+            .ReturnsAsync(false);
+
+        SetupAuthenticatedUser(userId.ToString());
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
+            .Returns(legacyService.Object);
+
+        // Act
+        var result = await _sut.EnableProvider("legacy");
+
+        // Assert
+        result.Should().NotBeNull();
+        var notFoundResult = result.Result.Should().BeOfType<NotFoundObjectResult>().Subject;
+        var response = notFoundResult.Value.Should().BeOfType<ErrorResponse>().Subject;
+        response.Error.Should().Be("No legacy connection found");
+    }
+
+    [Fact]
+    public async Task EnableProvider_WithAlreadyEnabledLink_ReturnsSuccess()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var legacyService = new Mock<LegacyService>(_providerLinkServiceMock.Object, new Mock<ILogger<LegacyService>>().Object);
+        legacyService.Setup(x => x.EnableProviderLinkAsync(userId))
+            .ReturnsAsync(true);
+
+        SetupAuthenticatedUser(userId.ToString());
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
+            .Returns(legacyService.Object);
+
+        // Act
+        var result = await _sut.EnableProvider("legacy");
+
+        // Assert
+        result.Should().NotBeNull();
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
+        response.Message.Should().Be("legacy enabled successfully");
+    }
+
+    [Fact]
+    public async Task EnableProvider_WithNoUserId_ReturnsUnauthorized()
+    {
+        // Arrange
+        SetupAuthenticatedUser(null);
+
+        // Act
+        var result = await _sut.EnableProvider("legacy");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task EnableProvider_WithNoLegacyService_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        SetupAuthenticatedUser(userId.ToString());
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
+            .Returns((IProviderService?)null);
+
+        // Act
+        var result = await _sut.EnableProvider("legacy");
+
+        // Assert
+        result.Should().NotBeNull();
+        var badResult = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        var response = badResult.Value.Should().BeOfType<ErrorResponse>().Subject;
+        response.Error.Should().Be("Legacy service not available");
+    }
+
+    #endregion
+
     #region ResyncProvider Tests
 
     [Fact]

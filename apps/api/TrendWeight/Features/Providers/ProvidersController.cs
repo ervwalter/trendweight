@@ -195,6 +195,53 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
+    /// Enables a disabled legacy provider
+    /// </summary>
+    /// <param name="provider">The provider to enable (must be 'legacy')</param>
+    /// <returns>Success or error response</returns>
+    [HttpPost("{provider}/enable")]
+    public async Task<ActionResult<ProviderOperationResponse>> EnableProvider(string provider)
+    {
+        try
+        {
+            // Validate provider - only legacy can be enabled
+            provider = provider.ToLowerInvariant();
+            if (provider != "legacy")
+            {
+                return BadRequest(new ErrorResponse { Error = "Only legacy provider can be enabled" });
+            }
+
+            // Get user ID from authenticated user claim
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+            {
+                _logger.LogWarning("User ID not found or invalid in authenticated user claims");
+                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
+            }
+
+            // Get legacy service and enable the provider
+            var legacyService = _providerIntegrationService.GetProviderService(provider) as LegacyService;
+            if (legacyService == null)
+            {
+                return BadRequest(new ErrorResponse { Error = "Legacy service not available" });
+            }
+
+            var success = await legacyService.EnableProviderLinkAsync(userGuid);
+            if (!success)
+            {
+                return NotFound(new ErrorResponse { Error = $"No {provider} connection found" });
+            }
+
+            return Ok(new ProviderOperationResponse { Message = $"{provider} enabled successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error enabling provider {Provider} for user", provider);
+            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
+        }
+    }
+
+    /// <summary>
     /// Gets provider links for a user via sharing code (no authentication required)
     /// </summary>
     /// <param name="sharingCode">The sharing code</param>

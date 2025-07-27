@@ -177,4 +177,85 @@ public class LegacyServiceTests
         Assert.False(result);
         _mockProviderLinkService.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<string>()), Times.Never);
     }
+
+    [Fact]
+    public async Task EnableProviderLinkAsync_WithDisabledLink_SetsDisabledToFalse()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var existingLink = new TrendWeight.Infrastructure.DataAccess.Models.DbProviderLink
+        {
+            Uid = userId,
+            Provider = "legacy",
+            UpdateReason = "User disabled legacy data",
+            Token = new Dictionary<string, object> { { "disabled", true }, { "someData", "value" } },
+            UpdatedAt = DateTime.UtcNow.ToString("O")
+        };
+
+        _mockProviderLinkService.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ReturnsAsync(existingLink);
+
+        Dictionary<string, object>? capturedToken = null;
+        _mockProviderLinkService.Setup(x => x.StoreProviderLinkAsync(userId, "legacy", It.IsAny<Dictionary<string, object>>(), "User enabled legacy data"))
+            .Callback<Guid, string, Dictionary<string, object>, string>((_, _, token, _) => capturedToken = token)
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _service.EnableProviderLinkAsync(userId);
+
+        // Assert
+        Assert.True(result);
+        Assert.NotNull(capturedToken);
+        Assert.True(capturedToken.ContainsKey("disabled"));
+        Assert.Equal(false, capturedToken["disabled"]);
+        Assert.Equal("value", capturedToken["someData"]); // Existing data preserved
+    }
+
+    [Fact]
+    public async Task EnableProviderLinkAsync_WithAlreadyEnabledLink_StillSetsDisabledToFalse()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var existingLink = new TrendWeight.Infrastructure.DataAccess.Models.DbProviderLink
+        {
+            Uid = userId,
+            Provider = "legacy",
+            UpdateReason = "legacy_import",
+            Token = new Dictionary<string, object> { { "disabled", false } },
+            UpdatedAt = DateTime.UtcNow.ToString("O")
+        };
+
+        _mockProviderLinkService.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ReturnsAsync(existingLink);
+
+        Dictionary<string, object>? capturedToken = null;
+        _mockProviderLinkService.Setup(x => x.StoreProviderLinkAsync(userId, "legacy", It.IsAny<Dictionary<string, object>>(), "User enabled legacy data"))
+            .Callback<Guid, string, Dictionary<string, object>, string>((_, _, token, _) => capturedToken = token)
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _service.EnableProviderLinkAsync(userId);
+
+        // Assert
+        Assert.True(result);
+        Assert.NotNull(capturedToken);
+        Assert.True(capturedToken.ContainsKey("disabled"));
+        Assert.Equal(false, capturedToken["disabled"]);
+    }
+
+    [Fact]
+    public async Task EnableProviderLinkAsync_WhenLinkDoesNotExist_ReturnsFalse()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        _mockProviderLinkService.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ReturnsAsync((TrendWeight.Infrastructure.DataAccess.Models.DbProviderLink?)null);
+
+        // Act
+        var result = await _service.EnableProviderLinkAsync(userId);
+
+        // Assert
+        Assert.False(result);
+        _mockProviderLinkService.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<string>()), Times.Never);
+    }
 }

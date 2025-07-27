@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { HiCheckCircle } from "react-icons/hi";
 import { apiRequest } from "../../lib/api/client";
-import { useDisconnectProvider, useResyncProvider } from "../../lib/api/mutations";
+import { useDisconnectProvider, useResyncProvider, useEnableProvider } from "../../lib/api/mutations";
 import { useProviderLinks } from "../../lib/api/queries";
 import { useToast } from "../../lib/hooks/useToast";
 import { Button } from "../ui/Button";
@@ -29,6 +29,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
 
   const disconnectMutation = useDisconnectProvider();
   const resyncMutation = useResyncProvider();
+  const enableMutation = useEnableProvider();
 
   const connectedProviders = new Set(providerLinks?.map((link) => link.provider) || []);
   const oauthProviders = getOAuthProviders();
@@ -251,16 +252,55 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                           <Button
                             type="button"
                             onClick={() => {
-                              // TODO: Implement enable/disable toggle in Task 8
-                              showToast({
-                                title: "Coming Soon",
-                                description: "Enable/disable functionality will be implemented soon.",
-                              });
+                              if (isDisabled) {
+                                // Enable the legacy provider
+                                enableMutation.mutate("legacy", {
+                                  onSuccess: () => {
+                                    showToast({
+                                      title: "Legacy Data Enabled",
+                                      description: "Your historical data is now visible in charts and exports.",
+                                      variant: "success",
+                                    });
+                                  },
+                                  onError: () => {
+                                    showToast({
+                                      title: "Enable Failed",
+                                      description: "Failed to enable legacy data. Please try again.",
+                                      variant: "error",
+                                    });
+                                  },
+                                });
+                              } else {
+                                // Disable the legacy provider
+                                disconnectMutation.mutate("legacy", {
+                                  onSuccess: () => {
+                                    showToast({
+                                      title: "Legacy Data Disabled",
+                                      description: "Your historical data is now hidden from charts and exports.",
+                                      variant: "success",
+                                    });
+                                  },
+                                  onError: () => {
+                                    showToast({
+                                      title: "Disable Failed",
+                                      description: "Failed to disable legacy data. Please try again.",
+                                      variant: "error",
+                                    });
+                                  },
+                                });
+                              }
                             }}
-                            variant={isDisabled ? "primary" : "secondary"}
+                            disabled={enableMutation.isPending || disconnectMutation.isPending}
+                            variant={isDisabled ? "primary" : "destructive"}
                             size="sm"
                           >
-                            {isDisabled ? "Enable" : "Disable"}
+                            {enableMutation.isPending || disconnectMutation.isPending
+                              ? isDisabled
+                                ? "Enabling..."
+                                : "Disabling..."
+                              : isDisabled
+                                ? "Enable"
+                                : "Disable"}
                           </Button>
                         </div>
                       </div>

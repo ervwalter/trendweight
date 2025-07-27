@@ -51,6 +51,17 @@ export function useDisconnectProvider() {
   });
 }
 
+export function useEnableProvider() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (provider: string) => apiRequest(`/providers/${provider}/enable`, { method: "POST" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
+    },
+  });
+}
+
 export function useResyncProvider() {
   const queryClient = useQueryClient();
 
