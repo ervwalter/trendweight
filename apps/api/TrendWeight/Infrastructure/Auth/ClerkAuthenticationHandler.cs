@@ -71,7 +71,7 @@ public class ClerkAuthenticationHandler : AuthenticationHandler<AuthenticationSc
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, userAccount.Uid.ToString()),
-                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.Email, email!),
                 new Claim("clerk_user_id", clerkUserId),
                 new Claim("provider", "clerk")
             };

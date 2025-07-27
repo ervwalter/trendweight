@@ -24,14 +24,14 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 2.3 Create IClerkTokenService interface and implementation
   - [x] 2.4 Create ClerkAuthenticationHandler
   - [x] 2.5 Update service registration to use Clerk authentication
-  - [ ] 2.6 Test JWT validation with Clerk tokens
-  - [ ] 2.7 Verify user mapping creation for new and existing users
+  - [x] 2.6 Test JWT validation with Clerk tokens
+  - [x] 2.7 Verify user mapping creation for new and existing users
 
-- [ ] 3. Frontend Authenticated Routes Update
-  - [ ] 3.1 Update API client to get tokens from Clerk
+- [x] 3. Frontend Authenticated Routes Update
+  - [x] 3.1 Update API client to get tokens from Clerk
   - [x] 3.2 Update authGuard to use Clerk auth state
-  - [ ] 3.3 Test all protected routes with Clerk authentication
-  - [ ] 3.4 Verify data loading works with new auth flow
+  - [x] 3.3 Test all protected routes with Clerk authentication
+  - [x] 3.4 Verify data loading works with new auth flow
 
 - [ ] 4. Cleanup and Migration
   - [ ] 4.1 Remove Supabase auth dependencies from frontend
