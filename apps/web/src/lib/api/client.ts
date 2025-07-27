@@ -16,8 +16,10 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
   // Get the current session's access token from Clerk if authenticated
   let token: string | null = null;
 
-  if (window.Clerk && window.Clerk.session) {
+  // @ts-expect-error - Clerk may not be initialized yet
+  if (window.Clerk?.session) {
     try {
+      // @ts-expect-error - Clerk session API
       token = await window.Clerk.session.getToken();
     } catch (error) {
       console.error("Failed to get Clerk token:", error);

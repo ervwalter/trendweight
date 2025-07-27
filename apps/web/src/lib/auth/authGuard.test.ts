@@ -1,37 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { requireAuth } from "./authGuard";
 import { redirect } from "@tanstack/react-router";
-import { supabase } from "../supabase/client";
 
 // Mock dependencies
 vi.mock("@tanstack/react-router", () => ({
   redirect: vi.fn(),
 }));
 
-vi.mock("../supabase/client", () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn(),
-    },
-  },
-}));
+// Mock window.Clerk
+const mockClerk = {
+  user: null as any,
+  loaded: true,
+};
+
+// @ts-expect-error - Mock window.Clerk for testing
+global.window = {
+  Clerk: mockClerk,
+};
 
 describe("authGuard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockClerk.user = null;
   });
 
   describe("requireAuth", () => {
-    it("should allow access when session exists", async () => {
-      const mockSession = {
-        access_token: "test-token",
-        user: { id: "test-user-id" },
-      };
-
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: mockSession },
-        error: null,
-      } as any);
+    it("should allow access when user is authenticated", async () => {
+      mockClerk.user = { id: "user_123" };
 
       const context = {
         location: {
@@ -46,11 +41,8 @@ describe("authGuard", () => {
       expect(redirect).not.toHaveBeenCalled();
     });
 
-    it("should redirect to login when no session exists", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      } as any);
+    it("should redirect to login when user is not authenticated", async () => {
+      mockClerk.user = null;
 
       const mockRedirect = new Error("Redirect");
       vi.mocked(redirect).mockImplementation(() => {
@@ -77,10 +69,7 @@ describe("authGuard", () => {
     });
 
     it("should preserve original path in redirect", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      } as any);
+      mockClerk.user = null;
 
       const mockRedirect = new Error("Redirect");
       vi.mocked(redirect).mockImplementation(() => {
@@ -106,10 +95,7 @@ describe("authGuard", () => {
     });
 
     it("should handle root path redirect", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      } as any);
+      mockClerk.user = null;
 
       const mockRedirect = new Error("Redirect");
       vi.mocked(redirect).mockImplementation(() => {

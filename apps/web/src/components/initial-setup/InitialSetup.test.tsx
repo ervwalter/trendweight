@@ -18,15 +18,13 @@ vi.mock("../../lib/api/mutations", () => ({
   useUpdateProfile: () => mockUpdateProfile,
 }));
 
-const mockSession = {
-  user: {
-    user_metadata: {
-      full_name: "John Doe Smith",
-    },
-  },
+const mockUser = {
+  uid: "user_123",
+  email: "test@example.com",
+  displayName: "John Doe Smith",
 };
 vi.mock("../../lib/auth/useAuth", () => ({
-  useAuth: () => ({ session: mockSession }),
+  useAuth: vi.fn(() => ({ user: mockUser })),
 }));
 
 vi.mock("../../lib/utils/locale", () => ({
@@ -72,11 +70,7 @@ describe("InitialSetup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUpdateProfile.isError = false;
-    mockSession.user = {
-      user_metadata: {
-        full_name: "John Doe Smith",
-      },
-    };
+    mockUser.displayName = "John Doe Smith";
   });
 
   it("should render welcome message and form", () => {
@@ -99,11 +93,7 @@ describe("InitialSetup", () => {
   });
 
   it("should handle alternative name field in metadata", async () => {
-    mockSession.user = {
-      user_metadata: {
-        full_name: "Jane Smith",
-      },
-    };
+    mockUser.displayName = "Jane Smith";
 
     render(<InitialSetup />);
 
@@ -114,11 +104,7 @@ describe("InitialSetup", () => {
   });
 
   it("should handle missing user metadata", async () => {
-    mockSession.user = {
-      user_metadata: {
-        full_name: "",
-      },
-    };
+    mockUser.displayName = "";
 
     render(<InitialSetup />);
 
@@ -130,8 +116,8 @@ describe("InitialSetup", () => {
 
   it("should handle no session", async () => {
     // Temporarily override the mock
-    const originalSession = mockSession.user;
-    mockSession.user = null as any;
+    const originalUser = mockUser.displayName;
+    mockUser.displayName = null as any;
 
     render(<InitialSetup />);
 
@@ -141,7 +127,7 @@ describe("InitialSetup", () => {
     });
 
     // Restore original mock
-    mockSession.user = originalSession;
+    mockUser.displayName = originalUser;
   });
 
   it("should handle form submission successfully", async () => {
