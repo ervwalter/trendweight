@@ -5,7 +5,7 @@ import { Heading } from "../ui/Heading";
 
 export function DownloadSection() {
   const { data: providerLinks } = useProviderLinks();
-  const hasConnectedProviders = providerLinks?.some((link) => link.hasToken) || false;
+  const hasConnectedProviders = providerLinks?.some((link) => link.hasToken && !link.isDisabled) || false;
 
   // Only show this section if there's at least one connected provider
   if (!hasConnectedProviders) {
