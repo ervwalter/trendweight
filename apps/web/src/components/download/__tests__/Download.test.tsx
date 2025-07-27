@@ -84,7 +84,7 @@ describe("Download", () => {
 
     expect(screen.getByText("Computed Values")).toBeInTheDocument();
     expect(screen.getByText("Withings Data")).toBeInTheDocument();
-    expect(screen.getByText("Legacy Data Data")).toBeInTheDocument();
+    expect(screen.getByText("Legacy Data")).toBeInTheDocument();
   });
 
   it("excludes disabled legacy provider from the view toggle", () => {
@@ -96,7 +96,7 @@ describe("Download", () => {
 
     expect(screen.getByText("Computed Values")).toBeInTheDocument();
     expect(screen.getByText("Withings Data")).toBeInTheDocument();
-    expect(screen.queryByText("Legacy Data Data")).not.toBeInTheDocument();
+    expect(screen.queryByText("Legacy Data")).not.toBeInTheDocument();
   });
 
   it("filters out disabled providers from connected count", () => {

@@ -105,8 +105,8 @@ public class MeasurementSyncService : IMeasurementSyncService
                 }
             }
 
-            // Get the current data (whether refreshed or cached)
-            var currentData = await _sourceDataService.GetSourceDataAsync(userId) ?? new List<SourceData>();
+            // Get the current data (whether refreshed or cached) - only for active providers
+            var currentData = await _sourceDataService.GetSourceDataAsync(userId, activeProviders) ?? new List<SourceData>();
 
             return new MeasurementsResult
             {
@@ -159,8 +159,8 @@ public class MeasurementSyncService : IMeasurementSyncService
             // If sync was successful and we have measurements, merge and store them
             if (result.Success && result.Measurements != null)
             {
-                // Get existing data to merge with
-                var existingSourceData = await _sourceDataService.GetSourceDataAsync(userId);
+                // Get existing data to merge with - only need data for this specific provider
+                var existingSourceData = await _sourceDataService.GetSourceDataAsync(userId, new List<string> { provider });
                 var existingProviderData = existingSourceData?.FirstOrDefault(sd => sd.Source == provider);
 
                 List<RawMeasurement> mergedMeasurements;

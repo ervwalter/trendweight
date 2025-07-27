@@ -85,7 +85,7 @@ public class MeasurementSyncServiceTests : TestBase
         var activeProviders = new List<string>();
         var existingData = new List<SourceData>();
 
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
 
         // Act
@@ -111,7 +111,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync(lastSync);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
 
         // Act
@@ -151,7 +151,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync(lastSync);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -192,7 +192,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync((DateTime?)null); // Never synced
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -238,7 +238,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
             .ReturnsAsync((DateTime?)null); // Both need refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(withingsServiceMock.Object);
@@ -279,7 +279,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync((DateTime?)null); // Needs refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -322,7 +322,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "legacy"))
             .ReturnsAsync(lastSync);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
             .Returns(mockLegacyService.Object);
@@ -371,7 +371,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
             .ReturnsAsync(lastSync);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -405,7 +405,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "unknown"))
             .ReturnsAsync((DateTime?)null); // Needs refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("unknown"))
             .Returns((IProviderService?)null);
@@ -456,7 +456,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync((DateTime?)null); // Needs refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData); // Return existing data
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -548,7 +548,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
             .ReturnsAsync((DateTime?)null); // Both need refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(withingsServiceMock.Object);
@@ -610,7 +610,7 @@ public class MeasurementSyncServiceTests : TestBase
 
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
             .ReturnsAsync(lastSync);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
@@ -825,7 +825,7 @@ public class MeasurementSyncServiceTests : TestBase
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
             .ReturnsAsync(lastSyncTime);
 
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
             .ReturnsAsync(existingSourceData);
 
         // Act
@@ -865,7 +865,7 @@ public class MeasurementSyncServiceTests : TestBase
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
             .ReturnsAsync((DateTime?)null);
 
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
             .ReturnsAsync(new List<SourceData>());
 
         // Act
@@ -922,7 +922,7 @@ public class MeasurementSyncServiceTests : TestBase
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
             .ReturnsAsync((DateTime?)null); // No last sync = full sync
 
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId))
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
             .ReturnsAsync(existingSourceData);
 
         // Act

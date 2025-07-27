@@ -202,6 +202,9 @@ describe("mutations", () => {
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({
         queryKey: queryKeys.providerLinks(),
       });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+        queryKey: queryKeys.data(),
+      });
     });
   });
 
@@ -260,6 +263,9 @@ describe("mutations", () => {
 
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({
         queryKey: queryKeys.providerLinks(),
+      });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+        queryKey: queryKeys.data(),
       });
     });
   });

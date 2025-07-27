@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ViewToggleButtons } from "../ViewToggleButtons";
@@ -49,7 +49,7 @@ describe("ViewToggleButtons", () => {
 
     render(<ViewToggleButtons viewType="computed" onViewChange={mockOnViewChange} providerLinks={providers} />);
 
-    expect(screen.getByText("Legacy Data Data")).toBeInTheDocument();
+    expect(screen.getByText("Legacy Data")).toBeInTheDocument();
   });
 
   it("excludes legacy provider when disabled", () => {
@@ -57,7 +57,7 @@ describe("ViewToggleButtons", () => {
 
     render(<ViewToggleButtons viewType="computed" onViewChange={mockOnViewChange} providerLinks={providers} />);
 
-    expect(screen.queryByText("Legacy Data Data")).not.toBeInTheDocument();
+    expect(screen.queryByText("Legacy Data")).not.toBeInTheDocument();
   });
 
   it("calls onViewChange when a button is clicked", async () => {
@@ -88,5 +88,18 @@ describe("ViewToggleButtons", () => {
 
     expect(screen.getByText("Withings Data")).toBeInTheDocument();
     expect(screen.queryByText("Fitbit Data")).not.toBeInTheDocument();
+  });
+
+  it("always shows legacy provider last", () => {
+    const providers = [createProviderLink("legacy", false), createProviderLink("withings"), createProviderLink("fitbit")];
+
+    render(<ViewToggleButtons viewType="computed" onViewChange={mockOnViewChange} providerLinks={providers} />);
+
+    const buttons = screen.getAllByRole("radio");
+    // First button is "Computed Values", then Withings, Fitbit, and Legacy last
+    expect(buttons[0]).toHaveTextContent("Computed Values");
+    expect(buttons[1]).toHaveTextContent("Withings Data");
+    expect(buttons[2]).toHaveTextContent("Fitbit Data");
+    expect(buttons[3]).toHaveTextContent("Legacy Data");
   });
 });

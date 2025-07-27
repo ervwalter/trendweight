@@ -47,6 +47,7 @@ export function useDisconnectProvider() {
     mutationFn: (provider: string) => apiRequest(`/providers/${provider}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.data() });
     },
   });
 }
@@ -58,6 +59,7 @@ export function useEnableProvider() {
     mutationFn: (provider: string) => apiRequest(`/providers/${provider}/enable`, { method: "POST" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.data() });
     },
   });
 }
