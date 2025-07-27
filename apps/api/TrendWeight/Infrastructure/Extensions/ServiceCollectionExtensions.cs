@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using TrendWeight.Infrastructure.Auth;
 using TrendWeight.Infrastructure.Middleware;
@@ -28,6 +29,33 @@ public static class ServiceCollectionExtensions
         // Configure authentication - Supabase only
         services.AddAuthentication("Supabase")
             .AddScheme<SupabaseAuthenticationSchemeOptions, SupabaseAuthenticationHandler>("Supabase", null);
+
+        // Configure authorization
+        services.AddAuthorization(options =>
+        {
+            options.DefaultPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddClerkAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Configure app options (will be used by authentication handler)
+        services.Configure<AppOptions>(configuration);
+
+        // Add Clerk services
+        services.AddHttpClient<ClerkTokenService>();
+        services.AddSingleton<IClerkTokenService, ClerkTokenService>();
+        services.AddScoped<IUserAccountMappingService, UserAccountMappingService>();
+
+        // Configure authentication - Clerk only
+        services.AddAuthentication("Clerk")
+            .AddScheme<AuthenticationSchemeOptions, ClerkAuthenticationHandler>("Clerk", null);
 
         // Configure authorization
         services.AddAuthorization(options =>

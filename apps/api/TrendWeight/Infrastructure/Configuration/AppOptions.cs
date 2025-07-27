@@ -24,4 +24,9 @@ public class AppOptions
     /// Legacy database connection string
     /// </summary>
     public string LegacyDbConnectionString { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Clerk authentication configuration
+    /// </summary>
+    public ClerkConfig Clerk { get; set; } = new();
 }

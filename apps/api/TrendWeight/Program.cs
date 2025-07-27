@@ -27,8 +27,8 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add Supabase authentication
-builder.Services.AddSupabaseAuthentication(builder.Configuration);
+// Add Clerk authentication (includes Supabase as fallback)
+builder.Services.AddClerkAuthentication(builder.Configuration);
 
 // Add TrendWeight services
 builder.Services.AddTrendWeightServices(builder.Configuration);

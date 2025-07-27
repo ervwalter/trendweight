@@ -7,28 +7,29 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 
 ## Tasks
 
-- [ ] 1. Frontend Anonymous UI Implementation
-  - [ ] 1.1 Install and configure Clerk React SDK
-  - [ ] 1.2 Update main.tsx to wrap app with ClerkProvider
-  - [ ] 1.3 Create new useAuth hook wrapping Clerk's hooks
-  - [ ] 1.4 Update Header component to use new auth state
+- [x] 1. Frontend Anonymous UI Implementation
+  - [x] 1.1 Install and configure Clerk React SDK
+  - [x] 1.2 Update main.tsx to wrap app with ClerkProvider
+  - [x] 1.3 Create new useAuth hook wrapping Clerk's hooks
+  - [x] 1.4 Update Header component to use new auth state
   - [ ] 1.5 Update Landing/Home page component for auth state
-  - [ ] 1.6 Update login route and create new Login component with Clerk SignIn
-  - [ ] 1.7 Remove auth callback routes (verify, apple callback)
+  - [x] 1.6 Update login route and create new Login component with Clerk SignIn
+  - [x] 1.7 Remove auth callback routes (verify, apple callback)
   - [ ] 1.8 Verify all anonymous UI flows work correctly
+  ⚠️ Note: Many components still reference old Supabase auth methods and need updating
 
-- [ ] 2. Backend JWT Validation Support
-  - [ ] 2.1 Create user_accounts database table and update schema files
-  - [ ] 2.2 Create IUserAccountMappingService interface and implementation
-  - [ ] 2.3 Create IClerkTokenService interface and implementation
-  - [ ] 2.4 Create ClerkAuthenticationHandler
-  - [ ] 2.5 Update service registration to use Clerk authentication
+- [x] 2. Backend JWT Validation Support
+  - [x] 2.1 Create user_accounts database table and update schema files
+  - [x] 2.2 Create IUserAccountMappingService interface and implementation
+  - [x] 2.3 Create IClerkTokenService interface and implementation
+  - [x] 2.4 Create ClerkAuthenticationHandler
+  - [x] 2.5 Update service registration to use Clerk authentication
   - [ ] 2.6 Test JWT validation with Clerk tokens
   - [ ] 2.7 Verify user mapping creation for new and existing users
 
 - [ ] 3. Frontend Authenticated Routes Update
   - [ ] 3.1 Update API client to get tokens from Clerk
-  - [ ] 3.2 Update authGuard to use Clerk auth state
+  - [x] 3.2 Update authGuard to use Clerk auth state
   - [ ] 3.3 Test all protected routes with Clerk authentication
   - [ ] 3.4 Verify data loading works with new auth flow
 

@@ -4,7 +4,7 @@ This document describes the database schema for TrendWeight's Supabase backend.
 
 ## Overview
 
-The database consists of three main tables that handle user profiles and weight tracking data from fitness providers (Fitbit and Withings).
+The database consists of four main tables that handle user profiles, authentication mapping, and weight tracking data from fitness providers (Fitbit and Withings).
 
 ## Tables
 
@@ -68,6 +68,20 @@ Stores raw weight measurement data from providers.
 ]
 ```
 
+### user_accounts
+Maps external authentication provider IDs to internal user IDs.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| uid | UUID | Internal user ID (primary key) |
+| external_id | VARCHAR | External provider's user ID |
+| provider | VARCHAR | Auth provider name ('clerk', 'supabase') |
+| email | VARCHAR | User's email address |
+| created_at | TEXT | ISO 8601 timestamp of creation |
+| updated_at | TEXT | ISO 8601 timestamp of last update |
+
+**Unique Constraint:** (external_id, provider)
+
 ## Security
 
 ### Row Level Security (RLS)
@@ -80,6 +94,8 @@ All tables have RLS enabled with policies that deny all access except through th
 - `idx_users_email` - For efficient email lookups
 - `idx_vendor_links_updated` - For tracking recently updated provider links
 - `idx_source_data_updated` - For tracking recently synced data
+- `idx_user_accounts_external` - For efficient lookups by external ID and provider
+- `idx_user_accounts_email` - For email-based user searches
 
 ## Data Conventions
 
