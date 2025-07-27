@@ -187,7 +187,7 @@ public class LegacyMigrationService : ILegacyMigrationService
         await _sourceDataService.UpdateSourceDataAsync(userId, sourceData);
 
         // Create provider link for legacy data
-        await _providerLinkService.StoreProviderLinkAsync(userId, "legacy", new Dictionary<string, object>());
+        await _providerLinkService.StoreProviderLinkAsync(userId, "legacy", new Dictionary<string, object>() { { "disabled", false } });
 
         _logger.LogInformation("Successfully imported {Count} legacy measurements for user {UserId}", measurements.Count, userId);
         return true;

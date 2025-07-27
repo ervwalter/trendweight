@@ -42,30 +42,24 @@ export async function ensureProfile(sharingCode?: string): Promise<void> {
 }
 
 /**
- * Ensures the user has connected provider links, redirecting if not.
+ * Ensures the user has at least one non-legacy provider connected, redirecting if not.
  * @param sharingCode - Optional sharing code for shared dashboards
- * @throws Redirect to /link for authenticated users or / for shared dashboards if no provider links exist
+ * @throws Redirect to /link for authenticated users or / for shared dashboards if no non-legacy provider links exist
  */
 export async function ensureProviderLinks(sharingCode?: string): Promise<void> {
-  if (sharingCode) {
-    // Skip validation for demo
-    if (sharingCode === "demo") {
-      return;
-    }
+  // Skip validation for demo
+  if (sharingCode === "demo") {
+    return;
+  }
 
-    // For shared dashboards, check provider links
-    const providerLinks = await queryClient.fetchQuery(queryOptions.providerLinks(sharingCode));
+  const providerLinks = await queryClient.fetchQuery(queryOptions.providerLinks(sharingCode));
 
-    if (!providerLinks || providerLinks.length === 0) {
-      throw redirect({ to: "/", replace: true });
-    }
-  } else {
-    // For authenticated users, use the normal provider links query
-    const providerLinks = await queryClient.fetchQuery(queryOptions.providerLinks());
+  // Check if at least one non-legacy provider exists
+  const hasNonLegacyProvider = providerLinks?.some((link) => link.provider !== "legacy" && link.hasToken && !link.isDisabled) ?? false;
 
-    if (!providerLinks || providerLinks.length === 0) {
-      throw redirect({ to: "/link", replace: true });
-    }
+  if (!hasNonLegacyProvider) {
+    const redirectTo = sharingCode ? "/" : "/link";
+    throw redirect({ to: redirectTo, replace: true });
   }
 }
 
