@@ -36,15 +36,15 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 4.4 Verify import is skipped when link exists (regardless of disabled state)
   - [x] 4.5 Verify all tests pass
 
-- [ ] 5. Implement LegacyService Provider
-  - [ ] 5.1 Write tests for LegacyService implementing IProviderService
-  - [ ] 5.2 Create LegacyService with proper interface implementation
-  - [ ] 5.3 Implement GetMeasurementsAsync to return data only when enabled
-  - [ ] 5.4 Implement HasActiveProviderLinkAsync to check disabled state
-  - [ ] 5.5 Implement RemoveProviderLinkAsync to set disabled flag (not delete)
-  - [ ] 5.6 Implement SyncMeasurementsAsync as no-op returning success
-  - [ ] 5.7 Register LegacyService in DI container
-  - [ ] 5.8 Verify all tests pass
+- [x] 5. Implement LegacyService Provider
+  - [x] 5.1 Write tests for LegacyService implementing IProviderService
+  - [x] 5.2 Create LegacyService with proper interface implementation
+  - [x] 5.3 Implement GetMeasurementsAsync to return data only when enabled
+  - [x] 5.4 Implement HasActiveProviderLinkAsync to check disabled state
+  - [x] 5.5 Implement RemoveProviderLinkAsync to set disabled flag (not delete)
+  - [x] 5.6 Implement SyncMeasurementsAsync as no-op returning success
+  - [x] 5.7 Register LegacyService in DI container
+  - [x] 5.8 Verify all tests pass
 
 - [ ] 6. Refactor Backend to Use LegacyService
   - [ ] 6.1 Update ProvidersController to remove special legacy handling
