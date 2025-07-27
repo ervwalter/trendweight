@@ -74,7 +74,7 @@ public class ProvidersControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetProviderLinks_WithDeletedLegacyProvider_FiltersOutDeleted()
+    public async Task GetProviderLinks_WithDisabledLegacyProvider_IncludesItWithIsDisabledTrue()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -87,7 +87,7 @@ public class ProvidersControllerTests : TestBase
                 Uid = userId,
                 Provider = "legacy",
                 UpdateReason = "legacy_import",
-                Token = new Dictionary<string, object> { { "deleted", true } },
+                Token = new Dictionary<string, object> { { "disabled", true } },
                 UpdatedAt = DateTime.UtcNow.ToString("O")
             }
         };
@@ -104,9 +104,10 @@ public class ProvidersControllerTests : TestBase
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
 
-        // Should only return 2 providers (legacy filtered out because it has deleted=true)
-        response.Should().HaveCount(2);
-        response.Should().NotContain(r => r.Provider == "legacy");
+        // Should return all providers including disabled legacy
+        response.Should().HaveCount(3);
+        var legacyProvider = response.Single(r => r.Provider == "legacy");
+        legacyProvider.IsDisabled.Should().BeTrue();
     }
 
     [Fact]
@@ -249,13 +250,14 @@ public class ProvidersControllerTests : TestBase
         SetupAuthenticatedUser(userId.ToString());
         _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, provider))
             .ReturnsAsync(existingLink);
-        _sourceDataServiceMock.Setup(x => x.DeleteSourceDataAsync(userId, provider))
-            .Returns(Task.CompletedTask);
-        _providerLinkServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProviderLink>()))
-            .ReturnsAsync(existingLink);
 
-        // Note: For legacy provider, we don't use ProviderIntegrationService
-        // The controller should handle this case specially
+        // Mock the provider service for legacy
+        var mockLegacyService = new Mock<IProviderService>();
+        mockLegacyService.Setup(x => x.RemoveProviderLinkAsync(userId))
+            .ReturnsAsync(true);
+
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider))
+            .Returns(mockLegacyService.Object);
 
         // Act
         var result = await _sut.DisconnectProvider(provider);
@@ -268,17 +270,11 @@ public class ProvidersControllerTests : TestBase
         var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
         response.Message.Should().Be($"{provider} disconnected successfully");
 
-        // Verify source data was deleted
-        _sourceDataServiceMock.Verify(x => x.DeleteSourceDataAsync(userId, provider), Times.Once);
+        // Verify provider service was called to remove the link
+        mockLegacyService.Verify(x => x.RemoveProviderLinkAsync(userId), Times.Once);
 
-        // Verify provider link was updated with deleted flag
-        _providerLinkServiceMock.Verify(x => x.UpdateAsync(It.Is<DbProviderLink>(
-            link => link.Uid == userId &&
-                    link.Provider == provider &&
-                    link.Token != null &&
-                    link.Token.ContainsKey("deleted") &&
-                    (bool)link.Token["deleted"] == true
-        )), Times.Once);
+        // Verify source data was NOT deleted for legacy provider
+        _sourceDataServiceMock.Verify(x => x.DeleteSourceDataAsync(userId, provider), Times.Never);
     }
 
     [Fact]
@@ -503,7 +499,7 @@ public class ProvidersControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetProviderLinksBySharingCode_WithDeletedLegacyProvider_FiltersOutDeleted()
+    public async Task GetProviderLinksBySharingCode_WithDisabledLegacyProvider_IncludesItWithIsDisabledTrue()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -520,7 +516,7 @@ public class ProvidersControllerTests : TestBase
                 Uid = userId,
                 Provider = "legacy",
                 UpdateReason = "legacy_import",
-                Token = new Dictionary<string, object> { { "deleted", true } },
+                Token = new Dictionary<string, object> { { "disabled", true } },
                 UpdatedAt = DateTime.UtcNow.ToString("O")
             }
         };
@@ -538,9 +534,10 @@ public class ProvidersControllerTests : TestBase
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
 
-        // Should only return 1 provider (legacy filtered out)
-        response.Should().HaveCount(1);
-        response.Should().NotContain(r => r.Provider == "legacy");
+        // Should return all providers including disabled legacy
+        response.Should().HaveCount(2);
+        var legacyProvider = response.Single(r => r.Provider == "legacy");
+        legacyProvider.IsDisabled.Should().BeTrue();
     }
 
     [Fact]

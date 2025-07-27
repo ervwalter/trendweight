@@ -46,13 +46,13 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 5.7 Register LegacyService in DI container
   - [x] 5.8 Verify all tests pass
 
-- [ ] 6. Refactor Backend to Use LegacyService
-  - [ ] 6.1 Update ProvidersController to remove special legacy handling
-  - [ ] 6.2 Update MeasurementSyncService to remove special legacy handling
-  - [ ] 6.3 Update deletion logic to keep source_data (soft delete only)
-  - [ ] 6.4 Update GetProviderLinks to use HasActiveProviderLinkAsync
-  - [ ] 6.5 Verify provider integration works through standard flow
-  - [ ] 6.6 Verify all tests pass
+- [x] 6. Refactor Backend to Use LegacyService
+  - [x] 6.1 Update ProvidersController to remove special legacy handling
+  - [x] 6.2 Update MeasurementSyncService to remove special legacy handling
+  - [x] 6.3 Update deletion logic to keep source_data (soft delete only)
+  - [x] 6.4 Update GetProviderLinks to use HasActiveProviderLinkAsync
+  - [x] 6.5 Verify provider integration works through standard flow
+  - [x] 6.6 Verify all tests pass
 
 - [ ] 7. Update Frontend Provider Display Components
   - [ ] 7.1 Write tests for legacy provider display name mapping

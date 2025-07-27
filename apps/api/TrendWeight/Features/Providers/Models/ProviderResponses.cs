@@ -9,6 +9,7 @@ public class ProviderLinkResponse
     public required string ConnectedAt { get; set; }
     public string? UpdateReason { get; set; }
     public required bool HasToken { get; set; }
+    public bool IsDisabled { get; set; }
 }
 
 /// <summary>
