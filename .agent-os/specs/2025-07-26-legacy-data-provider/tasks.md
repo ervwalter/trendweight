@@ -69,12 +69,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 8.5 Wire up Enable/Disable button in ProviderList component
   - [x] 8.6 Verify all tests pass
 
-- [ ] 9. Add Legacy Provider to Download/Export
-  - [ ] 9.1 Write tests for legacy provider in download functionality
-  - [ ] 9.2 Add "legacy" to download provider options
-  - [ ] 9.3 Display as "Legacy Data" in download UI
-  - [ ] 9.4 Only show when HasActiveProviderLinkAsync returns true
-  - [ ] 9.5 Verify all tests pass
+- [x] 9. Add Legacy Provider to Download/Export
+  - [x] 9.1 Write tests for legacy provider in download functionality
+  - [x] 9.2 Add "legacy" to download provider options
+  - [x] 9.3 Display as "Legacy Data" in download UI
+  - [x] 9.4 Only show when HasActiveProviderLinkAsync returns true
+  - [x] 9.5 Verify all tests pass
 
 - [ ] 10. Integration Testing
   - [ ] 10.1 Test new user account creation with legacy email match
