@@ -4,6 +4,7 @@ import { ClerkLoaded, ClerkProvider } from "@clerk/clerk-react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider } from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastContextProvider } from "./components/ui/ToastProvider";
 import { BackgroundQueryProgress } from "./lib/progress/BackgroundQueryProgress";
@@ -22,12 +23,15 @@ const clerkAppearance = {
   cssLayerName: "clerk",
   elements: {
     rootBox: "w-full",
-    cardBox: "w-full shadow-none border-2 border-gray-100",
+    cardBox: "w-full shadow-none border-none",
+    card: "shadow-none rounded-none",
     formButtonPrimary: "bg-brand-500 hover:bg-brand-600 text-white font-medium py-2.5 rounded-md",
     logoBox: "hidden", // Hide Clerk logo
     headerTitle: "text-2xl font-bold text-gray-900",
     socialButtons: "grid-cols-1 gap-2 w-full",
     socialButtonsBlockButton: "py-2.5",
+    footerAction__signIn: "hidden",
+    footer: "[&>div]:border-transparent [&>div]:rounded-xl [&>div]:bg-brand-50 bg-none",
   },
   variables: {
     colorPrimary: "var(--color-brand-500)",
@@ -53,12 +57,15 @@ const clerkLocalization = {
 };
 
 function App() {
+  console.log("[App] Rendering with Clerk signInFallbackRedirectUrl=/dashboard");
   return (
     <ErrorBoundary>
       <ClerkProvider
         publishableKey={publishableKey}
         signInFallbackRedirectUrl="/dashboard"
+        signUpFallbackRedirectUrl="/dashboard"
         signInUrl="/login"
+        signUpUrl="/login"
         appearance={clerkAppearance}
         localization={clerkLocalization}
       >
@@ -69,6 +76,7 @@ function App() {
               <BackgroundQueryProgress />
               <ClerkLoaded>
                 <RouterProvider router={router} />
+                <TanStackRouterDevtools router={router} position="bottom-left" />
               </ClerkLoaded>
             </ProgressProvider>
             <ReactQueryDevtools initialIsOpen={false} />

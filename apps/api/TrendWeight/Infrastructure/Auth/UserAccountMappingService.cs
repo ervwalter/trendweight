@@ -69,4 +69,27 @@ public class UserAccountMappingService : IUserAccountMappingService
 
         return await CreateMappingAsync(externalId, email, provider);
     }
+
+    public async Task<bool> DeleteByInternalIdAsync(Guid uid)
+    {
+        try
+        {
+            // First get the user account to delete
+            var userAccount = await GetByInternalIdAsync(uid);
+            if (userAccount == null)
+            {
+                _logger.LogWarning("No user account found to delete with UID {Uid}", uid);
+                return false;
+            }
+
+            await _supabaseService.DeleteAsync(userAccount);
+            _logger.LogInformation("Deleted user account with UID {Uid}", uid);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting user account with UID {Uid}", uid);
+            throw;
+        }
+    }
 }

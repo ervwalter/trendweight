@@ -10,6 +10,18 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Create user_accounts table for mapping external auth IDs to internal GUIDs
+CREATE TABLE IF NOT EXISTS public.user_accounts (
+    uid UUID NOT NULL DEFAULT uuid_generate_v4(),
+    external_id VARCHAR NOT NULL,
+    provider VARCHAR NOT NULL DEFAULT 'clerk',
+    email VARCHAR NOT NULL,
+    created_at TEXT DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+    updated_at TEXT DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+    CONSTRAINT user_accounts_pkey PRIMARY KEY (uid),
+    CONSTRAINT user_accounts_external_provider_unique UNIQUE (external_id, provider)
+);
+
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (
     uid UUID NOT NULL,
@@ -17,9 +29,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     profile JSONB NOT NULL,
     created_at TEXT DEFAULT now(),
     updated_at TEXT DEFAULT now(),
-    CONSTRAINT profiles_pkey PRIMARY KEY (uid),
-    CONSTRAINT profiles_uid_auth_users_fkey FOREIGN KEY (uid) 
-        REFERENCES auth.users(id) ON DELETE CASCADE
+    CONSTRAINT profiles_pkey PRIMARY KEY (uid)
+    -- No foreign key constraint - profiles is independent
 );
 
 -- Create provider_links table
@@ -46,18 +57,6 @@ CREATE TABLE IF NOT EXISTS public.source_data (
         REFERENCES public.profiles(uid) ON DELETE CASCADE
 );
 
--- Create user_accounts table for mapping external auth IDs to internal GUIDs
-CREATE TABLE IF NOT EXISTS public.user_accounts (
-    uid UUID NOT NULL DEFAULT uuid_generate_v4(),
-    external_id VARCHAR NOT NULL,
-    provider VARCHAR NOT NULL DEFAULT 'clerk',
-    email VARCHAR NOT NULL,
-    created_at TEXT DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-    updated_at TEXT DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-    CONSTRAINT user_accounts_pkey PRIMARY KEY (uid),
-    CONSTRAINT user_accounts_external_provider_unique UNIQUE (external_id, provider)
-);
-
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.profiles USING btree (email);
 CREATE INDEX IF NOT EXISTS idx_user_accounts_external ON public.user_accounts USING btree (external_id, provider);
@@ -69,6 +68,7 @@ CREATE INDEX IF NOT EXISTS idx_source_data_updated ON public.source_data USING b
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.provider_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.source_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_accounts ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- All tables are admin-only (service role access only)

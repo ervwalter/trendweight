@@ -10,6 +10,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Infrastructure.Configuration;
+using TrendWeight.Infrastructure.Services;
 
 namespace TrendWeight.Infrastructure.Extensions;
 
@@ -75,6 +76,10 @@ public static class ServiceCollectionExtensions
 
         // Register Supabase services
         services.AddSingleton<ISupabaseService, SupabaseService>();
+
+        // Register Clerk services
+        services.AddHttpClient<ClerkService>();
+        services.AddSingleton<IClerkService, ClerkService>();
 
         // Register feature services
         services.AddScoped<IProfileService, ProfileService>();

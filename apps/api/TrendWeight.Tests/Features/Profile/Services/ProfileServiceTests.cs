@@ -7,6 +7,8 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Infrastructure.Auth;
+using TrendWeight.Infrastructure.Services;
 using TrendWeight.Tests.Fixtures;
 
 namespace TrendWeight.Tests.Features.Profile.Services;
@@ -17,6 +19,8 @@ public class ProfileServiceTests : TestBase
     private readonly Mock<ILogger<ProfileService>> _loggerMock;
     private readonly Mock<ISourceDataService> _sourceDataServiceMock;
     private readonly Mock<IProviderLinkService> _providerLinkServiceMock;
+    private readonly Mock<IUserAccountMappingService> _userAccountMappingServiceMock;
+    private readonly Mock<IClerkService> _clerkServiceMock;
     private readonly ProfileService _sut;
 
     public ProfileServiceTests()
@@ -25,12 +29,16 @@ public class ProfileServiceTests : TestBase
         _loggerMock = new Mock<ILogger<ProfileService>>();
         _sourceDataServiceMock = new Mock<ISourceDataService>();
         _providerLinkServiceMock = new Mock<IProviderLinkService>();
+        _userAccountMappingServiceMock = new Mock<IUserAccountMappingService>();
+        _clerkServiceMock = new Mock<IClerkService>();
 
         _sut = new ProfileService(
             _supabaseServiceMock.Object,
             _loggerMock.Object,
             _sourceDataServiceMock.Object,
-            _providerLinkServiceMock.Object);
+            _providerLinkServiceMock.Object,
+            _userAccountMappingServiceMock.Object,
+            _clerkServiceMock.Object);
     }
 
     [Fact]
@@ -315,11 +323,30 @@ public class ProfileServiceTests : TestBase
     }
 
     [Fact]
-    public async Task DeleteAccountAsync_DeletesAuthUserOnly_CascadeHandlesRest()
+    public async Task DeleteAccountAsync_DeletesAllComponents()
     {
         // Arrange
         var userId = Guid.NewGuid();
+        var userAccount = new DbUserAccount
+        {
+            Uid = userId,
+            ExternalId = "clerk_123",
+            Provider = "clerk",
+            Email = "test@example.com"
+        };
+        var profile = CreateTestProfile(userId);
+
+        _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
+            .ReturnsAsync(userAccount);
+        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123"))
+            .ReturnsAsync(true);
         _supabaseServiceMock.Setup(x => x.DeleteAuthUserAsync(userId))
+            .ReturnsAsync(true);
+        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
+            .ReturnsAsync(profile);
+        _supabaseServiceMock.Setup(x => x.DeleteAsync(profile))
+            .Returns(Task.CompletedTask);
+        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId))
             .ReturnsAsync(true);
 
         // Act
@@ -327,28 +354,47 @@ public class ProfileServiceTests : TestBase
 
         // Assert
         result.Should().BeTrue();
+        _clerkServiceMock.Verify(x => x.DeleteUserAsync("clerk_123"), Times.Once);
         _supabaseServiceMock.Verify(x => x.DeleteAuthUserAsync(userId), Times.Once);
-        // Verify that manual deletion methods are NOT called (CASCADE DELETE handles it)
-        _sourceDataServiceMock.Verify(x => x.DeleteAllSourceDataAsync(It.IsAny<Guid>()), Times.Never);
-        _providerLinkServiceMock.Verify(x => x.DeleteAllProviderLinksAsync(It.IsAny<Guid>()), Times.Never);
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<DbProfile>()), Times.Never);
-        _supabaseServiceMock.Verify(x => x.GetByIdAsync<DbProfile>(It.IsAny<Guid>()), Times.Never);
+        _supabaseServiceMock.Verify(x => x.GetByIdAsync<DbProfile>(userId), Times.Once);
+        _supabaseServiceMock.Verify(x => x.DeleteAsync(profile), Times.Once);
+        _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Once);
     }
 
     [Fact]
-    public async Task DeleteAccountAsync_WhenAuthDeletionFails_ReturnsFalse()
+    public async Task DeleteAccountAsync_WhenAuthDeletionFails_ContinuesWithOtherDeletions()
     {
         // Arrange
         var userId = Guid.NewGuid();
+        var userAccount = new DbUserAccount
+        {
+            Uid = userId,
+            ExternalId = "clerk_123",
+            Provider = "clerk",
+            Email = "test@example.com"
+        };
+
+        _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
+            .ReturnsAsync(userAccount);
+        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123"))
+            .ReturnsAsync(true);
         _supabaseServiceMock.Setup(x => x.DeleteAuthUserAsync(userId))
-            .ReturnsAsync(false);
+            .ReturnsAsync(false); // Supabase auth deletion fails
+        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
+            .ReturnsAsync(CreateTestProfile(userId));
+        _supabaseServiceMock.Setup(x => x.DeleteAsync(It.IsAny<DbProfile>()))
+            .Returns(Task.CompletedTask);
+        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId))
+            .ReturnsAsync(true);
 
         // Act
         var result = await _sut.DeleteAccountAsync(userId);
 
         // Assert
-        result.Should().BeFalse();
+        result.Should().BeTrue(); // Should still succeed because other deletions worked
         _supabaseServiceMock.Verify(x => x.DeleteAuthUserAsync(userId), Times.Once);
+        _clerkServiceMock.Verify(x => x.DeleteUserAsync("clerk_123"), Times.Once);
+        _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Once);
     }
 
     [Fact]

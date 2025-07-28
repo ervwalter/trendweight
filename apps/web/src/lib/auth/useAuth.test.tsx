@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useAuth } from "./useAuth";
 
 // Mock Clerk hooks
@@ -11,6 +11,15 @@ vi.mock("@clerk/clerk-react", () => ({
   useUser: () => mockUseUser(),
   useAuth: () => mockUseClerkAuth(),
   useClerk: () => mockUseClerk(),
+}));
+
+// Mock TanStack Query
+const mockQueryClient = {
+  clear: vi.fn(),
+};
+
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => mockQueryClient,
 }));
 
 describe("useAuth", () => {
@@ -98,5 +107,67 @@ describe("useAuth", () => {
 
     // When fullName is null, it falls back to email address
     expect(result.current.user?.displayName).toBe("test@example.com");
+  });
+
+  it("should clear query cache on sign out", async () => {
+    const mockSignOut = vi.fn();
+    mockUseUser.mockReturnValue({
+      user: {
+        id: "user_123",
+        primaryEmailAddress: { emailAddress: "test@example.com" },
+        fullName: "Test User",
+      },
+      isLoaded: true,
+    });
+    mockUseClerkAuth.mockReturnValue({
+      isSignedIn: true,
+    });
+    mockUseClerk.mockReturnValue({
+      signOut: mockSignOut,
+    });
+
+    const { result } = renderHook(() => useAuth());
+
+    // Call signOut
+    await act(async () => {
+      await result.current.signOut();
+    });
+
+    // Verify Clerk signOut was called with default redirect
+    expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: "/" });
+
+    // Verify query cache was cleared
+    expect(mockQueryClient.clear).toHaveBeenCalled();
+  });
+
+  it("should sign out with custom redirectUrl", async () => {
+    const mockSignOut = vi.fn();
+    mockUseUser.mockReturnValue({
+      user: {
+        id: "user_123",
+        primaryEmailAddress: { emailAddress: "test@example.com" },
+        fullName: "Test User",
+      },
+      isLoaded: true,
+    });
+    mockUseClerkAuth.mockReturnValue({
+      isSignedIn: true,
+    });
+    mockUseClerk.mockReturnValue({
+      signOut: mockSignOut,
+    });
+
+    const { result } = renderHook(() => useAuth());
+
+    // Call signOut with custom redirectUrl
+    await act(async () => {
+      await result.current.signOut("/account-deleted");
+    });
+
+    // Verify Clerk signOut was called with custom redirect
+    expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: "/account-deleted" });
+
+    // Verify query cache was cleared
+    expect(mockQueryClient.clear).toHaveBeenCalled();
   });
 });

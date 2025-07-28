@@ -62,14 +62,6 @@ public class ProfileController : ControllerBase
 
             if (user == null)
             {
-                // First check if the auth user still exists
-                // This handles the case where a user deleted their account but still has a valid JWT
-                var authUserExists = await _supabaseService.AuthUserExistsAsync(userGuid);
-                if (!authUserExists)
-                {
-                    _logger.LogWarning("Auth user no longer exists for UID: {UserId}", userId);
-                    return Unauthorized(new ErrorResponse { Error = "Authentication expired" });
-                }
 
                 // Check for legacy profile migration
                 var migratedProfile = await _legacyMigrationService.CheckAndMigrateIfNeededAsync(userId, userEmail);
@@ -186,18 +178,11 @@ public class ProfileController : ControllerBase
                 return Unauthorized(new ErrorResponse { Error = "User email not found" });
             }
 
-            // Check if the auth user still exists before attempting to create/update profile
+            // Parse the user ID
             if (!Guid.TryParse(userId, out var userGuid))
             {
                 _logger.LogWarning("Invalid user ID format: {UserId}", userId);
                 return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
-            }
-
-            var authUserExists = await _supabaseService.AuthUserExistsAsync(userGuid);
-            if (!authUserExists)
-            {
-                _logger.LogWarning("Auth user no longer exists for UID: {UserId}", userId);
-                return Unauthorized(new ErrorResponse { Error = "Authentication expired" });
             }
 
             // Use the service to update or create the profile

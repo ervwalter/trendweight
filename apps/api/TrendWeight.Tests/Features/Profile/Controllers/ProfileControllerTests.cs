@@ -119,21 +119,22 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetProfile_WhenUserNotFoundAndAuthUserDeleted_ReturnsUnauthorized()
+    public async Task GetProfile_WhenUserNotFound_ReturnsNotFound()
     {
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
-        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(false); // Auth user deleted
+        _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId.ToString(), "test@example.com"))
+            .ReturnsAsync((DbProfile?)null);
 
         // Act
         var result = await _sut.GetProfile();
 
         // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>()
+        result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("Authentication expired");
+            .Which.Error.Should().Be("User not found");
     }
 
     [Fact]
