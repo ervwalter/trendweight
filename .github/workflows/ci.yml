@@ -125,7 +125,7 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
           tags: |
             ${{ steps.meta.outputs.tags }}
-            ${{ startsWith(github.ref, 'refs/tags/v') && steps.meta-do.outputs.tags || '' }}
+            ${{ steps.meta-do.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -134,6 +134,7 @@ jobs:
             VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
             VITE_APPLE_SERVICES_ID=${{ secrets.VITE_APPLE_SERVICES_ID }}
             VITE_TURNSTILE_SITE_KEY=${{ secrets.VITE_TURNSTILE_SITE_KEY }}
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
             BUILD_TIME=${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
             BUILD_COMMIT=${{ github.sha }}
             BUILD_BRANCH=${{ github.ref_name }}
