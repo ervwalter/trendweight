@@ -33,12 +33,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 3.3 Test all protected routes with Clerk authentication
   - [x] 3.4 Verify data loading works with new auth flow
 
-- [ ] 4. Cleanup and Migration
-  - [ ] 4.1 Remove Supabase auth dependencies from frontend
-  - [ ] 4.2 Remove Apple.js script from index.html
-  - [ ] 4.3 Delete unused auth components and files
-  - [ ] 4.4 Update environment variables and configuration
-  - [ ] 4.5 Verify all tests pass with new auth system
+- [x] 4. Cleanup and Migration
+  - [x] 4.1 Remove Supabase auth dependencies from frontend
+  - [x] 4.2 Remove Apple.js script from index.html
+  - [x] 4.3 Delete unused auth components and files
+  - [x] 4.4 Update environment variables and configuration
+  - [x] 4.5 Verify all tests pass with new auth system
 
 - [ ] 5. Documentation and Deployment Prep
   - [ ] 5.1 Update README with Clerk setup instructions
