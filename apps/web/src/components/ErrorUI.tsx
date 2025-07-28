@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { Container } from "./Container";
 import { pageTitle } from "../lib/utils/pageTitle";
 import { Button } from "./ui/Button";
@@ -50,7 +49,7 @@ export function ErrorUI({ error, componentStack }: ErrorUIProps) {
                   Refresh Page
                 </Button>
                 <Button asChild variant="primary">
-                  <Link to="/">Go to Homepage</Link>
+                  <a href="/">Go to Homepage</a>
                 </Button>
                 <a href={mailtoLink}>
                   <Button variant="primary">Email Support</Button>

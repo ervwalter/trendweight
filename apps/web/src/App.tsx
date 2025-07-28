@@ -1,6 +1,6 @@
 import "@bprogress/core/css";
 import { ProgressProvider } from "@bprogress/react";
-import { ClerkLoaded, ClerkProvider } from "@clerk/clerk-react";
+import { ClerkLoaded, ClerkLoading, ClerkProvider } from "@clerk/clerk-react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider } from "@tanstack/react-router";
@@ -58,7 +58,6 @@ const clerkLocalization = {
 };
 
 function App() {
-  console.log("[App] Rendering with Clerk signInFallbackRedirectUrl=/dashboard");
   return (
     <ErrorBoundary>
       <ClerkProvider
@@ -74,6 +73,11 @@ function App() {
             <ProgressProvider color="#eef5ff" height="3px" delay={250} spinnerPosition="top-right">
               <ProgressManager />
               <BackgroundQueryProgress />
+              <ClerkLoading>
+                <div className="flex h-screen items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-gray-400" />
+                </div>
+              </ClerkLoading>
               <ClerkLoaded>
                 <RouterProvider router={router} />
               </ClerkLoaded>
