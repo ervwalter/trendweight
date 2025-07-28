@@ -24,11 +24,11 @@ const clerkAppearance = {
   elements: {
     rootBox: "w-full",
     cardBox: "w-full shadow-none border-none",
-    card: "shadow-none rounded-none",
+    card: "shadow-none rounded-none px-1 pt-2",
     formButtonPrimary: "bg-brand-500 hover:bg-brand-600 text-white font-medium py-2.5 rounded-md",
     logoBox: "hidden", // Hide Clerk logo
     headerTitle: "text-2xl font-bold text-gray-900",
-    socialButtons: "grid-cols-1 gap-2 w-full",
+    socialButtons: "grid-cols-1 gap-2 md:gap-3 w-full pb-2",
     socialButtonsBlockButton: "py-2.5",
     footerAction__signIn: "hidden",
     footer: "[&>div]:border-transparent [&>div]:rounded-xl [&>div]:bg-brand-50 bg-none",
@@ -47,7 +47,9 @@ const clerkAppearance = {
 const clerkLocalization = {
   signIn: {
     start: {
+      title: "Welcome",
       titleCombined: "Welcome",
+      subtitle: "Log in to your account or create a new one",
       subtitleCombined: "Log in to your account or create a new one",
     },
     emailCode: {
@@ -65,7 +67,6 @@ function App() {
         signInFallbackRedirectUrl="/dashboard"
         signUpFallbackRedirectUrl="/dashboard"
         signInUrl="/login"
-        signUpUrl="/login"
         appearance={clerkAppearance}
         localization={clerkLocalization}
       >
