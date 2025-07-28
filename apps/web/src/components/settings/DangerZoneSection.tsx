@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Heading } from "../ui/Heading";
 import { Button } from "../ui/Button";
@@ -8,19 +7,18 @@ import { useAuth } from "../../lib/auth/useAuth";
 
 export function DangerZoneSection() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const navigate = useNavigate();
   const { signOut } = useAuth();
   const deleteAccountMutation = useDeleteAccount();
 
   const handleDeleteAccount = async () => {
+    console.log("[DangerZone] Starting account deletion");
     try {
       await deleteAccountMutation.mutateAsync();
+      console.log("[DangerZone] Account deleted, signing out with redirect to /account-deleted");
 
-      // Sign out the user
-      await signOut();
-
-      // Navigate to success page
-      navigate({ to: "/account-deleted" });
+      // Sign out the user and redirect to account-deleted page
+      await signOut("/account-deleted");
+      console.log("[DangerZone] signOut completed");
     } catch (error) {
       console.error("Failed to delete account:", error);
       // Keep the dialog open to show error state

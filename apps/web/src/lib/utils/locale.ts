@@ -28,6 +28,7 @@ export function shouldUseMetric(locale?: string): boolean {
  */
 export function extractFirstName(fullName?: string | null): string {
   if (!fullName) return "";
+  if (fullName.includes("@")) return "";
 
   // Split by space and take the first part
   const parts = fullName.trim().split(/\s+/);

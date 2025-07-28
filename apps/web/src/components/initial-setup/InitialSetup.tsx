@@ -12,7 +12,7 @@ import { Button } from "../ui/Button";
 
 export function InitialSetup() {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { user } = useAuth();
   const updateProfile = useUpdateProfile();
 
   const {
@@ -32,15 +32,10 @@ export function InitialSetup() {
 
   // Set default first name from auth user
   useEffect(() => {
-    if (session?.user) {
-      const metadata = session.user.user_metadata;
-      if (metadata?.full_name) {
-        setValue("firstName", extractFirstName(metadata.full_name));
-      } else if (metadata?.name) {
-        setValue("firstName", extractFirstName(metadata.name));
-      }
+    if (user?.displayName) {
+      setValue("firstName", extractFirstName(user.displayName));
     }
-  }, [session, setValue]);
+  }, [user, setValue]);
 
   const onSubmit = async (data: ProfileData) => {
     try {

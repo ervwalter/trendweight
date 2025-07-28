@@ -1,5 +1,4 @@
 import { redirect } from "@tanstack/react-router";
-import { supabase } from "../supabase/client";
 
 interface BeforeLoadContext {
   location: {
@@ -7,6 +6,20 @@ interface BeforeLoadContext {
     href: string;
     search: Record<string, unknown>;
   };
+}
+
+declare global {
+  interface Window {
+    Clerk?: {
+      user: {
+        id: string;
+        primaryEmailAddress?: {
+          emailAddress: string;
+        } | null;
+      } | null;
+      loaded: boolean;
+    };
+  }
 }
 
 /**
@@ -20,12 +33,12 @@ interface BeforeLoadContext {
  * })
  */
 export async function requireAuth({ location }: BeforeLoadContext) {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  console.log("[authGuard] requireAuth called for:", location.pathname);
+  const clerk = window.Clerk;
 
-  if (!session) {
-    // Redirect to login with the original destination
+  if (!clerk) {
+    // Clerk not yet initialized, redirect to login
+    console.log("[authGuard] Clerk not initialized, redirecting to login");
     throw redirect({
       to: "/login",
       search: {
@@ -33,4 +46,21 @@ export async function requireAuth({ location }: BeforeLoadContext) {
       },
     });
   }
+
+  // Since we're using ClerkLoaded wrapper, clerk should already be loaded
+  const user = clerk.user;
+  console.log("[authGuard] Clerk user:", user ? `${user.id} (${user.primaryEmailAddress?.emailAddress})` : "null");
+
+  if (!user) {
+    // Redirect to login with the original destination
+    console.log("[authGuard] No user, redirecting to login with from:", location.pathname);
+    throw redirect({
+      to: "/login",
+      search: {
+        from: location.pathname,
+      },
+    });
+  }
+
+  console.log("[authGuard] Auth check passed for:", location.pathname);
 }

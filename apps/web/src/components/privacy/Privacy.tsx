@@ -76,8 +76,12 @@ export function Privacy() {
           {" - "}Hosts the servers that run our application
         </li>
         <li>
+          <ExternalLink href="https://clerk.com/">Clerk</ExternalLink>
+          {" - "}Handles sign-in (email/Google/Microsoft/Apple) securely
+        </li>
+        <li>
           <ExternalLink href="https://supabase.com/">Supabase</ExternalLink>
-          {" - "}Handles sign-in (email/Google/Microsoft/Apple) and stores your data securely
+          {" - "}Stores your weight data and settings securely
         </li>
       </ul>
 

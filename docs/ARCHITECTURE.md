@@ -112,8 +112,14 @@ This approach:
 
 ### Tables
 
+- **user_accounts**: Maps Clerk user IDs to internal GUIDs
+  - `id` (uuid) - Internal user ID (primary key)
+  - `clerk_id` (text) - Clerk user ID (unique)
+  - `email` (text) - User's email address
+  - `created_at`, `updated_at` (text) - ISO 8601 timestamps
+
 - **profiles**: User profiles with settings (UUID primary key)
-  - `id` (uuid) - User's Supabase Auth UID
+  - `id` (uuid) - Internal user ID (foreign key to user_accounts)
   - `profile_data` (jsonb) - User profile information
   - `settings_data` (jsonb) - User settings
   - `created_at`, `updated_at` (text) - ISO 8601 timestamps
@@ -139,33 +145,35 @@ This approach:
 ## Authentication Flow
 
 ### Frontend
-- Uses Supabase Auth with React Context
+- Uses Clerk for authentication with React SDK
+- Custom `useAuth` hook wraps Clerk's authentication hooks
 - Route-level protection using `beforeLoad: requireAuth` from `/lib/auth/authGuard.ts`
 - TanStack Router integration for clean, declarative route protection
 - Redirects to `/login` with `from` parameter to preserve destination
-- Supports email links and social logins (Google, Microsoft, Apple)
+- Supports email OTP and social logins (Google, Microsoft, Apple)
 
 ### Backend
-- Validates Supabase JWTs using JWT secret
-- `SupabaseAuthenticationHandler` in Infrastructure/Auth
+- Validates Clerk JWTs using JWKS endpoint
+- `ClerkAuthenticationHandler` in Infrastructure/Auth
+- User mapping between Clerk IDs and internal GUIDs via `user_accounts` table
 - All API endpoints require authentication except:
   - `/api/health` - Health check endpoint
   - `/api/withings/callback` - OAuth callback handler
+  - `/api/fitbit/callback` - OAuth callback handler
 - Provider OAuth tokens stored encrypted in database
 
 ## Frontend Route Structure
 
 ### Public Routes
 - `/` - Home page with marketing content
-- `/login` - Authentication page with email and social login options
-- `/check-email` - Email verification prompt
-- `/auth/verify` - Email link verification handler
+- `/login` - Authentication page with Clerk SignIn component
 - `/about` - About page
 - `/faq` - Frequently asked questions
 - `/privacy` - Privacy policy
 - `/tipjar` - Donation options
 - `/build` - Build/deployment information
 - `/demo` - Demo dashboard with sample data
+- `/account-deleted` - Account deletion confirmation
 
 ### Protected Routes (require authentication)
 - `/dashboard` - Main dashboard showing measurement data and charts
@@ -471,9 +479,11 @@ The containerized application:
 - Check `logs/` directory for startup errors
 
 ### Authentication Issues
-- Verify Supabase JWT secret matches in backend config
+- Verify Clerk secret key and authority URL in backend config
+- Ensure email claim is configured in Clerk session token settings
 - Frontend API calls are proxied through Vite in development
 - JWT tokens have 5-minute clock skew tolerance
+- Check user_accounts table for proper ID mapping
 - Rate limiting may reject excessive requests (>100/minute)
 
 ### Database Issues

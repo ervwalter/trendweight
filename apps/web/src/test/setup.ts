@@ -49,35 +49,3 @@ if (!global.CSS) {
   global.CSS = {} as any;
 }
 global.CSS.supports = vi.fn(() => false);
-
-// Mock Supabase client
-vi.mock("@/lib/supabase/client", () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
-      getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
-      signInWithEmail: vi.fn().mockResolvedValue({ data: { user: null, session: null }, error: null }),
-      signInWithOAuth: vi.fn().mockResolvedValue({ data: { provider: null, url: null }, error: null }),
-      signInWithOtp: vi.fn().mockResolvedValue({ data: { user: null, session: null }, error: null }),
-      signOut: vi.fn().mockResolvedValue({ error: null }),
-      onAuthStateChange: vi.fn(() => ({
-        data: { subscription: { unsubscribe: vi.fn() } },
-      })),
-    },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-        eq: vi.fn(() => ({
-          single: vi.fn().mockResolvedValue({ data: null, error: null }),
-        })),
-      })),
-      insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-      update: vi.fn(() => ({
-        eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-      })),
-      delete: vi.fn(() => ({
-        eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-      })),
-    })),
-  },
-}));

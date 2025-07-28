@@ -121,12 +121,6 @@ public class TestSupabaseService : ISupabaseService
         return Task.FromResult(true);
     }
 
-    public Task<bool> AuthUserExistsAsync(Guid userId)
-    {
-        // For test purposes, assume auth user exists
-        return Task.FromResult(true);
-    }
-
     private static object? GetIdProperty(object obj)
     {
         var prop = obj.GetType().GetProperty("Uid") ?? obj.GetType().GetProperty("Id");

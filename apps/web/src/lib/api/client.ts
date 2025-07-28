@@ -1,5 +1,3 @@
-import { supabase } from "../supabase/client";
-
 export class ApiError extends Error {
   status: number;
   errorCode?: string;
@@ -15,11 +13,18 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
-  // Get the current session's access token if authenticated
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const token = session?.access_token || null;
+  // Get the current session's access token from Clerk if authenticated
+  let token: string | null = null;
+
+  // @ts-expect-error - Clerk may not be initialized yet
+  if (window.Clerk?.session) {
+    try {
+      // @ts-expect-error - Clerk session API
+      token = await window.Clerk.session.getToken();
+    } catch (error) {
+      console.error("Failed to get Clerk token:", error);
+    }
+  }
 
   // Use a relative path for the API base URL to work with the Vite proxy
   const apiBaseUrl = "/api";
@@ -29,7 +34,7 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
     ...((options?.headers as Record<string, string>) || {}),
   };
 
-  // Add Authorization header with Supabase JWT token if available
+  // Add Authorization header with Clerk JWT token if available
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }

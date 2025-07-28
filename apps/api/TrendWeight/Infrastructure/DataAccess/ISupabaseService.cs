@@ -14,5 +14,4 @@ public interface ISupabaseService
     Task DeleteAsync<T>(T model) where T : BaseModel, new();
     Task<List<T>> QueryAsync<T>(Action<ISupabaseTable<T, RealtimeChannel>> query) where T : BaseModel, new();
     Task<bool> DeleteAuthUserAsync(Guid userId);
-    Task<bool> AuthUserExistsAsync(Guid userId);
 }

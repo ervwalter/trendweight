@@ -2,21 +2,24 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "../../test/mocks/server";
 import { apiRequest, ApiError } from "./client";
-import { supabase } from "../supabase/client";
 import { apiHandlers } from "../../test/mocks/handlers";
 
-// Mock the supabase client
-vi.mock("../supabase/client", () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn(),
-    },
-  },
-}));
+// Mock window.Clerk
+const mockClerk = {
+  user: null as any,
+  loaded: true,
+  session: null as any,
+};
+
+// @ts-expect-error - Mock window.Clerk for testing
+global.window = {
+  Clerk: mockClerk,
+};
 
 describe("api/client with MSW", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockClerk.session = null;
   });
 
   describe("ApiError", () => {
@@ -45,10 +48,7 @@ describe("api/client with MSW", () => {
     it("should make successful request without authentication", async () => {
       const mockResponse = { data: "test" };
 
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       server.use(
         http.get("/api/test", () => {
@@ -65,25 +65,9 @@ describe("api/client with MSW", () => {
       const mockToken = "test-jwt-token";
       const mockResponse = { data: "authenticated" };
 
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: {
-          session: {
-            access_token: mockToken,
-            token_type: "bearer",
-            expires_in: 3600,
-            expires_at: 1234567890,
-            refresh_token: "refresh-token",
-            user: {
-              id: "123",
-              app_metadata: {},
-              user_metadata: {},
-              aud: "authenticated",
-              created_at: "",
-            },
-          },
-        },
-        error: null,
-      });
+      mockClerk.session = {
+        getToken: vi.fn().mockResolvedValue(mockToken),
+      };
 
       // Use MSW to verify the authorization header
       let receivedHeaders: Headers | undefined;
@@ -96,14 +80,32 @@ describe("api/client with MSW", () => {
 
       await apiRequest("/protected");
 
+      expect(mockClerk.session.getToken).toHaveBeenCalled();
       expect(receivedHeaders?.get("Authorization")).toBe(`Bearer ${mockToken}`);
     });
 
+    it("should handle getToken failure gracefully", async () => {
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      mockClerk.session = {
+        getToken: vi.fn().mockRejectedValue(new Error("Token error")),
+      };
+
+      server.use(
+        http.get("/api/test", () => {
+          return HttpResponse.json({ data: "test" });
+        }),
+      );
+
+      const result = await apiRequest("/test");
+
+      expect(result).toEqual({ data: "test" });
+      expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to get Clerk token:", expect.any(Error));
+
+      consoleErrorSpy.mockRestore();
+    });
+
     it("should merge custom headers with defaults", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       let receivedHeaders: Headers | undefined;
       server.use(
@@ -124,10 +126,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should pass through request options", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       let receivedBody: unknown;
       let receivedMethod: string | undefined;
@@ -150,10 +149,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should throw ApiError on failed request with JSON error response", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       server.use(
         http.get("/api/test", () => {
@@ -183,10 +179,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle non-JSON error response", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       server.use(
         http.get("/api/test", () => {
@@ -212,10 +205,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 401 unauthorized errors", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       server.use(apiHandlers.unauthorized("/api/protected"));
 
@@ -230,25 +220,9 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 403 forbidden errors", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: {
-          session: {
-            access_token: "valid-token",
-            token_type: "bearer",
-            expires_in: 3600,
-            expires_at: 1234567890,
-            refresh_token: "refresh-token",
-            user: {
-              id: "123",
-              app_metadata: {},
-              user_metadata: {},
-              aud: "authenticated",
-              created_at: "",
-            },
-          },
-        },
-        error: null,
-      });
+      mockClerk.session = {
+        getToken: vi.fn().mockResolvedValue("valid-token"),
+      };
 
       server.use(apiHandlers.forbidden("/api/admin"));
 
@@ -262,10 +236,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 404 not found errors", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       server.use(apiHandlers.notFound("/api/missing"));
 
@@ -280,10 +251,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 500 server errors with retry flag", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       server.use(
         http.get("/api/test", () => {
@@ -310,10 +278,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle network errors", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       server.use(apiHandlers.networkError("/api/test"));
 
@@ -321,10 +286,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle different HTTP methods", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       // Test POST
       server.use(
@@ -364,10 +326,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle empty response body", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       server.use(
         http.get("/api/test", () => {
@@ -380,10 +339,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle complex nested paths", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       server.use(
         http.get("/api/users/123/settings/preferences", () => {
@@ -396,10 +352,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle query parameters in path", async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: null },
-        error: null,
-      });
+      mockClerk.session = null;
 
       let receivedUrl: URL | undefined;
       server.use(
