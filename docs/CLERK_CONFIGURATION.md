@@ -54,9 +54,6 @@ Clerk__Authority=https://your-instance.clerk.accounts.dev
 
 # Your Clerk secret key (found in Clerk Dashboard > API Keys)
 Clerk__SecretKey=sk_test_xxxxxxxxxxxxx
-
-# Optional: Override JWKS URL if needed
-Clerk__JwksUrl=https://your-instance.clerk.accounts.dev/.well-known/jwks.json
 ```
 
 ## Session Configuration

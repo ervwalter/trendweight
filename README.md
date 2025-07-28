@@ -80,7 +80,7 @@ For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.m
    VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
    
    # Backend (ASP.NET Core)
-   Clerk__Authority=https://your-clerk-domain.clerk.accounts.dev
+   Clerk__Authority=https://your-instance.clerk.accounts.dev
    Clerk__SecretKey=your_clerk_secret_key
    ```
 

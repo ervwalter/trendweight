@@ -11,6 +11,7 @@ public class ClerkTokenService : IClerkTokenService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<ClerkTokenService> _logger;
+    private readonly string _authority;
     private readonly string _jwksUrl;
     private JsonWebKeySet? _cachedKeySet;
     private DateTime _cacheExpiry = DateTime.MinValue;
@@ -23,10 +24,11 @@ public class ClerkTokenService : IClerkTokenService
     {
         _httpClient = httpClientFactory.CreateClient();
         _logger = logger;
-        _jwksUrl = options.Value.Clerk.JwksUrl;
+        _authority = options.Value.Clerk.Authority;
+        _jwksUrl = $"{_authority}/.well-known/jwks.json";
     }
 
-    public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token)
+    public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token, string? requestOrigin = null)
     {
         try
         {
@@ -37,13 +39,26 @@ public class ClerkTokenService : IClerkTokenService
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKeys = keySet.Keys,
-                ValidateIssuer = false, // Clerk doesn't use issuer validation
-                ValidateAudience = false, // Clerk doesn't use audience validation
+                ValidateIssuer = true,
+                ValidIssuer = _authority,
+                ValidateAudience = false, // Clerk uses 'azp' claim, not standard 'aud'
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.FromMinutes(5)
             };
 
             var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+
+            // Validate azp claim if request origin is provided
+            if (!string.IsNullOrEmpty(requestOrigin))
+            {
+                var azp = principal.FindFirst("azp")?.Value;
+                if (!string.IsNullOrEmpty(azp) && azp != requestOrigin)
+                {
+                    _logger.LogWarning("Token azp claim '{Azp}' does not match request origin '{Origin}'", azp, requestOrigin);
+                    return null;
+                }
+            }
+
             return principal;
         }
         catch (Exception ex)

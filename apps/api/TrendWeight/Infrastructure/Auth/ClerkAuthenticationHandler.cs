@@ -48,8 +48,12 @@ public class ClerkAuthenticationHandler : AuthenticationHandler<AuthenticationSc
 
         try
         {
+            // Build the request origin from the current request
+            var request = Context.Request;
+            var requestOrigin = $"{request.Scheme}://{request.Host}";
+
             // Validate the Clerk JWT
-            var claimsPrincipal = await _clerkTokenService.ValidateTokenAsync(token);
+            var claimsPrincipal = await _clerkTokenService.ValidateTokenAsync(token, requestOrigin);
             if (claimsPrincipal == null)
             {
                 return AuthenticateResult.Fail("Invalid token");
