@@ -4,7 +4,6 @@ import { ClerkLoaded, ClerkProvider } from "@clerk/clerk-react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastContextProvider } from "./components/ui/ToastProvider";
 import { BackgroundQueryProgress } from "./lib/progress/BackgroundQueryProgress";
@@ -77,7 +76,6 @@ function App() {
               <BackgroundQueryProgress />
               <ClerkLoaded>
                 <RouterProvider router={router} />
-                <TanStackRouterDevtools router={router} position="bottom-left" />
               </ClerkLoaded>
             </ProgressProvider>
             <ReactQueryDevtools initialIsOpen={false} />
