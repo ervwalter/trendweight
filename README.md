@@ -13,7 +13,7 @@ A web application for tracking weight trends by integrating with smart scales fr
 - 📊 Weight trend visualization with moving averages
 - 🔄 Automatic sync with Withings and Fitbit smart scales
 - 📱 Responsive design for mobile and desktop
-- 🔐 Secure authentication with Supabase Auth and Cloudflare Turnstile
+- 🔐 Secure authentication with Clerk
 - 📈 Goal tracking and progress monitoring
 - 🌍 Metric and imperial unit support
 - 🔗 Legacy user migration from classic TrendWeight
@@ -23,7 +23,7 @@ A web application for tracking weight trends by integrating with smart scales fr
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS
 - **Backend**: C# ASP.NET Core Web API
 - **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth with JWT
+- **Authentication**: Clerk with JWT
 
 For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -33,7 +33,8 @@ For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.m
 
 - [Node.js](https://nodejs.org/) (v18 or higher)
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- A Supabase project (for database and authentication)
+- A Supabase project (for database)
+- A Clerk account (for authentication)
 
 ### Quick Start
 
@@ -63,6 +64,29 @@ For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.m
    ```
 
    This starts both the frontend (http://localhost:5173) and backend (http://localhost:5199) servers.
+
+### Clerk Setup
+
+1. Create a Clerk application at https://clerk.com
+
+2. Configure the following social login providers in Clerk Dashboard:
+   - Google OAuth
+   - Microsoft OAuth
+   - Apple OAuth
+
+3. Set the following environment variables in your `.env` file:
+   ```
+   # Frontend (Vite)
+   VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+   
+   # Backend (ASP.NET Core)
+   Clerk__Authority=https://your-clerk-domain.clerk.accounts.dev
+   Clerk__SecretKey=your_clerk_secret_key
+   ```
+
+4. Configure allowed redirect URLs in Clerk:
+   - Development: `http://localhost:5173/*`
+   - Production: `https://yourdomain.com/*`
 
 ## Development
 

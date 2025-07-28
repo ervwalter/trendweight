@@ -28,7 +28,10 @@ export function TipJar() {
             Hosting via <ExternalLink href="https://www.digitalocean.com">Digital Ocean</ExternalLink>: <strong>$25</strong>/month
           </li>
           <li>
-            Database and authentication via <ExternalLink href="https://supabase.com">Supabase</ExternalLink>: <strong>$25</strong>/month
+            Database via <ExternalLink href="https://supabase.com">Supabase</ExternalLink>: <strong>$25</strong>/month
+          </li>
+          <li>
+            Authentication via <ExternalLink href="https://clerk.com">Clerk</ExternalLink>: <strong>$25</strong>/month
           </li>
           <li>
             Analytics via <ExternalLink href="https://plausible.io">Plausible</ExternalLink>: <strong>~$10</strong>/month
@@ -36,7 +39,7 @@ export function TipJar() {
         </ul>
 
         <p>
-          In total, my monthly expenses are <strong>$60</strong>/month.
+          In total, my monthly expenses are <strong>$85</strong>/month.
         </p>
 
         <p>

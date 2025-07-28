@@ -12,11 +12,10 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.2 Update main.tsx to wrap app with ClerkProvider
   - [x] 1.3 Create new useAuth hook wrapping Clerk's hooks
   - [x] 1.4 Update Header component to use new auth state
-  - [ ] 1.5 Update Landing/Home page component for auth state
+  - [x] 1.5 Update Landing/Home page component for auth state
   - [x] 1.6 Update login route and create new Login component with Clerk SignIn
   - [x] 1.7 Remove auth callback routes (verify, apple callback)
-  - [ ] 1.8 Verify all anonymous UI flows work correctly
-        ⚠️ Note: Many components still reference old Supabase auth methods and need updating
+  - [x] 1.8 Verify all anonymous UI flows work correctly
 
 - [x] 2. Backend JWT Validation Support
   - [x] 2.1 Create user_accounts database table and update schema files
@@ -41,8 +40,8 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 4.5 Verify all tests pass with new auth system
 
 - [ ] 5. Documentation and Deployment Prep
-  - [ ] 5.1 Update README with Clerk setup instructions
-  - [ ] 5.2 Document required Clerk configuration settings
+  - [x] 5.1 Update README with Clerk setup instructions
+  - [x] 5.2 Document required Clerk configuration settings
   - [ ] 5.3 Create deployment checklist for production migration
   - [ ] 5.4 Update ARCHITECTURE.md with new auth flow
   - [ ] 5.5 Verify all integration tests pass
