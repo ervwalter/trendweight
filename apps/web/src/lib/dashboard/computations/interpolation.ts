@@ -40,7 +40,8 @@ export function interpolateWeightMeasurements(sourceMeasurements: SourceMeasurem
   }
 
   // Add in the missing days and re-sort
-  return [...sortedMeasurements, ...missingDays].toSorted((a, b) => a.date.toString().localeCompare(b.date.toString()));
+  // Use sort() instead of toSorted() for better browser compatibility
+  return [...sortedMeasurements, ...missingDays].sort((a, b) => a.date.toString().localeCompare(b.date.toString()));
 }
 
 /**
@@ -84,5 +85,6 @@ export function interpolateFatMeasurements(fatSourceMeasurements: SourceMeasurem
     previous = currentFat;
   }
 
-  return [...sortedMeasurements, ...missingFatDays].toSorted((a, b) => a.date.toString().localeCompare(b.date.toString()));
+  // Use sort() instead of toSorted() for better browser compatibility
+  return [...sortedMeasurements, ...missingFatDays].sort((a, b) => a.date.toString().localeCompare(b.date.toString()));
 }

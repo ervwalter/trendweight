@@ -91,5 +91,6 @@ export function computeFatTrends(fatSourceMeasurements: SourceMeasurement[], mea
   }
 
   // Combine original measurements with additional ones and re-sort
-  return [...measurements, ...additionalMeasurements].toSorted((a, b) => a.date.toString().localeCompare(b.date.toString()));
+  // Use sort() instead of toSorted() for better browser compatibility
+  return [...measurements, ...additionalMeasurements].sort((a, b) => a.date.toString().localeCompare(b.date.toString()));
 }
