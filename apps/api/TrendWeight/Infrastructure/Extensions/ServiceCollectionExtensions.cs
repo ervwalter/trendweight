@@ -16,32 +16,6 @@ namespace TrendWeight.Infrastructure.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-
-    public static IServiceCollection AddSupabaseAuthentication(
-        this IServiceCollection services,
-        IConfiguration configuration)
-    {
-        // Configure app options (will be used by authentication handler)
-        services.Configure<AppOptions>(configuration);
-
-        // Add token service
-        services.AddSingleton<ISupabaseTokenService, SupabaseTokenService>();
-
-        // Configure authentication - Supabase only
-        services.AddAuthentication("Supabase")
-            .AddScheme<SupabaseAuthenticationSchemeOptions, SupabaseAuthenticationHandler>("Supabase", null);
-
-        // Configure authorization
-        services.AddAuthorization(options =>
-        {
-            options.DefaultPolicy = new AuthorizationPolicyBuilder()
-                .RequireAuthenticatedUser()
-                .Build();
-        });
-
-        return services;
-    }
-
     public static IServiceCollection AddClerkAuthentication(
         this IServiceCollection services,
         IConfiguration configuration)

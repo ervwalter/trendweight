@@ -82,7 +82,6 @@ public class ProfileControllerTests : TestBase
         var migratedProfile = CreateTestProfile(userId);
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
-        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(true); // Auth user exists
         _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId.ToString(), "test@example.com"))
             .ReturnsAsync(migratedProfile);
 
@@ -105,7 +104,6 @@ public class ProfileControllerTests : TestBase
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
-        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(true); // Auth user exists
         _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId.ToString(), "test@example.com"))
             .ReturnsAsync((DbProfile?)null);
 
@@ -366,7 +364,6 @@ public class ProfileControllerTests : TestBase
         updatedProfile.Profile.UseMetric = request.UseMetric.Value;
 
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(true); // Auth user exists
         _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request))
             .ReturnsAsync(updatedProfile);
 
@@ -424,7 +421,6 @@ public class ProfileControllerTests : TestBase
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
         var request = new UpdateProfileRequest { FirstName = "Test" };
-        _supabaseServiceMock.Setup(x => x.AuthUserExistsAsync(userId)).ReturnsAsync(true); // Auth user exists
         _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()))
             .ThrowsAsync(new Exception("Database error"));
 

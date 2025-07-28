@@ -217,42 +217,4 @@ public class SupabaseService : ISupabaseService
             return false;
         }
     }
-
-    public async Task<bool> AuthUserExistsAsync(Guid userId)
-    {
-        try
-        {
-            // Supabase Auth Admin API endpoint for getting a user
-            var url = $"{_config.Url}/auth/v1/admin/users/{userId}";
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Add("apikey", _config.ServiceKey);
-            request.Headers.Add("Authorization", $"Bearer {_config.ServiceKey}");
-
-            using var httpClient = _httpClientFactory.CreateClient();
-            var response = await httpClient.SendAsync(request);
-
-            if (response.IsSuccessStatusCode)
-            {
-                _logger.LogDebug("Auth user {UserId} exists", userId);
-                return true;
-            }
-
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                _logger.LogDebug("Auth user {UserId} does not exist", userId);
-                return false;
-            }
-
-            var errorContent = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning("Unexpected response checking auth user {UserId}. Status: {StatusCode}, Error: {Error}",
-                userId, response.StatusCode, errorContent);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking if auth user {UserId} exists", userId);
-            return false;
-        }
-    }
 }

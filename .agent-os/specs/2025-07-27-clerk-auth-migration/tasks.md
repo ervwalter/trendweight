@@ -16,7 +16,7 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.6 Update login route and create new Login component with Clerk SignIn
   - [x] 1.7 Remove auth callback routes (verify, apple callback)
   - [ ] 1.8 Verify all anonymous UI flows work correctly
-  ⚠️ Note: Many components still reference old Supabase auth methods and need updating
+        ⚠️ Note: Many components still reference old Supabase auth methods and need updating
 
 - [x] 2. Backend JWT Validation Support
   - [x] 2.1 Create user_accounts database table and update schema files
@@ -37,9 +37,8 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [ ] 4.1 Remove Supabase auth dependencies from frontend
   - [ ] 4.2 Remove Apple.js script from index.html
   - [ ] 4.3 Delete unused auth components and files
-  - [ ] 4.4 Create migration script for existing users
-  - [ ] 4.5 Update environment variables and configuration
-  - [ ] 4.6 Verify all tests pass with new auth system
+  - [ ] 4.4 Update environment variables and configuration
+  - [ ] 4.5 Verify all tests pass with new auth system
 
 - [ ] 5. Documentation and Deployment Prep
   - [ ] 5.1 Update README with Clerk setup instructions
