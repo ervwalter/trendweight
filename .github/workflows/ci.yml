@@ -130,10 +130,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
-            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
-            VITE_APPLE_SERVICES_ID=${{ secrets.VITE_APPLE_SERVICES_ID }}
-            VITE_TURNSTILE_SITE_KEY=${{ secrets.VITE_TURNSTILE_SITE_KEY }}
             VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
             BUILD_TIME=${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
             BUILD_COMMIT=${{ github.sha }}

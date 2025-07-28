@@ -324,18 +324,19 @@ The app uses @bprogress/react for progress indication:
 ### Frontend (.env.local)
 ```
 VITE_API_URL=http://localhost:5199
-VITE_SUPABASE_URL=https://[project-ref].supabase.co
-VITE_SUPABASE_ANON_KEY=[anon-key]
+VITE_CLERK_PUBLISHABLE_KEY=[clerk-publishable-key]
 ```
 
 ### Backend (appsettings.Development.json)
 ```json
 {
+  "Clerk": {
+    "Authority": "https://[clerk-domain].clerk.accounts.dev",
+    "SecretKey": "sk_test_[clerk-secret-key]"
+  },
   "Supabase": {
     "Url": "https://[project-ref].supabase.co",
-    "AnonKey": "[anon-key]",
-    "ServiceKey": "[service-key]",
-    "JwtSecret": "[jwt-secret]"
+    "ServiceKey": "[service-key]"
   },
   "Withings": {
     "ClientId": "[client-id]",
@@ -380,9 +381,9 @@ The `/build` route displays build metadata injected during the Docker build proc
 The project includes a multi-stage Dockerfile for production deployment:
 
 #### Build Stages
-1. **Frontend Build** (node:20-alpine)
+1. **Frontend Build** (node:22-alpine)
    - Installs frontend dependencies and builds Vite app
-   - Accepts build args for Supabase configuration
+   - Accepts build args for Clerk configuration
    - Outputs static files to dist/
 
 2. **Backend Build** (mcr.microsoft.com/dotnet/sdk:9.0)
@@ -405,8 +406,7 @@ npm run docker:run
 
 # Manual build with specific args
 docker build \
-  --build-arg VITE_SUPABASE_URL=<url> \
-  --build-arg VITE_SUPABASE_ANON_KEY=<key> \
+  --build-arg VITE_CLERK_PUBLISHABLE_KEY=<key> \
   -t trendweight:local .
 ```
 
@@ -436,12 +436,11 @@ The `.github/workflows/ci.yml` workflow runs on all branches and provides:
   - Branch name for feature branches
   - PR number for pull requests
   - SHA prefix for commit tracking
-- Build args injected from GitHub secrets for Supabase config
+- Build args injected from GitHub secrets for Clerk config
 - DigitalOcean registry enables auto-deploy on their App Platform
 
 #### Required GitHub Secrets
-- `VITE_SUPABASE_URL` - Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `VITE_CLERK_PUBLISHABLE_KEY` - Clerk publishable key
 - `DIGITALOCEAN_ACCESS_TOKEN` - DigitalOcean API token with registry write access
 - `DIGITALOCEAN_REGISTRY_NAME` - Your DigitalOcean registry name (e.g., "your-registry-name")
 

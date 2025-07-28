@@ -8,10 +8,7 @@ set +a
 
 # Build Docker image with all necessary build args
 docker build \
-  --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
-  --build-arg VITE_SUPABASE_ANON_KEY="$VITE_SUPABASE_ANON_KEY" \
-  --build-arg VITE_APPLE_SERVICES_ID="$VITE_APPLE_SERVICES_ID" \
-  --build-arg VITE_TURNSTILE_SITE_KEY="$VITE_TURNSTILE_SITE_KEY" \
+  --build-arg VITE_CLERK_PUBLISHABLE_KEY="$VITE_CLERK_PUBLISHABLE_KEY" \
   --build-arg BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
   --build-arg BUILD_COMMIT="$(git rev-parse HEAD)" \
   --build-arg BUILD_BRANCH="$(git rev-parse --abbrev-ref HEAD)" \
