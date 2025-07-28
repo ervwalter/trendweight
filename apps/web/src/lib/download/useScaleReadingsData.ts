@@ -27,10 +27,12 @@ export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolea
       // Single provider data
       const providerData = apiSourceData.find((d) => d.source === viewType);
       if (providerData?.measurements) {
+        // Apply conversion factor for non-metric users
+        const conversionFactor = dashboardData.profile.useMetric ? 1 : 2.20462262;
         data = providerData.measurements.map((m) => ({
           date: LocalDate.parse(m.date),
           time: m.time,
-          weight: m.weight || undefined,
+          weight: m.weight ? m.weight * conversionFactor : undefined,
           fatRatio: m.fatRatio,
           provider: viewType,
         }));
@@ -51,7 +53,7 @@ export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolea
     });
 
     return data;
-  }, [viewType, apiSourceData, dashboardData.measurements, sortNewestFirst]);
+  }, [viewType, apiSourceData, dashboardData.measurements, dashboardData.profile.useMetric, sortNewestFirst]);
 
   return {
     readings,

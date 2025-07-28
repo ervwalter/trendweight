@@ -79,6 +79,7 @@ describe("useScaleReadingsData", () => {
     profile: {
       name: "Test User",
       email: "test@example.com",
+      useMetric: true, // Set to true so tests expect kg values
     },
   };
 
@@ -127,6 +128,7 @@ describe("useScaleReadingsData", () => {
       expect(result.current.profile).toEqual({
         name: "Test User",
         email: "test@example.com",
+        useMetric: true,
       });
     });
   });
