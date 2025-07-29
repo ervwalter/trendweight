@@ -54,6 +54,13 @@ const percentDeltaFormatter = Intl.NumberFormat([], {
   signDisplay: "always",
 });
 
+const metricPlannedFormatter = Intl.NumberFormat([], {
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+  style: "unit",
+  unit: "kilogram",
+});
+
 interface FormatOptions {
   type: Mode;
   metric?: boolean;
@@ -74,6 +81,14 @@ export const formatWeight = (weight: number, metric: boolean, sign = false) => {
     } else {
       return imperialFormatter.format(weight);
     }
+  }
+};
+
+export const formatPlannedWeight = (weight: number, metric: boolean) => {
+  if (metric) {
+    return metricPlannedFormatter.format(weight);
+  } else {
+    return imperialFormatter.format(weight);
   }
 };
 

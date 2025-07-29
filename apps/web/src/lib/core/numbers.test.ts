@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatWeight, formatPercent, formatNumber, formatMeasurement } from "./numbers";
+import { formatWeight, formatPercent, formatNumber, formatMeasurement, formatPlannedWeight } from "./numbers";
 
 describe("numbers", () => {
   describe("formatWeight", () => {
@@ -181,6 +181,26 @@ describe("numbers", () => {
         sign: true,
       });
       expect(result).toMatch(/\+2\.5.*%/);
+    });
+  });
+
+  describe("formatPlannedWeight", () => {
+    it("should format metric planned weights with proper precision", () => {
+      expect(formatPlannedWeight(0.25, true)).toMatch(/0\.25.*kg/i);
+      expect(formatPlannedWeight(0.75, true)).toMatch(/0\.75.*kg/i);
+      expect(formatPlannedWeight(1.0, true)).toMatch(/1.*kg/i);
+      expect(formatPlannedWeight(0.5, true)).toMatch(/0\.5.*kg/i);
+    });
+
+    it("should format imperial planned weights normally", () => {
+      expect(formatPlannedWeight(0.5, false)).toMatch(/0\.5.*lb/i);
+      expect(formatPlannedWeight(1.5, false)).toMatch(/1\.5.*lb/i);
+      expect(formatPlannedWeight(2.0, false)).toMatch(/2\.0.*lb/i);
+    });
+
+    it("should handle zero values", () => {
+      expect(formatPlannedWeight(0, true)).toMatch(/0.*kg/i);
+      expect(formatPlannedWeight(0, false)).toMatch(/0\.0.*lb/i);
     });
   });
 });

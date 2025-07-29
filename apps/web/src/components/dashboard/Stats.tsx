@@ -1,7 +1,7 @@
 import { ChronoUnit, LocalDate, Period } from "@js-joda/core";
 import { shortDate } from "../../lib/core/dates";
 import type { Measurement } from "../../lib/core/interfaces";
-import { formatNumber, formatWeight } from "../../lib/core/numbers";
+import { formatNumber, formatWeight, formatPlannedWeight } from "../../lib/core/numbers";
 import { useDashboardData } from "../../lib/dashboard/hooks";
 import { Heading } from "../ui/Heading";
 
@@ -20,9 +20,11 @@ const Stats = () => {
   const distanceToGoal = calculateDistanceToGoal(measurements, useMetric, goalWeight);
   const dateOfGoal = calculateDateOfGoal(weightSlope, lastMeasurement, goalWeight, distanceToGoal);
 
-  const ppw = useMetric ? plannedPoundsPerWeek && plannedPoundsPerWeek * (2.20462262 / 2) : plannedPoundsPerWeek;
+  const ppw = plannedPoundsPerWeek; // Already stored in user's preferred units
   const caloriesPerDay = (gainPerWeek / 7) * 3500 * (useMetric ? 2.20462262 : 1);
-  const caloriesVsPlan = plannedPoundsPerWeek !== undefined ? Math.abs(plannedPoundsPerWeek) * 500 - caloriesPerDay : 0;
+  // For calories calculation, we need pounds - convert if metric
+  const ppwInPounds = useMetric && plannedPoundsPerWeek ? plannedPoundsPerWeek * 2.20462262 : plannedPoundsPerWeek;
+  const caloriesVsPlan = ppwInPounds !== undefined ? Math.abs(ppwInPounds) * 500 - caloriesPerDay : 0;
 
   return (
     <div>
@@ -68,7 +70,8 @@ const Stats = () => {
                 </>
               ) : (
                 <>
-                  {isMe ? "You" : "They"} must cut <strong>{formatNumber(caloriesVsPlan)} cal/day</strong> to lose {formatWeight(-1 * ppw, useMetric)}/week.
+                  {isMe ? "You" : "They"} must cut <strong>{formatNumber(caloriesVsPlan)} cal/day</strong> to lose {formatPlannedWeight(-1 * ppw, useMetric)}
+                  /week.
                 </>
               )}
             </li>
