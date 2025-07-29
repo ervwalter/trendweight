@@ -16,10 +16,10 @@
 - **ORM:** Dapper (lightweight micro-ORM)
 
 ### Authentication
-- **Provider:** Supabase Auth
+- **Provider:** Clerk
 - **Token Type:** JWT
-- **Frontend:** @supabase/supabase-js
-- **Backend:** Microsoft.AspNetCore.Authentication.JwtBearer
+- **Frontend:** @clerk/clerk-react
+- **Backend:** Custom ClerkAuthenticationHandler with JWT validation
 
 ### Backend Technologies
 - **API Documentation:** Swashbuckle (Swagger/OpenAPI)

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TrendWeight is a web application for tracking weight trends by integrating with smart scales from Withings and Fitbit. The application uses a modern architecture with a C# ASP.NET Core API backend and a Vite + React frontend.
 
+**Authentication:** TrendWeight uses Clerk for authentication (NOT Supabase Auth). Supabase is used only for the PostgreSQL database.
+
 ### Project Name Convention
 - The project name is **TrendWeight** (capital T, capital W, no space)
 - Use this capitalization consistently in code, namespaces, and project names
@@ -122,7 +124,7 @@ If you see any route file that doesn't follow this pattern, it MUST be refactore
 4. Follow existing service layer pattern
 
 ### Updating Database Schema
-1. Modify schema in Supabase dashboard
+1. Modify schema in Supabase dashboard (database only, not auth)
 2. Update corresponding C# models with `Db` prefix
 3. Update TypeScript interfaces if needed
 4. Remember all timestamps are stored as ISO 8601 strings
@@ -234,7 +236,7 @@ Use the same pattern for `console.warn` when testing code that logs warnings. Ap
 - Test the extracted services thoroughly
 - Trust that the framework integration works as documented
 
-Example: For Supabase authentication, we created `ISupabaseTokenService` to test JWT validation and claims mapping logic separately from the authentication handler.
+Example: For Clerk authentication, we created `IClerkTokenService` to test JWT validation and claims mapping logic separately from the authentication handler.
 
 ## Agent OS Documentation
 
