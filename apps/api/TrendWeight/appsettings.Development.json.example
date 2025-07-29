@@ -18,8 +18,11 @@
   },
   "Supabase": {
     "Url": "https://your-project-id.supabase.co",
-    "AnonKey": "paste-your-anon-key-here",
-    "ServiceKey": "paste-your-service-role-key-here",
-    "JwtSecret": "paste-your-jwt-secret-here"
-  }
+    "ServiceKey": "paste-your-service-role-key-here"
+  },
+  "Clerk": {
+    "Authority": "https://your-instance.clerk.accounts.dev",
+    "SecretKey": "your-clerk-secret-key"
+  },
+  "LegacyDbConnectionString": ""
 }

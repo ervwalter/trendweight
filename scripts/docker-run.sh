@@ -3,13 +3,15 @@
 # Script to run TrendWeight Docker container with environment variables passed through
 
 # List of environment variables to pass to the container
-# Based on AppOptions configuration structure
+# Based on AppOptions configuration structure and .env.example
 ENV_VARS=(
     # Supabase configuration
     "Supabase__Url"
-    "Supabase__AnonKey"
     "Supabase__ServiceKey"
-    "Supabase__JwtSecret"
+    
+    # Clerk authentication configuration
+    "Clerk__SecretKey"
+    "Clerk__Authority"
     
     # Legacy database connection
     "LegacyDbConnectionString"
@@ -22,11 +24,11 @@ ENV_VARS=(
     "Fitbit__ClientId"
     "Fitbit__ClientSecret"
     
-    # Other ASP.NET Core configuration
+    # Security configuration
     "AllowedHosts"
     
     # Reverse proxy configuration (if using Plausible analytics)
-    "ReverseProxy__Clusters__plausible__Destinations__primary__Address"
+    "ReverseProxy__Clusters__plausible__Destinations__plausible__Address"
 )
 
 # Build the docker run command with all environment variables

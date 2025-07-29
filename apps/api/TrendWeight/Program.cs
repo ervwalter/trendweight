@@ -215,9 +215,25 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "
 // For production, serve the SPA for any non-API routes
 if (!app.Environment.IsDevelopment())
 {
-    // Custom fallback handler that sets no-cache headers
+    // Custom fallback handler that redirects trailing slashes and serves SPA
     app.MapFallback(async context =>
     {
+        var path = context.Request.Path.Value;
+
+        // Redirect trailing slash requests to non-slash URLs (except root "/")
+        if (path != null &&
+            path.EndsWith('/') &&
+            path.Length > 1 &&
+            context.Request.Method == "GET")
+        {
+            var newPath = path.TrimEnd('/');
+            var queryString = context.Request.QueryString.Value;
+            var redirectUrl = newPath + queryString;
+
+            context.Response.Redirect(redirectUrl, permanent: true);
+            return;
+        }
+
         context.Response.ContentType = "text/html";
         context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
         context.Response.Headers.Pragma = "no-cache";
