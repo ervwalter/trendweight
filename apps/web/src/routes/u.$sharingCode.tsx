@@ -24,8 +24,9 @@ export const Route = createFileRoute("/u/$sharingCode")({
 
 function SharedDashboard() {
   const { sharingCode } = Route.useParams();
+  const isDemo = sharingCode === "demo";
   return (
-    <Layout suspenseFallback={<DashboardPlaceholder />}>
+    <Layout suspenseFallback={<DashboardPlaceholder />} noIndex={!isDemo}>
       <Dashboard sharingCode={sharingCode} />
     </Layout>
   );

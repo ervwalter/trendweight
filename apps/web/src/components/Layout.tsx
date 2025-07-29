@@ -8,6 +8,7 @@ interface LayoutProps {
   children: ReactNode;
   title?: string;
   suspenseFallback?: ReactNode;
+  noIndex?: boolean;
 }
 
 function LoadingFallback() {
@@ -18,10 +19,11 @@ function LoadingFallback() {
   );
 }
 
-export function Layout({ children, title, suspenseFallback }: LayoutProps) {
+export function Layout({ children, title, suspenseFallback, noIndex }: LayoutProps) {
   return (
     <>
       <title>{pageTitle(title)}</title>
+      {noIndex && <meta name="robots" content="noindex, nofollow" />}
       <div className="flex min-h-screen flex-col">
         <Header />
         <Container as="main" className="flex-grow py-4 md:py-6">
