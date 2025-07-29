@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.3.1](https://github.com/ervwalter/trendweight/compare/v2.3.0...v2.3.1) (2025-07-29)
+
+
+### Fixes
+
+* **auth:** adjust formFieldInput max height for better layout ([304bd48](https://github.com/ervwalter/trendweight/commit/304bd482fd514a97c4c530cf9fa3fd70b886a152))
+* **auth:** update SignIn component to run in combined mode ([5e1c26d](https://github.com/ervwalter/trendweight/commit/5e1c26d1049b25957ea3e3194d43b59b347f2dbb))
+* **deps:** add @types/node version 24.1.0 to dependencies ([4bdd1a9](https://github.com/ervwalter/trendweight/commit/4bdd1a9aec846aed8632b941acfa5e3f88339bfe))
+* **web:** update version to 2.3.0 in package-lock.json ([48d9fd7](https://github.com/ervwalter/trendweight/commit/48d9fd74b9ef6e4aa9710b988ac21a545b3c6063))
+
+
+### Dependencies
+
+* update npm dependencies ([#289](https://github.com/ervwalter/trendweight/issues/289)) ([5814a68](https://github.com/ervwalter/trendweight/commit/5814a6809d30ddb682930a1c64d2c9b184eb602a))
+
 ## [2.3.0](https://github.com/ervwalter/trendweight/compare/v2.2.3...v2.3.0) (2025-07-29)
 
 
