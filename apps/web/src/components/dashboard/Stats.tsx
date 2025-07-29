@@ -21,8 +21,10 @@ const Stats = () => {
   const dateOfGoal = calculateDateOfGoal(weightSlope, lastMeasurement, goalWeight, distanceToGoal);
 
   const ppw = plannedPoundsPerWeek; // Already stored in user's preferred units
-  const caloriesPerDay = (gainPerWeek / 7) * 3500 * (useMetric ? 2.20462262 : 1);
-  // For calories calculation, we need pounds - convert if metric
+  // Convert weight change to pounds for calorie calculation (500 cal/day = 1 lb/week)
+  const gainPerWeekInPounds = useMetric ? gainPerWeek * 2.20462262 : gainPerWeek;
+  const caloriesPerDay = gainPerWeekInPounds * 500;
+  // Convert planned weight change to pounds for calorie calculation
   const ppwInPounds = useMetric && plannedPoundsPerWeek ? plannedPoundsPerWeek * 2.20462262 : plannedPoundsPerWeek;
   const caloriesVsPlan = ppwInPounds !== undefined ? Math.abs(ppwInPounds) * 500 - caloriesPerDay : 0;
 
