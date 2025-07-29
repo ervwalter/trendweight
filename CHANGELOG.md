@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.3](https://github.com/ervwalter/trendweight/compare/v2.3.2...v2.3.3) (2025-07-29)
+
+
+### Fixes
+
+* **stats:** improve precision for metric planned weight display ([3e650e8](https://github.com/ervwalter/trendweight/commit/3e650e8e3a27c8f10d9325e145658f1602c1efce))
+
 ## [2.3.2](https://github.com/ervwalter/trendweight/compare/v2.3.1...v2.3.2) (2025-07-29)
 
 
