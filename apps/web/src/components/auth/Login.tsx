@@ -8,7 +8,7 @@ const clerkAppearance = {
     cardBox: "w-full shadow-none border-none",
     card: "shadow-none rounded-none px-1 pt-2",
     formButtonPrimary: "bg-brand-500 hover:bg-brand-600 text-white font-medium px-6 py-3 rounded-md",
-    formFieldInput: "px-4 py-3 max-h-auto leading-normal",
+    formFieldInput: "px-4 py-3 max-h-none leading-normal",
     logoBox: "hidden",
     headerTitle: "text-2xl font-bold text-gray-900",
     socialButtons: "grid-cols-1 gap-2 md:gap-3 w-full pb-2",
