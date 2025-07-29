@@ -31,6 +31,7 @@ const clerkLocalization = {
       subtitleCombined: "You should receive a 6-digit code. Enter it below to continue.",
     },
   },
+  socialButtonsBlockButtonManyInView: "Continue with {{provider}}",
 };
 
 function App() {
