@@ -36,11 +36,19 @@ export const ToggleButtonGroup = ({
     return child;
   });
 
+  // Ensure radio button behavior - prevent deselecting current value
+  const handleValueChange = (newValue: string) => {
+    // Only allow changes if a different value is selected
+    if (newValue && newValue !== value && onChange) {
+      onChange(newValue);
+    }
+  };
+
   return (
     <ToggleGroup.Root
       type="single"
       value={value}
-      onValueChange={onChange}
+      onValueChange={handleValueChange}
       defaultValue={defaultValue}
       aria-label={ariaLabel}
       className={twMerge(baseStyles, variantStyles[variant], className)}

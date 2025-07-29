@@ -43,8 +43,12 @@ export function BasicProfileSettings({ register, errors, control }: BasicProfile
               aria-label="Weight Units"
               variant="subtle"
             >
-              <ToggleButton value="false">lbs</ToggleButton>
-              <ToggleButton value="true">kg</ToggleButton>
+              <ToggleButton value="false" data-testid="unit-lbs">
+                lbs
+              </ToggleButton>
+              <ToggleButton value="true" data-testid="unit-kg">
+                kg
+              </ToggleButton>
             </ToggleButtonGroup>
           )}
         />

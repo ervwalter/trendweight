@@ -90,6 +90,12 @@ vi.mock("./ProfileSection", () => ({
           register("useMetric").onChange(event);
         }}
       />
+      <button data-testid="unit-lbs" type="button">
+        lbs
+      </button>
+      <button data-testid="unit-kg" type="button">
+        kg
+      </button>
     </div>
   ),
 }));
@@ -350,6 +356,37 @@ describe("Settings", () => {
     });
 
     // Reset for other tests
+    mockProfileData.goalWeight = 180;
+    mockProfileData.plannedPoundsPerWeek = 1.0;
+  });
+
+  it("should not convert units when clicking the same unit button", async () => {
+    const user = userEvent.setup();
+
+    // Start with lbs and specific values
+    mockProfileData.useMetric = false;
+    mockProfileData.goalWeight = 180;
+    mockProfileData.plannedPoundsPerWeek = 1.0;
+
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("goal-weight")).toHaveValue(180);
+      expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
+    });
+
+    // Click lbs button again (should not convert)
+    const lbsButton = screen.getByTestId("unit-lbs");
+    await user.click(lbsButton);
+
+    // Values should remain unchanged (not multiplied by conversion factor)
+    await waitFor(() => {
+      expect(screen.getByTestId("goal-weight")).toHaveValue(180);
+      expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
+    });
+
+    // Reset for other tests
+    mockProfileData.useMetric = false;
     mockProfileData.goalWeight = 180;
     mockProfileData.plannedPoundsPerWeek = 1.0;
   });

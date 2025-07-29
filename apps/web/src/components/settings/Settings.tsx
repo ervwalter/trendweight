@@ -43,35 +43,39 @@ export function Settings() {
       if (name === "useMetric" && type === "change") {
         const isMetric = value.useMetric;
 
-        // Convert planned pounds per week when switching units
-        const currentPlan = value.plannedPoundsPerWeek;
-        if (currentPlan && currentPlan !== 0) {
-          if (isMetric) {
-            // Converting from lbs to kg (roughly divide by 2)
-            setValue("plannedPoundsPerWeek", currentPlan / 2);
-          } else {
-            // Converting from kg to lbs (roughly multiply by 2)
-            setValue("plannedPoundsPerWeek", currentPlan * 2);
+        // Only convert if the metric setting actually changed from the profile data
+        // This prevents conversions when clicking the same unit or during form reset
+        if (profileData && profileData.useMetric !== isMetric) {
+          // Convert planned pounds per week when switching units
+          const currentPlan = value.plannedPoundsPerWeek;
+          if (currentPlan && currentPlan !== 0) {
+            if (isMetric) {
+              // Converting from lbs to kg (roughly divide by 2)
+              setValue("plannedPoundsPerWeek", currentPlan / 2);
+            } else {
+              // Converting from kg to lbs (roughly multiply by 2)
+              setValue("plannedPoundsPerWeek", currentPlan * 2);
+            }
           }
-        }
 
-        // Convert goal weight when switching units
-        const currentGoalWeight = value.goalWeight;
-        if (currentGoalWeight && currentGoalWeight !== 0) {
-          if (isMetric) {
-            // Converting from lbs to kg (divide by 2.20462 and round)
-            const kgValue = Math.round(currentGoalWeight / 2.20462);
-            setValue("goalWeight", kgValue);
-          } else {
-            // Converting from kg to lbs (multiply by 2.20462 and round)
-            const lbsValue = Math.round(currentGoalWeight * 2.20462);
-            setValue("goalWeight", lbsValue);
+          // Convert goal weight when switching units
+          const currentGoalWeight = value.goalWeight;
+          if (currentGoalWeight && currentGoalWeight !== 0) {
+            if (isMetric) {
+              // Converting from lbs to kg (divide by 2.20462 and round)
+              const kgValue = Math.round(currentGoalWeight / 2.20462);
+              setValue("goalWeight", kgValue);
+            } else {
+              // Converting from kg to lbs (multiply by 2.20462 and round)
+              const lbsValue = Math.round(currentGoalWeight * 2.20462);
+              setValue("goalWeight", lbsValue);
+            }
           }
         }
       }
     });
     return () => subscription.unsubscribe();
-  }, [watch, setValue]);
+  }, [watch, setValue, profileData]);
 
   // Warn user about unsaved changes when navigating away
   useNavigationGuard(isDirty);
