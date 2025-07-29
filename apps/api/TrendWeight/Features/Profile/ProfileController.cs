@@ -81,6 +81,15 @@ public class ProfileController : ControllerBase
                 await _legacyMigrationService.CheckAndMigrateLegacyDataIfNeededAsync(userGuid, userEmail);
             }
 
+            // Update email in profile if it doesn't match Clerk claim
+            if (!string.IsNullOrEmpty(userEmail) && user.Email != userEmail)
+            {
+                _logger.LogInformation("Updating profile email from {OldEmail} to {NewEmail} for user {UserId}", user.Email, userEmail, userId);
+                user.Email = userEmail;
+                user.UpdatedAt = DateTime.UtcNow.ToString("o");
+                await _supabaseService.UpdateAsync(user);
+            }
+
             return BuildProfileResponse(user, isMe: true);
         }
         catch (Exception ex)

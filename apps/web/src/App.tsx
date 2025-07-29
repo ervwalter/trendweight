@@ -18,31 +18,6 @@ setupVersionSkewHandler();
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-const clerkAppearance = {
-  cssLayerName: "clerk",
-  elements: {
-    rootBox: "w-full",
-    cardBox: "w-full shadow-none border-none",
-    card: "shadow-none rounded-none px-1 pt-2",
-    formButtonPrimary: "bg-brand-500 hover:bg-brand-600 text-white font-medium py-2.5 rounded-md",
-    logoBox: "hidden", // Hide Clerk logo
-    headerTitle: "text-2xl font-bold text-gray-900",
-    socialButtons: "grid-cols-1 gap-2 md:gap-3 w-full pb-2",
-    socialButtonsBlockButton: "py-2.5",
-    footerAction__signIn: "hidden",
-    footer: "[&>div]:border-transparent [&>div]:rounded-xl [&>div]:bg-brand-50 bg-none",
-  },
-  variables: {
-    colorPrimary: "var(--color-brand-500)",
-    fontSize: "var(--font-size-base)",
-    fontFamily: "inherit",
-  },
-  layout: {
-    socialButtonsVariant: "blockButton" as const,
-    unsafe_disableDevelopmentModeWarnings: true,
-  },
-};
-
 const clerkLocalization = {
   signIn: {
     start: {
@@ -62,11 +37,15 @@ function App() {
     <ErrorBoundary>
       <ClerkProvider
         publishableKey={publishableKey}
-        signInFallbackRedirectUrl="/dashboard"
-        signUpFallbackRedirectUrl="/dashboard"
-        signInUrl="/login"
-        appearance={clerkAppearance}
         localization={clerkLocalization}
+        appearance={{
+          cssLayerName: "clerk",
+          variables: {
+            colorPrimary: "var(--color-brand-500)",
+            fontSize: "var(--font-size-base)",
+            fontFamily: "inherit",
+          },
+        }}
       >
         <QueryClientProvider client={queryClient}>
           <ToastContextProvider>

@@ -169,8 +169,7 @@ public class ClerkAuthenticationHandlerTests
         {
             Uid = Guid.NewGuid(),
             ExternalId = "clerk_user_123",
-            Provider = "clerk",
-            Email = "test@example.com"
+            Provider = "clerk"
         };
 
         _clerkTokenServiceMock
@@ -235,8 +234,7 @@ public class ClerkAuthenticationHandlerTests
             {
                 Uid = Guid.NewGuid(),
                 ExternalId = "clerk_user_123",
-                Provider = "clerk",
-                Email = "test@example.com"
+                Provider = "clerk"
             });
 
         // Act

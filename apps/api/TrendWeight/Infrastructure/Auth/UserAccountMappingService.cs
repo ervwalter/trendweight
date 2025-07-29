@@ -38,8 +38,44 @@ public class UserAccountMappingService : IUserAccountMappingService
 
         var existingProfile = existingProfiles.FirstOrDefault();
 
-        // Use existing UID if found, otherwise generate new one
-        var uid = existingProfile?.Uid ?? Guid.NewGuid();
+        Guid uid;
+
+        if (existingProfile != null)
+        {
+            // Check if a user account already exists with this UID
+            var existingUserAccount = await GetByInternalIdAsync(existingProfile.Uid);
+            if (existingUserAccount != null)
+            {
+                // CRITICAL: If the existing user account has a different external ID,
+                // we have a conflict - the same email is being used by different users.
+                // This should not update the existing mapping as that would hijack another user's account.
+                if (existingUserAccount.ExternalId != externalId || existingUserAccount.Provider != provider)
+                {
+                    _logger.LogWarning("Email {Email} is already associated with a different user account. ExistingUID: {ExistingUid}, ExistingExternalId: {ExistingExternalId}, NewExternalId: {NewExternalId}",
+                        email, existingProfile.Uid, existingUserAccount.ExternalId, externalId);
+
+                    // Create a new UID for this user instead of hijacking the existing account
+                    uid = Guid.NewGuid();
+                    _logger.LogInformation("Creating new user account with UID {Uid} for {Provider}:{ExternalId} due to email conflict", uid, provider, externalId);
+                }
+                else
+                {
+                    // User account already exists with same external ID - this is fine
+                    return existingUserAccount;
+                }
+            }
+            else
+            {
+                // Profile exists but no user account - use existing profile UID
+                uid = existingProfile.Uid;
+            }
+        }
+        else
+        {
+            // Generate new UID
+            uid = Guid.NewGuid();
+        }
+
         var now = DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
 
         var userAccount = new DbUserAccount
@@ -47,7 +83,6 @@ public class UserAccountMappingService : IUserAccountMappingService
             Uid = uid,
             ExternalId = externalId,
             Provider = provider,
-            Email = email,
             CreatedAt = now,
             UpdatedAt = now
         };

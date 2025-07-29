@@ -116,6 +116,13 @@ public class ProfileService : IProfileService
             profile.Profile.ShowCalories = request.ShowCalories;
             profile.Profile.HideDataBeforeStart = request.HideDataBeforeStart ?? profile.Profile.HideDataBeforeStart;
 
+            // Update email if it's changed
+            if (profile.Email != email)
+            {
+                _logger.LogInformation("Updating profile email from {OldEmail} to {NewEmail} for user {UserId}", profile.Email, email, userId);
+                profile.Email = email;
+            }
+
             // Update timestamp
             profile.UpdatedAt = DateTime.UtcNow.ToString("o");
 

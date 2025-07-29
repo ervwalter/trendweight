@@ -332,7 +332,6 @@ public class ProfileServiceTests : TestBase
             Uid = userId,
             ExternalId = "clerk_123",
             Provider = "clerk",
-            Email = "test@example.com"
         };
         var profile = CreateTestProfile(userId);
 
@@ -371,7 +370,6 @@ public class ProfileServiceTests : TestBase
             Uid = userId,
             ExternalId = "clerk_123",
             Provider = "clerk",
-            Email = "test@example.com"
         };
 
         _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))

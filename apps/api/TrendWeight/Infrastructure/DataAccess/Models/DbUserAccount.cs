@@ -16,9 +16,6 @@ public class DbUserAccount : BaseModel
     [Column("provider")]
     public string Provider { get; set; } = string.Empty;
 
-    [Column("email")]
-    public string Email { get; set; } = string.Empty;
-
     [Column("created_at")]
     public string CreatedAt { get; set; } = string.Empty;
 

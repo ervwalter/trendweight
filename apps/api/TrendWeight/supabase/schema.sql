@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS public.user_accounts (
     uid UUID NOT NULL DEFAULT uuid_generate_v4(),
     external_id VARCHAR NOT NULL,
     provider VARCHAR NOT NULL DEFAULT 'clerk',
-    email VARCHAR NOT NULL,
     created_at TEXT DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
     updated_at TEXT DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
     CONSTRAINT user_accounts_pkey PRIMARY KEY (uid),
@@ -60,7 +59,6 @@ CREATE TABLE IF NOT EXISTS public.source_data (
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.profiles USING btree (email);
 CREATE INDEX IF NOT EXISTS idx_user_accounts_external ON public.user_accounts USING btree (external_id, provider);
-CREATE INDEX IF NOT EXISTS idx_user_accounts_email ON public.user_accounts USING btree (email);
 CREATE INDEX IF NOT EXISTS idx_vendor_links_updated ON public.provider_links USING btree (updated_at);
 CREATE INDEX IF NOT EXISTS idx_source_data_updated ON public.source_data USING btree (updated_at);
 

@@ -76,7 +76,6 @@ Maps external authentication provider IDs to internal user IDs.
 | uid | UUID | Internal user ID (primary key) |
 | external_id | VARCHAR | External provider's user ID |
 | provider | VARCHAR | Auth provider name ('clerk', 'supabase') |
-| email | VARCHAR | User's email address |
 | created_at | TEXT | ISO 8601 timestamp of creation |
 | updated_at | TEXT | ISO 8601 timestamp of last update |
 
@@ -95,7 +94,6 @@ All tables have RLS enabled with policies that deny all access except through th
 - `idx_vendor_links_updated` - For tracking recently updated provider links
 - `idx_source_data_updated` - For tracking recently synced data
 - `idx_user_accounts_external` - For efficient lookups by external ID and provider
-- `idx_user_accounts_email` - For email-based user searches
 
 ## Data Conventions
 
