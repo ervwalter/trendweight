@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.4](https://github.com/ervwalter/trendweight/compare/v2.3.3...v2.3.4) (2025-07-29)
+
+
+### Fixes
+
+* **ui:** prevent toggle button deselection and unit conversion bugs ([f3a91a1](https://github.com/ervwalter/trendweight/commit/f3a91a1e37a915d370f196c651f21f95e8fa0d48))
+
+
+### Refactoring
+
+* **stats:** refactor calorie calculation for weight change and planned weight to be more clear ([394b1af](https://github.com/ervwalter/trendweight/commit/394b1afbba10b4ab0ee662b5bdfd830139ae0be7))
+
 ## [2.3.3](https://github.com/ervwalter/trendweight/compare/v2.3.2...v2.3.3) (2025-07-29)
 
 
