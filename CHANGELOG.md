@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.3.0](https://github.com/ervwalter/trendweight/compare/v2.2.3...v2.3.0) (2025-07-29)
+
+
+### Features
+
+* Add option to hide weight data before start date and include start date in onboarding ([#286](https://github.com/ervwalter/trendweight/issues/286)) ([b2cce4b](https://github.com/ervwalter/trendweight/commit/b2cce4b17ee6cd1fee6acc2d959f9ed9afdbc9af))
+* migrate authentication from Supabase Auth to Clerk ([#291](https://github.com/ervwalter/trendweight/issues/291)) ([0ee5c06](https://github.com/ervwalter/trendweight/commit/0ee5c06ddb552423c9d7fca9e056aa1a9fc307b0))
+* Support pre-existing data from TrendWeight classic site for migrated users ([#290](https://github.com/ervwalter/trendweight/issues/290)) ([15496ff](https://github.com/ervwalter/trendweight/commit/15496ffaaa80e7b9c61dbca48dac450f3b4654da))
+
+
+### Fixes
+
+* **auth:** clear react-query caches on sign out to prevent stale data ([f0837cb](https://github.com/ervwalter/trendweight/commit/f0837cbed36170a5abee778f8996c10908f92ab7))
+* **auth:** remove email from user_accounts table and fix account hijacking ([7cacf5e](https://github.com/ervwalter/trendweight/commit/7cacf5ee5975f9b6bb0843ec305bf6c6693274b5))
+* **download:** convert provider weights from kg to lbs for imperial users ([a2933a5](https://github.com/ervwalter/trendweight/commit/a2933a5ba2f6c9cb7038e6f93e9afc657156e586))
+* prevent router context error by removing Link from ErrorUI ([e588526](https://github.com/ervwalter/trendweight/commit/e588526a39dab9e00bd272ed7b352825d14adb27))
+* replace ES2023/ES2024 features for Safari 16 compatibility ([81eb10d](https://github.com/ervwalter/trendweight/commit/81eb10df2e1c7adb45e1dcbd61ac883b7a1ba226))
+* update CI/CD workflow to correctly handle Docker tags and add missing environment variable for Clerk ([1858ae0](https://github.com/ervwalter/trendweight/commit/1858ae0c688e174c83e918826acf0b5ef428050b))
+
+
+### Documentation
+
+* update architecture documentation for Clerk migration ([0ea26c6](https://github.com/ervwalter/trendweight/commit/0ea26c6f5b168abe597c6ef4d77cbe5f22878aa3))
+
+
+### Dependencies
+
+* update dependency microsoft.data.sqlclient to 6.1.0 ([#285](https://github.com/ervwalter/trendweight/issues/285)) ([fde006b](https://github.com/ervwalter/trendweight/commit/fde006bc259e8ffc56fd799be08f7366933e615e))
+* update npm dependencies to v9.32.0 ([#281](https://github.com/ervwalter/trendweight/issues/281)) ([7c2ca11](https://github.com/ervwalter/trendweight/commit/7c2ca11b8f1509694fd57d0aa0ce8d028adeba4b))
+
 ## [2.2.3](https://github.com/ervwalter/trendweight/compare/v2.2.2...v2.2.3) (2025-07-25)
 
 
