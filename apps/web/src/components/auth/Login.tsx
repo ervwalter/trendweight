@@ -12,10 +12,11 @@ const clerkAppearance = {
     headerTitle: "text-2xl font-bold text-gray-900",
     socialButtons: "grid-cols-1 gap-2 md:gap-3 w-full pb-2",
     socialButtonsBlockButton: "py-3 px-6",
-    footer: "[&>div]:border-transparent [&>div]:rounded-xl [&>div]:bg-brand-50 bg-none",
+    footer: "[&>div]:border-transparent [&>div]:rounded-xl [&>div]:bg-gray-50 bg-none",
   },
   layout: {
     socialButtonsVariant: "blockButton" as const,
+    privacyPageUrl: "/privacy",
     // unsafe_disableDevelopmentModeWarnings: true,
   },
 };

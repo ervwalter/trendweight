@@ -12,10 +12,6 @@ vi.mock("../notices/NewVersionNotice", () => ({
   NewVersionNotice: () => <div data-testid="new-version-notice">New Version Notice</div>,
 }));
 
-vi.mock("./PrivacyPolicyLink", () => ({
-  PrivacyPolicyLink: () => <div data-testid="privacy-policy-link">Privacy Policy Link</div>,
-}));
-
 describe("Login", () => {
   it("should render all login components", () => {
     render(<Login />);
@@ -23,6 +19,5 @@ describe("Login", () => {
     expect(screen.getByTestId("new-version-notice")).toBeInTheDocument();
     expect(screen.getByTestId("clerk-signin")).toBeInTheDocument();
     expect(screen.getByTestId("clerk-signin")).toHaveTextContent("routing: hash");
-    expect(screen.getByTestId("privacy-policy-link")).toBeInTheDocument();
   });
 });
