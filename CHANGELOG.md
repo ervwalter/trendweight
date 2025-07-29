@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.3.2](https://github.com/ervwalter/trendweight/compare/v2.3.1...v2.3.2) (2025-07-29)
+
+
+### Fixes
+
+* **auth:** add subtitleCombined for emailCode in clerkLocalization ([14e2b31](https://github.com/ervwalter/trendweight/commit/14e2b31fd6e5f8d9638f284e8b643eaa84a6a69e))
+* **auth:** remove unused PrivacyPolicyLink component and update tests ([2a7df55](https://github.com/ervwalter/trendweight/commit/2a7df5572de8619986a2a44479b4497800323c47))
+* **auth:** update login UI to handle transitions better ([48c69c9](https://github.com/ervwalter/trendweight/commit/48c69c9331907520d69bb1ef9a1442521597450c))
+* **migration:** convert PlannedPoundsPerWeek for metric users ([7bcb0a3](https://github.com/ervwalter/trendweight/commit/7bcb0a3fb333afa6d2478cfa6c06e84d2ab44a33))
+
+
+### Documentation
+
+* update authentication documentation to reflect Clerk usage ([86ff2b7](https://github.com/ervwalter/trendweight/commit/86ff2b768c7ad11384d4b906d64a6a77d37abd7a))
+
 ## [2.3.1](https://github.com/ervwalter/trendweight/compare/v2.3.0...v2.3.1) (2025-07-29)
 
 
