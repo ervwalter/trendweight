@@ -164,7 +164,7 @@ public class LegacyMigrationServiceTests : TestBase
             p.Profile.UseMetric == legacyProfile.UseMetric &&
             p.Profile.GoalStart == legacyProfile.StartDate &&
             p.Profile.GoalWeight == legacyProfile.GoalWeight &&
-            p.Profile.PlannedPoundsPerWeek == legacyProfile.PlannedPoundsPerWeek &&
+            p.Profile.PlannedPoundsPerWeek == (legacyProfile.UseMetric ? legacyProfile.PlannedPoundsPerWeek / 2 : legacyProfile.PlannedPoundsPerWeek) &&
             p.Profile.DayStartOffset == legacyProfile.DayStartOffset &&
             p.Profile.SharingToken == legacyProfile.PrivateUrlKey &&
             p.Profile.SharingEnabled == true &&
@@ -395,7 +395,7 @@ public class LegacyMigrationServiceTests : TestBase
         capturedProfile.Profile.UseMetric.Should().BeTrue();
         capturedProfile.Profile.GoalStart.Should().Be(new DateTime(2020, 6, 15));
         capturedProfile.Profile.GoalWeight.Should().Be(65.7m);
-        capturedProfile.Profile.PlannedPoundsPerWeek.Should().Be(0.75m);
+        capturedProfile.Profile.PlannedPoundsPerWeek.Should().Be(0.375m); // 0.75 / 2 for metric users
         capturedProfile.Profile.DayStartOffset.Should().Be(-12);
         capturedProfile.Profile.SharingToken.Should().Be("unique-sharing-key-123");
         capturedProfile.Profile.SharingEnabled.Should().BeTrue();
@@ -1037,4 +1037,44 @@ public class LegacyMigrationServiceTests : TestBase
     }
 
     #endregion
+
+    [Theory]
+    [InlineData(true, -1.5, -0.75)]  // Metric user: divide by 2
+    [InlineData(false, -1.5, -1.5)]  // Imperial user: no conversion
+    [InlineData(true, -2.0, -1.0)]   // Metric user: -2 lbs -> -1 in migrated units
+    [InlineData(false, -2.0, -2.0)]  // Imperial user: -2 lbs -> -2 lbs
+    [InlineData(true, 0.0, 0.0)]     // Metric user: maintenance -> maintenance
+    [InlineData(false, 0.0, 0.0)]    // Imperial user: maintenance -> maintenance
+    public async Task MigrateLegacyProfileAsync_ConvertsPlannedPoundsPerWeekCorrectly(bool useMetric, decimal legacyValue, decimal expectedValue)
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        var email = "test@example.com";
+        var legacyProfile = new LegacyProfile
+        {
+            UserId = Guid.NewGuid(),
+            Email = email,
+            FirstName = "Test User",
+            UseMetric = useMetric,
+            StartDate = new DateTime(2024, 1, 1),
+            GoalWeight = 70.0m,
+            PlannedPoundsPerWeek = legacyValue,
+            DayStartOffset = 0,
+            PrivateUrlKey = "test-key",
+            DeviceType = null,
+            FitbitRefreshToken = null
+        };
+
+        var expectedProfile = CreateTestDbProfile(Guid.Parse(userId), email);
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
+            .ReturnsAsync(expectedProfile);
+
+        // Act
+        var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
+
+        // Assert
+        _profileServiceMock.Verify(x => x.CreateAsync(It.Is<DbProfile>(p =>
+            p.Profile.PlannedPoundsPerWeek == expectedValue
+        )), Times.Once);
+    }
 }

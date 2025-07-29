@@ -82,7 +82,9 @@ public class LegacyMigrationService : ILegacyMigrationService
                 UseMetric = legacyProfile.UseMetric,
                 GoalStart = legacyProfile.StartDate,
                 GoalWeight = legacyProfile.GoalWeight,
-                PlannedPoundsPerWeek = legacyProfile.PlannedPoundsPerWeek,
+                PlannedPoundsPerWeek = legacyProfile.UseMetric
+                    ? legacyProfile.PlannedPoundsPerWeek / 2
+                    : legacyProfile.PlannedPoundsPerWeek,
                 DayStartOffset = legacyProfile.DayStartOffset,
                 ShowCalories = true, // it was on in the old site
                 SharingToken = legacyProfile.PrivateUrlKey, // Use existing sharing token
