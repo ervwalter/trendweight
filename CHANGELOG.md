@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.6](https://github.com/ervwalter/trendweight/compare/v2.3.5...v2.3.6) (2025-07-29)
+
+
+### Refactoring
+
+* **config:** remove unused Supabase AnonKey and JwtSecret ([efc82f9](https://github.com/ervwalter/trendweight/commit/efc82f90dfa96276fe44b761614f299d8733577f))
+
 ## [2.3.5](https://github.com/ervwalter/trendweight/compare/v2.3.4...v2.3.5) (2025-07-29)
 
 
