@@ -28,6 +28,7 @@ const clerkLocalization = {
     },
     emailCode: {
       subtitle: "You should receive a 6-digit code. Enter it below to continue.",
+      subtitleCombined: "You should receive a 6-digit code. Enter it below to continue.",
     },
   },
 };
