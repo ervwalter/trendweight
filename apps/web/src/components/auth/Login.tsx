@@ -27,7 +27,7 @@ export function Login() {
     <div className="mx-auto max-w-xl md:py-12">
       <NewVersionNotice />
 
-      <SignIn routing="hash" fallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard" signInUrl="/login" appearance={clerkAppearance} />
+      <SignIn routing="hash" appearance={clerkAppearance} />
 
       <PrivacyPolicyLink />
     </div>

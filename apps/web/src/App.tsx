@@ -38,6 +38,9 @@ function App() {
       <ClerkProvider
         publishableKey={publishableKey}
         localization={clerkLocalization}
+        signInFallbackRedirectUrl="/dashboard"
+        signUpFallbackRedirectUrl="/dashboard"
+        signInUrl="/login"
         appearance={{
           cssLayerName: "clerk",
           variables: {
