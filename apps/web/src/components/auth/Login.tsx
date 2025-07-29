@@ -1,6 +1,5 @@
 import { SignIn } from "@clerk/clerk-react";
 import { NewVersionNotice } from "../notices/NewVersionNotice";
-import { PrivacyPolicyLink } from "./PrivacyPolicyLink";
 
 const clerkAppearance = {
   elements: {
@@ -13,7 +12,6 @@ const clerkAppearance = {
     headerTitle: "text-2xl font-bold text-gray-900",
     socialButtons: "grid-cols-1 gap-2 md:gap-3 w-full pb-2",
     socialButtonsBlockButton: "py-3 px-6",
-    footerAction__signIn: "hidden",
     footer: "[&>div]:border-transparent [&>div]:rounded-xl [&>div]:bg-brand-50 bg-none",
   },
   layout: {
@@ -26,10 +24,7 @@ export function Login() {
   return (
     <div className="mx-auto max-w-xl md:py-12">
       <NewVersionNotice />
-
       <SignIn routing="hash" appearance={clerkAppearance} />
-
-      <PrivacyPolicyLink />
     </div>
   );
 }
