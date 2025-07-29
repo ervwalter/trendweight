@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.5](https://github.com/ervwalter/trendweight/compare/v2.3.4...v2.3.5) (2025-07-29)
+
+
+### Fixes
+
+* **auth:** add localization for social buttons in clerk ([e712dc8](https://github.com/ervwalter/trendweight/commit/e712dc8a70fc61a9ee249fe74881109deece600f))
+
 ## [2.3.4](https://github.com/ervwalter/trendweight/compare/v2.3.3...v2.3.4) (2025-07-29)
 
 
