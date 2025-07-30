@@ -1,7 +1,7 @@
 import { ChronoUnit, LocalDate, Period } from "@js-joda/core";
 import { shortDate } from "../../lib/core/dates";
 import type { Measurement } from "../../lib/core/interfaces";
-import { formatNumber, formatWeight, formatPlannedWeight } from "../../lib/core/numbers";
+import { formatNumber, formatPlannedWeight, formatWeight } from "../../lib/core/numbers";
 import { useDashboardData } from "../../lib/dashboard/hooks";
 import { Heading } from "../ui/Heading";
 
@@ -14,19 +14,19 @@ const Stats = () => {
   } = useDashboardData();
 
   const lastMeasurement = measurements[measurements.length - 1];
-  const gainPerWeek = Math.abs(weightSlope * 7);
+  const gainPerWeek = weightSlope * 7;
 
   const duration = calculateDuration(measurements[0].date, lastMeasurement.date);
   const distanceToGoal = calculateDistanceToGoal(measurements, useMetric, goalWeight);
   const dateOfGoal = calculateDateOfGoal(weightSlope, lastMeasurement, goalWeight, distanceToGoal);
 
-  const ppw = plannedPoundsPerWeek; // Already stored in user's preferred units
-  // Convert weight change to pounds for calorie calculation (500 cal/day = 1 lb/week)
-  const gainPerWeekInPounds = useMetric ? gainPerWeek * 2.20462262 : gainPerWeek;
-  const caloriesPerDay = gainPerWeekInPounds * 500;
-  // Convert planned weight change to pounds for calorie calculation
-  const ppwInPounds = useMetric && plannedPoundsPerWeek ? plannedPoundsPerWeek * 2.20462262 : plannedPoundsPerWeek;
-  const caloriesVsPlan = ppwInPounds !== undefined ? Math.abs(ppwInPounds) * 500 - caloriesPerDay : 0;
+  // convert everything to lbs for calorie calculations
+  const intendedChangePerWeek = (plannedPoundsPerWeek ?? 0) * (useMetric ? 2.20462262 : 1);
+  const intendedCaloriesPerWeek = intendedChangePerWeek * 3500;
+  const actualChangePerWeek = gainPerWeek * (useMetric ? 2.20462262 : 1);
+  const actualCaloriesPerWeek = actualChangePerWeek * 3500;
+
+  const caloriesVsPlan = (actualCaloriesPerWeek - intendedCaloriesPerWeek) / 7;
 
   return (
     <div>
@@ -35,8 +35,8 @@ const Stats = () => {
       </Heading>
       <ul className="space-y-1">
         <li>
-          {isMe ? "You are" : `${firstName} is`} {weightSlope > 0 ? "gaining" : "losing"} <strong>{formatWeight(gainPerWeek, useMetric)}/week</strong> of total
-          weight.{" "}
+          {isMe ? "You are" : `${firstName} is`} {weightSlope > 0 ? "gaining" : "losing"} <strong>{formatWeight(Math.abs(gainPerWeek), useMetric)}/week</strong>{" "}
+          of total weight.{" "}
         </li>
         <li className="mt-4">
           {isMe ? "You have" : "They have"} been tracking {isMe ? "your" : "their"} weight for <strong>{duration}</strong>.
@@ -59,20 +59,22 @@ const Stats = () => {
               )}
             </>
           ))}
-        {showCalories && ppw !== undefined && ppw <= 0 && (
+        {showCalories && plannedPoundsPerWeek !== undefined && plannedPoundsPerWeek <= 0 && (
           <>
             <li className="mt-4">
-              {isMe ? "You are" : "They are"} burning <strong>{formatNumber(caloriesPerDay)} cal/day</strong> {weightSlope > 0 ? "less" : "more"} than{" "}
-              {isMe ? "you are" : "they are"} eating.
+              {isMe ? "You are" : "They are"} burning <strong>{formatNumber(Math.abs(actualCaloriesPerWeek / 7))} cal/day</strong>{" "}
+              {weightSlope > 0 ? "less" : "more"} than {isMe ? "you are" : "they are"} eating.
             </li>
             <li>
               {caloriesVsPlan < 0 ? (
                 <>
-                  {isMe ? "You are" : "They are"} burning <strong>{formatNumber(-1 * caloriesVsPlan)} cal/day</strong> beyond {isMe ? "your" : "their"} plan.
+                  {isMe ? "You are" : "They are"} burning <strong>{formatNumber(Math.abs(caloriesVsPlan))} cal/day</strong> beyond {isMe ? "your" : "their"}{" "}
+                  plan.
                 </>
               ) : (
                 <>
-                  {isMe ? "You" : "They"} must cut <strong>{formatNumber(caloriesVsPlan)} cal/day</strong> to lose {formatPlannedWeight(-1 * ppw, useMetric)}
+                  {isMe ? "You" : "They"} must cut <strong>{formatNumber(Math.abs(caloriesVsPlan))} cal/day</strong> to lose{" "}
+                  {formatPlannedWeight(Math.abs(plannedPoundsPerWeek), useMetric)}
                   /week.
                 </>
               )}
