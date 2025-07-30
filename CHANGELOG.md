@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.1](https://github.com/ervwalter/trendweight/compare/v2.4.0...v2.4.1) (2025-07-30)
+
+
+### Fixes
+
+* **dashboard:** correct calorie tracking logic in Stats component ([2d51285](https://github.com/ervwalter/trendweight/commit/2d51285f47067f99ae8a2147a23bff2a584efbe2))
+* **tests:** update expected calorie calculation in Stats component tests ([0272b33](https://github.com/ervwalter/trendweight/commit/0272b33848fa63ef0e820fb738d4572c844f6cb5))
+
 ## [2.4.0](https://github.com/ervwalter/trendweight/compare/v2.3.6...v2.4.0) (2025-07-30)
 
 
