@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.4.0](https://github.com/ervwalter/trendweight/compare/v2.3.6...v2.4.0) (2025-07-30)
+
+
+### Features
+
+* add noindex meta tag to prevent Google indexing of personal weight sharing pages ([f46573d](https://github.com/ervwalter/trendweight/commit/f46573d0661338fc6998d5cdae7ed5079f30c21d))
+
+
+### Dependencies
+
+* update npm dependencies ([#297](https://github.com/ervwalter/trendweight/issues/297)) ([7211d21](https://github.com/ervwalter/trendweight/commit/7211d2142fb991bcd8f772fb0f48648aed46be4c))
+
 ## [2.3.6](https://github.com/ervwalter/trendweight/compare/v2.3.5...v2.3.6) (2025-07-29)
 
 
