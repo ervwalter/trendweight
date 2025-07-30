@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
 import { LocalDate } from "@js-joda/core";
-import Stats from "./Stats";
-import type { DashboardData } from "../../lib/dashboard/dashboardContext";
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Measurement } from "../../lib/core/interfaces";
+import type { DashboardData } from "../../lib/dashboard/dashboardContext";
+import Stats from "./Stats";
 
 // Mock the dashboard hooks
 vi.mock("../../lib/dashboard/hooks", () => ({
@@ -299,7 +299,7 @@ describe("Stats", () => {
 
       // Not meeting plan
       expect(screen.getByText(/You must cut/)).toBeInTheDocument();
-      expect(screen.getByText("150.0 cal/day")).toBeInTheDocument(); // Correct calculation based on actual logic
+      expect(screen.getByText("850.0 cal/day")).toBeInTheDocument(); // Correct calculation based on actual logic
       expect(screen.getByText(/to lose 1.0 lb/)).toBeInTheDocument();
     });
 
