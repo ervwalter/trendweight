@@ -71,13 +71,16 @@ ALTER TABLE public.user_accounts ENABLE ROW LEVEL SECURITY;
 -- Create RLS policies
 -- All tables are admin-only (service role access only)
 
+-- Drop existing policies if they exist, then create new ones
+
 -- Profiles table policies
+DROP POLICY IF EXISTS "Deny all access - admin only through service role" ON public.profiles;
+DROP POLICY IF EXISTS "Deny all access for anon users" ON public.profiles;
 CREATE POLICY "Deny all access - admin only through service role" 
     ON public.profiles 
     FOR ALL 
     TO authenticated 
     USING (false);
-
 CREATE POLICY "Deny all access for anon users" 
     ON public.profiles 
     FOR ALL 
@@ -85,12 +88,13 @@ CREATE POLICY "Deny all access for anon users"
     USING (false);
 
 -- Provider links table policies
+DROP POLICY IF EXISTS "Deny all access - admin only through service role" ON public.provider_links;
+DROP POLICY IF EXISTS "Deny all access for anon users" ON public.provider_links;
 CREATE POLICY "Deny all access - admin only through service role" 
     ON public.provider_links 
     FOR ALL 
     TO authenticated 
     USING (false);
-
 CREATE POLICY "Deny all access for anon users" 
     ON public.provider_links 
     FOR ALL 
@@ -98,12 +102,13 @@ CREATE POLICY "Deny all access for anon users"
     USING (false);
 
 -- Source data table policies
+DROP POLICY IF EXISTS "Deny all access - admin only through service role" ON public.source_data;
+DROP POLICY IF EXISTS "Deny all access for anon users" ON public.source_data;
 CREATE POLICY "Deny all access - admin only through service role" 
     ON public.source_data 
     FOR ALL 
     TO authenticated 
     USING (false);
-
 CREATE POLICY "Deny all access for anon users" 
     ON public.source_data 
     FOR ALL 
@@ -111,12 +116,13 @@ CREATE POLICY "Deny all access for anon users"
     USING (false);
 
 -- User accounts table policies
+DROP POLICY IF EXISTS "Deny all access - admin only through service role" ON public.user_accounts;
+DROP POLICY IF EXISTS "Deny all access for anon users" ON public.user_accounts;
 CREATE POLICY "Deny all access - admin only through service role" 
     ON public.user_accounts 
     FOR ALL 
     TO authenticated 
     USING (false);
-
 CREATE POLICY "Deny all access for anon users" 
     ON public.user_accounts 
     FOR ALL 
@@ -129,9 +135,52 @@ GRANT ALL ON public.provider_links TO service_role;
 GRANT ALL ON public.source_data TO service_role;
 GRANT ALL ON public.user_accounts TO service_role;
 
+-- Create legacy_profiles table for migrated legacy data
+CREATE TABLE IF NOT EXISTS public.legacy_profiles (
+    email VARCHAR PRIMARY KEY,
+    username VARCHAR, -- User's login username for lookup purposes
+    first_name VARCHAR,
+    use_metric BOOLEAN,
+    start_date DATE,
+    goal_weight DECIMAL,
+    planned_pounds_per_week DECIMAL, -- Already converted for metric users (divided by 2)
+    day_start_offset INTEGER,
+    private_url_key VARCHAR,
+    device_type VARCHAR,
+    refresh_token VARCHAR, -- OAuth refresh token (used for both Withings and Fitbit)
+    measurements JSONB DEFAULT '[]'::jsonb, -- Pre-converted RawMeasurement format
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create indexes on legacy_profiles
+CREATE INDEX IF NOT EXISTS idx_legacy_profiles_email ON public.legacy_profiles USING btree (email);
+CREATE INDEX IF NOT EXISTS idx_legacy_profiles_username ON public.legacy_profiles USING btree (username);
+
+-- Enable RLS on legacy_profiles table
+ALTER TABLE public.legacy_profiles ENABLE ROW LEVEL SECURITY;
+
+-- Legacy profiles table policies
+DROP POLICY IF EXISTS "Deny all access - admin only through service role" ON public.legacy_profiles;
+DROP POLICY IF EXISTS "Deny all access for anon users" ON public.legacy_profiles;
+CREATE POLICY "Deny all access - admin only through service role" 
+    ON public.legacy_profiles 
+    FOR ALL 
+    TO authenticated 
+    USING (false);
+CREATE POLICY "Deny all access for anon users" 
+    ON public.legacy_profiles 
+    FOR ALL 
+    TO anon 
+    USING (false);
+
+-- Grant permissions to service role for legacy_profiles
+GRANT ALL ON public.legacy_profiles TO service_role;
+
 -- Grant basic permissions to authenticated and anon roles (required by Supabase)
 -- Note: RLS policies will still deny access
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.provider_links TO authenticated, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.source_data TO authenticated, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_accounts TO authenticated, anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.legacy_profiles TO authenticated, anon;
