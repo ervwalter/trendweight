@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.2](https://github.com/ervwalter/trendweight/compare/v2.4.1...v2.4.2) (2025-08-01)
+
+
+### Fixes
+
+* **stats:** add test for handling single measurement with goal weight and prevent division by zero ([377a336](https://github.com/ervwalter/trendweight/commit/377a336e0925ace46b5a410ab3d271fb4433689e))
+
 ## [2.4.1](https://github.com/ervwalter/trendweight/compare/v2.4.0...v2.4.1) (2025-07-30)
 
 
