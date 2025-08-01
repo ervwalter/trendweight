@@ -147,6 +147,10 @@ const calculateDateOfGoal = (weightSlope: number, lastMeasurement: Measurement, 
   if (goalWeight && distanceToGoal) {
     const currentWeight = lastMeasurement.trendWeight;
     if (goalWeight && ((weightSlope > 0 && currentWeight < goalWeight) || (weightSlope <= 0 && currentWeight > goalWeight))) {
+      // Guard against division by zero or near-zero slopes (e.g., single measurement or flat trend)
+      if (Math.abs(weightSlope) < 0.0001) {
+        return undefined;
+      }
       return lastMeasurement.date.plusDays(Math.floor(Math.abs(distanceToGoal / weightSlope)));
     }
   }

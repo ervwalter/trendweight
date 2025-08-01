@@ -377,5 +377,29 @@ describe("Stats", () => {
 
       expect(screen.getByText(/0 days/)).toBeInTheDocument();
     });
+
+    it("handles single measurement with goal weight without crashing", () => {
+      // This test ensures the Infinity bug is fixed
+      mockUseDashboardData.mockReturnValue({
+        ...defaultMockData,
+        weightSlope: 0, // This causes the division by zero
+        measurements: [createMeasurement("2024-01-01", 180)],
+        profile: {
+          ...defaultMockData.profile,
+          goalWeight: 170, // Goal is set
+          plannedPoundsPerWeek: -1, // Plan is set
+        } as any,
+      } as any);
+
+      // Should not throw an error
+      expect(() => render(<Stats />)).not.toThrow();
+
+      // Should not show goal date (since slope is zero)
+      expect(screen.queryByText(/will reach your goal around/)).not.toBeInTheDocument();
+
+      // Should still show basic stats
+      expect(screen.getByText(/You are losing/)).toBeInTheDocument();
+      expect(screen.getByText(/to lose to reach your goal/)).toBeInTheDocument();
+    });
   });
 });
