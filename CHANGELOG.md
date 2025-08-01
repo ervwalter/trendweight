@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.3](https://github.com/ervwalter/trendweight/compare/v2.4.2...v2.4.3) (2025-08-01)
+
+
+### Dependencies
+
+* update akhilmhdh/contributors-readme-action action to v2.3.11 ([#302](https://github.com/ervwalter/trendweight/issues/302)) ([f33ce0b](https://github.com/ervwalter/trendweight/commit/f33ce0bdb7013e1c14923e5b54cc462cb4e893f9))
+* update npm dependencies ([#304](https://github.com/ervwalter/trendweight/issues/304)) ([1d7f459](https://github.com/ervwalter/trendweight/commit/1d7f459c97e00d9740036decec033284ef0775aa))
+
 ## [2.4.2](https://github.com/ervwalter/trendweight/compare/v2.4.1...v2.4.2) (2025-08-01)
 
 
