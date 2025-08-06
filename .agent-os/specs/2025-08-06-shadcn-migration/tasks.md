@@ -7,13 +7,13 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 
 ## Tasks
 
-- [ ] 1. shadcn/ui Installation and Configuration
-  - [ ] 1.1 Write tests for shadcn installation and configuration
-  - [ ] 1.2 Install shadcn/ui CLI and initialize project
-  - [ ] 1.3 Configure Tailwind CSS variables mapping brand-500 to primary
-  - [ ] 1.4 Install required dependencies (class-variance-authority, lucide-react)
-  - [ ] 1.5 Set up proper TypeScript configuration for shadcn components
-  - [ ] 1.6 Verify all tests pass after installation
+- [x] 1. shadcn/ui Installation and Configuration
+  - [x] 1.1 Write tests for shadcn installation and configuration
+  - [x] 1.2 Install shadcn/ui CLI and initialize project
+  - [x] 1.3 Configure Tailwind CSS variables mapping brand-500 to primary
+  - [x] 1.4 Install required dependencies (class-variance-authority, lucide-react)
+  - [x] 1.5 Set up proper TypeScript configuration for shadcn components
+  - [x] 1.6 Verify all tests pass after installation
 
 - [ ] 2. Core UI Component Migration
   - [ ] 2.1 Write tests for Button component migration to shadcn

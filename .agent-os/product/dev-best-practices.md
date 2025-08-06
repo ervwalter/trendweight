@@ -15,16 +15,20 @@ For essential commands and operational procedures, see @.agent-os/product/develo
 ### Mandatory Checks
 Before EVERY commit, run from the root directory:
 ```bash
-npm run format && npm run check:ci && npm run test
+npm run check && npm run test
 ```
 
-This single command ensures:
-- Code is properly formatted (Prettier)
+This ensures:
 - TypeScript compiles without errors
 - ESLint rules pass
-- All tests pass
+- All tests pass (both frontend and backend)
 
 **Never skip this step!** The project uses Turborepo for optimization, so always run commands from the root.
+
+**Alternative for CI/format checking:**
+```bash
+npm run format && npm run check:ci && npm run test
+```
 
 ## Development Workflow
 
