@@ -10,6 +10,7 @@ This is the technical specification for the spec detailed in @.agent-os/specs/20
 - **Tailwind Configuration**: Extend existing Tailwind v4 config to work with shadcn's requirements
 - **Design Token Mapping**: Map TrendWeight's existing brand colors (brand-500, brand-600, etc.) to shadcn's CSS variable system
 - **Standard shadcn Implementation**: Use shadcn components with their standard APIs rather than maintaining backward compatibility, requiring updates to existing component usage
+- **No Wrapper Components**: Do NOT create wrapper components in `components/ui/` to maintain backwards compatibility. Update consuming pages/components to use the new shadcn components directly. Wrapper components should only be created in rare cases and must be placed outside the `components/ui/` folder if needed.
 - **TypeScript Integration**: Full TypeScript support with proper type definitions for all migrated components
 - **Testing Compatibility**: All existing component tests must continue to pass with minimal modifications
 - **Bundle Size Optimization**: Remove unused Radix UI dependencies after migration to reduce bundle size

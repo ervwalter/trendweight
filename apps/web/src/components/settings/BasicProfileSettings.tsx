@@ -3,6 +3,7 @@ import { Controller } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { ToggleButton } from "../ui/ToggleButton";
 import { ToggleButtonGroup } from "../ui/ToggleButtonGroup";
+import { Input } from "../ui/input";
 
 interface BasicProfileSettingsProps {
   register: UseFormRegister<ProfileData>;
@@ -21,12 +22,7 @@ export function BasicProfileSettings({ register, errors, control }: BasicProfile
         <label htmlFor="firstName" className="mb-1 block text-sm font-medium text-gray-700">
           First Name
         </label>
-        <input
-          id="firstName"
-          type="text"
-          {...register("firstName", { required: "First name is required" })}
-          className="focus:ring-brand-500 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:outline-none"
-        />
+        <Input id="firstName" type="text" {...register("firstName", { required: "First name is required" })} aria-invalid={!!errors.firstName} />
         {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>}
         <p className="mt-1 text-sm text-gray-500">Used for greetings on the dashboard.</p>
       </div>

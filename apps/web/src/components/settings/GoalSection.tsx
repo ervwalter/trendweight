@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Heading } from "../ui/Heading";
+import { Input } from "../ui/input";
 
 interface GoalSectionProps {
   register: UseFormRegister<ProfileData>;
@@ -49,15 +50,16 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
           <label htmlFor="goalWeight" className="mb-1 block text-sm font-medium text-gray-700">
             Goal Weight ({weightUnit})
           </label>
-          <input
+          <Input
             id="goalWeight"
             type="number"
-            step="0.1"
+            step="1"
             {...register("goalWeight", {
               valueAsNumber: true,
               min: { value: 0, message: "Goal weight must be positive" },
             })}
-            className="focus:ring-brand-500 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:outline-none md:w-32"
+            className="md:w-32"
+            aria-invalid={!!errors.goalWeight}
           />
           {errors.goalWeight && <p className="mt-1 text-sm text-red-600">{errors.goalWeight.message}</p>}
           <p className="mt-1 text-sm text-gray-500">The weight you are working toward achieving.</p>

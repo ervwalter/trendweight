@@ -4,6 +4,7 @@ import type { ProfileData } from "../../lib/core/interfaces";
 import { ConfirmDialog } from "../ui/confirm-dialog";
 import { Heading } from "../ui/Heading";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 interface AccountManagementSectionProps {
   watch: UseFormWatch<ProfileData>;
@@ -53,13 +54,7 @@ export function AccountManagementSection({ watch }: AccountManagementSectionProp
         {shareUrl && (
           <div className="flex items-center space-x-4">
             <div className="relative flex-1">
-              <input
-                type="text"
-                value={shareUrl}
-                readOnly
-                className="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 pr-10 text-sm"
-                onClick={(e) => e.currentTarget.select()}
-              />
+              <Input type="text" value={shareUrl} readOnly className="bg-gray-50 pr-10" onClick={(e) => e.currentTarget.select()} />
               <Button
                 type="button"
                 onClick={handleCopy}

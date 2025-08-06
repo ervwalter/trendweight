@@ -152,6 +152,7 @@ If you see any route file that doesn't follow this pattern, it MUST be refactore
 9. **Defensive Input Handling** - Functions should handle unsorted input gracefully. The interpolation functions now sort input data before processing to ensure correct results regardless of input order.
 10. **Route File Pattern MANDATORY** - All route files were refactored to follow a minimal pattern. Route files must ONLY contain route definition and a single page component that renders Layout with a feature component. ALL business logic, hooks, and UI must be extracted to feature components. This pattern is now MANDATORY for all routes without exception.
 11. **File Naming Convention Change** - Switched to kebab-case for all new frontend TypeScript files to align with industry standards and shadcn/ui conventions. Component names remain PascalCase but filenames are now kebab-case (e.g., `user-profile.tsx` exports `UserProfile`). Existing PascalCase files remain as-is for now.
+12. **Git File Operations** - Always use `git mv` to rename/move files that are already tracked by git, never use regular `mv`. This prevents git confusion when creating new files with similar names but different case, which can cause tracking issues and merge conflicts.
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

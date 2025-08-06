@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import { useSharingSettings } from "../../lib/api/queries";
 import { useToggleSharing, useGenerateShareToken } from "../../lib/api/mutations";
 import { Switch } from "../ui/switch";
+import { Input } from "../ui/input";
 
 function SharingSectionContent() {
   const [showNewUrlConfirm, setShowNewUrlConfirm] = useState(false);
@@ -67,13 +68,11 @@ function SharingSectionContent() {
         {shareUrl && (
           <div className="flex items-center space-x-4">
             <div className="relative flex-1">
-              <input
+              <Input
                 type="text"
                 value={shareUrl}
                 readOnly
-                className={`w-full rounded-md border px-3 py-2 pr-10 text-sm ${
-                  sharingData?.sharingEnabled ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-gray-100 text-gray-400"
-                }`}
+                className={`pr-10 ${sharingData?.sharingEnabled ? "bg-gray-50" : "bg-gray-100 text-gray-400"}`}
                 onClick={(e) => sharingData?.sharingEnabled && e.currentTarget.select()}
                 disabled={!sharingData?.sharingEnabled}
               />

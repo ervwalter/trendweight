@@ -25,12 +25,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 2.7 Replace ConfirmDialog with shadcn AlertDialog
   - [x] 2.8 Verify all core component tests pass
 
-- [ ] 3. Form and Input Components Migration
-  - [ ] 3.1 Write tests for form component integrations
-  - [ ] 3.2 Install and configure shadcn Input components if needed
-  - [ ] 3.3 Update form implementations to use new Select component
-  - [ ] 3.4 Test form validation and error handling with new components
-  - [ ] 3.5 Verify all form-related tests pass
+- [x] 3. Form and Input Components Migration
+  - [x] 3.1 Write tests for form component integrations
+  - [x] 3.2 Install and configure shadcn Input components if needed
+  - [x] 3.3 Update form implementations to use new Select component
+  - [x] 3.4 Test form validation and error handling with new components
+  - [x] 3.5 Verify all form-related tests pass
 
 - [ ] 4. Layout and Navigation Components
   - [ ] 4.1 Write tests for Pagination component replacement
