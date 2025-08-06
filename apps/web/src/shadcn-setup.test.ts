@@ -28,7 +28,7 @@ describe("shadcn/ui setup", () => {
     // This will test that TypeScript can resolve @/components/ui/* paths
     // Test with existing Button component (PascalCase) to verify path resolution works
     try {
-      await import("@/components/ui/Button");
+      await import("@/components/ui/button");
       // If we get here, path resolution is working
       expect(true).toBe(true); // Path resolution successful
     } catch (error: any) {

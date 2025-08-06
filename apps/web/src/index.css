@@ -28,6 +28,12 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Prevent layout shift when Radix UI components hide body scroll */
+/* Override the margin-right that Radix UI adds to compensate for scrollbar */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+}
+
 /* Print styles */
 @media print {
   /* Force exact colors for printing */

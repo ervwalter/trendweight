@@ -162,7 +162,7 @@ describe("Settings", () => {
     await user.type(firstNameInput, "Jane Doe");
 
     expect(saveButton).not.toBeDisabled();
-    expect(saveButton).toHaveAttribute("data-variant", "primary");
+    expect(saveButton).toHaveAttribute("data-variant", "default");
   });
 
   it("should submit form with updated values", async () => {

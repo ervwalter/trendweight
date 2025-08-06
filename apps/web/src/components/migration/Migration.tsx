@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCompleteMigration } from "../../lib/api/mutations";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { ExternalLink } from "../ui/ExternalLink";
 import { Heading } from "../ui/Heading";
 
@@ -43,7 +43,7 @@ export function Migration() {
           If you encounter any issues, please don't hesitate to use the contact link at the bottom of the page to share the details.
         </p>
 
-        <Button variant="primary" onClick={handleContinue} disabled={completeMutation.isPending} className="w-full">
+        <Button variant="default" onClick={handleContinue} disabled={completeMutation.isPending} className="w-full">
           {completeMutation.isPending ? "Loading..." : "Continue to Dashboard"}
         </Button>
       </div>

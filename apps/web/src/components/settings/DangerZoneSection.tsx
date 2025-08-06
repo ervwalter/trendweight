@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import { Heading } from "../ui/Heading";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { useDeleteAccount } from "../../lib/api/mutations";
 import { useAuth } from "../../lib/auth/useAuth";
 

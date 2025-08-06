@@ -15,15 +15,15 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.5 Set up proper TypeScript configuration for shadcn components
   - [x] 1.6 Verify all tests pass after installation
 
-- [ ] 2. Core UI Component Migration
-  - [ ] 2.1 Write tests for Button component migration to shadcn
-  - [ ] 2.2 Replace custom Button with shadcn Button component
-  - [ ] 2.3 Update all Button usage throughout codebase to match shadcn API
-  - [ ] 2.4 Migrate Select component from react-select to shadcn Select
-  - [ ] 2.5 Update Select usage and remove react-select dependency
-  - [ ] 2.6 Replace Switch component with shadcn Switch
-  - [ ] 2.7 Replace ConfirmDialog with shadcn AlertDialog
-  - [ ] 2.8 Verify all core component tests pass
+- [x] 2. Core UI Component Migration
+  - [x] 2.1 Write tests for Button component migration to shadcn
+  - [x] 2.2 Replace custom Button with shadcn Button component
+  - [x] 2.3 Update all Button usage throughout codebase to match shadcn API
+  - [x] 2.4 Migrate Select component from react-select to shadcn Select
+  - [x] 2.5 Update Select usage and remove react-select dependency
+  - [x] 2.6 Replace Switch component with shadcn Switch
+  - [x] 2.7 Replace ConfirmDialog with shadcn AlertDialog
+  - [x] 2.8 Verify all core component tests pass
 
 - [ ] 3. Form and Input Components Migration
   - [ ] 3.1 Write tests for form component integrations

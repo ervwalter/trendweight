@@ -1,4 +1,4 @@
-import { Button } from "./Button";
+import { Button } from "./button";
 import { HiChevronLeft, HiChevronRight, HiChevronDoubleLeft, HiChevronDoubleRight } from "react-icons/hi";
 
 interface PaginationProps {
@@ -26,16 +26,10 @@ export function Pagination({ currentPage, totalPages, onPageChange, className = 
   return (
     <div className={`flex items-center gap-4 ${className}`}>
       <div className="flex items-center gap-2">
-        <Button onClick={() => onPageChange(1)} disabled={currentPage === 1} variant="secondary" size="sm" aria-label="First page">
+        <Button onClick={() => onPageChange(1)} disabled={currentPage === 1} variant="outline" size="sm" aria-label="First page">
           <HiChevronDoubleLeft className="h-4 w-4" />
         </Button>
-        <Button
-          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
-          variant="secondary"
-          size="sm"
-          aria-label="Previous page"
-        >
+        <Button onClick={() => onPageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1} variant="outline" size="sm" aria-label="Previous page">
           <HiChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm text-gray-600">
@@ -44,13 +38,13 @@ export function Pagination({ currentPage, totalPages, onPageChange, className = 
         <Button
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
-          variant="secondary"
+          variant="outline"
           size="sm"
           aria-label="Next page"
         >
           <HiChevronRight className="h-4 w-4" />
         </Button>
-        <Button onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages} variant="secondary" size="sm" aria-label="Last page">
+        <Button onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages} variant="outline" size="sm" aria-label="Last page">
           <HiChevronDoubleRight className="h-4 w-4" />
         </Button>
       </div>

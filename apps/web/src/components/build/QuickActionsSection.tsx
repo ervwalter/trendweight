@@ -1,4 +1,4 @@
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { FiCopy, FiCheck } from "react-icons/fi";
 
 interface QuickActionsSectionProps {
@@ -10,7 +10,7 @@ interface QuickActionsSectionProps {
 export function QuickActionsSection({ onCopyClick, copied, mailtoLink }: QuickActionsSectionProps) {
   return (
     <div className="mb-4 flex justify-end gap-3">
-      <Button onClick={onCopyClick} variant="secondary" size="md" className="flex items-center gap-2">
+      <Button onClick={onCopyClick} variant="outline" className="flex items-center gap-2">
         {copied ? (
           <>
             <FiCheck className="h-4 w-4" />
@@ -24,9 +24,7 @@ export function QuickActionsSection({ onCopyClick, copied, mailtoLink }: QuickAc
         )}
       </Button>
       <a href={mailtoLink}>
-        <Button variant="primary" size="md">
-          Email Support
-        </Button>
+        <Button variant="default">Email Support</Button>
       </a>
     </div>
   );

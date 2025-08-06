@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { ConfirmDialog } from "./confirm-dialog";
 
 describe("ConfirmDialog", () => {
   const defaultProps = {
@@ -65,14 +65,15 @@ describe("ConfirmDialog", () => {
     render(<ConfirmDialog {...defaultProps} destructive />);
 
     const confirmButton = screen.getByRole("button", { name: "Confirm" });
-    expect(confirmButton).toHaveClass("bg-red-700");
+    // Check for dark mode destructive classes that are being applied
+    expect(confirmButton).toHaveClass("dark:bg-destructive/60");
   });
 
   it("should render primary variant when destructive prop is false", () => {
     render(<ConfirmDialog {...defaultProps} destructive={false} />);
 
     const confirmButton = screen.getByRole("button", { name: "Confirm" });
-    expect(confirmButton).toHaveClass("bg-brand-600");
+    expect(confirmButton).toHaveClass("bg-primary");
   });
 
   it("should render ReactNode description", () => {

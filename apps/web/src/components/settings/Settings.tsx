@@ -4,7 +4,7 @@ import { useUpdateProfile } from "../../lib/api/mutations";
 import { useProfile } from "../../lib/api/queries";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { useNavigationGuard } from "../../lib/hooks/useNavigationGuard";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { AdvancedSection } from "./AdvancedSection";
 import { ConnectedAccountsSection } from "./ConnectedAccountsSection";
 import { DangerZoneSection } from "./DangerZoneSection";
@@ -118,7 +118,7 @@ export function Settings() {
               {updateProfile.isError && <p className="text-sm text-red-600">Failed to save settings. Please try again.</p>}
               {updateProfile.isSuccess && !isDirty && <p className="text-sm text-green-600">Settings saved successfully!</p>}
             </div>
-            <Button type="submit" disabled={!isDirty || isSubmitting} variant={isDirty && !isSubmitting ? "primary" : "secondary"}>
+            <Button type="submit" disabled={!isDirty || isSubmitting} variant={isDirty && !isSubmitting ? "default" : "outline"}>
               {isSubmitting ? "Saving..." : "Save Settings"}
             </Button>
           </div>

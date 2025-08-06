@@ -1,6 +1,6 @@
 import { Container } from "./Container";
 import { pageTitle } from "../lib/utils/pageTitle";
-import { Button } from "./ui/Button";
+import { Button } from "./ui/button";
 import { getDebugInfo } from "../lib/utils/debug-info";
 
 interface ErrorUIProps {
@@ -45,14 +45,14 @@ export function ErrorUI({ error, componentStack }: ErrorUIProps) {
               </div>
 
               <div className="mt-4 flex gap-3">
-                <Button onClick={() => window.location.reload()} variant="primary">
+                <Button onClick={() => window.location.reload()} variant="default">
                   Refresh Page
                 </Button>
-                <Button asChild variant="primary">
+                <Button asChild variant="default">
                   <a href="/">Go to Homepage</a>
                 </Button>
                 <a href={mailtoLink}>
-                  <Button variant="primary">Email Support</Button>
+                  <Button variant="default">Email Support</Button>
                 </a>
               </div>
             </div>

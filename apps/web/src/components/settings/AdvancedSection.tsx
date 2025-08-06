@@ -1,8 +1,8 @@
 import type { UseFormRegister, FieldErrors, UseFormWatch, UseFormSetValue, Control } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
-import { Switch } from "../ui/Switch";
-import { Select } from "../ui/Select";
+import { Switch } from "../ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Heading } from "../ui/Heading";
 
 interface AdvancedSectionProps {
@@ -29,22 +29,38 @@ export function AdvancedSection({ control }: AdvancedSectionProps) {
           <label htmlFor="dayStartOffset" className="mb-1 block text-sm font-medium text-gray-700">
             Day Start
           </label>
-          <div className="w-full md:w-48">
-            <Controller
-              name="dayStartOffset"
-              control={control}
-              render={({ field }) => (
-                <Select<{ value: number; label: string }>
-                  value={dayStartOptions.find((opt) => opt.value === field.value)}
-                  onChange={(option) => {
-                    field.onChange(option?.value ?? 0);
+          <Controller
+            name="dayStartOffset"
+            control={control}
+            render={({ field }) => {
+              const stringValue = field.value !== undefined && field.value !== null ? field.value.toString() : "";
+
+              return (
+                <Select
+                  value={stringValue}
+                  onValueChange={(value) => {
+                    if (value === "") {
+                      // Don't trigger onChange for empty values during initialization
+                      return;
+                    }
+                    const numericValue = parseInt(value, 10);
+                    field.onChange(numericValue);
                   }}
-                  options={dayStartOptions}
-                  placeholder="Select time..."
-                />
-              )}
-            />
-          </div>
+                >
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Select time..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dayStartOptions.map((option) => (
+                      <SelectItem key={option.value.toString()} value={option.value.toString()}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              );
+            }}
+          />
           <div className="mt-2 space-y-2 text-sm text-gray-600">
             <p>
               TrendWeight uses the first weight reading of each day, and this setting determines the time of day that TrendWeight considers a new day to have

@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import mathContent from "./math-of-trendweight.md?raw";
 import { Heading } from "../ui/Heading";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 
 export function Math() {
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -60,7 +60,7 @@ export function Math() {
               </ul>
               {showBackToTop && (
                 <div className="fixed bottom-8">
-                  <Button onClick={scrollToTop} variant="primary" className="flex items-center gap-2 shadow-lg" aria-label="Back to top">
+                  <Button onClick={scrollToTop} variant="default" className="flex items-center gap-2 shadow-lg" aria-label="Back to top">
                     <HiArrowUp className="h-4 w-4" />
                     <span>Back to top</span>
                   </Button>

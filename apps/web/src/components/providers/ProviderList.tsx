@@ -4,8 +4,8 @@ import { apiRequest } from "../../lib/api/client";
 import { useDisconnectProvider, useResyncProvider, useEnableProvider } from "../../lib/api/mutations";
 import { useProviderLinks } from "../../lib/api/queries";
 import { useToast } from "../../lib/hooks/useToast";
-import { Button } from "../ui/Button";
-import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { Button } from "../ui/button";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import { ExternalLink } from "../ui/ExternalLink";
 import { Heading } from "../ui/Heading";
 import { getProviderDisplayName, getOAuthProviders } from "../../lib/utils/providerDisplay";
@@ -126,7 +126,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                           });
                         }}
                         disabled={resyncMutation.isPending}
-                        variant="primary"
+                        variant="default"
                         size="sm"
                       >
                         {resyncMutation.isPending ? "Syncing..." : "Resync"}
@@ -142,7 +142,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                       </Button>
                     </>
                   ) : (
-                    <Button onClick={() => handleConnect(provider.id)} variant="primary" size="sm">
+                    <Button onClick={() => handleConnect(provider.id)} variant="default" size="sm">
                       Connect
                     </Button>
                   )}
@@ -196,7 +196,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                           });
                         }}
                         disabled={resyncMutation.isPending}
-                        variant="primary"
+                        variant="default"
                         size="sm"
                         className="@sm:px-6"
                       >
@@ -291,7 +291,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                               }
                             }}
                             disabled={enableMutation.isPending || disconnectMutation.isPending}
-                            variant={isDisabled ? "primary" : "destructive"}
+                            variant={isDisabled ? "default" : "destructive"}
                             size="sm"
                           >
                             {enableMutation.isPending || disconnectMutation.isPending

@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { FaCheck } from "react-icons/fa";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 
 interface OAuthCallbackUIProps {
   providerName: string;
@@ -54,7 +54,7 @@ export function OAuthCallbackUI({ providerName, state, error, errorCode, retryCo
           {errorCode === "RATE_LIMITED" && (
             <p className="mb-6 text-xs text-gray-500">If you've made multiple connection attempts, please wait a moment before trying again.</p>
           )}
-          <Button onClick={() => navigate({ to: "/link" })} variant="primary">
+          <Button onClick={() => navigate({ to: "/link" })} variant="default">
             Try Again
           </Button>
         </div>
@@ -67,7 +67,7 @@ export function OAuthCallbackUI({ providerName, state, error, errorCode, retryCo
     <div className="mt-12 text-center">
       <p className="mb-4 text-lg text-gray-700">Something went wrong</p>
       <p className="mb-6 text-sm text-gray-600">Let's try connecting your {providerName} account again.</p>
-      <Button onClick={() => navigate({ to: "/link" })} variant="primary">
+      <Button onClick={() => navigate({ to: "/link" })} variant="default">
         Connect Account
       </Button>
     </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useProviderLinks } from "../../lib/api/queries";
 import { Heading } from "../ui/Heading";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { ScaleReadingsTable } from "./ScaleReadingsTable";
 import { ViewToggleButtons } from "./ViewToggleButtons";
 import { SortToggle } from "./SortToggle";
@@ -60,7 +60,7 @@ export function Download() {
 
       {/* Download button */}
       <div className="mb-4">
-        <Button onClick={handleDownloadCSV} variant="primary" size="sm" className="bg-brand-500 hover:bg-brand-800">
+        <Button onClick={handleDownloadCSV} variant="default" size="sm" className="bg-brand-500 hover:bg-brand-800">
           <HiDownload className="mr-2 h-4 w-4" />
           Download as CSV
         </Button>

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Heading } from "../ui/Heading";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 
 export function AccountDeleted() {
   return (
@@ -55,7 +55,7 @@ export function AccountDeleted() {
         </div>
 
         <div className="space-y-4">
-          <Button asChild variant="primary">
+          <Button asChild variant="default">
             <Link to="/">Return to Home</Link>
           </Button>
           <p className="text-sm text-gray-500">Thank you for using TrendWeight!</p>

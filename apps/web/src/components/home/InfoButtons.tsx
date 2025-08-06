@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useAuth } from "../../lib/auth/useAuth";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 
 export function InfoButtons() {
   const { isInitializing, isLoggedIn } = useAuth();
@@ -12,11 +12,11 @@ export function InfoButtons() {
         <Link to="/about">Learn More</Link>
       </Button>
       {isLoggedIn ? (
-        <Button asChild variant="primary" size="xl" className={`w-full font-normal md:w-80 ${visibility}`}>
+        <Button asChild variant="default" size="xl" className={`w-full font-normal md:w-80 ${visibility}`}>
           <Link to="/dashboard">Go To Dashboard</Link>
         </Button>
       ) : (
-        <Button asChild variant="primary" size="xl" className={`w-full font-normal md:w-80 ${visibility}`}>
+        <Button asChild variant="default" size="xl" className={`w-full font-normal md:w-80 ${visibility}`}>
           <Link to="/login">Log In / Sign Up</Link>
         </Button>
       )}

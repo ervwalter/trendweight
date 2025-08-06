@@ -14,7 +14,7 @@ vi.mock("../../lib/api/client");
 vi.mock("../../lib/hooks/useToast");
 
 // Mock ConfirmDialog
-vi.mock("../ui/ConfirmDialog", () => ({
+vi.mock("../ui/confirm-dialog", () => ({
   ConfirmDialog: ({ open, onConfirm, title, description, confirmText }: any) =>
     open ? (
       <div data-testid="confirm-dialog">

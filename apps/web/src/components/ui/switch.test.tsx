@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Switch } from "./Switch";
+import { Switch } from "./switch";
 
 describe("Switch", () => {
   it("renders unchecked by default", () => {
@@ -79,10 +79,10 @@ describe("Switch", () => {
     render(<Switch />);
     const switchElement = screen.getByRole("switch");
 
-    expect(switchElement).toHaveClass("relative");
     expect(switchElement).toHaveClass("inline-flex");
-    expect(switchElement).toHaveClass("h-6");
-    expect(switchElement).toHaveClass("w-11");
+    expect(switchElement).toHaveClass("h-[1.15rem]");
+    expect(switchElement).toHaveClass("w-8");
+    expect(switchElement).toHaveAttribute("data-slot", "switch");
   });
 
   it("supports keyboard navigation", async () => {

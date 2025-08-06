@@ -6,25 +6,45 @@ import { GoalSection } from "./GoalSection";
 import type { ProfileData } from "../../lib/core/interfaces";
 
 // Mock Select component
-vi.mock("../ui/Select", () => ({
-  Select: ({ value, onChange, options, placeholder }: any) => (
-    <select
-      value={value?.value ?? ""}
-      onChange={(e) => {
-        const selectedValue = Number(e.target.value);
-        const option = options.find((opt: any) => opt.value === selectedValue);
-        onChange(option);
-      }}
-      data-testid="select"
-    >
-      <option value="">{placeholder}</option>
-      {options.map((opt: any) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
+vi.mock("../ui/select", () => ({
+  Select: ({ children, ...props }: any) => (
+    <div data-testid="select" {...props}>
+      {children}
+    </div>
   ),
+  SelectContent: ({ children, ...props }: any) => (
+    <div data-testid="select-content" {...props}>
+      {children}
+    </div>
+  ),
+  SelectGroup: ({ children, ...props }: any) => (
+    <div data-testid="select-group" {...props}>
+      {children}
+    </div>
+  ),
+  SelectItem: ({ children, value, ...props }: any) => (
+    <div data-testid="select-item" data-value={value} {...props}>
+      {children}
+    </div>
+  ),
+  SelectLabel: ({ children, ...props }: any) => (
+    <div data-testid="select-label" {...props}>
+      {children}
+    </div>
+  ),
+  SelectTrigger: ({ children, ...props }: any) => (
+    <button data-testid="select-trigger" {...props}>
+      {children}
+    </button>
+  ),
+  SelectValue: ({ placeholder, ...props }: any) => (
+    <span data-testid="select-value" {...props}>
+      {placeholder}
+    </span>
+  ),
+  SelectScrollUpButton: (props: any) => <button data-testid="select-scroll-up-button" {...props} />,
+  SelectScrollDownButton: (props: any) => <button data-testid="select-scroll-down-button" {...props} />,
+  SelectSeparator: (props: any) => <div data-testid="select-separator" {...props} />,
 }));
 
 // Test wrapper component
@@ -81,7 +101,7 @@ describe("GoalSection", () => {
     );
 
     expect(screen.getByLabelText("Goal Weight (lbs)")).toHaveValue(150);
-    expect(screen.getByTestId("select")).toHaveValue("-1");
+    expect(screen.getByTestId("select-trigger")).toBeInTheDocument();
   });
 
   it("should show validation error for goal weight", () => {

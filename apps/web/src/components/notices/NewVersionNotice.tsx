@@ -1,6 +1,6 @@
 import { HiX } from "react-icons/hi";
 import { usePersistedState } from "../../lib/hooks/usePersistedState";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { ExternalLink } from "../ui/ExternalLink";
 
 interface NewVersionNoticeProps {

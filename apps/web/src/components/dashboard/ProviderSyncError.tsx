@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { useReconnectProvider } from "../../lib/api/mutations";
 import type { ProviderSyncStatus } from "../../lib/api/types";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 
 interface ProviderSyncErrorProps {
   provider: string;

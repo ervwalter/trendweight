@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { UseFormWatch } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
-import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import { Heading } from "../ui/Heading";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 
 interface AccountManagementSectionProps {
   watch: UseFormWatch<ProfileData>;
@@ -84,7 +84,7 @@ export function AccountManagementSection({ watch }: AccountManagementSectionProp
                 )}
               </Button>
             </div>
-            <Button type="button" onClick={() => setShowNewUrlConfirm(true)} variant="secondary" size="sm">
+            <Button type="button" onClick={() => setShowNewUrlConfirm(true)} variant="outline" size="sm">
               Get a New URL
             </Button>
           </div>

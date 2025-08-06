@@ -8,7 +8,7 @@ import { shouldUseMetric, extractFirstName } from "../../lib/utils/locale";
 import { useAuth } from "../../lib/auth/useAuth";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { Heading } from "../ui/Heading";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 
 export function InitialSetup() {
   const navigate = useNavigate();
@@ -65,7 +65,7 @@ export function InitialSetup() {
 
           <div className="flex items-center justify-between">
             <div>{updateProfile.isError && <p className="text-sm text-red-600">Failed to create profile. Please try again.</p>}</div>
-            <Button type="submit" disabled={isSubmitting} variant="primary">
+            <Button type="submit" disabled={isSubmitting} variant="default">
               {isSubmitting ? "Creating Profile..." : "Continue"}
             </Button>
           </div>

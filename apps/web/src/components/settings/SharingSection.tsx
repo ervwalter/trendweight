@@ -1,10 +1,10 @@
 import { useState, Suspense } from "react";
-import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import { Heading } from "../ui/Heading";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { useSharingSettings } from "../../lib/api/queries";
 import { useToggleSharing, useGenerateShareToken } from "../../lib/api/mutations";
-import { Switch } from "../ui/Switch";
+import { Switch } from "../ui/switch";
 
 function SharingSectionContent() {
   const [showNewUrlConfirm, setShowNewUrlConfirm] = useState(false);
@@ -102,7 +102,7 @@ function SharingSectionContent() {
                 )}
               </Button>
             </div>
-            <Button type="button" onClick={() => setShowNewUrlConfirm(true)} variant="secondary" size="sm" disabled={generateToken.isPending}>
+            <Button type="button" onClick={() => setShowNewUrlConfirm(true)} variant="outline" size="sm" disabled={generateToken.isPending}>
               {generateToken.isPending ? "Generating..." : "Get a New URL"}
             </Button>
           </div>
