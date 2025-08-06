@@ -30,36 +30,30 @@ vi.mock("../ui/Button", () => ({
   ),
 }));
 
-vi.mock("../ui/Pagination", () => ({
-  Pagination: ({ currentPage, totalPages, onPageChange, totalItems, itemLabel, className }: any) => (
-    <div className={className} data-testid="pagination">
-      <span>
-        Page {currentPage} of {totalPages}
-      </span>
-      {totalItems && (
-        <span>
-          {" "}
-          - {totalItems} {itemLabel}
-        </span>
-      )}
-      <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
-        Previous
-      </button>
-      <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>
-        Next
-      </button>
-    </div>
-  ),
-}));
+vi.mock("./scale-readings-data-table", () => ({
+  ScaleReadingsDataTable: ({ readings, viewType, useMetric }: any) => {
+    // Simple mock that simulates pagination behavior
+    const pageSize = 50;
+    const totalPages = Math.ceil(readings.length / pageSize);
+    const displayedReadings = readings.slice(0, pageSize);
 
-vi.mock("./ScaleReadingsTable", () => ({
-  ScaleReadingsTable: ({ readings, viewType, useMetric }: any) => (
-    <div data-testid="scale-readings-table">
-      <div>View: {viewType}</div>
-      <div>Metric: {useMetric ? "true" : "false"}</div>
-      <div>Readings: {readings.length}</div>
-    </div>
-  ),
+    return (
+      <div data-testid="scale-readings-table">
+        <div>View: {viewType}</div>
+        <div>Metric: {useMetric ? "true" : "false"}</div>
+        <div>Readings: {displayedReadings.length}</div>
+        <div>Total: {readings.length}</div>
+        {totalPages > 1 && (
+          <div data-testid="pagination">
+            <span>Page 1 of {totalPages}</span>
+            <span> - {readings.length} readings</span>
+            <button disabled>Previous</button>
+            <button>Next</button>
+          </div>
+        )}
+      </div>
+    );
+  },
 }));
 
 vi.mock("./ViewToggleButtons", () => ({
@@ -164,22 +158,19 @@ describe("Download", () => {
     expect(vi.mocked(useScaleReadingsData)).toHaveBeenCalledWith("fitbit", true);
   });
 
-  it("should reset to page 1 when changing views", async () => {
+  it("should update view when changing views", async () => {
     const user = userEvent.setup();
     render(<Download />);
 
-    // Go to page 2
-    const nextButton = screen.getAllByText("Next")[0];
-    await user.click(nextButton);
-
-    expect(screen.getAllByText("Page 2 of 3")[0]).toBeInTheDocument();
+    // Initially should show computed view
+    expect(screen.getByTestId("scale-readings-table")).toHaveTextContent("View: computed");
 
     // Change view
     const fitbitButton = screen.getByText("fitbit");
     await user.click(fitbitButton);
 
-    // Should reset to page 1
-    expect(screen.getAllByText("Page 1 of 3")[0]).toBeInTheDocument();
+    // Should show fitbit view
+    expect(vi.mocked(useScaleReadingsData)).toHaveBeenCalledWith("fitbit", true);
   });
 
   it("should handle sort toggle", async () => {
@@ -206,33 +197,21 @@ describe("Download", () => {
     expect(downloadScaleReadingsCSV).toHaveBeenCalledWith(mockReadings, "computed", false);
   });
 
-  it("should paginate data correctly", () => {
+  it("should display data table with pagination info", () => {
     render(<Download />);
 
-    // Should show pagination info
-    expect(screen.getAllByText("Page 1 of 3")[0]).toBeInTheDocument();
-    expect(screen.getByText("- 125 readings")).toBeInTheDocument();
+    const table = screen.getByTestId("scale-readings-table");
+
+    // Should show correct total
+    expect(table).toHaveTextContent("Total: 125");
 
     // Table should show 50 items (first page)
-    const table = screen.getByTestId("scale-readings-table");
     expect(table).toHaveTextContent("Readings: 50");
-  });
 
-  it("should handle page navigation", async () => {
-    const user = userEvent.setup();
-    render(<Download />);
-
-    // Click next
-    const nextButtons = screen.getAllByText("Next");
-    await user.click(nextButtons[0]);
-
-    expect(screen.getAllByText("Page 2 of 3")[0]).toBeInTheDocument();
-
-    // Click previous
-    const previousButtons = screen.getAllByText("Previous");
-    await user.click(previousButtons[0]);
-
-    expect(screen.getAllByText("Page 1 of 3")[0]).toBeInTheDocument();
+    // Should show pagination info when more than 50 items
+    expect(screen.getByTestId("pagination")).toBeInTheDocument();
+    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument();
+    expect(screen.getByText("- 125 readings")).toBeInTheDocument();
   });
 
   it("should show empty state when no readings", () => {

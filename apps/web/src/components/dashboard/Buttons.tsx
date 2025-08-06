@@ -1,6 +1,5 @@
 import { useEffect } from "react";
-import { ToggleButton } from "../ui/ToggleButton";
-import { ToggleButtonGroup } from "../ui/ToggleButtonGroup";
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { useDashboardData } from "../../lib/dashboard/hooks";
 import { useIsMobile } from "../../lib/hooks/useMediaQuery";
 import type { Mode, TimeRange } from "../../lib/core/interfaces";
@@ -21,33 +20,33 @@ const Buttons = () => {
 
   return (
     <div className="flex flex-col-reverse gap-4 md:flex-row print:hidden">
-      <ToggleButtonGroup value={timeRange} onChange={(value) => setTimeRange(value as TimeRange)} defaultValue="4w" aria-label="Time Range">
-        <ToggleButton value="4w">
+      <ToggleGroup type="single" value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)} defaultValue="4w" aria-label="Time Range">
+        <ToggleGroupItem value="4w">
           <span className="lg:hidden">4 wk</span>
           <span className="hidden lg:inline">4 weeks</span>
-        </ToggleButton>
-        <ToggleButton value="3m">
+        </ToggleGroupItem>
+        <ToggleGroupItem value="3m">
           <span className="lg:hidden">3 mo</span>
           <span className="hidden lg:inline">3 months</span>
-        </ToggleButton>
-        <ToggleButton value="6m">
+        </ToggleGroupItem>
+        <ToggleGroupItem value="6m">
           <span className="lg:hidden">6 mo</span>
           <span className="hidden lg:inline">6 months</span>
-        </ToggleButton>
-        <ToggleButton value="1y">
+        </ToggleGroupItem>
+        <ToggleGroupItem value="1y">
           <span className="lg:hidden">1 yr</span>
           <span className="hidden lg:inline">1 year</span>
-        </ToggleButton>
-        <ToggleButton value="all">All</ToggleButton>
-        {!isMobile && <ToggleButton value="explore">Explore</ToggleButton>}
-      </ToggleButtonGroup>
+        </ToggleGroupItem>
+        <ToggleGroupItem value="all">All</ToggleGroupItem>
+        {!isMobile && <ToggleGroupItem value="explore">Explore</ToggleGroupItem>}
+      </ToggleGroup>
 
-      <ToggleButtonGroup value={mode} onChange={(value) => setMode(value as Mode)} defaultValue="weight" aria-label="Mode">
-        <ToggleButton value="weight">Weight</ToggleButton>
-        <ToggleButton value="fatpercent">Fat %</ToggleButton>
-        <ToggleButton value="fatmass">Fat Mass</ToggleButton>
-        <ToggleButton value="leanmass">Lean Mass</ToggleButton>
-      </ToggleButtonGroup>
+      <ToggleGroup type="single" value={mode} onValueChange={(value) => setMode(value as Mode)} defaultValue="weight" aria-label="Mode">
+        <ToggleGroupItem value="weight">Weight</ToggleGroupItem>
+        <ToggleGroupItem value="fatpercent">Fat %</ToggleGroupItem>
+        <ToggleGroupItem value="fatmass">Fat Mass</ToggleGroupItem>
+        <ToggleGroupItem value="leanmass">Lean Mass</ToggleGroupItem>
+      </ToggleGroup>
     </div>
   );
 };

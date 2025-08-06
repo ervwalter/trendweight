@@ -32,13 +32,13 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 3.4 Test form validation and error handling with new components
   - [x] 3.5 Verify all form-related tests pass
 
-- [ ] 4. Layout and Navigation Components
-  - [ ] 4.1 Write tests for Pagination component replacement
-  - [ ] 4.2 Replace custom Pagination with shadcn Pagination component
-  - [ ] 4.3 Update pagination usage in components that use it
-  - [ ] 4.4 Replace ToggleButtonGroup with shadcn Toggle Group
-  - [ ] 4.5 Test toggle group functionality and styling
-  - [ ] 4.6 Verify all navigation component tests pass
+- [x] 4. Layout and Navigation Components (Modified: Combined with Task 6)
+  - [x] 4.1 Write tests for DataTable with built-in pagination
+  - [x] 4.2 Install shadcn Table and Toggle Group components
+  - [x] 4.3 Replace ScaleReadingsTable with DataTable using TanStack Table
+  - [x] 4.4 Replace ToggleButtonGroup with shadcn Toggle Group
+  - [x] 4.5 Test toggle group functionality and styling
+  - [x] 4.6 Verify all navigation component tests pass
 
 - [ ] 5. Card Pattern Standardization
   - [ ] 5.1 Write tests for Card component usage patterns
@@ -50,13 +50,13 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [ ] 5.7 Search for and replace any remaining card patterns
   - [ ] 5.8 Verify all card-related tests pass
 
-- [ ] 6. Data Table Migration
-  - [ ] 6.1 Write tests for Table component migrations
-  - [ ] 6.2 Install shadcn Table components (Table, TableHeader, TableBody, TableRow, TableCell)
-  - [ ] 6.3 Replace ScaleReadingsTable implementation with shadcn Table components
+- [x] 6. Data Table Migration (Combined with Task 4)
+  - [x] 6.1 Write tests for Table component migrations
+  - [x] 6.2 Install shadcn Table components (Table, TableHeader, TableBody, TableRow, TableCell)
+  - [x] 6.3 Replace ScaleReadingsTable implementation with shadcn Table components + TanStack Table
   - [ ] 6.4 Replace RecentReadings table with shadcn Table components
-  - [ ] 6.5 Ensure table accessibility and responsive behavior
-  - [ ] 6.6 Verify all table-related tests pass
+  - [x] 6.5 Ensure table accessibility and responsive behavior
+  - [x] 6.6 Verify all table-related tests pass
 
 - [ ] 7. Loading States and Progress Migration
   - [ ] 7.1 Write tests for Skeleton component replacement

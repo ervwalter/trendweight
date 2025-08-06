@@ -1,5 +1,4 @@
-import { ToggleButton } from "../ui/ToggleButton";
-import { ToggleButtonGroup } from "../ui/ToggleButtonGroup";
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import type { ViewType } from "./types";
 import type { ProviderLink } from "../../lib/api/types";
 import { getProviderDisplayName } from "../../lib/utils/providerDisplay";
@@ -21,14 +20,14 @@ export function ViewToggleButtons({ viewType, onViewChange, providerLinks }: Vie
   });
 
   return (
-    <ToggleButtonGroup value={viewType} onChange={onViewChange} defaultValue="computed" aria-label="View Type">
-      <ToggleButton value="computed">Computed Values</ToggleButton>
+    <ToggleGroup type="single" value={viewType} onValueChange={onViewChange} defaultValue="computed" aria-label="View Type">
+      <ToggleGroupItem value="computed">Computed Values</ToggleGroupItem>
       {sortedProviders.map((provider) => (
-        <ToggleButton key={provider.provider} value={provider.provider}>
+        <ToggleGroupItem key={provider.provider} value={provider.provider}>
           {getProviderDisplayName(provider.provider)}
           {provider.provider !== "legacy" && " Data"}
-        </ToggleButton>
+        </ToggleGroupItem>
       ))}
-    </ToggleButtonGroup>
+    </ToggleGroup>
   );
 }

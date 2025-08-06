@@ -1,5 +1,4 @@
-import { ToggleButton } from "../ui/ToggleButton";
-import { ToggleButtonGroup } from "../ui/ToggleButtonGroup";
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 interface SortToggleProps {
   sortNewestFirst: boolean;
@@ -8,14 +7,15 @@ interface SortToggleProps {
 
 export function SortToggle({ sortNewestFirst, onSortChange }: SortToggleProps) {
   return (
-    <ToggleButtonGroup
+    <ToggleGroup
+      type="single"
       value={sortNewestFirst ? "newest" : "oldest"}
-      onChange={(value) => onSortChange(value === "newest")}
+      onValueChange={(value) => onSortChange(value === "newest")}
       defaultValue="newest"
       aria-label="Sort Order"
     >
-      <ToggleButton value="newest">Newest First</ToggleButton>
-      <ToggleButton value="oldest">Oldest First</ToggleButton>
-    </ToggleButtonGroup>
+      <ToggleGroupItem value="newest">Newest First</ToggleGroupItem>
+      <ToggleGroupItem value="oldest">Oldest First</ToggleGroupItem>
+    </ToggleGroup>
   );
 }

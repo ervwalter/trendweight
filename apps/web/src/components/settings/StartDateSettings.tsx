@@ -1,8 +1,7 @@
 import type { Control, UseFormRegister, UseFormWatch } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
-import { ToggleButton } from "../ui/ToggleButton";
-import { ToggleButtonGroup } from "../ui/ToggleButtonGroup";
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { Input } from "../ui/input";
 
 interface StartDateSettingsProps {
@@ -28,15 +27,16 @@ export function StartDateSettings({ register, control }: StartDateSettingsProps)
           name="hideDataBeforeStart"
           control={control}
           render={({ field }) => (
-            <ToggleButtonGroup
+            <ToggleGroup
+              type="single"
               value={String(field.value ?? false)}
-              onChange={(value) => field.onChange(value === "true")}
+              onValueChange={(value) => field.onChange(value === "true")}
               aria-label="Earlier weight data"
-              variant="subtle"
+              variant="outline"
             >
-              <ToggleButton value="false">Show</ToggleButton>
-              <ToggleButton value="true">Hide</ToggleButton>
-            </ToggleButtonGroup>
+              <ToggleGroupItem value="false">Show</ToggleGroupItem>
+              <ToggleGroupItem value="true">Hide</ToggleGroupItem>
+            </ToggleGroup>
           )}
         />
         <p className="mt-2 text-sm text-gray-500">
