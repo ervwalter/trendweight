@@ -47,8 +47,8 @@ export function ConfirmDialog({
               {cancelText}
             </Button>
           </AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <Button onClick={onConfirm} variant={destructive ? "destructive" : "default"} size="sm">
+          <AlertDialogAction onClick={onConfirm} asChild>
+            <Button variant={destructive ? "destructive" : "default"} size="sm">
               {confirmText}
             </Button>
           </AlertDialogAction>

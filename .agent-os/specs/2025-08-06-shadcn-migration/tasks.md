@@ -111,10 +111,10 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 12.5 Verify src/components/ui/ only contains shadcn components
   - [x] 12.6 Run comprehensive test suite to ensure all tests pass
 
-- [ ] 13. Bundle Optimization and Dependencies
-  - [ ] 13.1 Remove unused Radix UI dependencies
-  - [ ] 13.2 Remove unused react-icons packages
-  - [ ] 13.3 Verify tree-shaking effectiveness for shadcn components
-  - [ ] 13.4 Run bundle analysis to confirm size optimization
-  - [ ] 13.5 Update package.json dependencies
-  - [ ] 13.6 Verify final build and all tests pass
+- [x] 13. Bundle Optimization and Dependencies
+  - [x] 13.1 Remove unused Radix UI dependencies
+  - [x] 13.2 Remove unused react-icons packages
+  - [x] 13.3 Verify tree-shaking effectiveness for shadcn components
+  - [x] 13.4 Run bundle analysis to confirm size optimization
+  - [x] 13.5 Update package.json dependencies
+  - [x] 13.6 Verify final build and all tests pass

@@ -224,8 +224,8 @@ describe("Semantic Color System", () => {
       function TestIncorrectBorders() {
         return (
           <div>
-            <div className="border-border border">Incorrect Border</div>
-            <input className="border-border border" />
+            <div className="border border-gray-300">Incorrect Border</div>
+            <input className="border border-slate-400" />
           </div>
         );
       }
@@ -236,11 +236,11 @@ describe("Semantic Color System", () => {
         </ThemeProvider>,
       );
 
-      const grayBorder = container.querySelector(".border-border");
+      const grayBorder = container.querySelector(".border-gray-300");
       expect(grayBorder).toBeTruthy();
       expect(usesSemantic(grayBorder as HTMLElement)).toBe(false);
 
-      const slateBorder = container.querySelector(".border-border");
+      const slateBorder = container.querySelector(".border-slate-400");
       expect(slateBorder).toBeTruthy();
       expect(usesSemantic(slateBorder as HTMLElement)).toBe(false);
     });

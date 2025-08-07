@@ -32,22 +32,49 @@ const Chart = () => {
 
   // Handle print events
   useEffect(() => {
+    let hadDarkClass = false;
+
     const handleBeforePrint = async () => {
+      // Temporarily remove dark class to ensure light mode colors for print
+      const htmlElement = document.documentElement;
+      hadDarkClass = htmlElement.classList.contains("dark");
+      if (hadDarkClass) {
+        htmlElement.classList.remove("dark");
+      }
+
       // Always generate a fresh image when printing
       const imageUrl = await generateChartImage();
       if (imageUrl) {
         setPrintImageUrl(imageUrl);
       }
+
+      // Restore dark class if it was present
+      if (hadDarkClass) {
+        // Small delay to ensure image generation is complete
+        setTimeout(() => {
+          htmlElement.classList.add("dark");
+        }, 100);
+      }
+    };
+
+    const handleAfterPrint = () => {
+      // Restore dark class if it was removed
+      if (hadDarkClass) {
+        document.documentElement.classList.add("dark");
+      }
     };
 
     // Add event listeners
     window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
 
     // Also handle media query for better browser support
     const mediaQueryList = window.matchMedia("print");
     const handleMediaQueryChange = (mql: MediaQueryListEvent | MediaQueryList) => {
       if (mql.matches) {
         handleBeforePrint();
+      } else {
+        handleAfterPrint();
       }
     };
 
@@ -57,6 +84,7 @@ const Chart = () => {
 
     return () => {
       window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
       if (mediaQueryList.removeEventListener) {
         mediaQueryList.removeEventListener("change", handleMediaQueryChange);
       }

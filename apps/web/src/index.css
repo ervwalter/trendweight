@@ -31,6 +31,26 @@ html body[data-scroll-locked] {
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+
+  /* Force light mode chart colors for printing, regardless of current theme */
+  :root {
+    --chart-weight: #8b0000 !important;
+    --chart-fatpercent: #660066 !important;
+    --chart-fatmass: #336600 !important;
+    --chart-leanmass: #000066 !important;
+    --chart-actual-diamond: #333333 !important;
+    --chart-diamond-fill: #ffffff !important;
+    --chart-interpolated-diamond: #e2e2e2 !important;
+    --chart-actual-dot: #333333 !important;
+    --chart-interpolated-dot: #e2e2e2 !important;
+    --chart-actual-line: #aaaaaa !important;
+    --chart-actual-sinker: #999999 !important;
+    --chart-interpolated-sinker: #e2e2e2 !important;
+    --chart-weekend-band: rgba(220, 220, 220, 0.2) !important;
+    --chart-goal-band: rgb(244, 255, 244) !important;
+    --chart-goal-line: #00aa00 !important;
+    --chart-goal-label: #007700 !important;
+  }
 }
 
 /* Toast animations */
