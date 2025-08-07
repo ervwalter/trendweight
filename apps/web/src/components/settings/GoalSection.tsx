@@ -1,10 +1,10 @@
-import type { UseFormRegister, FieldErrors, UseFormWatch, Control } from "react-hook-form";
-import { Controller } from "react-hook-form";
 import { useMemo } from "react";
+import type { Control, FieldErrors, UseFormRegister, UseFormWatch } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { CardContent, CardTitle } from "../ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 interface GoalSectionProps {
   register: UseFormRegister<ProfileData>;
@@ -39,12 +39,12 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
   );
 
   return (
-    <CardContent className="border-b border-gray-200">
-      <CardTitle>Goal Settings</CardTitle>
-      <p className="mt-2 mb-4 text-sm text-gray-600">
-        Set a goal weight and plan to track your progress. Your dashboard will show whether you're ahead or behind schedule.
-      </p>
-      <div className="space-y-4">
+    <>
+      <CardHeader className="pt-6">
+        <CardTitle>Goal Settings</CardTitle>
+        <CardDescription>Set a goal weight and plan to track your progress. Your dashboard will show whether you're ahead or behind schedule.</CardDescription>
+      </CardHeader>
+      <CardContent className="border-b py-6">
         <div>
           <label htmlFor="goalWeight" className="mb-1 block text-sm font-medium text-gray-700">
             Goal Weight ({weightUnit})
@@ -102,7 +102,7 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
           />
           <p className="mt-2 text-sm text-gray-500">Your planned rate of weight change. This helps track if you're ahead or behind schedule.</p>
         </div>
-      </div>
-    </CardContent>
+      </CardContent>
+    </>
   );
 }

@@ -1,6 +1,6 @@
-import type { UseFormRegister, UseFormWatch, Control } from "react-hook-form";
+import type { Control, UseFormRegister, UseFormWatch } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
-import { CardContent, CardTitle } from "../ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { StartDateSettings } from "./StartDateSettings";
 
 interface ProgressTrackingSectionProps {
@@ -11,12 +11,14 @@ interface ProgressTrackingSectionProps {
 
 export function ProgressTrackingSection({ register, watch, control }: ProgressTrackingSectionProps) {
   return (
-    <CardContent className="border-b border-gray-200">
-      <CardTitle>Progress Tracking</CardTitle>
-      <p className="mt-2 mb-4 text-sm text-gray-600">
-        Track your weight change from a specific starting point and control how your historical data is displayed.
-      </p>
-      <StartDateSettings register={register} control={control} watch={watch} />
-    </CardContent>
+    <>
+      <CardHeader className="pt-6">
+        <CardTitle>Progress Tracking</CardTitle>
+        <CardDescription>Track your weight change from a specific starting point and control how your historical data is displayed.</CardDescription>
+      </CardHeader>
+      <CardContent className="border-b py-6">
+        <StartDateSettings register={register} control={control} watch={watch} />
+      </CardContent>
+    </>
   );
 }

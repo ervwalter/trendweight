@@ -4,6 +4,7 @@ import { useUpdateProfile } from "../../lib/api/mutations";
 import { useProfile } from "../../lib/api/queries";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { useNavigationGuard } from "../../lib/hooks/useNavigationGuard";
+import { NewVersionNotice } from "../notices/NewVersionNotice";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { AdvancedSection } from "./AdvancedSection";
@@ -15,7 +16,6 @@ import { ProfileSection } from "./ProfileSection";
 import { ProgressTrackingSection } from "./ProgressTrackingSection";
 import { SettingsLayout } from "./SettingsLayout";
 import { SharingSection } from "./SharingSection";
-import { NewVersionNotice } from "../notices/NewVersionNotice";
 
 export function Settings() {
   const { data: profileData } = useProfile();
@@ -105,7 +105,7 @@ export function Settings() {
       {profileData?.isMigrated && <NewVersionNotice />}
 
       {/* Settings Form Card */}
-      <Card className="mb-6">
+      <Card className="mb-6 py-0">
         <form onSubmit={handleSubmit(onSubmit)}>
           <ProfileSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} />
           <ProgressTrackingSection register={register} watch={watch} control={control} />
@@ -140,7 +140,7 @@ export function Settings() {
       <DownloadSection />
 
       {/* Danger Zone Card */}
-      <Card className="border-2 border-red-200">
+      <Card className="border-destructive">
         <DangerZoneSection />
       </Card>
     </SettingsLayout>

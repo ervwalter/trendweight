@@ -1,9 +1,9 @@
-import type { UseFormRegister, FieldErrors, UseFormWatch, UseFormSetValue, Control } from "react-hook-form";
+import type { Control, FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
-import { Switch } from "../ui/switch";
+import { CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { CardContent, CardTitle } from "../ui/card";
+import { Switch } from "../ui/switch";
 
 interface AdvancedSectionProps {
   register: UseFormRegister<ProfileData>;
@@ -21,9 +21,11 @@ const dayStartOptions = Array.from({ length: 24 }, (_, i) => {
 
 export function AdvancedSection({ control }: AdvancedSectionProps) {
   return (
-    <CardContent className="border-b border-gray-200">
-      <CardTitle>Advanced Settings</CardTitle>
-      <div className="mt-4 space-y-4">
+    <>
+      <CardHeader className="pt-6">
+        <CardTitle>Advanced Settings</CardTitle>
+      </CardHeader>
+      <CardContent className="border-b py-6">
         <div>
           <label htmlFor="dayStartOffset" className="mb-1 block text-sm font-medium text-gray-700">
             Day Start
@@ -90,7 +92,7 @@ export function AdvancedSection({ control }: AdvancedSectionProps) {
           />
           <p className="mt-2 text-sm text-gray-600">Display estimated calorie surplus/deficit based on your weight changes.</p>
         </div>
-      </div>
-    </CardContent>
+      </CardContent>
+    </>
   );
 }

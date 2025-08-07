@@ -54,17 +54,17 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 6.1 Write tests for Table component migrations
   - [x] 6.2 Install shadcn Table components (Table, TableHeader, TableBody, TableRow, TableCell)
   - [x] 6.3 Replace ScaleReadingsTable implementation with shadcn Table components + TanStack Table
-  - [ ] 6.4 Replace RecentReadings table with shadcn Table components
+  - [x] 6.4 Replace RecentReadings table with shadcn Table components
   - [x] 6.5 Ensure table accessibility and responsive behavior
   - [x] 6.6 Verify all table-related tests pass
 
-- [ ] 7. Loading States and Progress Migration
-  - [ ] 7.1 Write tests for Skeleton component replacement
-  - [ ] 7.2 Install shadcn Skeleton component
-  - [ ] 7.3 Replace DashboardPlaceholder custom skeleton with shadcn Skeleton
-  - [ ] 7.4 Evaluate shadcn Progress vs @bprogress/react for goal progress
-  - [ ] 7.5 Update loading states throughout application
-  - [ ] 7.6 Verify all loading state tests pass
+- [x] 7. Loading States and Progress Migration
+  - [x] 7.1 Write tests for Skeleton component replacement
+  - [x] 7.2 Install shadcn Skeleton component
+  - [x] 7.3 Replace DashboardPlaceholder custom skeleton with shadcn Skeleton
+  - [x] 7.4 Evaluate shadcn Progress vs @bprogress/react for goal progress
+  - [x] 7.5 Update loading states throughout application
+  - [x] 7.6 Verify all loading state tests pass
 
 - [ ] 8. Icon Library Unification
   - [ ] 8.1 Write tests for icon replacements
