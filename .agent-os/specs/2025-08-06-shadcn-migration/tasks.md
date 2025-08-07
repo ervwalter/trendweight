@@ -74,12 +74,12 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 8.5 Remove unused react-icons dependencies
   - [x] 8.6 Verify all icon-related tests pass
 
-- [ ] 9. Toast and Dialog System Migration
-  - [ ] 9.1 Write tests for Toast system replacement
-  - [ ] 9.2 Replace Radix Toast implementation with shadcn Toast
-  - [ ] 9.3 Update ToastProvider with shadcn toast system
-  - [ ] 9.4 Test all dialog and toast interactions
-  - [ ] 9.5 Verify all toast and dialog tests pass
+- [x] 9. Toast and Dialog System Migration
+  - [x] 9.1 Write tests for Toast system replacement
+  - [x] 9.2 Replace Radix Toast implementation with shadcn Toast (using Sonner)
+  - [x] 9.3 Update ToastProvider with shadcn toast system
+  - [x] 9.4 Test all dialog and toast interactions
+  - [x] 9.5 Verify all toast and dialog tests pass
 
 - [ ] 10. Component Cleanup and Organization
   - [ ] 10.1 Write tests for component organization
