@@ -4,6 +4,7 @@ import { Container } from "./Container";
 import { useAuth } from "../lib/auth/useAuth";
 import { useState, useRef, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { ModeToggle } from "./mode-toggle";
 
 export function Header() {
   const { isInitializing, isLoggedIn, signOut } = useAuth();
@@ -28,14 +29,15 @@ export function Header() {
   return (
     <header className="bg-brand-500 text-white print:hidden">
       <Container>
-        <nav className="flex items-stretch justify-between">
+        {/* Desktop Navigation */}
+        <nav className="hidden items-stretch justify-between md:flex">
           <div className="flex items-center gap-2 py-3">
             <Link to={isLoggedIn ? "/dashboard" : "/"} className="font-logo text-3xl leading-tight font-bold">
               TrendWeight
             </Link>
             <Logo className="h-8 w-auto" />
           </div>
-          <div className="hidden items-stretch md:flex md:pr-8">
+          <div className="flex items-stretch pr-8">
             <NavLink to="/" visibility={visibility}>
               Home
             </NavLink>
@@ -61,15 +63,31 @@ export function Header() {
                 Log Out
               </button>
             )}
+            <div className="flex items-center px-2">
+              <ModeToggle />
+            </div>
           </div>
-          <button
-            ref={buttonRef}
-            className="flex items-center p-2 text-white md:hidden"
-            aria-label="Open menu"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
+        </nav>
+
+        {/* Mobile Navigation */}
+        <nav className="flex items-center justify-between py-3 md:hidden">
+          {/* Hamburger Menu - Left */}
+          <button ref={buttonRef} className="-ml-2 flex items-center p-2 text-white" aria-label="Open menu" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
+
+          {/* Logo - Center */}
+          <div className="flex items-center gap-1">
+            <Link to={isLoggedIn ? "/dashboard" : "/"} className="font-logo text-2xl leading-tight font-bold">
+              TrendWeight
+            </Link>
+            <Logo className="h-6 w-auto" />
+          </div>
+
+          {/* Theme Toggle - Right */}
+          <div className="-mr-2">
+            <ModeToggle />
+          </div>
         </nav>
         {/* Mobile menu */}
         <div ref={menuRef} className={`md:hidden ${mobileMenuOpen ? "block" : "hidden"} bg-brand-400 -mx-4 px-4 py-4`}>

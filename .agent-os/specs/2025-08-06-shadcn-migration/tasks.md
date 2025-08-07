@@ -81,16 +81,16 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 9.4 Test all dialog and toast interactions
   - [x] 9.5 Verify all toast and dialog tests pass
 
-- [ ] 10. Dark Mode Infrastructure
-  - [ ] 10.1 Write tests for theme provider and mode toggle
-  - [ ] 10.2 Create ThemeProvider component following shadcn/ui Vite pattern
-  - [ ] 10.3 Implement useTheme hook for consuming theme state
-  - [ ] 10.4 Create ModeToggle component with dropdown menu
-  - [ ] 10.5 Add theme toggle to application header/navigation
-  - [ ] 10.6 Configure CSS variables for light and dark themes in OKLCH format
-  - [ ] 10.7 Update Tailwind config for dark mode class strategy
-  - [ ] 10.8 Test theme persistence and system preference detection
-  - [ ] 10.9 Verify theme switching works across all pages
+- [x] 10. Dark Mode Infrastructure
+  - [x] 10.1 Write tests for theme provider and mode toggle
+  - [x] 10.2 Create ThemeProvider component following shadcn/ui Vite pattern
+  - [x] 10.3 Implement useTheme hook for consuming theme state
+  - [x] 10.4 Create ModeToggle component with dropdown menu
+  - [x] 10.5 Add theme toggle to application header/navigation
+  - [x] 10.6 Configure CSS variables for light and dark themes in OKLCH format
+  - [x] 10.7 Update Tailwind config for dark mode class strategy
+  - [x] 10.8 Test theme persistence and system preference detection
+  - [x] 10.9 Verify theme switching works across all pages
 
 - [ ] 11. Semantic Color Migration
   - [ ] 11.1 Write tests for semantic color usage

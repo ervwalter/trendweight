@@ -12,6 +12,7 @@ import { ProgressManager } from "./lib/progress/ProgressManager";
 import { queryClient } from "./lib/queryClient";
 import { setupVersionSkewHandler } from "./lib/version-skew/setupVersionSkewHandler";
 import { router } from "./router";
+import { ThemeProvider } from "./components/theme-provider";
 
 // Set up version skew handling
 setupVersionSkewHandler();
@@ -37,38 +38,40 @@ const clerkLocalization = {
 function App() {
   return (
     <ErrorBoundary>
-      <ClerkProvider
-        publishableKey={publishableKey}
-        localization={clerkLocalization}
-        signInFallbackRedirectUrl="/dashboard"
-        signUpFallbackRedirectUrl="/dashboard"
-        signInUrl="/login"
-        appearance={{
-          cssLayerName: "clerk",
-          variables: {
-            colorPrimary: "var(--color-brand-500)",
-            fontSize: "var(--font-size-base)",
-            fontFamily: "inherit",
-          },
-        }}
-      >
-        <QueryClientProvider client={queryClient}>
-          <ProgressProvider color="#eef5ff" height="3px" delay={250} spinnerPosition="top-right">
-            <ProgressManager />
-            <BackgroundQueryProgress />
-            <ClerkLoading>
-              <div className="flex h-screen items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-gray-400" />
-              </div>
-            </ClerkLoading>
-            <ClerkLoaded>
-              <RouterProvider router={router} />
-            </ClerkLoaded>
-          </ProgressProvider>
-          <Toaster />
-          <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
-      </ClerkProvider>
+      <ThemeProvider defaultTheme="system" storageKey="trendweight-theme">
+        <ClerkProvider
+          publishableKey={publishableKey}
+          localization={clerkLocalization}
+          signInFallbackRedirectUrl="/dashboard"
+          signUpFallbackRedirectUrl="/dashboard"
+          signInUrl="/login"
+          appearance={{
+            cssLayerName: "clerk",
+            variables: {
+              colorPrimary: "var(--color-brand-500)",
+              fontSize: "var(--font-size-base)",
+              fontFamily: "inherit",
+            },
+          }}
+        >
+          <QueryClientProvider client={queryClient}>
+            <ProgressProvider color="#eef5ff" height="3px" delay={250} spinnerPosition="top-right">
+              <ProgressManager />
+              <BackgroundQueryProgress />
+              <ClerkLoading>
+                <div className="flex h-screen items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-gray-400" />
+                </div>
+              </ClerkLoading>
+              <ClerkLoaded>
+                <RouterProvider router={router} />
+              </ClerkLoaded>
+            </ProgressProvider>
+            <Toaster />
+            <ReactQueryDevtools initialIsOpen={false} />
+          </QueryClientProvider>
+        </ClerkProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }
