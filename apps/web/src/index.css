@@ -1,8 +1,9 @@
 @layer theme, base, clerk, components, utilities;
 @import "tailwindcss";
+@import "@clerk/themes/shadcn.css";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (.dark &);
 @plugin "@tailwindcss/typography";
 
 @theme {
@@ -142,48 +143,86 @@ html body[data-scroll-locked] {
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Chart-specific colors */
+  --chart-weight: #8b0000;
+  --chart-fatpercent: #660066;
+  --chart-fatmass: #336600;
+  --chart-leanmass: #000066;
+  --chart-actual-diamond: #333333;
+  --chart-interpolated-diamond: #e2e2e2;
+  --chart-diamond-fill: #ffffff;
+  --chart-actual-dot: #333333;
+  --chart-interpolated-dot: #e2e2e2;
+  --chart-actual-line: #aaaaaa;
+  --chart-actual-sinker: #999999;
+  --chart-interpolated-sinker: #e2e2e2;
+  --chart-weekend-band: rgba(220, 220, 220, 0.2);
+  --chart-goal-band: rgb(244, 255, 244);
+  --chart-goal-line: rgb(100, 150, 100);
+  --chart-goal-label: rgb(140, 180, 140);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.44 0.11 257.6); /* darker brand with reduced saturation for dark mode */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --success: oklch(0.7 0.15 142.5); /* Green color for dark mode */
-  --success-foreground: oklch(0.145 0 0);
-  --warning: oklch(0.8 0.13 70); /* Amber color for dark mode */
-  --warning-foreground: oklch(0.145 0 0);
-  --info: oklch(0.68 0.14 245); /* Blue color for dark mode */
-  --info-foreground: oklch(0.985 0 0);
-  --link: oklch(0.65 0.16 257.6); /* Brighter link color for dark mode */
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+@media screen {
+  .dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.56 0.13 257.6); /* darker brand with reduced saturation for dark mode */
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.985 0 0);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --success: oklch(0.7 0.15 142.5); /* Green color for dark mode */
+    --success-foreground: oklch(0.145 0 0);
+    --warning: oklch(0.8 0.13 70); /* Amber color for dark mode */
+    --warning-foreground: oklch(0.145 0 0);
+    --info: oklch(0.68 0.14 245); /* Blue color for dark mode */
+    --info-foreground: oklch(0.985 0 0);
+    --link: oklch(0.65 0.16 257.6); /* Brighter link color for dark mode */
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+
+    /* Chart-specific colors for dark mode */
+    --chart-weight: #ef4444;
+    --chart-fatpercent: #d946ef;
+    --chart-fatmass: #84cc16;
+    --chart-leanmass: #60a5fa;
+    --chart-actual-diamond: #737373;
+    --chart-interpolated-diamond: #2a2a2a;
+    --chart-diamond-fill: #171717;
+    --chart-actual-dot: #737373;
+    --chart-interpolated-dot: #2a2a2a;
+    --chart-actual-line: #525252;
+    --chart-actual-sinker: #525252;
+    --chart-interpolated-sinker: #2a2a2a;
+    --chart-weekend-band: rgba(50, 50, 50, 0.15);
+    --chart-goal-band: rgba(34, 197, 94, 0.1);
+    --chart-goal-line: rgba(34, 197, 94, 0.4);
+    --chart-goal-label: rgba(34, 197, 94, 0.7);
+  }
 }
 
 @layer base {

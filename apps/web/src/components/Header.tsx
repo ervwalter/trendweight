@@ -1,9 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Logo } from "./Logo";
-import { Container } from "./Container";
-import { useAuth } from "../lib/auth/useAuth";
-import { useState, useRef, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../lib/auth/useAuth";
+import { Container } from "./Container";
+import { Logo } from "./Logo";
 import { ModeToggle } from "./mode-toggle";
 
 export function Header() {
@@ -27,7 +27,7 @@ export function Header() {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="bg-primary text-white print:hidden">
+    <header className="bg-primary text-primary-foreground print:hidden">
       <Container>
         {/* Desktop Navigation */}
         <nav className="hidden items-stretch justify-between md:flex">
@@ -37,7 +37,7 @@ export function Header() {
             </Link>
             <Logo className="h-8 w-auto" />
           </div>
-          <div className="flex items-stretch pr-8">
+          <div className="flex items-stretch">
             <NavLink to="/" visibility={visibility}>
               Home
             </NavLink>
@@ -59,7 +59,10 @@ export function Header() {
                 Log In
               </NavLink>
             ) : (
-              <button className={`hover:text-link hover:bg-background flex items-center px-3 transition-colors ${visibility}`} onClick={() => signOut()}>
+              <button
+                className={`hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors ${visibility}`}
+                onClick={() => signOut()}
+              >
                 Log Out
               </button>
             )}
@@ -72,7 +75,12 @@ export function Header() {
         {/* Mobile Navigation */}
         <nav className="flex items-center justify-between py-3 md:hidden">
           {/* Hamburger Menu - Left */}
-          <button ref={buttonRef} className="-ml-2 flex items-center p-2 text-white" aria-label="Open menu" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button
+            ref={buttonRef}
+            className="text-primary-foreground -ml-2 flex items-center p-2"
+            aria-label="Open menu"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
@@ -114,7 +122,7 @@ export function Header() {
               </MobileNavLink>
             ) : (
               <button
-                className={`hover:bg-primary/80 block w-full rounded px-3 py-2 text-left text-white ${visibility}`}
+                className={`hover:bg-primary/80 text-primary-foreground block w-full rounded px-3 py-2 text-left ${visibility}`}
                 onClick={async (e) => {
                   e.preventDefault();
                   await signOut();
@@ -146,7 +154,7 @@ function NavLink({ to, children, visibility = "visible" }: NavLinkProps) {
   return (
     <Link
       to={to}
-      className={`hover:text-link hover:bg-background flex items-center px-3 transition-colors ${visibility}`}
+      className={`hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors ${visibility}`}
       activeProps={{
         className: "bg-primary/90",
       }}
@@ -164,7 +172,7 @@ function MobileNavLink({ to, children, onClick, visibility = "visible" }: Mobile
   return (
     <Link
       to={to}
-      className={`hover:bg-primary/80 rounded px-3 py-2 text-white ${visibility}`}
+      className={`hover:bg-primary/80 text-primary-foreground rounded px-3 py-2 ${visibility}`}
       activeProps={{
         className: "bg-primary/80",
       }}

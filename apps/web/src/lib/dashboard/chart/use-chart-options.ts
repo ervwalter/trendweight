@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Modes } from "../../core/interfaces";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import type { DashboardData } from "../dashboardContext";
@@ -8,25 +8,6 @@ import chartOptionsTemplate from "./options-template";
 
 export const useChartOptions = (data: DashboardData) => {
   const isNarrow = useIsMobile();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    // Check if dark mode is active
-    const checkDarkMode = () => {
-      setIsDarkMode(document.documentElement.classList.contains("dark"));
-    };
-
-    checkDarkMode();
-
-    // Watch for changes
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   const {
     dataPoints,
@@ -37,7 +18,7 @@ export const useChartOptions = (data: DashboardData) => {
   } = data;
 
   return useMemo(() => {
-    const options = chartOptionsTemplate(isDarkMode);
+    const options = chartOptionsTemplate();
 
     if (isNarrow && options.chart) {
       options.chart.height = "75%";
@@ -54,7 +35,6 @@ export const useChartOptions = (data: DashboardData) => {
       mode,
       modeText,
       isNarrow,
-      isDarkMode,
       lastMeasurement,
       dataArrays,
     };
@@ -82,8 +62,8 @@ export const useChartOptions = (data: DashboardData) => {
     }
 
     // Build Y-axis options
-    buildYAxisOptions(options, mode, useMetric, goalWeight, isDarkMode);
+    buildYAxisOptions(options, mode, useMetric, goalWeight);
 
     return options;
-  }, [dataPoints, activeSlope, goalWeight, isNarrow, mode, timeRange, useMetric, isDarkMode]);
+  }, [dataPoints, activeSlope, goalWeight, isNarrow, mode, timeRange, useMetric]);
 };

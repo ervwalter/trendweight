@@ -7,50 +7,31 @@ type ThemeProviderProps = {
   storageKey?: string;
 };
 
-export function ThemeProvider({ children, defaultTheme = "system", storageKey = "trendweight-theme", ...props }: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultTheme = "light", storageKey = "trendweight-theme", ...props }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem(storageKey) as Theme;
-    if (stored) return stored;
-    // Save default theme to storage on initialization
+    // Validate stored value is either "light" or "dark"
+    if (stored === "light" || stored === "dark") {
+      return stored;
+    }
+    // If invalid or not present, use default and save it
     localStorage.setItem(storageKey, defaultTheme);
     return defaultTheme;
   });
 
   useEffect(() => {
     const root = window.document.documentElement;
-
     root.classList.remove("light", "dark");
-
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-
-      root.classList.add(systemTheme);
-      return;
-    }
-
     root.classList.add(theme);
-  }, [theme]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const handleChange = () => {
-      if (theme === "system") {
-        const root = window.document.documentElement;
-        root.classList.remove("light", "dark");
-        root.classList.add(mediaQuery.matches ? "dark" : "light");
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => mediaQuery.removeEventListener("change", handleChange);
   }, [theme]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === storageKey && e.newValue) {
-        setTheme(e.newValue as Theme);
+        // Validate the new value is either "light" or "dark"
+        if (e.newValue === "light" || e.newValue === "dark") {
+          setTheme(e.newValue);
+        }
       }
     };
 

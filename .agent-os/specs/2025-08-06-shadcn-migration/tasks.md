@@ -92,16 +92,16 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 10.8 Test theme persistence and system preference detection
   - [x] 10.9 Verify theme switching works across all pages
 
-- [ ] 11. Semantic Color Migration
-  - [ ] 11.1 Write tests for semantic color usage
-  - [ ] 11.2 Audit all components for hardcoded color classes
-  - [ ] 11.3 Replace bg-white/bg-gray-* with semantic equivalents (bg-background, bg-card, bg-muted)
-  - [ ] 11.4 Replace text-gray-*/text-black with semantic equivalents (text-foreground, text-muted-foreground)
-  - [ ] 11.5 Replace border-gray-* with border-border
-  - [ ] 11.6 Update brand color usage to use primary/secondary semantic colors
-  - [ ] 11.7 Update status colors (success, error, warning) to semantic variables
-  - [ ] 11.8 Configure Highcharts themes for dark mode support
-  - [ ] 11.9 Verify all components adapt correctly to theme changes
+- [x] 11. Semantic Color Migration
+  - [x] 11.1 Write tests for semantic color usage
+  - [x] 11.2 Audit all components for hardcoded color classes
+  - [x] 11.3 Replace bg-white/bg-gray-* with semantic equivalents (bg-background, bg-card, bg-muted)
+  - [x] 11.4 Replace text-gray-*/text-black with semantic equivalents (text-foreground, text-muted-foreground)
+  - [x] 11.5 Replace border-gray-* with border-border
+  - [x] 11.6 Update brand color usage to use primary/secondary semantic colors
+  - [x] 11.7 Update status colors (success, error, warning) to semantic variables
+  - [x] 11.8 Configure Highcharts themes for dark mode support
+  - [x] 11.9 Verify all components adapt correctly to theme changes
 
 - [ ] 12. Component Cleanup and Organization
   - [ ] 12.1 Write tests for component organization

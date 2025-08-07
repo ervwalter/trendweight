@@ -26,6 +26,7 @@ export function Settings() {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     reset,
     control,
     formState: { errors, isDirty, isSubmitting },
@@ -38,45 +39,45 @@ export function Settings() {
     }
   }, [profileData, reset]);
 
-  // Watch for unit changes and convert values
-  useEffect(() => {
-    const subscription = watch((value, { name, type }) => {
-      if (name === "useMetric" && type === "change") {
-        const isMetric = value.useMetric;
+  // Handle unit conversion when toggle is clicked
+  const handleUnitChange = (newIsMetric: boolean) => {
+    const currentValues = getValues();
+    const currentIsMetric = currentValues.useMetric;
 
-        // Only convert if the metric setting actually changed from the profile data
-        // This prevents conversions when clicking the same unit or during form reset
-        if (profileData && profileData.useMetric !== isMetric) {
-          // Convert planned pounds per week when switching units
-          const currentPlan = value.plannedPoundsPerWeek;
-          if (currentPlan && currentPlan !== 0) {
-            if (isMetric) {
-              // Converting from lbs to kg (roughly divide by 2)
-              setValue("plannedPoundsPerWeek", currentPlan / 2);
-            } else {
-              // Converting from kg to lbs (roughly multiply by 2)
-              setValue("plannedPoundsPerWeek", currentPlan * 2);
-            }
-          }
+    // Only convert if actually changing
+    if (currentIsMetric === newIsMetric) {
+      return;
+    }
 
-          // Convert goal weight when switching units
-          const currentGoalWeight = value.goalWeight;
-          if (currentGoalWeight && currentGoalWeight !== 0) {
-            if (isMetric) {
-              // Converting from lbs to kg (divide by 2.20462 and round)
-              const kgValue = Math.round(currentGoalWeight / 2.20462);
-              setValue("goalWeight", kgValue);
-            } else {
-              // Converting from kg to lbs (multiply by 2.20462 and round)
-              const lbsValue = Math.round(currentGoalWeight * 2.20462);
-              setValue("goalWeight", lbsValue);
-            }
-          }
-        }
+    // Update the metric setting first
+    setValue("useMetric", newIsMetric);
+
+    // Convert planned pounds per week
+    const currentPlan = currentValues.plannedPoundsPerWeek;
+    if (currentPlan && currentPlan !== 0) {
+      if (newIsMetric) {
+        // Converting from lbs to kg (roughly divide by 2)
+        setValue("plannedPoundsPerWeek", currentPlan / 2);
+      } else {
+        // Converting from kg to lbs (roughly multiply by 2)
+        setValue("plannedPoundsPerWeek", currentPlan * 2);
       }
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, setValue, profileData]);
+    }
+
+    // Convert goal weight
+    const currentGoalWeight = currentValues.goalWeight;
+    if (currentGoalWeight && currentGoalWeight !== 0) {
+      if (newIsMetric) {
+        // Converting from lbs to kg (divide by 2.20462 and round)
+        const kgValue = Math.round(currentGoalWeight / 2.20462);
+        setValue("goalWeight", kgValue);
+      } else {
+        // Converting from kg to lbs (multiply by 2.20462 and round)
+        const lbsValue = Math.round(currentGoalWeight * 2.20462);
+        setValue("goalWeight", lbsValue);
+      }
+    }
+  };
 
   // Warn user about unsaved changes when navigating away
   useNavigationGuard(isDirty);
@@ -107,7 +108,7 @@ export function Settings() {
       {/* Settings Form Card */}
       <Card className="mb-6 py-0">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <ProfileSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} />
+          <ProfileSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} onUnitChange={handleUnitChange} />
           <ProgressTrackingSection register={register} watch={watch} control={control} />
           <GoalSection register={register} errors={errors} watch={watch} control={control} />
           <AdvancedSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} />

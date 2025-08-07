@@ -74,6 +74,7 @@ const Chart = () => {
       };
 
       // Get SVG with exact same options as export
+      // Always use white background for printing (dark mode is screen-only)
       const svg = exportingChart.getSVG({
         chart: {
           width: chart.chartWidth,

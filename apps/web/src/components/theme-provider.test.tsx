@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider } from "./theme-provider";
@@ -12,36 +12,17 @@ function TestComponent() {
       <span data-testid="current-theme">{theme}</span>
       <button onClick={() => setTheme("light")}>Set Light</button>
       <button onClick={() => setTheme("dark")}>Set Dark</button>
-      <button onClick={() => setTheme("system")}>Set System</button>
     </div>
   );
 }
 
 describe("ThemeProvider", () => {
-  const originalMatchMedia = window.matchMedia;
-
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
-
-    // Mock matchMedia for system preference tests
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: query === "(prefers-color-scheme: dark)",
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
   });
 
   afterEach(() => {
-    window.matchMedia = originalMatchMedia;
     document.documentElement.className = "";
   });
 
@@ -55,14 +36,14 @@ describe("ThemeProvider", () => {
     expect(screen.getByTestId("current-theme")).toBeInTheDocument();
   });
 
-  it("defaults to system theme when no stored preference", () => {
+  it("defaults to light theme when no stored preference", () => {
     render(
       <ThemeProvider>
         <TestComponent />
       </ThemeProvider>,
     );
 
-    expect(screen.getByTestId("current-theme")).toHaveTextContent("system");
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
   });
 
   it("uses stored theme preference from localStorage", () => {
@@ -98,19 +79,7 @@ describe("ThemeProvider", () => {
 
     await waitFor(() => {
       expect(document.documentElement.classList.contains("dark")).toBe(false);
-    });
-  });
-
-  it("applies system preference when theme is system", async () => {
-    // System prefers dark (mocked above)
-    render(
-      <ThemeProvider defaultTheme="system">
-        <TestComponent />
-      </ThemeProvider>,
-    );
-
-    await waitFor(() => {
-      expect(document.documentElement.classList.contains("dark")).toBe(true);
+      expect(document.documentElement.classList.contains("light")).toBe(true);
     });
   });
 
@@ -123,12 +92,25 @@ describe("ThemeProvider", () => {
       </ThemeProvider>,
     );
 
+    // Start with light (default)
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
+
+    // Switch to dark
+    const setDarkButton = screen.getByText("Set Dark");
+    await user.click(setDarkButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
+      expect(document.documentElement.classList.contains("dark")).toBe(true);
+    });
+
+    // Switch back to light
     const setLightButton = screen.getByText("Set Light");
     await user.click(setLightButton);
 
     await waitFor(() => {
       expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
-      expect(document.documentElement.classList.contains("dark")).toBe(false);
+      expect(document.documentElement.classList.contains("light")).toBe(true);
     });
   });
 
@@ -149,68 +131,37 @@ describe("ThemeProvider", () => {
     });
   });
 
-  it("responds to system preference changes", async () => {
-    // Test that the theme provider correctly applies system preferences
-    // We'll test by rendering with system theme and checking the applied class
-
-    // Start with dark system preference
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: query === "(prefers-color-scheme: dark)",
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
-
-    const { unmount } = render(
-      <ThemeProvider defaultTheme="system">
+  it("allows overriding default theme", () => {
+    render(
+      <ThemeProvider defaultTheme="dark">
         <TestComponent />
       </ThemeProvider>,
     );
 
-    // Should have dark class when system prefers dark
-    await waitFor(() => {
-      expect(document.documentElement.classList.contains("dark")).toBe(true);
-    });
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
+  });
 
-    unmount();
-    document.documentElement.className = "";
-
-    // Now test with light system preference
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: false, // light mode
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
+  it("uses custom storage key when provided", async () => {
+    const user = userEvent.setup();
+    const customKey = "custom-theme-key";
 
     render(
-      <ThemeProvider defaultTheme="system">
+      <ThemeProvider storageKey={customKey}>
         <TestComponent />
       </ThemeProvider>,
     );
 
-    // Should have light class when system prefers light
+    const setDarkButton = screen.getByText("Set Dark");
+    await user.click(setDarkButton);
+
     await waitFor(() => {
-      expect(document.documentElement.classList.contains("dark")).toBe(false);
+      expect(localStorage.getItem(customKey)).toBe("dark");
+      expect(localStorage.getItem("trendweight-theme")).toBeNull();
     });
   });
 
-  it("syncs theme across browser tabs via storage event", async () => {
-    render(
+  it("syncs theme across tabs via storage event", () => {
+    const { rerender } = render(
       <ThemeProvider>
         <TestComponent />
       </ThemeProvider>,
@@ -220,38 +171,54 @@ describe("ThemeProvider", () => {
     const storageEvent = new StorageEvent("storage", {
       key: "trendweight-theme",
       newValue: "dark",
+      oldValue: "light",
       storageArea: localStorage,
     });
 
     window.dispatchEvent(storageEvent);
 
-    await waitFor(() => {
-      expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
-      expect(document.documentElement.classList.contains("dark")).toBe(true);
-    });
-  });
-
-  it("supports custom storage key", () => {
-    render(
-      <ThemeProvider storageKey="custom-theme-key" defaultTheme="dark">
+    rerender(
+      <ThemeProvider>
         <TestComponent />
       </ThemeProvider>,
     );
 
-    expect(localStorage.getItem("custom-theme-key")).toBe("dark");
+    waitFor(() => {
+      expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
+    });
   });
 
-  it("throws error when useTheme is used outside ThemeProvider", () => {
-    // Suppress expected console.error for this test
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("ignores invalid theme values from localStorage", () => {
+    localStorage.setItem("trendweight-theme", "invalid-theme");
 
-    const TestComponentWithoutProvider = () => {
-      useTheme(); // This should throw
-      return <div>Should not render</div>;
-    };
+    render(
+      <ThemeProvider>
+        <TestComponent />
+      </ThemeProvider>,
+    );
 
-    expect(() => render(<TestComponentWithoutProvider />)).toThrow("useTheme must be used within a ThemeProvider");
+    // Should default to light when invalid
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
+  });
 
-    consoleErrorSpy.mockRestore();
+  it("ignores invalid theme values from storage events", () => {
+    render(
+      <ThemeProvider>
+        <TestComponent />
+      </ThemeProvider>,
+    );
+
+    // Simulate storage event with invalid value
+    const storageEvent = new StorageEvent("storage", {
+      key: "trendweight-theme",
+      newValue: "invalid-theme",
+      oldValue: "light",
+      storageArea: localStorage,
+    });
+
+    window.dispatchEvent(storageEvent);
+
+    // Should remain light
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
   });
 });

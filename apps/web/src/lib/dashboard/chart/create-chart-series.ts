@@ -1,15 +1,15 @@
 import type { SeriesHlcOptions, SeriesLineOptions } from "highcharts/highstock";
 import type { Mode } from "../../core/interfaces";
 
-const getColors = (isDarkMode: boolean) => ({
-  weight: isDarkMode ? "#ef4444" : "#8b0000", // Brighter red for trend line in dark mode
-  fatpercent: isDarkMode ? "#d946ef" : "#660066", // Brighter purple for trend line in dark mode
-  fatmass: isDarkMode ? "#84cc16" : "#336600", // Brighter green for trend line in dark mode
-  leanmass: isDarkMode ? "#60a5fa" : "#000066", // Brighter blue for trend line in dark mode
+const getColors = () => ({
+  weight: "var(--chart-weight)",
+  fatpercent: "var(--chart-fatpercent)",
+  fatmass: "var(--chart-fatmass)",
+  leanmass: "var(--chart-leanmass)",
 });
 
-export const createTrendSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean, isDarkMode = false): SeriesLineOptions => {
-  const colors = getColors(isDarkMode);
+export const createTrendSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean): SeriesLineOptions => {
+  const colors = getColors();
   return {
     type: "line",
     id: "trend",
@@ -28,62 +28,44 @@ export const createTrendSeries = (data: [number, number][], mode: Mode, modeText
   };
 };
 
-export const createDiamondsSeries = (data: [number, number | null][], isInterpolated: boolean, isNarrow: boolean, isDarkMode = false): SeriesLineOptions => {
-  const series = createLineSeries(data, isInterpolated, isDarkMode);
+export const createDiamondsSeries = (data: [number, number | null][], isInterpolated: boolean, isNarrow: boolean): SeriesLineOptions => {
+  const series = createLineSeries(data, isInterpolated);
   series.connectNulls = false;
   series.zIndex = 6;
   series.lineWidth = 0;
   series.marker = {
     enabled: true,
     symbol: "diamond",
-    lineColor: isDarkMode
-      ? isInterpolated
-        ? "#2a2a2a"
-        : "#737373" // More contrast between interpolated and actual
-      : isInterpolated
-        ? "#e2e2e2"
-        : "#333333",
-    fillColor: isDarkMode ? "#171717" : "#ffffff", // Very dark fill for dark mode
+    lineColor: isInterpolated ? "var(--chart-interpolated-diamond)" : "var(--chart-actual-diamond)",
+    fillColor: "var(--chart-diamond-fill)",
     lineWidth: 1,
     radius: isNarrow ? 3 : 4.5,
   };
   return series;
 };
 
-export const createDotSeries = (data: [number, number | null][], isInterpolated: boolean, isDarkMode = false): SeriesLineOptions => {
-  const series = createLineSeries(data, isInterpolated, isDarkMode);
+export const createDotSeries = (data: [number, number | null][], isInterpolated: boolean): SeriesLineOptions => {
+  const series = createLineSeries(data, isInterpolated);
   series.connectNulls = false;
   series.zIndex = 4;
   series.lineWidth = 0;
   series.marker = {
     enabled: true,
     symbol: "circle",
-    lineColor: isDarkMode
-      ? isInterpolated
-        ? "#2a2a2a"
-        : "#737373" // Match diamond contrast
-      : isInterpolated
-        ? "#e2e2e2"
-        : "#333333",
-    fillColor: isDarkMode
-      ? isInterpolated
-        ? "#2a2a2a"
-        : "#737373" // Match diamond contrast
-      : isInterpolated
-        ? "#e2e2e2"
-        : "#333333",
+    lineColor: isInterpolated ? "var(--chart-interpolated-dot)" : "var(--chart-actual-dot)",
+    fillColor: isInterpolated ? "var(--chart-interpolated-dot)" : "var(--chart-actual-dot)",
     lineWidth: 0,
     radius: 2,
   };
   return series;
 };
 
-export const createLineSeries = (data: [number, number | null][], isInterpolated: boolean, isDarkMode = false): SeriesLineOptions => ({
+export const createLineSeries = (data: [number, number | null][], isInterpolated: boolean): SeriesLineOptions => ({
   type: "line",
   id: isInterpolated ? "estimated" : "actual",
   name: isInterpolated ? "Estimated Reading" : "Scale Reading",
   lineWidth: 1,
-  color: isDarkMode ? "#525252" : "#aaaaaa", // Darker gray for less contrast in dark mode
+  color: "var(--chart-actual-line)",
   legendIndex: 0,
   zIndex: 3,
   connectNulls: true,
@@ -97,8 +79,8 @@ export const createLineSeries = (data: [number, number | null][], isInterpolated
   },
 });
 
-export const createProjectionSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean, isDarkMode = false): SeriesLineOptions => {
-  const colors = getColors(isDarkMode);
+export const createProjectionSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean): SeriesLineOptions => {
+  const colors = getColors();
   return {
     type: "line",
     id: "projection",
@@ -116,20 +98,14 @@ export const createProjectionSeries = (data: [number, number][], mode: Mode, mod
   };
 };
 
-export const createSinkersSeries = (data: [number, number | null, number | null, null][], isInterpolated: boolean, isDarkMode = false): SeriesHlcOptions => ({
+export const createSinkersSeries = (data: [number, number | null, number | null, null][], isInterpolated: boolean): SeriesHlcOptions => ({
   type: "hlc",
   id: isInterpolated ? "estimated-sinkers" : "actual-sinkers",
   name: isInterpolated ? "Estimated Sinkers" : "Actual Sinkers",
   showInLegend: false,
   enableMouseTracking: false,
   zIndex: 2,
-  color: isDarkMode
-    ? isInterpolated
-      ? "#2a2a2a"
-      : "#525252" // Better contrast for dark mode
-    : isInterpolated
-      ? "#e2e2e2"
-      : "#999999",
+  color: isInterpolated ? "var(--chart-interpolated-sinker)" : "var(--chart-actual-sinker)",
   pointValKey: "high",
   data,
 });

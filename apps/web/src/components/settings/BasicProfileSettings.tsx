@@ -8,13 +8,14 @@ interface BasicProfileSettingsProps {
   register: UseFormRegister<ProfileData>;
   errors: FieldErrors<ProfileData>;
   control: Control<ProfileData>;
+  onUnitChange?: (isMetric: boolean) => void;
 }
 
 /**
  * Basic profile settings component containing First Name, Time Zone, and Units.
  * Used in both the initial setup flow and the main settings page.
  */
-export function BasicProfileSettings({ register, errors, control }: BasicProfileSettingsProps) {
+export function BasicProfileSettings({ register, errors, control, onUnitChange }: BasicProfileSettingsProps) {
   return (
     <div className="space-y-4">
       <div>
@@ -35,7 +36,15 @@ export function BasicProfileSettings({ register, errors, control }: BasicProfile
             <ToggleGroup
               type="single"
               value={String(field.value ?? false)}
-              onValueChange={(value) => field.onChange(value === "true")}
+              onValueChange={(value) => {
+                const isMetric = value === "true";
+                // If we have a custom handler, use it instead of direct onChange
+                if (onUnitChange) {
+                  onUnitChange(isMetric);
+                } else {
+                  field.onChange(isMetric);
+                }
+              }}
               aria-label="Weight Units"
               variant="outline"
             >

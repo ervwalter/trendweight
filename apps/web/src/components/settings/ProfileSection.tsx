@@ -9,16 +9,17 @@ interface ProfileSectionProps {
   watch: UseFormWatch<ProfileData>;
   setValue: UseFormSetValue<ProfileData>;
   control: Control<ProfileData>;
+  onUnitChange?: (isMetric: boolean) => void;
 }
 
-export function ProfileSection({ register, errors, control }: ProfileSectionProps) {
+export function ProfileSection({ register, errors, control, onUnitChange }: ProfileSectionProps) {
   return (
     <>
       <CardHeader className="pt-6">
         <CardTitle>Profile Settings</CardTitle>
       </CardHeader>
       <CardContent className="border-b py-6">
-        <BasicProfileSettings register={register} errors={errors} control={control} />
+        <BasicProfileSettings register={register} errors={errors} control={control} onUnitChange={onUnitChange} />
       </CardContent>
     </>
   );

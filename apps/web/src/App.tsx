@@ -1,10 +1,12 @@
 import "@bprogress/core/css";
 import { ProgressProvider } from "@bprogress/react";
 import { ClerkLoaded, ClerkLoading, ClerkProvider } from "@clerk/clerk-react";
+import { shadcn } from "@clerk/themes";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider } from "@tanstack/react-router";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/sonner";
 import { BackgroundQueryProgress } from "./lib/progress/BackgroundQueryProgress";
 import "./lib/progress/progress.css";
@@ -12,7 +14,6 @@ import { ProgressManager } from "./lib/progress/ProgressManager";
 import { queryClient } from "./lib/queryClient";
 import { setupVersionSkewHandler } from "./lib/version-skew/setupVersionSkewHandler";
 import { router } from "./router";
-import { ThemeProvider } from "./components/theme-provider";
 
 // Set up version skew handling
 setupVersionSkewHandler();
@@ -38,7 +39,7 @@ const clerkLocalization = {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="system" storageKey="trendweight-theme">
+      <ThemeProvider defaultTheme="light" storageKey="trendweight-theme">
         <ClerkProvider
           publishableKey={publishableKey}
           localization={clerkLocalization}
@@ -46,6 +47,7 @@ function App() {
           signUpFallbackRedirectUrl="/dashboard"
           signInUrl="/login"
           appearance={{
+            baseTheme: shadcn,
             cssLayerName: "clerk",
             variables: {
               colorPrimary: "var(--color-brand-500)",

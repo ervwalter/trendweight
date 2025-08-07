@@ -18,12 +18,11 @@ interface BuilderOptions {
   mode: keyof typeof Modes;
   modeText: string;
   isNarrow: boolean;
-  isDarkMode: boolean;
   lastMeasurement: { date: LocalDate; trend: number };
   dataArrays: ChartDataArrays;
 }
 
-export function buildWeekendPlotBands(lastMeasurementDate: LocalDate, isDarkMode = false): XAxisOptions["plotBands"] {
+export function buildWeekendPlotBands(lastMeasurementDate: LocalDate): XAxisOptions["plotBands"] {
   const plotBands: XAxisOptions["plotBands"] = [];
   const endDate = lastMeasurementDate.plusWeeks(1);
   let saturday = endDate;
@@ -37,7 +36,7 @@ export function buildWeekendPlotBands(lastMeasurementDate: LocalDate, isDarkMode
     plotBands.push({
       from: toEpoch(saturday) - 43200000, // Friday noon
       to: toEpoch(saturday) + 129600000, // Sunday noon
-      color: isDarkMode ? "rgba(50, 50, 50, 0.15)" : "rgba(220, 220, 220, 0.2)", // Lower contrast for dark mode
+      color: "var(--chart-weekend-band)",
       zIndex: 1,
     });
     saturday = saturday.plusWeeks(1);
@@ -47,40 +46,40 @@ export function buildWeekendPlotBands(lastMeasurementDate: LocalDate, isDarkMode
 }
 
 export function build4WeekOptions(options: Options, builderOptions: BuilderOptions): void {
-  const { mode, modeText, isNarrow, isDarkMode, lastMeasurement, dataArrays } = builderOptions;
+  const { mode, modeText, isNarrow, lastMeasurement, dataArrays } = builderOptions;
   const { actualData, interpolatedData, trendData, projectionsData, actualSinkersData, interpolatedSinkersData } = dataArrays;
 
   if (options.series && options.xAxis && !Array.isArray(options.xAxis)) {
-    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow, isDarkMode));
-    options.series.push(createDiamondsSeries(actualData, false, isNarrow, isDarkMode));
-    options.series.push(createDiamondsSeries(interpolatedData, true, isNarrow, isDarkMode));
-    options.series.push(createSinkersSeries(actualSinkersData, false, isDarkMode));
-    options.series.push(createSinkersSeries(interpolatedSinkersData, true, isDarkMode));
-    options.series.push(createProjectionSeries(projectionsData, mode, modeText, isNarrow, isDarkMode));
+    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow));
+    options.series.push(createDiamondsSeries(actualData, false, isNarrow));
+    options.series.push(createDiamondsSeries(interpolatedData, true, isNarrow));
+    options.series.push(createSinkersSeries(actualSinkersData, false));
+    options.series.push(createSinkersSeries(interpolatedSinkersData, true));
+    options.series.push(createProjectionSeries(projectionsData, mode, modeText, isNarrow));
 
     options.xAxis.tickInterval = 86400000 * 7;
     options.xAxis.range = 86400000 * (28 - 1 + 6);
-    options.xAxis.plotBands = buildWeekendPlotBands(lastMeasurement.date, isDarkMode);
+    options.xAxis.plotBands = buildWeekendPlotBands(lastMeasurement.date);
   }
 }
 
 export function build3MonthOptions(options: Options, builderOptions: BuilderOptions): void {
-  const { mode, modeText, isNarrow, isDarkMode, dataArrays } = builderOptions;
+  const { mode, modeText, isNarrow, dataArrays } = builderOptions;
   const { actualData, interpolatedData, trendData, projectionsData, actualSinkersData, interpolatedSinkersData } = dataArrays;
 
   if (options.series && options.xAxis && !Array.isArray(options.xAxis)) {
-    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow, isDarkMode));
+    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow));
 
     if (isNarrow) {
-      options.series.push(createLineSeries(actualData, false, isDarkMode));
+      options.series.push(createLineSeries(actualData, false));
     } else {
-      options.series.push(createDotSeries(actualData, false, isDarkMode));
-      options.series.push(createDotSeries(interpolatedData, true, isDarkMode));
-      options.series.push(createSinkersSeries(actualSinkersData, false, isDarkMode));
-      options.series.push(createSinkersSeries(interpolatedSinkersData, true, isDarkMode));
+      options.series.push(createDotSeries(actualData, false));
+      options.series.push(createDotSeries(interpolatedData, true));
+      options.series.push(createSinkersSeries(actualSinkersData, false));
+      options.series.push(createSinkersSeries(interpolatedSinkersData, true));
     }
 
-    options.series.push(createProjectionSeries(projectionsData, mode, modeText, isNarrow, isDarkMode));
+    options.series.push(createProjectionSeries(projectionsData, mode, modeText, isNarrow));
     options.xAxis.tickInterval = 86400000 * 7;
     options.xAxis.range = 86400000 * (90 - 1 + 6);
     options.xAxis.plotBands = [];
@@ -88,14 +87,14 @@ export function build3MonthOptions(options: Options, builderOptions: BuilderOpti
 }
 
 export function buildLongTermOptions(options: Options, builderOptions: BuilderOptions, timeRange: "6m" | "1y" | "all"): void {
-  const { mode, modeText, isNarrow, isDarkMode, dataArrays } = builderOptions;
+  const { mode, modeText, isNarrow, dataArrays } = builderOptions;
   const { actualData, trendData, projectionsData } = dataArrays;
 
   if (options.series && options.xAxis && !Array.isArray(options.xAxis)) {
     options.series = [];
-    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow, isDarkMode));
-    options.series.push(createLineSeries(actualData, false, isDarkMode));
-    options.series.push(createProjectionSeries(projectionsData, mode, modeText, isNarrow, isDarkMode));
+    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow));
+    options.series.push(createLineSeries(actualData, false));
+    options.series.push(createProjectionSeries(projectionsData, mode, modeText, isNarrow));
 
     const rangeDays = timeRange === "6m" ? 180 : timeRange === "1y" ? 365 : trendData.length;
     options.xAxis.range = 86400000 * (rangeDays - 1 + 6);
@@ -104,24 +103,24 @@ export function buildLongTermOptions(options: Options, builderOptions: BuilderOp
 }
 
 export function buildExploreOptions(options: Options, builderOptions: BuilderOptions): void {
-  const { mode, modeText, isNarrow, isDarkMode, lastMeasurement, dataArrays } = builderOptions;
+  const { mode, modeText, isNarrow, lastMeasurement, dataArrays } = builderOptions;
   const { actualData, interpolatedData, trendData, projectionsData, actualSinkersData, interpolatedSinkersData } = dataArrays;
 
   if (options.series && options.xAxis && !Array.isArray(options.xAxis)) {
     // Initial series setup
     options.series = [];
-    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow, isDarkMode));
+    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow));
 
     if (isNarrow) {
-      options.series.push(createLineSeries(actualData, false, isDarkMode));
+      options.series.push(createLineSeries(actualData, false));
     } else {
-      options.series.push(createDotSeries(actualData, false, isDarkMode));
-      options.series.push(createDotSeries(interpolatedData, true, isDarkMode));
-      options.series.push(createSinkersSeries(actualSinkersData, false, isDarkMode));
-      options.series.push(createSinkersSeries(interpolatedSinkersData, true, isDarkMode));
+      options.series.push(createDotSeries(actualData, false));
+      options.series.push(createDotSeries(interpolatedData, true));
+      options.series.push(createSinkersSeries(actualSinkersData, false));
+      options.series.push(createSinkersSeries(interpolatedSinkersData, true));
     }
 
-    options.series.push(createProjectionSeries(projectionsData, mode, modeText, isNarrow, isDarkMode));
+    options.series.push(createProjectionSeries(projectionsData, mode, modeText, isNarrow));
 
     // Chart adjustments
     if (options.chart) {
@@ -147,26 +146,26 @@ export function buildExploreOptions(options: Options, builderOptions: BuilderOpt
       margin: 10,
       series: {
         type: "line",
-        color: isDarkMode ? "#6b7280" : "#4a5568",
+        color: "var(--muted-foreground)",
         lineWidth: 1,
         fillOpacity: 0.1,
       },
       xAxis: {
         labels: {
           style: {
-            color: isDarkMode ? "#9ca3af" : "#718096",
+            color: "var(--muted-foreground)",
             fontSize: "11px",
             textOutline: "none",
           },
         },
       },
       handles: {
-        backgroundColor: isDarkMode ? "#374151" : "#e2e8f0",
-        borderColor: isDarkMode ? "#4b5563" : "#a0aec0",
+        backgroundColor: "var(--muted)",
+        borderColor: "var(--border)",
       },
-      outlineColor: isDarkMode ? "#4b5563" : "#cbd5e0",
+      outlineColor: "var(--border)",
       outlineWidth: 1,
-      maskFill: isDarkMode ? "rgba(55, 65, 81, 0.3)" : "rgba(226, 232, 240, 0.3)",
+      maskFill: "var(--muted)",
     };
 
     options.scrollbar = {
@@ -175,12 +174,12 @@ export function buildExploreOptions(options: Options, builderOptions: BuilderOpt
 
     // Add dynamic series update handler
     options.xAxis.events = {
-      afterSetExtremes: createAfterSetExtremesHandler(dataArrays, mode, modeText, isNarrow, isDarkMode),
+      afterSetExtremes: createAfterSetExtremesHandler(dataArrays, mode, modeText, isNarrow),
     };
   }
 }
 
-function createAfterSetExtremesHandler(dataArrays: ChartDataArrays, mode: keyof typeof Modes, modeText: string, isNarrow: boolean, isDarkMode: boolean) {
+function createAfterSetExtremesHandler(dataArrays: ChartDataArrays, mode: keyof typeof Modes, modeText: string, isNarrow: boolean) {
   const { actualData, interpolatedData, projectionsData, actualSinkersData, interpolatedSinkersData } = dataArrays;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -198,34 +197,34 @@ function createAfterSetExtremesHandler(dataArrays: ChartDataArrays, mode: keyof 
     // Add series based on range
     if (rangeDays <= 90) {
       // 90 days or less - diamonds view
-      chart.addSeries(createDiamondsSeries(actualData, false, isNarrow, isDarkMode), false);
-      chart.addSeries(createDiamondsSeries(interpolatedData, true, isNarrow, isDarkMode), false);
-      chart.addSeries(createSinkersSeries(actualSinkersData, false, isDarkMode), false);
-      chart.addSeries(createSinkersSeries(interpolatedSinkersData, true, isDarkMode), false);
+      chart.addSeries(createDiamondsSeries(actualData, false, isNarrow), false);
+      chart.addSeries(createDiamondsSeries(interpolatedData, true, isNarrow), false);
+      chart.addSeries(createSinkersSeries(actualSinkersData, false), false);
+      chart.addSeries(createSinkersSeries(interpolatedSinkersData, true), false);
     } else if (rangeDays <= 190) {
       // 91-190 days - dots view
       if (isNarrow) {
-        chart.addSeries(createLineSeries(actualData, false, isDarkMode), false);
+        chart.addSeries(createLineSeries(actualData, false), false);
       } else {
-        chart.addSeries(createDotSeries(actualData, false, isDarkMode), false);
-        chart.addSeries(createDotSeries(interpolatedData, true, isDarkMode), false);
-        chart.addSeries(createSinkersSeries(actualSinkersData, false, isDarkMode), false);
-        chart.addSeries(createSinkersSeries(interpolatedSinkersData, true, isDarkMode), false);
+        chart.addSeries(createDotSeries(actualData, false), false);
+        chart.addSeries(createDotSeries(interpolatedData, true), false);
+        chart.addSeries(createSinkersSeries(actualSinkersData, false), false);
+        chart.addSeries(createSinkersSeries(interpolatedSinkersData, true), false);
       }
     } else {
       // More than 190 days - line view
-      chart.addSeries(createLineSeries(actualData, false, isDarkMode), false);
+      chart.addSeries(createLineSeries(actualData, false), false);
     }
 
     // Re-add projection series
-    chart.addSeries(createProjectionSeries(projectionsData, mode, modeText, isNarrow, isDarkMode), false);
+    chart.addSeries(createProjectionSeries(projectionsData, mode, modeText, isNarrow), false);
 
     // Redraw once after all series changes
     chart.redraw();
   };
 }
 
-export function buildYAxisOptions(options: Options, mode: keyof typeof Modes, useMetric: boolean, goalWeight?: number, isDarkMode = false): void {
+export function buildYAxisOptions(options: Options, mode: keyof typeof Modes, useMetric: boolean, goalWeight?: number): void {
   if (!options.yAxis || Array.isArray(options.yAxis)) return;
 
   // Set minimum y-axis range based on mode and units
@@ -243,13 +242,13 @@ export function buildYAxisOptions(options: Options, mode: keyof typeof Modes, us
       {
         from: goalWeight - goalWidth,
         to: goalWeight + goalWidth,
-        color: isDarkMode ? "rgba(34, 197, 94, 0.1)" : "rgb(244, 255, 244)", // Subtle green background
+        color: "var(--chart-goal-band)",
         label: {
           text: "Goal Range",
           align: "right",
           verticalAlign: "top",
           style: {
-            color: isDarkMode ? "rgba(34, 197, 94, 0.7)" : "rgb(140, 180, 140)",
+            color: "var(--chart-goal-label)",
             fontSize: "10px",
           },
           x: -4,
@@ -262,14 +261,14 @@ export function buildYAxisOptions(options: Options, mode: keyof typeof Modes, us
     options.yAxis.plotLines = [
       {
         value: goalWeight - goalWidth,
-        color: isDarkMode ? "rgba(34, 197, 94, 0.4)" : "rgb(100, 150, 100)",
+        color: "var(--chart-goal-line)",
         dashStyle: "ShortDash",
         zIndex: 1,
         width: 1,
       },
       {
         value: goalWeight + goalWidth,
-        color: isDarkMode ? "rgba(34, 197, 94, 0.4)" : "rgb(100, 150, 100)",
+        color: "var(--chart-goal-line)",
         dashStyle: "ShortDash",
         zIndex: 1,
         width: 1,

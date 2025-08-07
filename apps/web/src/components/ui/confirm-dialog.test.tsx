@@ -65,8 +65,8 @@ describe("ConfirmDialog", () => {
     render(<ConfirmDialog {...defaultProps} destructive />);
 
     const confirmButton = screen.getByRole("button", { name: "Confirm" });
-    // Check for dark mode destructive classes that are being applied
-    expect(confirmButton).toHaveClass("dark:bg-destructive/60");
+    // Check for destructive variant classes
+    expect(confirmButton).toHaveClass("bg-destructive");
   });
 
   it("should render primary variant when destructive prop is false", () => {

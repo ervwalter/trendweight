@@ -3,16 +3,20 @@ import { Heart, Lightbulb, Rss, ShoppingCart } from "lucide-react";
 import { Heading } from "../ui/Heading";
 import { useAuth } from "../../lib/auth/useAuth";
 import { ExternalLink } from "../ui/ExternalLink";
+import { Button } from "../ui/button";
+import { useTheme } from "../../lib/hooks/use-theme";
 
 export function About() {
   const { isInitializing, user } = useAuth();
+  const { theme } = useTheme();
   const getStarted = isInitializing || !user ? { label: "Log In / Sign Up", href: "/login" } : { label: "Go to Dashboard", href: "/dashboard" };
+  const screenshotSrc = theme === "dark" ? "/screenshot-large-dark.png" : "/screenshot-large.png";
 
   return (
     <div>
       <div className="bg-background float-right hidden w-96 pb-4 pl-4 md:block">
         <Link to="/demo">
-          <img src="/screenshot-large.png" alt="dashboard screenshot" className="h-auto w-full" />
+          <img src={screenshotSrc} alt="dashboard screenshot" className="h-auto w-full" />
         </Link>
       </div>
       <Heading level={1} className="pb-4">
@@ -32,9 +36,9 @@ export function About() {
         <div className="pb-2 text-lg">
           <b>See it in action...</b>
         </div>
-        <Link to="/demo" className="bg-success hover:bg-success inline-block rounded px-6 py-3 text-lg text-white transition-colors">
-          View Demo
-        </Link>
+        <Button variant="success" size="lg" asChild>
+          <Link to="/demo">View Demo</Link>
+        </Button>
       </div>
       <p className="pb-4">
         The idea is pretty simple. You weigh yourself each day and TrendWeight will plot a exponentially weighted moving average for your weight alongside your
@@ -141,9 +145,9 @@ export function About() {
             Ready to check it out?
           </Heading>
           <div className="mt-2 flex">
-            <Link to={getStarted.href} className="bg-primary hover:bg-primary inline-block rounded px-6 py-3 text-lg text-white transition-colors">
-              {getStarted.label}
-            </Link>
+            <Button variant="default" size="lg" asChild>
+              <Link to={getStarted.href}>{getStarted.label}</Link>
+            </Button>
           </div>
         </div>
       </div>
