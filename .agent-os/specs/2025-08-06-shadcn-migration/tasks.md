@@ -81,18 +81,40 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 9.4 Test all dialog and toast interactions
   - [x] 9.5 Verify all toast and dialog tests pass
 
-- [ ] 10. Component Cleanup and Organization
-  - [ ] 10.1 Write tests for component organization
-  - [ ] 10.2 Move ExternalLink to src/components/common/
-  - [ ] 10.3 Remove old custom components from src/components/ui/
-  - [ ] 10.4 Update import paths for relocated components
-  - [ ] 10.5 Verify src/components/ui/ only contains shadcn components
-  - [ ] 10.6 Run comprehensive test suite to ensure all tests pass
+- [ ] 10. Dark Mode Infrastructure
+  - [ ] 10.1 Write tests for theme provider and mode toggle
+  - [ ] 10.2 Create ThemeProvider component following shadcn/ui Vite pattern
+  - [ ] 10.3 Implement useTheme hook for consuming theme state
+  - [ ] 10.4 Create ModeToggle component with dropdown menu
+  - [ ] 10.5 Add theme toggle to application header/navigation
+  - [ ] 10.6 Configure CSS variables for light and dark themes in OKLCH format
+  - [ ] 10.7 Update Tailwind config for dark mode class strategy
+  - [ ] 10.8 Test theme persistence and system preference detection
+  - [ ] 10.9 Verify theme switching works across all pages
 
-- [ ] 11. Bundle Optimization and Dependencies
-  - [ ] 11.1 Remove unused Radix UI dependencies
-  - [ ] 11.2 Remove unused react-icons packages
-  - [ ] 11.3 Verify tree-shaking effectiveness for shadcn components
-  - [ ] 11.4 Run bundle analysis to confirm size optimization
-  - [ ] 11.5 Update package.json dependencies
-  - [ ] 11.6 Verify final build and all tests pass
+- [ ] 11. Semantic Color Migration
+  - [ ] 11.1 Write tests for semantic color usage
+  - [ ] 11.2 Audit all components for hardcoded color classes
+  - [ ] 11.3 Replace bg-white/bg-gray-* with semantic equivalents (bg-background, bg-card, bg-muted)
+  - [ ] 11.4 Replace text-gray-*/text-black with semantic equivalents (text-foreground, text-muted-foreground)
+  - [ ] 11.5 Replace border-gray-* with border-border
+  - [ ] 11.6 Update brand color usage to use primary/secondary semantic colors
+  - [ ] 11.7 Update status colors (success, error, warning) to semantic variables
+  - [ ] 11.8 Configure Highcharts themes for dark mode support
+  - [ ] 11.9 Verify all components adapt correctly to theme changes
+
+- [ ] 12. Component Cleanup and Organization
+  - [ ] 12.1 Write tests for component organization
+  - [ ] 12.2 Move ExternalLink to src/components/common/
+  - [ ] 12.3 Remove old custom components from src/components/ui/
+  - [ ] 12.4 Update import paths for relocated components
+  - [ ] 12.5 Verify src/components/ui/ only contains shadcn components
+  - [ ] 12.6 Run comprehensive test suite to ensure all tests pass
+
+- [ ] 13. Bundle Optimization and Dependencies
+  - [ ] 13.1 Remove unused Radix UI dependencies
+  - [ ] 13.2 Remove unused react-icons packages
+  - [ ] 13.3 Verify tree-shaking effectiveness for shadcn components
+  - [ ] 13.4 Run bundle analysis to confirm size optimization
+  - [ ] 13.5 Update package.json dependencies
+  - [ ] 13.6 Verify final build and all tests pass

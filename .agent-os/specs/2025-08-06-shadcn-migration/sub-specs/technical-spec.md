@@ -9,6 +9,8 @@ This is the technical specification for the spec detailed in @.agent-os/specs/20
 
 - **Tailwind Configuration**: Extend existing Tailwind v4 config to work with shadcn's requirements
 - **Design Token Mapping**: Map TrendWeight's existing brand colors (brand-500, brand-600, etc.) to shadcn's CSS variable system
+- **Dark Mode Support**: Implement theme switching using CSS variables with support for light, dark, and system preference modes
+- **Theme Persistence**: Store user's theme preference in localStorage and sync across browser tabs
 - **Standard shadcn Implementation**: Use shadcn components with their standard APIs rather than maintaining backward compatibility, requiring updates to existing component usage
 - **No Wrapper Components**: Do NOT create wrapper components in `components/ui/` to maintain backwards compatibility. Update consuming pages/components to use the new shadcn components directly. Wrapper components should only be created in rare cases and must be placed outside the `components/ui/` folder if needed.
 - **TypeScript Integration**: Full TypeScript support with proper type definitions for all migrated components
@@ -94,6 +96,99 @@ This is the technical specification for the spec detailed in @.agent-os/specs/20
 - `HiCheck` → `Check` from lucide-react
 - `HiDownload` → `Download` from lucide-react
 - `HiChevronLeft/Right` → `ChevronLeft/Right` from lucide-react
+
+## Dark Mode Implementation (Following shadcn/ui Vite Guide)
+
+### Theme Provider Setup
+- **Provider Component**: Implement `components/theme-provider.tsx` following shadcn/ui Vite pattern
+- **Theme Types**: Support "light", "dark", and "system" modes
+- **System Detection**: Use `window.matchMedia('(prefers-color-scheme: dark)')` for system preference
+- **Storage Key**: Use `vite-ui-theme` in localStorage (or `trendweight-theme` for branding)
+- **Class Application**: Apply theme class directly to `document.documentElement`
+- **Context Hook**: Export `useTheme` hook for consuming theme state
+
+### Mode Toggle Component
+- **Location**: Add theme toggle in application header/navigation
+- **Implementation**: Use shadcn DropdownMenu with Sun/Moon/Monitor icons from lucide-react
+- **Keyboard Support**: Full accessibility with keyboard navigation
+- **Visual Feedback**: Show current theme state with appropriate icon
+
+### CSS Variable Strategy (OKLCH Color Model)
+```css
+@layer base {
+  :root {
+    /* Using OKLCH for better color consistency */
+    --background: oklch(100% 0 0);
+    --foreground: oklch(14.5% 0 0);
+    --card: oklch(100% 0 0);
+    --card-foreground: oklch(14.5% 0 0);
+    --popover: oklch(100% 0 0);
+    --popover-foreground: oklch(14.5% 0 0);
+    --primary: /* Map from brand-500 in OKLCH */;
+    --primary-foreground: oklch(98.5% 0 0);
+    --secondary: oklch(96.1% 0 0);
+    --secondary-foreground: oklch(14.5% 0 0);
+    --muted: oklch(96.1% 0 0);
+    --muted-foreground: oklch(45.5% 0.02 264.52);
+    --accent: oklch(96.1% 0 0);
+    --accent-foreground: oklch(14.5% 0 0);
+    --destructive: oklch(59.2% 0.258 27.35);
+    --destructive-foreground: oklch(98.5% 0 0);
+    --border: oklch(90% 0 0);
+    --input: oklch(90% 0 0);
+    --ring: /* Map from brand color */;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: oklch(14.5% 0 0);
+    --foreground: oklch(98.5% 0 0);
+    --card: oklch(14.5% 0 0);
+    --card-foreground: oklch(98.5% 0 0);
+    --popover: oklch(14.5% 0 0);
+    --popover-foreground: oklch(98.5% 0 0);
+    --primary: /* Map from brand-400 for better contrast in dark mode */;
+    --primary-foreground: oklch(14.5% 0 0);
+    --secondary: oklch(21.7% 0 0);
+    --secondary-foreground: oklch(98.5% 0 0);
+    --muted: oklch(21.7% 0 0);
+    --muted-foreground: oklch(64.5% 0 0);
+    --accent: oklch(21.7% 0 0);
+    --accent-foreground: oklch(98.5% 0 0);
+    --destructive: oklch(52.8% 0.253 25.18);
+    --destructive-foreground: oklch(98.5% 0 0);
+    --border: oklch(21.7% 0 0);
+    --input: oklch(21.7% 0 0);
+    --ring: oklch(78.5% 0.074 71.77);
+  }
+}
+```
+
+### Tailwind Configuration Updates
+- **Dark Mode Strategy**: Use `class` strategy in tailwind.config.js (this only controls when the `.dark` class is applied)
+- **Color Extensions**: Map CSS variables to Tailwind utilities
+- **OKLCH Support**: Ensure Tailwind v4 OKLCH color support is configured
+
+### Semantic Color Strategy (Critical Requirement)
+- **NO `dark:` prefixes**: Components should NOT use `dark:bg-gray-800` style classes
+- **Semantic Variables Only**: Use semantic color utilities like `bg-background`, `text-foreground`, `border-border`
+- **Color Migration Required**: ALL existing hardcoded colors must be converted to semantic variables:
+  - `bg-white` → `bg-background` or `bg-card`
+  - `text-gray-900` → `text-foreground`
+  - `border-gray-200` → `border-border`
+  - `bg-gray-50` → `bg-muted`
+  - `text-gray-600` → `text-muted-foreground`
+  - Brand colors → `bg-primary`, `text-primary-foreground`
+- **Exceptional Cases**: Direct color usage only allowed for:
+  - One-off decorative elements that don't change with theme
+  - Status colors that remain constant (though prefer semantic like `bg-destructive`)
+  
+### Component Adaptation
+- All shadcn components automatically adapt via CSS variables
+- Custom components must use semantic CSS variables for ALL colors
+- Existing components need color refactoring to remove hardcoded Tailwind colors
+- Charts (Highcharts) will need custom theme configuration for dark mode
+- Ensure WCAG AA contrast ratios in both themes
 
 ## Configuration Requirements
 

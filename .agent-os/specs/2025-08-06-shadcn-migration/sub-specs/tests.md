@@ -95,6 +95,23 @@ This is the tests coverage details for the spec detailed in @.agent-os/specs/202
 - Modal behavior and backdrop interactions
 - Focus management and keyboard navigation
 
+**Dark Mode and Theme System**
+- ThemeProvider correctly manages theme state
+- Theme persists to localStorage and retrieves on reload
+- System preference detection works correctly
+- Theme changes apply to all components immediately
+- ModeToggle component shows correct icon for current theme
+- Dropdown menu allows selection of light/dark/system modes
+- Theme syncs across browser tabs via storage events
+
+**Semantic Color System**
+- All components use semantic color classes (no hardcoded colors)
+- Colors correctly change when theme switches
+- Contrast ratios meet WCAG AA standards in both themes
+- Charts and visualizations adapt to dark mode
+- No `dark:` prefixes used except in exceptional cases
+- All bg-white, text-gray-*, border-gray-* replaced with semantic equivalents
+
 ### Visual Regression Tests
 
 **Component Appearance**
