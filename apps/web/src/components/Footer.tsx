@@ -1,4 +1,4 @@
-import { FaGithub, FaRss } from "react-icons/fa";
+import { GithubIcon, Rss } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Container } from "./Container";
 
@@ -33,10 +33,10 @@ export function Footer() {
           <div className="flex flex-wrap items-center gap-2 text-sm md:gap-4">
             <div className="flex items-center gap-2 md:gap-4">
               <a href="https://github.com/ervwalter/trendweight" className="transition-colors hover:text-gray-600">
-                <FaGithub />
+                <GithubIcon className="h-4 w-4" />
               </a>
               <a href="https://ewal.dev/series/trendweight" className="transition-colors hover:text-gray-600">
-                <FaRss />
+                <Rss className="h-4 w-4" />
               </a>
             </div>
             <a href="mailto:erv@ewal.net" className="transition-colors hover:text-gray-600">

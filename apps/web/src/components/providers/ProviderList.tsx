@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { HiCheckCircle } from "react-icons/hi";
+import { CheckCircle } from "lucide-react";
 import { apiRequest } from "../../lib/api/client";
 import { useDisconnectProvider, useResyncProvider, useEnableProvider } from "../../lib/api/mutations";
 import { useProviderLinks } from "../../lib/api/queries";
@@ -156,7 +156,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
             <div key={provider.id} className="relative rounded-lg border border-gray-200 bg-gray-50 p-4 @sm:p-6">
               {isConnected && (
                 <div className="absolute top-4 right-4">
-                  <HiCheckCircle className="h-5 w-5 text-green-600 @sm:h-6 @sm:w-6" />
+                  <CheckCircle className="h-5 w-5 text-green-600 @sm:h-6 @sm:w-6" />
                 </div>
               )}
               <Heading level={2}>{provider.displayName}</Heading>

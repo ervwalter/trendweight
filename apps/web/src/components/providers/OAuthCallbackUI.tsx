@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { FaCheck } from "react-icons/fa";
+import { Check } from "lucide-react";
 import { Button } from "../ui/button";
 
 interface OAuthCallbackUIProps {
@@ -36,7 +36,7 @@ export function OAuthCallbackUI({ providerName, state, error, errorCode, retryCo
     return (
       <div className="mt-12 text-center">
         <div className="mb-4 flex items-center justify-center gap-2 text-lg text-gray-700">
-          <FaCheck className="text-green-600" />
+          <Check className="h-5 w-5 text-green-600" />
           <span>Connected!</span>
         </div>
         <p className="text-sm text-gray-500">Taking you to your dashboard...</p>

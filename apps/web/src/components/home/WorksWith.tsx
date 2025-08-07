@@ -1,4 +1,4 @@
-import { FaCheck } from "react-icons/fa";
+import { Check } from "lucide-react";
 
 export function WorksWith() {
   return (
@@ -31,13 +31,13 @@ export function WorksWith() {
       <div className="order-1 pb-6 text-xl md:order-3 md:pt-6">
         <div className="font-bold">Enter your daily weight how you like...</div>
         <div>
-          <FaCheck className="mr-1 inline-block text-green-500" /> Smart Scales / WiFi Scales
+          <Check className="mr-1 inline-block h-5 w-5 text-green-500" /> Smart Scales / WiFi Scales
         </div>
         <div>
-          <FaCheck className="mr-1 inline-block text-green-500" /> Withings Health Mate App
+          <Check className="mr-1 inline-block h-5 w-5 text-green-500" /> Withings Health Mate App
         </div>
         <div>
-          <FaCheck className="mr-1 inline-block text-green-500" /> Fitbit App
+          <Check className="mr-1 inline-block h-5 w-5 text-green-500" /> Fitbit App
         </div>
       </div>
     </div>

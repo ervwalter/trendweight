@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { HiOutlineHeart, HiOutlineLightBulb, HiOutlineRss, HiOutlineShoppingCart } from "react-icons/hi";
+import { Heart, Lightbulb, Rss, ShoppingCart } from "lucide-react";
 import { Heading } from "../ui/Heading";
 import { useAuth } from "../../lib/auth/useAuth";
 import { ExternalLink } from "../ui/ExternalLink";
@@ -55,7 +55,7 @@ export function About() {
             <div className="mt-[-24px]">
               <div>
                 <div className="bg-brand-400 inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
-                  <HiOutlineLightBulb className="h-6 w-6" />
+                  <Lightbulb className="h-6 w-6" />
                 </div>
               </div>
               <Heading level={3} className="mt-6 mb-0 pb-0 tracking-tight text-gray-900">
@@ -78,7 +78,7 @@ export function About() {
             <div className="mt-[-24px]">
               <div>
                 <div className="bg-brand-400 inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
-                  <HiOutlineShoppingCart className="h-6 w-6" />
+                  <ShoppingCart className="h-6 w-6" />
                 </div>
               </div>
               <Heading level={3} className="mt-6 mb-0 pb-0 tracking-tight text-gray-900">
@@ -98,7 +98,7 @@ export function About() {
             <div className="mt-[-24px]">
               <div>
                 <div className="bg-brand-400 inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
-                  <HiOutlineRss className="h-6 w-6" />
+                  <Rss className="h-6 w-6" />
                 </div>
               </div>
               <Heading level={3} className="mt-6 mb-0 pb-0 tracking-tight text-gray-900">
@@ -118,7 +118,7 @@ export function About() {
             <div className="mt-[-24px]">
               <div>
                 <div className="bg-brand-400 inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
-                  <HiOutlineHeart className="h-6 w-6" />
+                  <Heart className="h-6 w-6" />
                 </div>
               </div>
               <Heading level={3} className="mt-6 mb-0 pb-0 tracking-tight text-gray-900">

@@ -1,6 +1,6 @@
 import "katex/dist/katex.min.css";
 import { useEffect, useState } from "react";
-import { HiArrowUp } from "react-icons/hi";
+import { ArrowUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
@@ -61,7 +61,7 @@ export function Math() {
               {showBackToTop && (
                 <div className="fixed bottom-8">
                   <Button onClick={scrollToTop} variant="default" className="flex items-center gap-2 shadow-lg" aria-label="Back to top">
-                    <HiArrowUp className="h-4 w-4" />
+                    <ArrowUp className="h-4 w-4" />
                     <span>Back to top</span>
                   </Button>
                 </div>

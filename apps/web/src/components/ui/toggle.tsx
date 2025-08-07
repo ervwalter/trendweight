@@ -32,4 +32,5 @@ function Toggle({ className, variant, size, ...props }: React.ComponentProps<typ
   return <TogglePrimitive.Root data-slot="toggle" className={cn(toggleVariants({ variant, size, className }))} {...props} />;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Toggle, toggleVariants };

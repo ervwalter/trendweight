@@ -1,4 +1,4 @@
-import { HiX } from "react-icons/hi";
+import { X } from "lucide-react";
 import { usePersistedState } from "../../lib/hooks/usePersistedState";
 import { Button } from "../ui/button";
 import { ExternalLink } from "../ui/ExternalLink";
@@ -32,7 +32,7 @@ export function NewVersionNotice({ onDismiss }: NewVersionNoticeProps) {
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={handleDismiss} className="hover:bg-brand-100 -my-2 -mr-2 ml-4" aria-label="Dismiss notice">
-          <HiX className="h-4 w-4" />
+          <X className="h-4 w-4" />
         </Button>
       </div>
     </div>

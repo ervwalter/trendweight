@@ -66,13 +66,13 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 7.5 Update loading states throughout application
   - [x] 7.6 Verify all loading state tests pass
 
-- [ ] 8. Icon Library Unification
-  - [ ] 8.1 Write tests for icon replacements
-  - [ ] 8.2 Create icon mapping from react-icons to lucide-react equivalents
-  - [ ] 8.3 Replace HiMenu, HiX, HiCheck, and other common icons with lucide equivalents
-  - [ ] 8.4 Update icon imports throughout codebase
-  - [ ] 8.5 Remove unused react-icons dependencies
-  - [ ] 8.6 Verify all icon-related tests pass
+- [x] 8. Icon Library Unification
+  - [x] 8.1 Write tests for icon replacements
+  - [x] 8.2 Create icon mapping from react-icons to lucide-react equivalents
+  - [x] 8.3 Replace HiMenu, HiX, HiCheck, and other common icons with lucide equivalents
+  - [x] 8.4 Update icon imports throughout codebase
+  - [x] 8.5 Remove unused react-icons dependencies
+  - [x] 8.6 Verify all icon-related tests pass
 
 - [ ] 9. Toast and Dialog System Migration
   - [ ] 9.1 Write tests for Toast system replacement

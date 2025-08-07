@@ -3,7 +3,7 @@ import { Logo } from "./Logo";
 import { Container } from "./Container";
 import { useAuth } from "../lib/auth/useAuth";
 import { useState, useRef, useEffect } from "react";
-import { HiMenu, HiX } from "react-icons/hi";
+import { Menu, X } from "lucide-react";
 
 export function Header() {
   const { isInitializing, isLoggedIn, signOut } = useAuth();
@@ -68,7 +68,7 @@ export function Header() {
             aria-label="Open menu"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <HiX size={24} /> : <HiMenu size={24} />}
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </nav>
         {/* Mobile menu */}

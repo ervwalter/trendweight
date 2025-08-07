@@ -120,7 +120,6 @@ describe("Download", () => {
     expect(screen.getByText("Download Your Data")).toBeInTheDocument();
     expect(screen.getByTestId("view-toggle-buttons")).toBeInTheDocument();
     expect(screen.getByTestId("sort-toggle")).toBeInTheDocument();
-    expect(screen.getByText("Download Icon")).toBeInTheDocument();
     expect(screen.getByText("Download as CSV")).toBeInTheDocument();
   });
 

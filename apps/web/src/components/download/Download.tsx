@@ -7,7 +7,7 @@ import { ViewToggleButtons } from "./ViewToggleButtons";
 import { SortToggle } from "./SortToggle";
 import { useScaleReadingsData } from "../../lib/download/useScaleReadingsData";
 import { downloadScaleReadingsCSV } from "../../lib/download/csvExport";
-import { HiDownload } from "react-icons/hi";
+import { Download as DownloadIcon } from "lucide-react";
 import type { ViewType } from "./types";
 
 export function Download() {
@@ -48,7 +48,7 @@ export function Download() {
       {/* Download button */}
       <div className="mb-4">
         <Button onClick={handleDownloadCSV} variant="default" size="sm" className="bg-brand-500 hover:bg-brand-800">
-          <HiDownload className="mr-2 h-4 w-4" />
+          <DownloadIcon className="mr-2 h-4 w-4" />
           Download as CSV
         </Button>
       </div>

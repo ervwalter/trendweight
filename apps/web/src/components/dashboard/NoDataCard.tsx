@@ -1,4 +1,4 @@
-import { HiOutlineClock } from "react-icons/hi";
+import { Clock } from "lucide-react";
 import type { ProviderSyncStatus } from "../../lib/api/types";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
@@ -19,7 +19,7 @@ export function NoDataCard({ providerStatus }: NoDataCardProps) {
       <CardHeader>
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0">
-            <HiOutlineClock className="h-8 w-8" />
+            <Clock className="h-8 w-8" />
           </div>
           <CardTitle>Waiting for Data</CardTitle>
         </div>

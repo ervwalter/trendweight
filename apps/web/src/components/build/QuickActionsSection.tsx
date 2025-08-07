@@ -1,5 +1,5 @@
 import { Button } from "../ui/button";
-import { FiCopy, FiCheck } from "react-icons/fi";
+import { Copy, Check } from "lucide-react";
 
 interface QuickActionsSectionProps {
   onCopyClick: () => void;
@@ -13,12 +13,12 @@ export function QuickActionsSection({ onCopyClick, copied, mailtoLink }: QuickAc
       <Button onClick={onCopyClick} variant="outline" className="flex items-center gap-2">
         {copied ? (
           <>
-            <FiCheck className="h-4 w-4" />
+            <Check className="h-4 w-4" />
             Copied!
           </>
         ) : (
           <>
-            <FiCopy className="h-4 w-4" />
+            <Copy className="h-4 w-4" />
             Copy Build Info
           </>
         )}

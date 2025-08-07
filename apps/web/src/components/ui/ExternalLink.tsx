@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { HiExternalLink } from "react-icons/hi";
+import { ExternalLink as ExternalLinkIcon } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 
 interface ExternalLinkProps {
@@ -12,7 +12,7 @@ export function ExternalLink({ href, children, className }: ExternalLinkProps) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className={twMerge("text-brand-600 hover:text-brand-700 underline", className)}>
       {children}
-      <HiExternalLink className="ml-0.5 inline-block h-3 w-3 align-baseline" />
+      <ExternalLinkIcon className="ml-0.5 inline-block h-3 w-3 align-baseline" />
     </a>
   );
 }
