@@ -2,7 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useCompleteMigration } from "../../lib/api/mutations";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { ExternalLink } from "../ui/ExternalLink";
+import { ExternalLink } from "../common/external-link";
 
 export function Migration() {
   const navigate = useNavigate();

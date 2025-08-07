@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { UseFormWatch } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { ConfirmDialog } from "../ui/confirm-dialog";
-import { Heading } from "../ui/Heading";
+import { Heading } from "../common/heading";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 

@@ -4,7 +4,7 @@ import { ApiError } from "../../lib/api/client";
 import { Modes, TimeRanges } from "../../lib/core/interfaces";
 import { DashboardProvider } from "../../lib/dashboard/context";
 import { useComputeDashboardData } from "../../lib/dashboard/hooks";
-import { Heading } from "../ui/Heading";
+import { Heading } from "../common/heading";
 import Buttons from "./Buttons";
 import Chart from "./chart/Chart";
 import Currently from "./Currently";

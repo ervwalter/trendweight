@@ -1,5 +1,5 @@
-import { ExternalLink } from "../ui/ExternalLink";
-import { Heading } from "../ui/Heading";
+import { ExternalLink } from "../common/external-link";
+import { Heading } from "../common/heading";
 
 export function TipJar() {
   return (

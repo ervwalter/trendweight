@@ -113,7 +113,10 @@ describe("Settings", () => {
     vi.clearAllMocks();
     mockUpdateProfile.isError = false;
     mockUpdateProfile.isSuccess = false;
-    mockMutateAsync.mockResolvedValue(undefined);
+    // Mock the response to match what the component expects
+    mockMutateAsync.mockResolvedValue({
+      user: mockProfileData,
+    });
   });
 
   it("should render all sections", () => {
@@ -294,8 +297,8 @@ describe("Settings", () => {
     const user = userEvent.setup();
 
     // Create a promise that we can control
-    let resolveSubmit: () => void;
-    const submitPromise = new Promise<void>((resolve) => {
+    let resolveSubmit: (value: any) => void;
+    const submitPromise = new Promise((resolve) => {
       resolveSubmit = resolve;
     });
     mockMutateAsync.mockReturnValue(submitPromise);
@@ -312,8 +315,8 @@ describe("Settings", () => {
     expect(saveButton).toBeDisabled();
     expect(saveButton).toHaveTextContent("Saving...");
 
-    // Resolve the promise
-    resolveSubmit!();
+    // Resolve the promise with the expected response structure
+    resolveSubmit!({ user: mockProfileData });
     await waitFor(() => {
       expect(saveButton).toHaveTextContent("Save Settings");
     });

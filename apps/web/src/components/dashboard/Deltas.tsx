@@ -1,7 +1,7 @@
 import { Modes } from "../../lib/core/interfaces";
 import { formatMeasurement } from "../../lib/core/numbers";
 import { useDashboardData } from "../../lib/dashboard/hooks";
-import { Heading } from "../ui/Heading";
+import { Heading } from "../common/heading";
 import ChangeArrow from "./ChangeArrow";
 
 const Deltas = () => {

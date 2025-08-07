@@ -1,5 +1,5 @@
 import { Container } from "../Container";
-import { Heading } from "../ui/Heading";
+import { Heading } from "../common/heading";
 import { useState } from "react";
 import { ChangelogSection } from "./ChangelogSection";
 import { BuildDetailsSection } from "./BuildDetailsSection";

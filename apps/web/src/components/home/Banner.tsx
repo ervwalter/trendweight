@@ -1,5 +1,5 @@
 import { Container } from "../Container";
-import { Heading } from "../ui/Heading";
+import { Heading } from "../common/heading";
 
 export function Banner() {
   return (

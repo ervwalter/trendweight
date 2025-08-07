@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Heading } from "./Heading";
+import { Heading } from "./heading";
 
 describe("Heading", () => {
   it("should render h1 element for level 1", () => {

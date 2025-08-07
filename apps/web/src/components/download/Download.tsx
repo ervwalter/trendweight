@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useProviderLinks } from "../../lib/api/queries";
-import { Heading } from "../ui/Heading";
+import { Heading } from "../common/heading";
 import { Button } from "../ui/button";
 import { ScaleReadingsDataTable } from "./scale-readings-data-table";
 import { ViewToggleButtons } from "./ViewToggleButtons";

@@ -6,8 +6,8 @@ import { useProviderLinks } from "../../lib/api/queries";
 import { useToast } from "../../lib/hooks/useToast";
 import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ui/confirm-dialog";
-import { ExternalLink } from "../ui/ExternalLink";
-import { Heading } from "../ui/Heading";
+import { ExternalLink } from "../common/external-link";
+import { Heading } from "../common/heading";
 import { getProviderDisplayName, getOAuthProviders } from "../../lib/utils/providerDisplay";
 
 // Simple date formatter for connection dates

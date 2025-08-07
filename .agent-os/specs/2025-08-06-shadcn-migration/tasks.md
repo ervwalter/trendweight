@@ -103,13 +103,13 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 11.8 Configure Highcharts themes for dark mode support
   - [x] 11.9 Verify all components adapt correctly to theme changes
 
-- [ ] 12. Component Cleanup and Organization
-  - [ ] 12.1 Write tests for component organization
-  - [ ] 12.2 Move ExternalLink to src/components/common/
-  - [ ] 12.3 Remove old custom components from src/components/ui/
-  - [ ] 12.4 Update import paths for relocated components
-  - [ ] 12.5 Verify src/components/ui/ only contains shadcn components
-  - [ ] 12.6 Run comprehensive test suite to ensure all tests pass
+- [x] 12. Component Cleanup and Organization
+  - [x] 12.1 Write tests for component organization
+  - [x] 12.2 Move ExternalLink to src/components/common/
+  - [x] 12.3 Remove old custom components from src/components/ui/
+  - [x] 12.4 Update import paths for relocated components
+  - [x] 12.5 Verify src/components/ui/ only contains shadcn components
+  - [x] 12.6 Run comprehensive test suite to ensure all tests pass
 
 - [ ] 13. Bundle Optimization and Dependencies
   - [ ] 13.1 Remove unused Radix UI dependencies

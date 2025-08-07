@@ -3,7 +3,7 @@ import { shortDate } from "../../lib/core/dates";
 import type { Measurement } from "../../lib/core/interfaces";
 import { formatNumber, formatPlannedWeight, formatWeight } from "../../lib/core/numbers";
 import { useDashboardData } from "../../lib/dashboard/hooks";
-import { Heading } from "../ui/Heading";
+import { Heading } from "../common/heading";
 
 const Stats = () => {
   const {

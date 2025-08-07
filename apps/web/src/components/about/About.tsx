@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Lightbulb, Rss, ShoppingCart } from "lucide-react";
-import { Heading } from "../ui/Heading";
+import { Heading } from "../common/heading";
 import { useAuth } from "../../lib/auth/useAuth";
-import { ExternalLink } from "../ui/ExternalLink";
+import { ExternalLink } from "../common/external-link";
 import { Button } from "../ui/button";
 import { useTheme } from "../../lib/hooks/use-theme";
 

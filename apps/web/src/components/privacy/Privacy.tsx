@@ -1,5 +1,5 @@
-import { Heading } from "../ui/Heading";
-import { ExternalLink } from "../ui/ExternalLink";
+import { Heading } from "../common/heading";
+import { ExternalLink } from "../common/external-link";
 
 export function Privacy() {
   return (

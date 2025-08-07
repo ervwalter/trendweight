@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Heading } from "../ui/Heading";
+import { Heading } from "../common/heading";
 import { Button } from "../ui/button";
 
 export function AccountDeleted() {
