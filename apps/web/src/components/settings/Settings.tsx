@@ -5,6 +5,7 @@ import { useProfile } from "../../lib/api/queries";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { useNavigationGuard } from "../../lib/hooks/useNavigationGuard";
 import { Button } from "../ui/button";
+import { Card } from "../ui/card";
 import { AdvancedSection } from "./AdvancedSection";
 import { ConnectedAccountsSection } from "./ConnectedAccountsSection";
 import { DangerZoneSection } from "./DangerZoneSection";
@@ -104,7 +105,7 @@ export function Settings() {
       {profileData?.isMigrated && <NewVersionNotice />}
 
       {/* Settings Form Card */}
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm">
+      <Card className="mb-6">
         <form onSubmit={handleSubmit(onSubmit)}>
           <ProfileSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} />
           <ProgressTrackingSection register={register} watch={watch} control={control} />
@@ -123,25 +124,25 @@ export function Settings() {
             </Button>
           </div>
         </form>
-      </div>
+      </Card>
 
       {/* Sharing Card */}
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm">
+      <Card className="mb-6">
         <SharingSection />
-      </div>
+      </Card>
 
       {/* Connected Accounts Card */}
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm">
+      <Card className="mb-6">
         <ConnectedAccountsSection />
-      </div>
+      </Card>
 
       {/* Download Card */}
       <DownloadSection />
 
       {/* Danger Zone Card */}
-      <div className="rounded-lg border-2 border-red-200 bg-white shadow-sm">
+      <Card className="border-2 border-red-200">
         <DangerZoneSection />
-      </div>
+      </Card>
     </SettingsLayout>
   );
 }

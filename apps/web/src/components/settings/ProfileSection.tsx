@@ -1,7 +1,7 @@
 import type { UseFormRegister, FieldErrors, UseFormWatch, UseFormSetValue, Control } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { BasicProfileSettings } from "./BasicProfileSettings";
-import { Heading } from "../ui/Heading";
+import { CardContent, CardTitle } from "../ui/card";
 
 interface ProfileSectionProps {
   register: UseFormRegister<ProfileData>;
@@ -13,9 +13,11 @@ interface ProfileSectionProps {
 
 export function ProfileSection({ register, errors, control }: ProfileSectionProps) {
   return (
-    <div className="border-b border-gray-200 p-6">
-      <Heading level={2}>Profile Settings</Heading>
-      <BasicProfileSettings register={register} errors={errors} control={control} />
-    </div>
+    <CardContent className="border-b border-gray-200">
+      <CardTitle>Profile Settings</CardTitle>
+      <div className="mt-4">
+        <BasicProfileSettings register={register} errors={errors} control={control} />
+      </div>
+    </CardContent>
   );
 }

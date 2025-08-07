@@ -3,7 +3,7 @@ import { Controller } from "react-hook-form";
 import { useMemo } from "react";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Heading } from "../ui/Heading";
+import { CardContent, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 
 interface GoalSectionProps {
@@ -39,12 +39,11 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
   );
 
   return (
-    <div className="border-b border-gray-200 p-6">
-      <Heading level={2}>Goal Settings</Heading>
-      <p className="mb-6 text-sm text-gray-600">
+    <CardContent className="border-b border-gray-200">
+      <CardTitle>Goal Settings</CardTitle>
+      <p className="mt-2 mb-4 text-sm text-gray-600">
         Set a goal weight and plan to track your progress. Your dashboard will show whether you're ahead or behind schedule.
       </p>
-
       <div className="space-y-4">
         <div>
           <label htmlFor="goalWeight" className="mb-1 block text-sm font-medium text-gray-700">
@@ -104,6 +103,6 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
           <p className="mt-2 text-sm text-gray-500">Your planned rate of weight change. This helps track if you're ahead or behind schedule.</p>
         </div>
       </div>
-    </div>
+    </CardContent>
   );
 }

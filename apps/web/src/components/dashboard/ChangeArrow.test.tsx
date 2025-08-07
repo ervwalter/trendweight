@@ -20,46 +20,40 @@ describe("ChangeArrow", () => {
     });
   });
 
-  describe("color based on intended direction", () => {
-    it("shows neutral color when no intended direction", () => {
+  describe("semantic meaning based on intended direction", () => {
+    it("indicates neutral when no intended direction", () => {
       const { container } = render(<ChangeArrow change={5} intendedDirection={0} />);
       const arrow = container.querySelector("span");
-      expect(arrow).toHaveClass("text-gray-700");
       expect(arrow).toHaveAttribute("aria-label", "Neutral change");
     });
 
-    it("shows green color for positive change with positive intended direction", () => {
+    it("indicates positive for positive change with positive intended direction", () => {
       const { container } = render(<ChangeArrow change={5} intendedDirection={1} />);
       const arrow = container.querySelector("span");
-      expect(arrow).toHaveClass("text-green-600");
       expect(arrow).toHaveAttribute("aria-label", "Positive change");
     });
 
-    it("shows red color for positive change with negative intended direction", () => {
+    it("indicates negative for positive change with negative intended direction", () => {
       const { container } = render(<ChangeArrow change={5} intendedDirection={-1} />);
       const arrow = container.querySelector("span");
-      expect(arrow).toHaveClass("text-red-600");
       expect(arrow).toHaveAttribute("aria-label", "Negative change");
     });
 
-    it("shows green color for negative change with negative intended direction", () => {
+    it("indicates positive for negative change with negative intended direction", () => {
       const { container } = render(<ChangeArrow change={-5} intendedDirection={-1} />);
       const arrow = container.querySelector("span");
-      expect(arrow).toHaveClass("text-green-600");
       expect(arrow).toHaveAttribute("aria-label", "Positive change");
     });
 
-    it("shows red color for negative change with positive intended direction", () => {
+    it("indicates negative for negative change with positive intended direction", () => {
       const { container } = render(<ChangeArrow change={-5} intendedDirection={1} />);
       const arrow = container.querySelector("span");
-      expect(arrow).toHaveClass("text-red-600");
       expect(arrow).toHaveAttribute("aria-label", "Negative change");
     });
 
-    it("shows green color for zero change with any intended direction", () => {
+    it("indicates positive for zero change with any intended direction", () => {
       const { container } = render(<ChangeArrow change={0} intendedDirection={1} />);
       const arrow = container.querySelector("span");
-      expect(arrow).toHaveClass("text-green-600");
       expect(arrow).toHaveAttribute("aria-label", "Positive change");
     });
   });

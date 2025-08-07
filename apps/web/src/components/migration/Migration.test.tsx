@@ -185,15 +185,10 @@ describe("Migration", () => {
     mockCompleteMigration.isPending = false;
   });
 
-  it("should apply correct styling classes", () => {
+  it("should render in a card container", () => {
     renderMigration();
 
-    // Check for specific layout classes
-    const container = screen.getByText("Welcome Back!").closest(".rounded-lg");
-    expect(container).toHaveClass("border", "border-gray-200", "bg-white", "shadow-sm");
-
-    // Check for data sync box styling - only this one has brand colors
-    const infoBox = screen.getByText(/Your historical data will sync shortly/).closest(".rounded-lg");
-    expect(infoBox).toHaveClass("bg-brand-50", "p-4");
+    const container = screen.getByText("Welcome Back!").closest("[data-slot='card']");
+    expect(container).toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 interface ChangelogSectionProps {
   changelog: string | null;
@@ -12,11 +13,11 @@ export function ChangelogSection({ changelog, loadingChangelog, buildVersion }: 
   }
 
   return (
-    <div className="mb-8 overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <div className="border-b border-gray-200 bg-gray-50 px-6 py-3">
-        <h2 className="font-semibold">Changelog for {buildVersion}</h2>
-      </div>
-      <div className="px-6 py-4">
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle>Changelog for {buildVersion}</CardTitle>
+      </CardHeader>
+      <CardContent>
         {loadingChangelog ? (
           <p className="text-gray-500">Loading changelog...</p>
         ) : (
@@ -24,7 +25,7 @@ export function ChangelogSection({ changelog, loadingChangelog, buildVersion }: 
             <ReactMarkdown>{changelog || ""}</ReactMarkdown>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

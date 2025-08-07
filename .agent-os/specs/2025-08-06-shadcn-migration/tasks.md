@@ -40,15 +40,15 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 4.5 Test toggle group functionality and styling
   - [x] 4.6 Verify all navigation component tests pass
 
-- [ ] 5. Card Pattern Standardization
-  - [ ] 5.1 Write tests for Card component usage patterns
-  - [ ] 5.2 Install shadcn Card components (Card, CardHeader, CardContent, CardFooter)
-  - [ ] 5.3 Replace card-like divs in Settings page with shadcn Card
-  - [ ] 5.4 Update Migration component to use shadcn Card
-  - [ ] 5.5 Update NoDataCard component to use shadcn Card
-  - [ ] 5.6 Update DownloadSection cards to use shadcn Card
-  - [ ] 5.7 Search for and replace any remaining card patterns
-  - [ ] 5.8 Verify all card-related tests pass
+- [x] 5. Card Pattern Standardization
+  - [x] 5.1 Write tests for Card component usage patterns
+  - [x] 5.2 Install shadcn Card components (Card, CardHeader, CardContent, CardFooter)
+  - [x] 5.3 Replace card-like divs in Settings page with shadcn Card
+  - [x] 5.4 Update Migration component to use shadcn Card
+  - [x] 5.5 Update NoDataCard component to use shadcn Card
+  - [x] 5.6 Update DownloadSection cards to use shadcn Card
+  - [x] 5.7 Search for and replace any remaining card patterns
+  - [x] 5.8 Verify all card-related tests pass
 
 - [x] 6. Data Table Migration (Combined with Task 4)
   - [x] 6.1 Write tests for Table component migrations

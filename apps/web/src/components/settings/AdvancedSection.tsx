@@ -3,7 +3,7 @@ import { Controller } from "react-hook-form";
 import type { ProfileData } from "../../lib/core/interfaces";
 import { Switch } from "../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Heading } from "../ui/Heading";
+import { CardContent, CardTitle } from "../ui/card";
 
 interface AdvancedSectionProps {
   register: UseFormRegister<ProfileData>;
@@ -21,10 +21,9 @@ const dayStartOptions = Array.from({ length: 24 }, (_, i) => {
 
 export function AdvancedSection({ control }: AdvancedSectionProps) {
   return (
-    <div className="border-b border-gray-200 p-6">
-      <Heading level={2}>Advanced Settings</Heading>
-
-      <div className="space-y-4">
+    <CardContent className="border-b border-gray-200">
+      <CardTitle>Advanced Settings</CardTitle>
+      <div className="mt-4 space-y-4">
         <div>
           <label htmlFor="dayStartOffset" className="mb-1 block text-sm font-medium text-gray-700">
             Day Start
@@ -92,6 +91,6 @@ export function AdvancedSection({ control }: AdvancedSectionProps) {
           <p className="mt-2 text-sm text-gray-600">Display estimated calorie surplus/deficit based on your weight changes.</p>
         </div>
       </div>
-    </div>
+    </CardContent>
   );
 }

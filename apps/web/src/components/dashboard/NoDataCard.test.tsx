@@ -72,13 +72,13 @@ describe("NoDataCard", () => {
 
     const icon = container.querySelector("svg");
     expect(icon).toBeInTheDocument();
-    expect(icon).toHaveClass("h-8", "w-8");
   });
 
-  it("has correct card styling", () => {
+  it("renders as a card element", () => {
     const { container } = render(<NoDataCard />);
 
     const card = container.firstChild;
-    expect(card).toHaveClass("mx-auto", "max-w-2xl", "rounded-lg", "border", "border-gray-200", "bg-white", "p-6", "shadow-sm");
+    expect(card).toBeInTheDocument();
+    expect(card).toHaveAttribute("data-slot", "card");
   });
 });

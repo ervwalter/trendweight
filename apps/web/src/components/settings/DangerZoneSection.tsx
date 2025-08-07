@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ConfirmDialog } from "../ui/confirm-dialog";
-import { Heading } from "../ui/Heading";
+import { CardHeader, CardContent, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { useDeleteAccount } from "../../lib/api/mutations";
 import { useAuth } from "../../lib/auth/useAuth";
@@ -27,18 +27,19 @@ export function DangerZoneSection() {
 
   return (
     <>
-      <div className="p-6">
-        <Heading level={2}>Danger Zone</Heading>
-        <p className="mb-4 text-sm text-gray-600">
+      <CardHeader>
+        <CardTitle>Danger Zone</CardTitle>
+        <CardDescription>
           If you wish to delete your account, you may do so at any time. Your account, your settings, and all your weight data will be deleted from TrendWeight
           servers. If you wish to recreate your account at a later date, you may, but you'll need to reconnect your new account to a scale to redownload any
           weight data from Fitbit or Withings at that time.
-        </p>
-
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <Button type="button" onClick={() => setShowDeleteConfirm(true)} variant="destructive" size="sm" disabled={deleteAccountMutation.isPending}>
           {deleteAccountMutation.isPending ? "Deleting..." : "Delete Account"}
         </Button>
-      </div>
+      </CardContent>
 
       <ConfirmDialog
         open={showDeleteConfirm}

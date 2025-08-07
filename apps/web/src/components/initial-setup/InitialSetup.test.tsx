@@ -253,14 +253,11 @@ describe("InitialSetup", () => {
     });
   });
 
-  it("should apply correct layout styling", () => {
+  it("should render in a card container", () => {
     render(<InitialSetup />);
 
-    const container = screen.getByText("Welcome to TrendWeight!").closest(".rounded-lg");
-    expect(container).toHaveClass("border", "border-gray-200", "bg-white", "shadow-sm");
-
-    const header = screen.getByText("Welcome to TrendWeight!").closest(".border-b");
-    expect(header).toHaveClass("border-gray-200", "p-6");
+    const container = screen.getByText("Welcome to TrendWeight!").closest("[data-slot='card']");
+    expect(container).toBeInTheDocument();
   });
 
   it("should handle metric checkbox toggle", async () => {

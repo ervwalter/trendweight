@@ -1,11 +1,15 @@
 import { ProviderList } from "../providers/ProviderList";
-import { Heading } from "../ui/Heading";
+import { CardHeader, CardContent, CardTitle } from "../ui/card";
 
 export function ConnectedAccountsSection() {
   return (
-    <div className="p-6">
-      <Heading level={2}>Connected Accounts</Heading>
-      <ProviderList variant="settings" showHeader={false} />
-    </div>
+    <>
+      <CardHeader>
+        <CardTitle>Connected Accounts</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ProviderList variant="settings" showHeader={false} />
+      </CardContent>
+    </>
   );
 }

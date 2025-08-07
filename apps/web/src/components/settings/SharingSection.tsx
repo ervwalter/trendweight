@@ -1,6 +1,6 @@
 import { useState, Suspense } from "react";
 import { ConfirmDialog } from "../ui/confirm-dialog";
-import { Heading } from "../ui/Heading";
+import { CardHeader, CardContent, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { useSharingSettings } from "../../lib/api/queries";
 import { useToggleSharing, useGenerateShareToken } from "../../lib/api/mutations";
@@ -43,13 +43,14 @@ function SharingSectionContent() {
 
   return (
     <>
-      <div className="p-6">
-        <Heading level={2}>Sharing</Heading>
-        <p className="mb-4 text-sm text-gray-600">
+      <CardHeader>
+        <CardTitle>Sharing</CardTitle>
+        <CardDescription>
           You can give the following personal URL to anyone you'd like to share your charts and stats with. You can also decide at any time to change the URL
           (in case you change your mind).
-        </p>
-
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <div className="mb-6 flex items-center space-x-3">
           <Switch checked={sharingData?.sharingEnabled ?? false} onCheckedChange={handleToggleSharing} disabled={toggleSharing.isPending} />
           <label className="text-sm font-medium">Enable sharing</label>
@@ -106,7 +107,7 @@ function SharingSectionContent() {
             </Button>
           </div>
         )}
-      </div>
+      </CardContent>
 
       <ConfirmDialog
         open={showNewUrlConfirm}
@@ -131,10 +132,14 @@ export function SharingSection() {
   return (
     <Suspense
       fallback={
-        <div className="p-6">
-          <Heading level={2}>Sharing</Heading>
-          <p className="text-sm text-gray-500">Loading sharing settings...</p>
-        </div>
+        <>
+          <CardHeader>
+            <CardTitle>Sharing</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-500">Loading sharing settings...</p>
+          </CardContent>
+        </>
       }
     >
       <SharingSectionContent />
