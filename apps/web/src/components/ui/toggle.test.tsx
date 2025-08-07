@@ -20,9 +20,9 @@ describe("Toggle", () => {
     render(<Toggle pressed>Pressed Toggle</Toggle>);
     const toggle = screen.getByRole("button");
     expect(toggle).toHaveAttribute("data-state", "on");
-    expect(toggle).toHaveClass("data-[state=on]:bg-brand-500");
-    expect(toggle).toHaveClass("data-[state=on]:border-brand-500");
-    expect(toggle).toHaveClass("data-[state=on]:text-white");
+    expect(toggle).toHaveClass("data-[state=on]:bg-primary");
+    expect(toggle).toHaveClass("data-[state=on]:border-primary");
+    expect(toggle).toHaveClass("data-[state=on]:text-primary-foreground");
   });
 
   it("applies different sizes correctly", () => {

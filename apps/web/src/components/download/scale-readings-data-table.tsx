@@ -70,7 +70,7 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
         const weight = row.original.weight;
         const isInterpolated = row.original.weightIsInterpolated;
         return (
-          <span className={cn(isInterpolated && "text-gray-500 italic")}>
+          <span className={cn(isInterpolated && "text-muted-foreground italic")}>
             {weight !== undefined ? formatMeasurement(weight, { type: "weight", metric: useMetric }) : "-"}
           </span>
         );
@@ -95,7 +95,7 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
         const fatRatio = row.original.fatRatio;
         const isInterpolated = row.original.fatIsInterpolated;
         return (
-          <span className={cn(isInterpolated && "text-gray-500 italic")}>
+          <span className={cn(isInterpolated && "text-muted-foreground italic")}>
             {fatRatio !== undefined && fatRatio !== null ? formatMeasurement(fatRatio, { type: "fatpercent", metric: useMetric }) : "-"}
           </span>
         );
@@ -141,7 +141,7 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
       {/* Top info and pagination */}
       {(showPagination || readings.length > 0) && (
         <div className="flex items-center justify-between gap-4">
-          <div className="text-sm whitespace-nowrap text-gray-600">{readings.length} total readings</div>
+          <div className="text-muted-foreground text-sm whitespace-nowrap">{readings.length} total readings</div>
           {showPagination && (
             <div>
               <PaginationContent className="flex">
@@ -156,7 +156,7 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
                   </Button>
                 </PaginationItem>
                 <PaginationItem>
-                  <span className="px-3 text-sm text-gray-600">
+                  <span className="text-muted-foreground px-3 text-sm">
                     Page {currentPage} of {pageCount}
                   </span>
                 </PaginationItem>
@@ -186,7 +186,7 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="border-b border-gray-300">
+            <TableRow key={headerGroup.id} className="border-border border-b">
               {headerGroup.headers.map((header) => (
                 <TableHead key={header.id} className="pr-6 pb-2 pl-6 text-left font-semibold">
                   {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
@@ -197,7 +197,7 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
         </TableHeader>
         <TableBody>
           {table.getRowModel().rows.map((row, index) => (
-            <TableRow key={row.id} className={cn("border-b border-gray-200", index % 2 === 1 && "bg-gray-100")}>
+            <TableRow key={row.id} className={cn("border-border border-b", index % 2 === 1 && "bg-muted")}>
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id} className="py-2 pr-6 pl-6">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -223,7 +223,7 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
               </Button>
             </PaginationItem>
             <PaginationItem>
-              <span className="px-3 text-sm text-gray-600">
+              <span className="text-muted-foreground px-3 text-sm">
                 Page {currentPage} of {pageCount}
               </span>
             </PaginationItem>

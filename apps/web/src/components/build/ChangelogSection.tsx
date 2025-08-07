@@ -19,7 +19,7 @@ export function ChangelogSection({ changelog, loadingChangelog, buildVersion }: 
       </CardHeader>
       <CardContent>
         {loadingChangelog ? (
-          <p className="text-gray-500">Loading changelog...</p>
+          <p className="text-muted-foreground">Loading changelog...</p>
         ) : (
           <div className="prose prose-sm prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-li:my-0 max-w-none">
             <ReactMarkdown>{changelog || ""}</ReactMarkdown>

@@ -3,5 +3,5 @@ interface AuthErrorProps {
 }
 
 export function AuthError({ error }: AuthErrorProps) {
-  return <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">{error}</div>;
+  return <div className="border-destructive/30 bg-destructive/10 text-destructive mb-4 rounded-md border p-3">{error}</div>;
 }

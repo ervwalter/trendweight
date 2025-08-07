@@ -28,7 +28,7 @@ describe("Banner", () => {
     const { container } = render(<Banner />);
 
     const bannerWrapper = container.firstChild;
-    expect(bannerWrapper).toHaveClass("bg-brand-500", "text-white");
+    expect(bannerWrapper).toHaveClass("bg-primary", "text-white");
   });
 
   it("should render the trend line SVG icon", () => {

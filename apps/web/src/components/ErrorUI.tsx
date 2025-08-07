@@ -25,8 +25,8 @@ export function ErrorUI({ error, componentStack }: ErrorUIProps) {
       <Container>
         <div className="flex min-h-[67vh] flex-col items-start justify-start py-8 md:items-center md:justify-center md:py-32 lg:py-40">
           <div className="flex flex-col items-start space-y-4 px-4 md:flex-row md:items-center md:space-y-0 md:space-x-4 lg:space-x-6">
-            <div className="w-full max-w-[600px] border-none py-4 md:max-w-[700px] md:border-r md:border-gray-300 lg:max-w-[800px]">
-              <div className="text-brand-600 font-logo text-4xl leading-tight font-bold md:text-5xl">TrendWeight</div>
+            <div className="md:border-border w-full max-w-[600px] border-none py-4 md:max-w-[700px] md:border-r lg:max-w-[800px]">
+              <div className="text-primary font-logo text-4xl leading-tight font-bold md:text-5xl">TrendWeight</div>
               <div className="mt-4">
                 <b>Oops.</b> Something went wrong.
               </div>
@@ -34,13 +34,13 @@ export function ErrorUI({ error, componentStack }: ErrorUIProps) {
               <div className="mt-4">We encountered an unexpected error while processing your request.</div>
 
               {error?.message && (
-                <div className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3">
-                  <p className="text-sm font-medium text-gray-700">Error Details</p>
-                  <p className="font-mono text-xs text-gray-600">{error.message}</p>
+                <div className="border-border bg-muted mt-4 rounded-md border p-3">
+                  <p className="text-foreground/80 text-sm font-medium">Error Details</p>
+                  <p className="text-muted-foreground font-mono text-xs">{error.message}</p>
                 </div>
               )}
 
-              <div className="mt-4 text-sm text-gray-600">
+              <div className="text-muted-foreground mt-4 text-sm">
                 Try refreshing the page first. If the problem persists, use the button below to send me the error details.
               </div>
 

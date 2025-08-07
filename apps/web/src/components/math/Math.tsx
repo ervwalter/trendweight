@@ -41,18 +41,18 @@ export function Math() {
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-background">
       <div>
         <div className="lg:grid lg:grid-cols-4 lg:gap-8">
           <div className="hidden lg:block">
             <div>
-              <Heading level={2} className="pb-4 text-gray-900">
+              <Heading level={2} className="text-foreground pb-4">
                 Table of Contents
               </Heading>
               <ul className="list-disc space-y-1 pl-5 text-sm">
                 {headings.map((heading) => (
                   <li key={heading.id}>
-                    <a href={`#${heading.id}`} className="hover:text-brand-600 text-gray-600 transition-colors hover:underline">
+                    <a href={`#${heading.id}`} className="hover:text-link text-muted-foreground transition-colors hover:underline">
                       {heading.text}
                     </a>
                   </li>
@@ -69,7 +69,7 @@ export function Math() {
             </div>
           </div>
           <div className="mt-6 lg:col-span-3 lg:mt-0">
-            <div className="prose prose-gray prose-li:my-0.5 prose-h1:mb-4 prose-h2:mt-6 prose-h2:mb-3 prose-h3:mt-4 prose-h3:mb-2 prose-h4:mt-3 prose-h4:mb-2 max-w-none">
+            <div className="prose dark:prose-invert prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-ul:text-foreground prose-ol:text-foreground prose-li:text-foreground prose-li:my-0.5 prose-h1:mb-4 prose-h2:mt-6 prose-h2:mb-3 prose-h3:mt-4 prose-h3:mb-2 prose-h4:mt-3 prose-h4:mb-2 max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}
@@ -91,7 +91,7 @@ export function Math() {
                   code: ({ children, className, ...props }) => {
                     const isInline = !className?.includes("language-");
                     return isInline ? (
-                      <code className="rounded bg-gray-100 px-1 py-0.5 text-sm text-gray-800" {...props}>
+                      <code className="bg-muted text-foreground/90 rounded px-1 py-0.5 text-sm" {...props}>
                         {children}
                       </code>
                     ) : (
@@ -99,7 +99,7 @@ export function Math() {
                     );
                   },
                   pre: ({ children, ...props }) => (
-                    <pre className="overflow-x-auto rounded-lg bg-gray-100 text-gray-800" {...props}>
+                    <pre className="bg-muted text-foreground/90 overflow-x-auto rounded-lg" {...props}>
                       {children}
                     </pre>
                   ),

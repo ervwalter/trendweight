@@ -38,25 +38,25 @@ export function BuildDetailsSection({
       <CardContent className="p-0">
         <div className="divide-y divide-gray-200">
           <div className="flex justify-between px-6 py-4">
-            <span className="text-gray-600">Environment</span>
+            <span className="text-muted-foreground">Environment</span>
             <span className="font-medium">
               {environment === "production" ? (
-                <span className="text-green-600">Production</span>
+                <span className="text-success">Production</span>
               ) : environment === "development" ? (
-                <span className="text-yellow-600">Development</span>
+                <span className="text-warning">Development</span>
               ) : (
-                <span className="text-blue-600">{environment}</span>
+                <span className="text-info">{environment}</span>
               )}
             </span>
           </div>
 
           <div className="px-6 py-4">
             <div className="mb-1 flex justify-between">
-              <span className="text-gray-600">Build Time</span>
+              <span className="text-muted-foreground">Build Time</span>
               {buildTimeInfo && typeof buildTimeInfo === "object" ? (
                 <span className="text-right font-medium">
                   <div>{buildTimeInfo.ageText}</div>
-                  <div className="text-sm text-gray-500">{buildTimeInfo.localTime}</div>
+                  <div className="text-muted-foreground text-sm">{buildTimeInfo.localTime}</div>
                 </span>
               ) : (
                 <span className="font-medium">{buildTime}</span>
@@ -65,17 +65,17 @@ export function BuildDetailsSection({
           </div>
 
           <div className="flex justify-between px-6 py-4">
-            <span className="text-gray-600">Version</span>
+            <span className="text-muted-foreground">Version</span>
             <span className="font-medium">{versionUrl ? <ExternalLink href={versionUrl}>{buildVersion}</ExternalLink> : buildVersion}</span>
           </div>
 
           <div className="flex justify-between px-6 py-4">
-            <span className="text-gray-600">Branch</span>
+            <span className="text-muted-foreground">Branch</span>
             <span className="font-mono text-sm font-medium">{buildBranch}</span>
           </div>
 
           <div className="flex justify-between px-6 py-4">
-            <span className="text-gray-600">Commit</span>
+            <span className="text-muted-foreground">Commit</span>
             <span className="font-mono text-sm font-medium">
               {commitUrl ? <ExternalLink href={commitUrl}>{buildCommit.substring(0, 7)}</ExternalLink> : buildCommit}
             </span>
@@ -83,7 +83,7 @@ export function BuildDetailsSection({
 
           {buildRepo && githubRepo && (
             <div className="flex justify-between px-6 py-4">
-              <span className="text-gray-600">Repository</span>
+              <span className="text-muted-foreground">Repository</span>
               <span className="font-medium">
                 <ExternalLink href={githubRepo}>{buildRepo}</ExternalLink>
               </span>

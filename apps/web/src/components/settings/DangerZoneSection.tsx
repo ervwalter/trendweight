@@ -60,7 +60,7 @@ export function DangerZoneSection() {
             <p className="font-semibold">This action cannot be undone.</p>
             <p>If you recreate your account later, you'll need to reconnect your scale to re-download any weight data.</p>
             {deleteAccountMutation.error && (
-              <p className="text-sm text-red-600">
+              <p className="text-destructive text-sm">
                 Error: {deleteAccountMutation.error instanceof Error ? deleteAccountMutation.error.message : "Failed to delete account"}
               </p>
             )}

@@ -44,9 +44,9 @@ export function AccountManagementSection({ watch }: AccountManagementSectionProp
   return (
     <>
       {/* Sharing Section */}
-      <div className="border-b border-gray-200 p-6">
+      <div className="border-border border-b p-6">
         <Heading level={2}>Sharing</Heading>
-        <p className="mb-4 text-sm text-gray-600">
+        <p className="text-muted-foreground mb-4 text-sm">
           You can give the following personal URL to anyone you'd like to share your charts and stats with. You can also decide at any time to change the URL
           (in case you change your mind).
         </p>
@@ -54,7 +54,7 @@ export function AccountManagementSection({ watch }: AccountManagementSectionProp
         {shareUrl && (
           <div className="flex items-center space-x-4">
             <div className="relative flex-1">
-              <Input type="text" value={shareUrl} readOnly className="bg-gray-50 pr-10" onClick={(e) => e.currentTarget.select()} />
+              <Input type="text" value={shareUrl} readOnly className="bg-muted pr-10" onClick={(e) => e.currentTarget.select()} />
               <Button
                 type="button"
                 onClick={handleCopy}
@@ -64,7 +64,7 @@ export function AccountManagementSection({ watch }: AccountManagementSectionProp
                 title={copied ? "Copied!" : "Copy to clipboard"}
               >
                 {copied ? (
-                  <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="text-success h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
@@ -87,9 +87,9 @@ export function AccountManagementSection({ watch }: AccountManagementSectionProp
       </div>
 
       {/* Danger Zone Section */}
-      <div className="m-6 rounded-lg border-2 border-red-100 p-6">
+      <div className="border-destructive/20 m-6 rounded-lg border-2 p-6">
         <Heading level={2}>Danger Zone</Heading>
-        <p className="mb-4 text-sm text-gray-600">
+        <p className="text-muted-foreground mb-4 text-sm">
           If you wish to delete your account, you may do so at any time. Your account, your settings, and all your weight data will be deleted from TrendWeight
           servers. If you wish to recreate your account at a later date, you may, but you'll need to reconnect your new account to a scale to redownload any
           weight data from Fitbit or Withings at that time.
@@ -108,7 +108,7 @@ export function AccountManagementSection({ watch }: AccountManagementSectionProp
         description={
           <div className="space-y-2">
             <p>This will permanently invalidate your current sharing URL:</p>
-            <p className="rounded bg-gray-100 p-2 font-mono text-sm">{shareUrl}</p>
+            <p className="bg-muted rounded p-2 font-mono text-sm">{shareUrl}</p>
             <p>Anyone using the old URL will no longer be able to access your dashboard. This action cannot be undone.</p>
           </div>
         }

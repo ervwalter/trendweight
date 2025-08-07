@@ -56,14 +56,14 @@ describe("Container", () => {
 
   it("should merge custom className with default classes", () => {
     const { container } = render(
-      <Container className="custom-class bg-red-500">
+      <Container className="custom-class bg-destructive/100">
         <p>Content</p>
       </Container>,
     );
 
     const containerElement = container.firstChild;
     expect(containerElement).toHaveClass("custom-class");
-    expect(containerElement).toHaveClass("bg-red-500");
+    expect(containerElement).toHaveClass("bg-destructive/100");
     expect(containerElement).toHaveClass("mx-auto");
     expect(containerElement).toHaveClass("w-full");
   });

@@ -18,16 +18,16 @@ export function BasicProfileSettings({ register, errors, control }: BasicProfile
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor="firstName" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="firstName" className="text-foreground/80 mb-1 block text-sm font-medium">
           First Name
         </label>
         <Input id="firstName" type="text" {...register("firstName", { required: "First name is required" })} aria-invalid={!!errors.firstName} />
-        {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>}
-        <p className="mt-1 text-sm text-gray-500">Used for greetings on the dashboard.</p>
+        {errors.firstName && <p className="text-destructive mt-1 text-sm">{errors.firstName.message}</p>}
+        <p className="text-muted-foreground mt-1 text-sm">Used for greetings on the dashboard.</p>
       </div>
 
       <div className="mt-6">
-        <label className="mb-2 block text-sm font-medium text-gray-700">Weight Units</label>
+        <label className="text-foreground/80 mb-2 block text-sm font-medium">Weight Units</label>
         <Controller
           name="useMetric"
           control={control}
@@ -48,7 +48,7 @@ export function BasicProfileSettings({ register, errors, control }: BasicProfile
             </ToggleGroup>
           )}
         />
-        <p className="mt-2 text-sm text-gray-500">Choose your preferred unit of measurement.</p>
+        <p className="text-muted-foreground mt-2 text-sm">Choose your preferred unit of measurement.</p>
       </div>
     </div>
   );

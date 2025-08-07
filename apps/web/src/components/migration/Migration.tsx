@@ -24,22 +24,22 @@ export function Migration() {
           <CardTitle className="text-center">Welcome Back!</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-muted-foreground text-sm">
             TrendWeight has been updated with modern code and new features.{" "}
             <ExternalLink href="https://ewal.dev/trendweight-v2-has-launched">See what's new</ExternalLink>
           </p>
 
-          <p className="text-sm text-gray-600">
+          <p className="text-muted-foreground text-sm">
             Your account has been migrated from classic TrendWeight. Your settings and provider connections have been preserved.
           </p>
 
-          <div className="bg-brand-50 rounded-lg p-4">
-            <p className="text-brand-800 text-sm">
+          <div className="bg-primary/5 rounded-lg p-4">
+            <p className="text-primary text-sm">
               <strong>Note:</strong> Your historical data will sync shortly. This may take a few minutes depending on how much data you have.
             </p>
           </div>
 
-          <p className="text-sm text-gray-600 italic">
+          <p className="text-muted-foreground text-sm italic">
             If you encounter any issues, please don't hesitate to use the contact link at the bottom of the page to share the details.
           </p>
 

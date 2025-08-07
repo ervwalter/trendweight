@@ -27,7 +27,7 @@ export function AdvancedSection({ control }: AdvancedSectionProps) {
       </CardHeader>
       <CardContent className="border-b py-6">
         <div>
-          <label htmlFor="dayStartOffset" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="dayStartOffset" className="text-foreground/80 mb-1 block text-sm font-medium">
             Day Start
           </label>
           <Controller
@@ -62,7 +62,7 @@ export function AdvancedSection({ control }: AdvancedSectionProps) {
               );
             }}
           />
-          <div className="mt-2 space-y-2 text-sm text-gray-600">
+          <div className="text-muted-foreground mt-2 space-y-2 text-sm">
             <p>
               TrendWeight uses the first weight reading of each day, and this setting determines the time of day that TrendWeight considers a new day to have
               started.
@@ -85,12 +85,12 @@ export function AdvancedSection({ control }: AdvancedSectionProps) {
                   <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
                 </div>
                 <label htmlFor={field.name} className="cursor-pointer">
-                  <div className="text-sm font-medium text-gray-700">Show calorie calculations</div>
+                  <div className="text-foreground/80 text-sm font-medium">Show calorie calculations</div>
                 </label>
               </div>
             )}
           />
-          <p className="mt-2 text-sm text-gray-600">Display estimated calorie surplus/deficit based on your weight changes.</p>
+          <p className="text-muted-foreground mt-2 text-sm">Display estimated calorie surplus/deficit based on your weight changes.</p>
         </div>
       </CardContent>
     </>

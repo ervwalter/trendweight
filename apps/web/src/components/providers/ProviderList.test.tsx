@@ -95,7 +95,7 @@ describe("ProviderList", () => {
       expect(screen.getByText("Disconnect")).toBeInTheDocument();
 
       // Check for checkmark icon
-      const checkIcon = document.querySelector(".text-green-600");
+      const checkIcon = document.querySelector(".text-success");
       expect(checkIcon).toBeInTheDocument();
     });
 

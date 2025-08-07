@@ -10,7 +10,7 @@ export function About() {
 
   return (
     <div>
-      <div className="float-right hidden w-96 bg-white pb-4 pl-4 md:block">
+      <div className="bg-background float-right hidden w-96 pb-4 pl-4 md:block">
         <Link to="/demo">
           <img src="/screenshot-large.png" alt="dashboard screenshot" className="h-auto w-full" />
         </Link>
@@ -23,7 +23,7 @@ export function About() {
         When you really want to track your weight loss, you probably know you should disregard day to day changes in weight and instead focus on the trend over
         time. There are multiple ways to do this, but TrendWeight uses the methodology described by John Walker in his online book, <i>The Hacker's Diet</i>.
         Curious about the math behind how it works?{" "}
-        <Link to="/math" className="text-brand-600 hover:text-brand-700 underline">
+        <Link to="/math" className="text-link hover:text-link underline">
           Learn more about the math
         </Link>
         .
@@ -32,7 +32,7 @@ export function About() {
         <div className="pb-2 text-lg">
           <b>See it in action...</b>
         </div>
-        <Link to="/demo" className="inline-block rounded bg-green-600 px-6 py-3 text-lg text-white transition-colors hover:bg-green-700">
+        <Link to="/demo" className="bg-success hover:bg-success inline-block rounded px-6 py-3 text-lg text-white transition-colors">
           View Demo
         </Link>
       </div>
@@ -51,40 +51,40 @@ export function About() {
       </p>
       <div className="mt-8">
         <div className="grid grid-cols-1 gap-x-10 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="bg-brand-50 border-brand-100 mt-6 flow-root rounded-lg border px-6 pb-8">
+          <div className="bg-primary/10 border-primary/30 mt-6 flow-root rounded-lg border px-6 pb-8">
             <div className="mt-[-24px]">
               <div>
-                <div className="bg-brand-400 inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
+                <div className="bg-primary inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
                   <Lightbulb className="h-6 w-6" />
                 </div>
               </div>
-              <Heading level={3} className="mt-6 mb-0 pb-0 tracking-tight text-gray-900">
+              <Heading level={3} className="text-foreground mt-6 mb-0 pb-0 tracking-tight">
                 Questions?
               </Heading>
-              <p className="mt-5 text-base text-gray-500">
+              <p className="text-muted-foreground mt-5 text-base">
                 Take a look at these{" "}
-                <Link to="/faq" className="text-brand-600 hover:text-brand-700 underline">
+                <Link to="/faq" className="text-link hover:text-link underline">
                   FAQs
                 </Link>{" "}
                 or email{" "}
-                <a href="mailto:erv@ewal.net" className="text-brand-600 hover:text-brand-700 underline">
+                <a href="mailto:erv@ewal.net" className="text-link hover:text-link underline">
                   erv@ewal.net
                 </a>
                 .
               </p>
             </div>
           </div>
-          <div className="bg-brand-50 border-brand-100 mt-6 flow-root rounded-lg border px-6 pb-8">
+          <div className="bg-primary/10 border-primary/30 mt-6 flow-root rounded-lg border px-6 pb-8">
             <div className="mt-[-24px]">
               <div>
-                <div className="bg-brand-400 inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
+                <div className="bg-primary inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
                   <ShoppingCart className="h-6 w-6" />
                 </div>
               </div>
-              <Heading level={3} className="mt-6 mb-0 pb-0 tracking-tight text-gray-900">
+              <Heading level={3} className="text-foreground mt-6 mb-0 pb-0 tracking-tight">
                 Get a Scale
               </Heading>
-              <ul className="mt-5 list-disc pl-4 text-base text-gray-500">
+              <ul className="text-muted-foreground mt-5 list-disc pl-4 text-base">
                 <li>
                   <ExternalLink href="https://amzn.to/2Rh8yH1">Withings Scales</ExternalLink>
                 </li>
@@ -94,17 +94,17 @@ export function About() {
               </ul>
             </div>
           </div>
-          <div className="bg-brand-50 border-brand-100 mt-6 flow-root rounded-lg border px-6 pb-8">
+          <div className="bg-primary/10 border-primary/30 mt-6 flow-root rounded-lg border px-6 pb-8">
             <div className="mt-[-24px]">
               <div>
-                <div className="bg-brand-400 inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
+                <div className="bg-primary inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
                   <Rss className="h-6 w-6" />
                 </div>
               </div>
-              <Heading level={3} className="mt-6 mb-0 pb-0 tracking-tight text-gray-900">
+              <Heading level={3} className="text-foreground mt-6 mb-0 pb-0 tracking-tight">
                 Stay Updated
               </Heading>
-              <ul className="mt-5 list-disc pl-4 text-base text-gray-500">
+              <ul className="text-muted-foreground mt-5 list-disc pl-4 text-base">
                 <li>
                   <ExternalLink href="https://ewal.dev/series/trendweight">Blog</ExternalLink>
                 </li>
@@ -114,19 +114,19 @@ export function About() {
               </ul>
             </div>
           </div>
-          <div className="bg-brand-50 border-brand-100 mt-6 flow-root rounded-lg border px-6 pb-8">
+          <div className="bg-primary/10 border-primary/30 mt-6 flow-root rounded-lg border px-6 pb-8">
             <div className="mt-[-24px]">
               <div>
-                <div className="bg-brand-400 inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
+                <div className="bg-primary inline-flex items-center justify-center rounded-md p-3 text-white shadow-lg">
                   <Heart className="h-6 w-6" />
                 </div>
               </div>
-              <Heading level={3} className="mt-6 mb-0 pb-0 tracking-tight text-gray-900">
+              <Heading level={3} className="text-foreground mt-6 mb-0 pb-0 tracking-tight">
                 Support TrendWeight
               </Heading>
-              <p className="mt-5 text-base text-gray-500">
+              <p className="text-muted-foreground mt-5 text-base">
                 TrendWeight is free, forever. But if you want info about how you can help fund it,{" "}
-                <Link to="/tipjar" className="text-brand-600 hover:text-brand-700 underline">
+                <Link to="/tipjar" className="text-link hover:text-link underline">
                   go here
                 </Link>
                 .
@@ -135,13 +135,13 @@ export function About() {
           </div>
         </div>
       </div>
-      <div className="bg-brand-50 border-brand-100 mt-10 rounded-lg border">
+      <div className="bg-primary/5 border-primary/20 mt-10 rounded-lg border">
         <div className="px-6 py-8 md:px-12 md:py-10 lg:py-12">
-          <Heading level={2} className="text-brand-600 mb-0 font-extrabold tracking-tight">
+          <Heading level={2} className="text-primary mb-0 font-extrabold tracking-tight">
             Ready to check it out?
           </Heading>
           <div className="mt-2 flex">
-            <Link to={getStarted.href} className="bg-brand-600 hover:bg-brand-700 inline-block rounded px-6 py-3 text-lg text-white transition-colors">
+            <Link to={getStarted.href} className="bg-primary hover:bg-primary inline-block rounded px-6 py-3 text-lg text-white transition-colors">
               {getStarted.label}
             </Link>
           </div>

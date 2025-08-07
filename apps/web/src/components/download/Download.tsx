@@ -28,7 +28,7 @@ export function Download() {
     return (
       <>
         <Heading level={1}>Download Your Data</Heading>
-        <p className="mt-4 text-gray-600">No providers connected. Please connect a scale provider from the settings page.</p>
+        <p className="text-muted-foreground mt-4">No providers connected. Please connect a scale provider from the settings page.</p>
       </>
     );
   }
@@ -47,7 +47,7 @@ export function Download() {
 
       {/* Download button */}
       <div className="mb-4">
-        <Button onClick={handleDownloadCSV} variant="default" size="sm" className="bg-brand-500 hover:bg-brand-800">
+        <Button onClick={handleDownloadCSV} variant="default" size="sm">
           <DownloadIcon className="mr-2 h-4 w-4" />
           Download as CSV
         </Button>
@@ -55,7 +55,7 @@ export function Download() {
 
       {/* Data table */}
       {readings.length === 0 ? (
-        <p className="text-gray-600">No data available for the selected view.</p>
+        <p className="text-muted-foreground">No data available for the selected view.</p>
       ) : (
         <ScaleReadingsDataTable readings={readings} viewType={viewType} useMetric={profile.useMetric} />
       )}

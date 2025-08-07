@@ -23,29 +23,29 @@ export function Footer() {
   return (
     <footer className="py-4 print:hidden">
       <Container>
-        <div className="flex flex-col gap-4 text-gray-400 md:flex-row md:items-center md:justify-between">
+        <div className="text-muted-foreground flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2 text-sm">
             © 2012-{new Date().getFullYear()} Erv Walter<span>·</span>
-            <Link to="/build" className="transition-colors hover:text-gray-600 hover:underline">
+            <Link to="/build" className="hover:text-muted-foreground transition-colors hover:underline">
               {versionDisplay}
             </Link>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm md:gap-4">
             <div className="flex items-center gap-2 md:gap-4">
-              <a href="https://github.com/ervwalter/trendweight" className="transition-colors hover:text-gray-600">
+              <a href="https://github.com/ervwalter/trendweight" className="hover:text-muted-foreground transition-colors">
                 <GithubIcon className="h-4 w-4" />
               </a>
-              <a href="https://ewal.dev/series/trendweight" className="transition-colors hover:text-gray-600">
+              <a href="https://ewal.dev/series/trendweight" className="hover:text-muted-foreground transition-colors">
                 <Rss className="h-4 w-4" />
               </a>
             </div>
-            <a href="mailto:erv@ewal.net" className="transition-colors hover:text-gray-600">
+            <a href="mailto:erv@ewal.net" className="hover:text-muted-foreground transition-colors">
               Contact
             </a>
-            <Link to="/tipjar" className="transition-colors hover:text-gray-600">
+            <Link to="/tipjar" className="hover:text-muted-foreground transition-colors">
               Tip Jar
             </Link>
-            <Link to="/privacy" className="transition-colors hover:text-gray-600">
+            <Link to="/privacy" className="hover:text-muted-foreground transition-colors">
               Privacy
             </Link>
           </div>

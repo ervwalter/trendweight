@@ -115,9 +115,9 @@ export function Settings() {
           {/* Save button */}
           <div className="flex items-center justify-between p-6">
             <div>
-              {isDirty && <p className="text-sm text-gray-600">You have unsaved changes</p>}
-              {updateProfile.isError && <p className="text-sm text-red-600">Failed to save settings. Please try again.</p>}
-              {updateProfile.isSuccess && !isDirty && <p className="text-sm text-green-600">Settings saved successfully!</p>}
+              {isDirty && <p className="text-muted-foreground text-sm">You have unsaved changes</p>}
+              {updateProfile.isError && <p className="text-destructive text-sm">Failed to save settings. Please try again.</p>}
+              {updateProfile.isSuccess && !isDirty && <p className="text-success text-sm">Settings saved successfully!</p>}
             </div>
             <Button type="submit" disabled={!isDirty || isSubmitting} variant={isDirty && !isSubmitting ? "default" : "outline"}>
               {isSubmitting ? "Saving..." : "Save Settings"}

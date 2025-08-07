@@ -43,10 +43,10 @@ describe("Question", () => {
     );
 
     const titleElement = screen.getByText("Test Question");
-    expect(titleElement).toHaveClass("text-lg", "leading-6", "font-semibold", "text-gray-900");
+    expect(titleElement).toHaveClass("text-lg", "leading-6", "font-semibold", "text-foreground");
 
     const answerContainer = screen.getByText("Answer content").closest("dd");
-    expect(answerContainer).toHaveClass("prose", "prose-gray", "mt-2", "text-base", "text-gray-600");
+    expect(answerContainer).toHaveClass("prose", "prose-gray", "mt-2", "text-base", "text-muted-foreground");
   });
 
   it("should handle complex content", () => {

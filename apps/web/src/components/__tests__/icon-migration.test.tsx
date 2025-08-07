@@ -108,9 +108,9 @@ describe("Icon Migration to lucide-react", () => {
 
   describe("Icon Props Support", () => {
     it("should accept className prop", () => {
-      const { container } = render(<Menu className="h-5 w-5 text-gray-600" />);
+      const { container } = render(<Menu className="text-muted-foreground h-5 w-5" />);
       const icon = container.querySelector("svg");
-      expect(icon).toHaveClass("w-5", "h-5", "text-gray-600");
+      expect(icon).toHaveClass("w-5", "h-5", "text-muted-foreground");
     });
 
     it("should accept size prop", () => {

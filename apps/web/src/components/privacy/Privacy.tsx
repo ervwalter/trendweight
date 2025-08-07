@@ -10,7 +10,7 @@ export function Privacy() {
 
       <div className="md:flex md:gap-6">
         <div className="flex-1">
-          <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="border-border bg-muted mb-6 rounded-lg border p-4">
             <Heading level={2} className="mb-2">
               The Short Version
             </Heading>
@@ -122,12 +122,12 @@ export function Privacy() {
       </Heading>
       <p>
         Questions about your privacy or this policy? Email{" "}
-        <a href="mailto:erv@ewal.net" className="text-brand-600 hover:text-brand-700 underline">
+        <a href="mailto:erv@ewal.net" className="text-link hover:text-link underline">
           erv@ewal.net
         </a>
       </p>
 
-      <p className="mt-6 text-sm text-gray-600">This policy is effective as of July 5, 2025.</p>
+      <p className="text-muted-foreground mt-6 text-sm">This policy is effective as of July 5, 2025.</p>
     </div>
   );
 }

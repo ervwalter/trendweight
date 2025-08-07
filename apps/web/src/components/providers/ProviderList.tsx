@@ -54,7 +54,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
 
   // Suspense handles loading state
   if (!providerLinks) {
-    return <div className="text-gray-500">Loading providers...</div>;
+    return <div className="text-muted-foreground">Loading providers...</div>;
   }
 
   const containerClasses = variant === "settings" ? "space-y-4" : "space-y-8 mb-8";
@@ -66,11 +66,11 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
           <Heading level={1} display>
             Connect Your Scale
           </Heading>
-          <p className="mb-2 text-base text-gray-600 sm:text-lg">
+          <p className="text-muted-foreground mb-2 text-base sm:text-lg">
             Connect your Withings or Fitbit account to automatically track your weight with TrendWeight. When you're ready, click one of the options below and
             authorize TrendWeight to access your weight data.
           </p>
-          <p className="mb-8 text-sm text-gray-600 sm:text-base">
+          <p className="text-muted-foreground mb-8 text-sm sm:text-base">
             <span className="font-semibold">Don't have a smart scale?</span> No problem! You can manually enter your weight in either app and TrendWeight will
             still track your trends.
           </p>
@@ -88,15 +88,15 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
             return (
               <div
                 key={provider.id}
-                className="flex flex-col space-y-3 rounded-lg border border-gray-200 p-4 @sm:flex-row @sm:items-center @sm:justify-between @sm:space-y-0"
+                className="border-border flex flex-col space-y-3 rounded-lg border p-4 @sm:flex-row @sm:items-center @sm:justify-between @sm:space-y-0"
               >
                 <div className="flex items-center space-x-3">
                   <img src={provider.logo} alt={provider.name} className="h-10 w-10" />
                   <div>
-                    <Heading level={3} className="text-gray-900">
+                    <Heading level={3} className="text-foreground">
                       {provider.name}
                     </Heading>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-muted-foreground text-sm">
                       {isConnected ? `Connected ${connectionDateFormatter.format(new Date(providerLink!.connectedAt))}` : "Not connected"}
                     </p>
                   </div>
@@ -153,10 +153,10 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
 
           // Full layout for link page
           return (
-            <div key={provider.id} className="relative rounded-lg border border-gray-200 bg-gray-50 p-4 @sm:p-6">
+            <div key={provider.id} className="border-border bg-muted relative rounded-lg border p-4 @sm:p-6">
               {isConnected && (
                 <div className="absolute top-4 right-4">
-                  <CheckCircle className="h-5 w-5 text-green-600 @sm:h-6 @sm:w-6" />
+                  <CheckCircle className="text-success h-5 w-5 @sm:h-6 @sm:w-6" />
                 </div>
               )}
               <Heading level={2}>{provider.displayName}</Heading>
@@ -165,15 +165,15 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                   <img src={provider.logo} alt={`${provider.name} logo`} className="h-auto w-24 @sm:w-32 @md:w-48" />
                 </div>
                 <div className="flex-1">
-                  <p className="mb-3 text-sm text-gray-600 @sm:text-base">{provider.description}</p>
+                  <p className="text-muted-foreground mb-3 text-sm @sm:text-base">{provider.description}</p>
                   {provider.linkUrl && provider.linkText && (
-                    <p className="mb-3 text-sm text-gray-600 @sm:text-base">
+                    <p className="text-muted-foreground mb-3 text-sm @sm:text-base">
                       <ExternalLink href={provider.linkUrl} className="font-medium">
                         {provider.linkText}
                       </ExternalLink>
                     </p>
                   )}
-                  <p className="mb-4 text-xs text-gray-500 italic @sm:text-sm">{provider.note}</p>
+                  <p className="text-muted-foreground mb-4 text-xs italic @sm:text-sm">{provider.note}</p>
                   {isConnected ? (
                     <div className="flex flex-col gap-2 @sm:flex-row">
                       <Button
@@ -235,14 +235,14 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
               if (variant === "settings") {
                 // Compact layout for settings page
                 return (
-                  <div key="legacy" className="rounded-lg border border-gray-200 p-4">
+                  <div key="legacy" className="border-border rounded-lg border p-4">
                     <div className="flex flex-col space-y-4">
                       {/* Header section */}
                       <div className="flex flex-col space-y-3 @sm:flex-row @sm:items-center @sm:justify-between @sm:space-y-0">
                         <div className="flex items-center space-x-3">
                           <img src="/legacy-logo.png" alt="Legacy Data" className="h-10 w-10" />
                           <div>
-                            <Heading level={3} className="text-gray-900">
+                            <Heading level={3} className="text-foreground">
                               {getProviderDisplayName("legacy")}
                             </Heading>
                           </div>
@@ -307,11 +307,11 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
 
                       {/* Description and note - always visible for legacy */}
                       <div className="space-y-2">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-muted-foreground text-sm">
                           Historical weight data imported from classic TrendWeight. This data was migrated from your previous account and provides your complete
                           weight history.
                         </p>
-                        <p className="text-xs text-gray-500 italic">
+                        <p className="text-muted-foreground text-xs italic">
                           This data cannot be synced or updated. You can enable or disable its visibility in your charts and exports.
                         </p>
                       </div>

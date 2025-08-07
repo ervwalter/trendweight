@@ -8,8 +8,8 @@ interface QuestionProps {
 export function Question({ title, children }: QuestionProps) {
   return (
     <div>
-      <dt className="max-w-[42rem] text-lg leading-6 font-semibold text-gray-900">{title}</dt>
-      <dd className="prose prose-gray mt-2 text-base text-gray-600">{children}</dd>
+      <dt className="text-foreground max-w-[42rem] text-lg leading-6 font-semibold">{title}</dt>
+      <dd className="prose prose-gray text-muted-foreground mt-2 text-base">{children}</dd>
     </div>
   );
 }

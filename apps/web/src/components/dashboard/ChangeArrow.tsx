@@ -7,10 +7,10 @@ const ChangeArrow = ({ change, intendedDirection = 0 }: ChangeArrowProps) => {
   let color: string;
 
   if (intendedDirection === 0) {
-    color = "text-gray-700";
+    color = "text-foreground/80";
   } else {
     const isGood = change * intendedDirection >= 0;
-    color = isGood ? "text-green-600" : "text-red-600";
+    color = isGood ? "text-success" : "text-destructive";
   }
 
   return (

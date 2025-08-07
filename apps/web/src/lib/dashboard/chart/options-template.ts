@@ -1,13 +1,14 @@
 import Highstock from "highcharts/highstock";
 import { formatNumber } from "../../core/numbers";
 
-const chartOptionsTemplate = (): Highstock.Options => ({
+const chartOptionsTemplate = (isDarkMode = false): Highstock.Options => ({
   accessibility: {
     enabled: false,
   },
   chart: {
     plotBorderWidth: 0.25,
-    plotBorderColor: "#999999",
+    plotBorderColor: isDarkMode ? "#4a4a4a" : "#999999",
+    backgroundColor: isDarkMode ? "#0a0a0a" : "#ffffff",
     panning: { enabled: false },
     spacingBottom: 40,
     spacingRight: 0,
@@ -23,7 +24,13 @@ const chartOptionsTemplate = (): Highstock.Options => ({
     enabled: false,
   },
   legend: {
-    backgroundColor: "#ffffff",
+    backgroundColor: isDarkMode ? "#0a0a0a" : "#ffffff",
+    itemStyle: {
+      color: isDarkMode ? "#e5e5e5" : "#333333",
+    },
+    itemHoverStyle: {
+      color: isDarkMode ? "#ffffff" : "#000000",
+    },
     enabled: true,
     y: 40,
   },
@@ -83,6 +90,11 @@ const chartOptionsTemplate = (): Highstock.Options => ({
     crosshair: true,
     ordinal: false,
     lineWidth: 0,
+    labels: {
+      style: {
+        color: isDarkMode ? "#b3b3b3" : "#666666",
+      },
+    },
     dateTimeLabelFormats: {
       second: "%H:%M:%S",
       minute: "%H:%M",
@@ -101,11 +113,15 @@ const chartOptionsTemplate = (): Highstock.Options => ({
     startOnTick: true,
     lineWidth: 0,
     gridLineWidth: 0.5,
+    gridLineColor: isDarkMode ? "#333333" : "#e6e6e6",
     gridZIndex: 0,
     labels: {
       x: -4,
       y: 4,
       align: "right",
+      style: {
+        color: isDarkMode ? "#b3b3b3" : "#666666",
+      },
     },
   },
   series: [],

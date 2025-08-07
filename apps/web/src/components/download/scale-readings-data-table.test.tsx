@@ -195,7 +195,7 @@ describe("ScaleReadingsDataTable", () => {
     // Check for italic styling on interpolated values
     // The spans inside the td cells have the italic class
     const cells = container.querySelectorAll("td span");
-    const interpolatedCells = Array.from(cells).filter((cell) => cell.classList.contains("italic") && cell.classList.contains("text-gray-500"));
+    const interpolatedCells = Array.from(cells).filter((cell) => cell.classList.contains("italic") && cell.classList.contains("text-muted-foreground"));
 
     // We should have two interpolated values (weight and fat)
     expect(interpolatedCells.length).toBe(2);
@@ -247,8 +247,8 @@ describe("ScaleReadingsDataTable", () => {
     const { container } = render(<ScaleReadingsDataTable readings={readings} viewType="computed" useMetric={false} />);
 
     const rows = container.querySelectorAll("tbody tr");
-    expect(rows[0]).not.toHaveClass("bg-gray-100");
-    expect(rows[1]).toHaveClass("bg-gray-100");
-    expect(rows[2]).not.toHaveClass("bg-gray-100");
+    expect(rows[0]).not.toHaveClass("bg-muted");
+    expect(rows[1]).toHaveClass("bg-muted");
+    expect(rows[2]).not.toHaveClass("bg-muted");
   });
 });

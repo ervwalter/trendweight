@@ -19,13 +19,13 @@ describe("AuthDivider", () => {
     expect(lineDiv).toHaveClass("absolute", "inset-0", "flex", "items-center");
 
     const borderDiv = lineDiv?.firstChild;
-    expect(borderDiv).toHaveClass("w-full", "border-t", "border-gray-300");
+    expect(borderDiv).toHaveClass("w-full", "border-t", "border-border");
 
     const textContainer = outerDiv?.lastChild;
     expect(textContainer).toHaveClass("relative", "flex", "justify-center", "text-sm");
 
     const textSpan = screen.getByText("or");
-    expect(textSpan).toHaveClass("bg-gray-50", "px-4", "font-medium", "text-gray-700", "uppercase");
+    expect(textSpan).toHaveClass("bg-muted", "px-4", "font-medium", "text-foreground/80", "uppercase");
   });
 
   it("should have proper structure for visual divider", () => {
@@ -40,7 +40,7 @@ describe("AuthDivider", () => {
     expect(centeredText).toBeInTheDocument();
 
     // Text should have background to overlay the line
-    const backgroundText = container.querySelector(".bg-gray-50");
+    const backgroundText = container.querySelector(".bg-muted");
     expect(backgroundText).toBeInTheDocument();
   });
 

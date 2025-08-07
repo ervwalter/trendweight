@@ -24,13 +24,13 @@ describe("Button", () => {
     expect(screen.getByRole("button")).toHaveClass("border");
 
     rerender(<Button variant="success">Success</Button>);
-    expect(screen.getByRole("button")).toHaveClass("bg-green-600");
+    expect(screen.getByRole("button")).toHaveClass("bg-success");
 
     rerender(<Button variant="destructive">Destructive</Button>);
     expect(screen.getByRole("button")).toHaveClass("bg-destructive");
 
     rerender(<Button variant="warning">Warning</Button>);
-    expect(screen.getByRole("button")).toHaveClass("bg-amber-600");
+    expect(screen.getByRole("button")).toHaveClass("bg-warning");
   });
 
   it("applies different sizes correctly", () => {

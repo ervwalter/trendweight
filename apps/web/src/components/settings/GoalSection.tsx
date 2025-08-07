@@ -46,7 +46,7 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
       </CardHeader>
       <CardContent className="border-b py-6">
         <div>
-          <label htmlFor="goalWeight" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="goalWeight" className="text-foreground/80 mb-1 block text-sm font-medium">
             Goal Weight ({weightUnit})
           </label>
           <Input
@@ -60,12 +60,12 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
             className="md:w-32"
             aria-invalid={!!errors.goalWeight}
           />
-          {errors.goalWeight && <p className="mt-1 text-sm text-red-600">{errors.goalWeight.message}</p>}
-          <p className="mt-1 text-sm text-gray-500">The weight you are working toward achieving.</p>
+          {errors.goalWeight && <p className="text-destructive mt-1 text-sm">{errors.goalWeight.message}</p>}
+          <p className="text-muted-foreground mt-1 text-sm">The weight you are working toward achieving.</p>
         </div>
 
         <div className="mt-6">
-          <label htmlFor="plannedPoundsPerWeek" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="plannedPoundsPerWeek" className="text-foreground/80 mb-1 block text-sm font-medium">
             My Plan
           </label>
           <Controller
@@ -100,7 +100,7 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
               );
             }}
           />
-          <p className="mt-2 text-sm text-gray-500">Your planned rate of weight change. This helps track if you're ahead or behind schedule.</p>
+          <p className="text-muted-foreground mt-2 text-sm">Your planned rate of weight change. This helps track if you're ahead or behind schedule.</p>
         </div>
       </CardContent>
     </>

@@ -5,16 +5,16 @@ import { Question } from "./Question";
 
 export function Faq() {
   return (
-    <div className="bg-white">
+    <div className="bg-background">
       <div>
         <div className="lg:grid lg:grid-cols-4 lg:gap-8">
           <div>
-            <Heading level={1} className="pb-4 text-gray-900">
+            <Heading level={1} className="text-foreground pb-4">
               Frequently asked questions
             </Heading>
-            <p className="text-base text-gray-500">
+            <p className="text-muted-foreground text-base">
               Can't find the answer you're looking for? Email me at{" "}
-              <a href="mailto:erv@ewal.net" className="text-brand-600 hover:text-brand-700 underline">
+              <a href="mailto:erv@ewal.net" className="text-link hover:text-link underline">
                 erv@ewal.net
               </a>
               .
@@ -46,7 +46,7 @@ export function Faq() {
               <Question title="How do I change from Withings to Fitbit (or vice versa)?">
                 <p>
                   If you have some data in one type of account and are going to start using the other type of account, you can simply add a connection via the{" "}
-                  <Link to="/settings" className="text-brand-600 hover:text-brand-700 underline">
+                  <Link to="/settings" className="text-link hover:text-link underline">
                     settings page
                   </Link>{" "}
                   to your new account. TrendWeight will keep all the existing weight data from your old account and combine it with the data from the new one,
@@ -76,7 +76,7 @@ export function Faq() {
                 </p>
                 <p>
                   Go to your{" "}
-                  <Link to="/settings" className="text-brand-600 hover:text-brand-700 underline">
+                  <Link to="/settings" className="text-link hover:text-link underline">
                     Settings
                   </Link>{" "}
                   page to find your private URL. You can also change your private URL at any time in case you gave your URL to someone and later decide you
@@ -91,7 +91,7 @@ export function Faq() {
                 </p>
                 <p>
                   Additionally, we have a{" "}
-                  <Link to="/math" className="text-brand-600 hover:text-brand-700 underline">
+                  <Link to="/math" className="text-link hover:text-link underline">
                     detailed explanation of the math behind TrendWeight
                   </Link>{" "}
                   that covers everything from the basic concepts to the advanced calculations.
@@ -104,7 +104,7 @@ export function Faq() {
                 </p>
                 <p>
                   TrendWeight is free. It will always be free, but if you'd like to know how to help support TrendWeight, you can read more{" "}
-                  <Link to="/tipjar" className="text-brand-600 hover:text-brand-700 underline">
+                  <Link to="/tipjar" className="text-link hover:text-link underline">
                     here
                   </Link>
                   .
@@ -120,7 +120,7 @@ export function Faq() {
               <Question title="I still have a question or a suggestion for a new feature.">
                 <p>
                   No problem. If you have a question you don't see answered here, feel free to email{" "}
-                  <a href="mailto:erv@ewal.net" className="text-brand-600 hover:text-brand-700 underline">
+                  <a href="mailto:erv@ewal.net" className="text-link hover:text-link underline">
                     erv@ewal.net
                   </a>{" "}
                   and let me know. If you have a suggestion, you can also email that to me, or you can post your idea{" "}

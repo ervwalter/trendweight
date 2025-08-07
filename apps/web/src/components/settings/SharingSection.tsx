@@ -55,7 +55,7 @@ function SharingSectionContent() {
           <Switch checked={sharingData?.sharingEnabled ?? false} onCheckedChange={handleToggleSharing} disabled={toggleSharing.isPending} />
           <label className="text-sm font-medium">Enable sharing</label>
           {toggleSharing.isPending && (
-            <svg className="h-4 w-4 animate-spin text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="text-muted-foreground h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path
                 className="opacity-75"
@@ -73,7 +73,7 @@ function SharingSectionContent() {
                 type="text"
                 value={shareUrl}
                 readOnly
-                className={`pr-10 ${sharingData?.sharingEnabled ? "bg-gray-50" : "bg-gray-100 text-gray-400"}`}
+                className={`pr-10 ${sharingData?.sharingEnabled ? "bg-muted" : "bg-muted text-muted-foreground"}`}
                 onClick={(e) => sharingData?.sharingEnabled && e.currentTarget.select()}
                 disabled={!sharingData?.sharingEnabled}
               />
@@ -87,7 +87,7 @@ function SharingSectionContent() {
                 disabled={!sharingData?.sharingEnabled}
               >
                 {copied ? (
-                  <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="text-success h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
@@ -116,7 +116,7 @@ function SharingSectionContent() {
         description={
           <div className="space-y-2">
             <p>This will permanently invalidate your current sharing URL:</p>
-            <p className="rounded bg-gray-100 p-2 font-mono text-sm">{shareUrl}</p>
+            <p className="bg-muted rounded p-2 font-mono text-sm">{shareUrl}</p>
             <p>Anyone using the old URL will no longer be able to access your dashboard. This action cannot be undone.</p>
           </div>
         }
@@ -137,7 +137,7 @@ export function SharingSection() {
             <CardTitle>Sharing</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-500">Loading sharing settings...</p>
+            <p className="text-muted-foreground text-sm">Loading sharing settings...</p>
           </CardContent>
         </>
       }

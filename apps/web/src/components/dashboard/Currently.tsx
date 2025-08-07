@@ -44,7 +44,7 @@ const Currently = () => {
           <ChangeArrow change={difference} intendedDirection={intendedDirection} />
         </div>
       </div>
-      <div className="pt-2 text-sm font-light text-gray-600 italic">
+      <div className="text-muted-foreground pt-2 text-sm font-light italic">
         {goalStartDate ? `since ${shortDate(goalStartDate)}` : `as of ${shortDate(last.date)}`}
       </div>
     </div>

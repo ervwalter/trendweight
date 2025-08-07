@@ -33,6 +33,6 @@ describe("HelpLink", () => {
   it("has correct styling classes", () => {
     render(<HelpLink />);
     const link = screen.getByRole("link");
-    expect(link).toHaveClass("inline-flex", "items-center", "gap-1", "text-gray-500", "italic", "transition-colors", "hover:text-gray-700");
+    expect(link).toHaveClass("inline-flex", "items-center", "gap-1", "text-muted-foreground", "italic", "transition-colors", "hover:text-foreground/80");
   });
 });

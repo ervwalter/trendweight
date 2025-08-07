@@ -22,7 +22,7 @@ export function NewVersionNotice({ onDismiss }: NewVersionNoticeProps) {
   };
 
   return (
-    <div className="bg-brand-50 mb-6 rounded-lg p-4 shadow-lg">
+    <div className="bg-primary/5 mb-6 rounded-lg p-4 shadow-lg">
       <div className="flex items-start">
         <div className="flex-1">
           <p className="font-medium">Welcome to the new TrendWeight!</p>
@@ -31,7 +31,7 @@ export function NewVersionNotice({ onDismiss }: NewVersionNoticeProps) {
             <ExternalLink href="https://ewal.dev/trendweight-v2-has-launched">See what's new</ExternalLink>
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleDismiss} className="hover:bg-brand-100 -my-2 -mr-2 ml-4" aria-label="Dismiss notice">
+        <Button variant="ghost" size="sm" onClick={handleDismiss} className="hover:bg-primary/10 -my-2 -mr-2 ml-4" aria-label="Dismiss notice">
           <X className="h-4 w-4" />
         </Button>
       </div>

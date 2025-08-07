@@ -52,7 +52,7 @@ export function Build() {
           Build Information
         </Heading>
 
-        <p className="mb-8 text-gray-600">
+        <p className="text-muted-foreground mb-8">
           This page contains technical information about the current build of TrendWeight. This information is useful when reporting issues or contacting
           support.
         </p>

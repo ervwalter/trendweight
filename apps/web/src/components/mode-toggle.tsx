@@ -33,7 +33,7 @@ export function ModeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Toggle theme" aria-haspopup="menu" className="text-white hover:bg-white/20 hover:text-white">
+        <Button variant="ghost" size="icon" aria-label="Toggle theme" aria-haspopup="menu" className="hover:bg-background/20 text-white hover:text-white">
           {currentTheme === "light" ? (
             <Sun className="h-[1.2rem] w-[1.2rem]" data-testid="sun-icon" />
           ) : (

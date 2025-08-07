@@ -10,7 +10,7 @@ interface ExternalLinkProps {
 
 export function ExternalLink({ href, children, className }: ExternalLinkProps) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={twMerge("text-brand-600 hover:text-brand-700 underline", className)}>
+    <a href={href} target="_blank" rel="noopener noreferrer" className={twMerge("text-link hover:text-link underline", className)}>
       {children}
       <ExternalLinkIcon className="ml-0.5 inline-block h-3 w-3 align-baseline" />
     </a>

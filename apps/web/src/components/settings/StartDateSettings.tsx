@@ -14,15 +14,15 @@ export function StartDateSettings({ register, control }: StartDateSettingsProps)
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor="goalStart" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="goalStart" className="text-foreground/80 mb-1 block text-sm font-medium">
           Start Date
         </label>
         <Input id="goalStart" type="date" {...register("goalStart")} max={new Date().toISOString().split("T")[0]} className="w-auto" />
-        <p className="mt-1 text-sm text-gray-500">Calculate your total weight change starting from this date.</p>
+        <p className="text-muted-foreground mt-1 text-sm">Calculate your total weight change starting from this date.</p>
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Earlier weight data</label>
+        <label className="text-foreground/80 mb-1 block text-sm font-medium">Earlier weight data</label>
         <Controller
           name="hideDataBeforeStart"
           control={control}
@@ -39,7 +39,7 @@ export function StartDateSettings({ register, control }: StartDateSettingsProps)
             </ToggleGroup>
           )}
         />
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="text-muted-foreground mt-2 text-sm">
           'Show' displays all your weight history. 'Hide' only shows data from your start date forward. Either way, your total weight change is calculated from
           your start date.
         </p>

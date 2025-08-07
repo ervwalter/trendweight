@@ -76,7 +76,7 @@ describe("NotFound", () => {
     render(<NotFound />);
 
     const branding = screen.getByText("TrendWeight");
-    expect(branding).toHaveClass("text-brand-600");
+    expect(branding).toHaveClass("text-primary");
     expect(branding).toHaveClass("font-logo");
     expect(branding).toHaveClass("text-4xl");
     expect(branding).toHaveClass("font-bold");
@@ -106,6 +106,6 @@ describe("NotFound", () => {
     // Check for border styling on desktop
     const textContainer = container.querySelector(".max-w-\\[600px\\]");
     expect(textContainer).toHaveClass("border-none");
-    expect(textContainer).toHaveClass("md:border-r", "md:border-gray-300");
+    expect(textContainer).toHaveClass("md:border-r", "md:border-border");
   });
 });

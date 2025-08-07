@@ -16,16 +16,16 @@ describe("AuthError", () => {
     expect(errorDiv).toHaveClass("mb-4");
     expect(errorDiv).toHaveClass("rounded-md");
     expect(errorDiv).toHaveClass("border");
-    expect(errorDiv).toHaveClass("border-red-200");
-    expect(errorDiv).toHaveClass("bg-red-50");
+    expect(errorDiv).toHaveClass("border-destructive/30");
+    expect(errorDiv).toHaveClass("bg-destructive/10");
     expect(errorDiv).toHaveClass("p-3");
-    expect(errorDiv).toHaveClass("text-red-700");
+    expect(errorDiv).toHaveClass("text-destructive");
   });
 
   it("should render empty error message", () => {
     const { container } = render(<AuthError error="" />);
 
-    const errorDiv = container.querySelector(".text-red-700");
+    const errorDiv = container.querySelector(".text-destructive");
     expect(errorDiv).toBeInTheDocument();
     expect(errorDiv).toHaveTextContent("");
   });
@@ -34,7 +34,7 @@ describe("AuthError", () => {
     const multilineError = "Error line 1\nError line 2";
     const { container } = render(<AuthError error={multilineError} />);
 
-    const errorDiv = container.querySelector(".text-red-700");
+    const errorDiv = container.querySelector(".text-destructive");
     // HTML renders newlines as spaces
     expect(errorDiv).toHaveTextContent("Error line 1 Error line 2");
   });

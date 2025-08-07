@@ -32,7 +32,9 @@ const RecentReadings = () => {
                 <TableCell className="pl-0" suppressHydrationWarning>
                   {recentDate(m.date)}
                 </TableCell>
-                <TableCell className="text-right text-gray-400">{formatMeasurement(m.actual, { type: mode, metric: useMetric, units: false })}</TableCell>
+                <TableCell className="text-muted-foreground text-right">
+                  {formatMeasurement(m.actual, { type: mode, metric: useMetric, units: false })}
+                </TableCell>
                 <TableCell className="pr-0 text-right font-semibold">{formatMeasurement(m.trend, { type: mode, metric: useMetric, units: false })}</TableCell>
               </TableRow>
             ))}

@@ -59,12 +59,12 @@ export function InitialSetup() {
             <BasicProfileSettings register={register} errors={errors} control={control} />
 
             <div>
-              <h2 className="mb-4 text-lg font-medium text-gray-900">Progress Tracking (Optional)</h2>
+              <h2 className="text-foreground mb-4 text-lg font-medium">Progress Tracking (Optional)</h2>
               <StartDateSettings register={register} control={control} watch={watch} />
             </div>
 
             <div className="flex items-center justify-between">
-              <div>{updateProfile.isError && <p className="text-sm text-red-600">Failed to create profile. Please try again.</p>}</div>
+              <div>{updateProfile.isError && <p className="text-destructive text-sm">Failed to create profile. Please try again.</p>}</div>
               <Button type="submit" disabled={isSubmitting} variant="default">
                 {isSubmitting ? "Creating Profile..." : "Continue"}
               </Button>

@@ -51,19 +51,19 @@ const ProviderSyncError: FC<ProviderSyncErrorProps> = ({ provider, status }) => 
   }
 
   return (
-    <div className="mb-4 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-4">
+    <div className="border-warning/30 bg-warning/10 mb-4 flex items-center justify-between rounded-lg border p-4">
       <div className="flex items-center space-x-3">
-        <span className="text-xl text-amber-600" role="img" aria-label="Warning">
+        <span className="text-warning text-xl" role="img" aria-label="Warning">
           ⚠️
         </span>
-        <span className="flex-1 text-amber-800">{errorMessage}</span>
+        <span className="text-warning flex-1">{errorMessage}</span>
       </div>
       <Button
         onClick={handleReconnect}
         disabled={reconnectProvider.isPending}
         variant="warning"
         size="sm"
-        className="ml-4 whitespace-nowrap focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+        className="focus:ring-warning ml-4 whitespace-nowrap focus:ring-2 focus:ring-offset-2"
       >
         {reconnectProvider.isPending ? "Loading..." : buttonText}
       </Button>
