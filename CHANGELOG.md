@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.5.0](https://github.com/ervwalter/trendweight/compare/v2.4.2...v2.5.0) (2025-08-08)
+
+
+### Features
+
+* **db:** migrate legacy profiles to Supabase; deprecate MSSQL ([#315](https://github.com/ervwalter/trendweight/issues/315)) ([304745a](https://github.com/ervwalter/trendweight/commit/304745a729506fdb8e0ff9ff4b236864a1eada99))
+* migrate UI to shadcn/ui with dark mode support ([#309](https://github.com/ervwalter/trendweight/issues/309)) ([1ee05f3](https://github.com/ervwalter/trendweight/commit/1ee05f3096fa0cfaa03df0ec6e444835ad5208a2))
+
+
+### Fixes
+
+* **ui:** improve form input padding and provider sync warning ([43a3c65](https://github.com/ervwalter/trendweight/commit/43a3c6528e997040ef0d128cd653f0428d86b2a9))
+
+
+### Documentation
+
+* Add comprehensive GitHub Copilot instructions for TrendWeight development ([#312](https://github.com/ervwalter/trendweight/issues/312)) ([8f23877](https://github.com/ervwalter/trendweight/commit/8f23877fc0bca476ec4b9ab89c5f8317de46cde1))
+* clean up AI guidance ([da75ea5](https://github.com/ervwalter/trendweight/commit/da75ea589503f0f2e82d74083abcd7b31862c019))
+* remove completed specs ([99c1a8b](https://github.com/ervwalter/trendweight/commit/99c1a8bc68204bb32a001a3dc1b09f235a1efd54))
+* update architecture documentation and component library references ([3badc7b](https://github.com/ervwalter/trendweight/commit/3badc7b68f5602aa587ac0499780fb4d02332494))
+
+
+### Dependencies
+
+* update akhilmhdh/contributors-readme-action action to v2.3.11 ([#302](https://github.com/ervwalter/trendweight/issues/302)) ([f33ce0b](https://github.com/ervwalter/trendweight/commit/f33ce0bdb7013e1c14923e5b54cc462cb4e893f9))
+* update dependency @vitejs/plugin-react to v5 ([#314](https://github.com/ervwalter/trendweight/issues/314)) ([e7f2c48](https://github.com/ervwalter/trendweight/commit/e7f2c4801d21fe6a2d9c45ce801661f765d6202f))
+* update npm dependencies ([#304](https://github.com/ervwalter/trendweight/issues/304)) ([1d7f459](https://github.com/ervwalter/trendweight/commit/1d7f459c97e00d9740036decec033284ef0775aa))
+
 ## [2.4.2](https://github.com/ervwalter/trendweight/compare/v2.4.1...v2.4.2) (2025-08-01)
 
 
