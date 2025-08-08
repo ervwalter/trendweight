@@ -488,7 +488,7 @@ public class LegacyMigrationServiceTests : TestBase
                 sd.Count == 1 &&
                 sd[0].Source == "legacy" &&
                 sd[0].Measurements != null &&
-                sd[0].Measurements.Count == 3)), // All measurements should be included, even malformed ones
+                sd[0].Measurements!.Count == 3)), // All measurements should be included, even malformed ones
             Times.Once);
     }
 
@@ -657,7 +657,7 @@ public class LegacyMigrationServiceTests : TestBase
                 sd.Count == 1 &&
                 sd[0].Source == "legacy" &&
                 sd[0].Measurements != null &&
-                sd[0].Measurements.Count == 10000)), // All measurements should be migrated
+                sd[0].Measurements!.Count == 10000)), // All measurements should be migrated
             Times.Once);
     }
 
