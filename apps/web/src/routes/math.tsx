@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Math } from "../components/math/Math";
-import { Layout } from "../components/Layout";
+import { Math } from "../components/math/math";
+import { Layout } from "../components/layout";
 
 export const Route = createFileRoute("/math")({
   component: MathPage,

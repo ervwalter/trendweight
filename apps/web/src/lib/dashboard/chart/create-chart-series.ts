@@ -1,29 +1,32 @@
 import type { SeriesHlcOptions, SeriesLineOptions } from "highcharts/highstock";
 import type { Mode } from "../../core/interfaces";
 
-const colors = {
-  weight: "#8b0000",
-  fatpercent: "#660066",
-  fatmass: "#336600",
-  leanmass: "#000066",
-};
-
-export const createTrendSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean): SeriesLineOptions => ({
-  type: "line",
-  id: "trend",
-  name: `${modeText} Trend`,
-  data,
-  color: colors[mode],
-  lineWidth: isNarrow ? 1.5 : 2,
-  zIndex: 5,
-  legendIndex: 1,
-  marker: {
-    enabled: false,
-  },
-  events: {
-    legendItemClick: () => false,
-  },
+const getColors = () => ({
+  weight: "var(--chart-weight)",
+  fatpercent: "var(--chart-fatpercent)",
+  fatmass: "var(--chart-fatmass)",
+  leanmass: "var(--chart-leanmass)",
 });
+
+export const createTrendSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean): SeriesLineOptions => {
+  const colors = getColors();
+  return {
+    type: "line",
+    id: "trend",
+    name: `${modeText} Trend`,
+    data,
+    color: colors[mode],
+    lineWidth: isNarrow ? 1.5 : 2,
+    zIndex: 5,
+    legendIndex: 1,
+    marker: {
+      enabled: false,
+    },
+    events: {
+      legendItemClick: () => false,
+    },
+  };
+};
 
 export const createDiamondsSeries = (data: [number, number | null][], isInterpolated: boolean, isNarrow: boolean): SeriesLineOptions => {
   const series = createLineSeries(data, isInterpolated);
@@ -33,8 +36,8 @@ export const createDiamondsSeries = (data: [number, number | null][], isInterpol
   series.marker = {
     enabled: true,
     symbol: "diamond",
-    lineColor: isInterpolated ? "#e2e2e2" : "#333333",
-    fillColor: "#ffffff",
+    lineColor: isInterpolated ? "var(--chart-interpolated-diamond)" : "var(--chart-actual-diamond)",
+    fillColor: "var(--chart-diamond-fill)",
     lineWidth: 1,
     radius: isNarrow ? 3 : 4.5,
   };
@@ -49,8 +52,8 @@ export const createDotSeries = (data: [number, number | null][], isInterpolated:
   series.marker = {
     enabled: true,
     symbol: "circle",
-    lineColor: isInterpolated ? "#e2e2e2" : "#333333",
-    fillColor: isInterpolated ? "#e2e2e2" : "#333333",
+    lineColor: isInterpolated ? "var(--chart-interpolated-dot)" : "var(--chart-actual-dot)",
+    fillColor: isInterpolated ? "var(--chart-interpolated-dot)" : "var(--chart-actual-dot)",
     lineWidth: 0,
     radius: 2,
   };
@@ -62,7 +65,7 @@ export const createLineSeries = (data: [number, number | null][], isInterpolated
   id: isInterpolated ? "estimated" : "actual",
   name: isInterpolated ? "Estimated Reading" : "Scale Reading",
   lineWidth: 1,
-  color: "#aaaaaa",
+  color: "var(--chart-actual-line)",
   legendIndex: 0,
   zIndex: 3,
   connectNulls: true,
@@ -76,21 +79,24 @@ export const createLineSeries = (data: [number, number | null][], isInterpolated
   },
 });
 
-export const createProjectionSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean): SeriesLineOptions => ({
-  type: "line",
-  id: "projection",
-  name: `Projected ${modeText}`,
-  data,
-  color: colors[mode],
-  lineWidth: isNarrow ? 1.5 : 2,
-  dashStyle: "ShortDot",
-  enableMouseTracking: false,
-  zIndex: 5,
-  legendIndex: 2,
-  events: {
-    legendItemClick: () => false,
-  },
-});
+export const createProjectionSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean): SeriesLineOptions => {
+  const colors = getColors();
+  return {
+    type: "line",
+    id: "projection",
+    name: `Projected ${modeText}`,
+    data,
+    color: colors[mode],
+    lineWidth: isNarrow ? 1.5 : 2,
+    dashStyle: "ShortDot",
+    enableMouseTracking: false,
+    zIndex: 5,
+    legendIndex: 2,
+    events: {
+      legendItemClick: () => false,
+    },
+  };
+};
 
 export const createSinkersSeries = (data: [number, number | null, number | null, null][], isInterpolated: boolean): SeriesHlcOptions => ({
   type: "hlc",
@@ -99,7 +105,7 @@ export const createSinkersSeries = (data: [number, number | null, number | null,
   showInLegend: false,
   enableMouseTracking: false,
   zIndex: 2,
-  color: isInterpolated ? "#e2e2e2" : "#999999",
+  color: isInterpolated ? "var(--chart-interpolated-sinker)" : "var(--chart-actual-sinker)",
   pointValKey: "high",
   data,
 });

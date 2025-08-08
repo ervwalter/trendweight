@@ -36,7 +36,7 @@ export function buildWeekendPlotBands(lastMeasurementDate: LocalDate): XAxisOpti
     plotBands.push({
       from: toEpoch(saturday) - 43200000, // Friday noon
       to: toEpoch(saturday) + 129600000, // Sunday noon
-      color: "rgba(220, 220, 220, 0.2)",
+      color: "var(--chart-weekend-band)",
       zIndex: 1,
     });
     saturday = saturday.plusWeeks(1);
@@ -146,26 +146,26 @@ export function buildExploreOptions(options: Options, builderOptions: BuilderOpt
       margin: 10,
       series: {
         type: "line",
-        color: "#4a5568",
+        color: "var(--muted-foreground)",
         lineWidth: 1,
         fillOpacity: 0.1,
       },
       xAxis: {
         labels: {
           style: {
-            color: "#718096",
+            color: "var(--muted-foreground)",
             fontSize: "11px",
             textOutline: "none",
           },
         },
       },
       handles: {
-        backgroundColor: "#e2e8f0",
-        borderColor: "#a0aec0",
+        backgroundColor: "var(--muted)",
+        borderColor: "var(--border)",
       },
-      outlineColor: "#cbd5e0",
+      outlineColor: "var(--border)",
       outlineWidth: 1,
-      maskFill: "rgba(226, 232, 240, 0.3)",
+      maskFill: "var(--muted)",
     };
 
     options.scrollbar = {
@@ -242,13 +242,13 @@ export function buildYAxisOptions(options: Options, mode: keyof typeof Modes, us
       {
         from: goalWeight - goalWidth,
         to: goalWeight + goalWidth,
-        color: "rgb(244, 255, 244)",
+        color: "var(--chart-goal-band)",
         label: {
           text: "Goal Range",
           align: "right",
           verticalAlign: "top",
           style: {
-            color: "rgb(140, 180, 140)",
+            color: "var(--chart-goal-label)",
             fontSize: "10px",
           },
           x: -4,
@@ -261,14 +261,14 @@ export function buildYAxisOptions(options: Options, mode: keyof typeof Modes, us
     options.yAxis.plotLines = [
       {
         value: goalWeight - goalWidth,
-        color: "rgb(100, 150, 100)",
+        color: "var(--chart-goal-line)",
         dashStyle: "ShortDash",
         zIndex: 1,
         width: 1,
       },
       {
         value: goalWeight + goalWidth,
-        color: "rgb(100, 150, 100)",
+        color: "var(--chart-goal-line)",
         dashStyle: "ShortDash",
         zIndex: 1,
         width: 1,

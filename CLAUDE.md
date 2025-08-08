@@ -31,7 +31,7 @@ For essential commands and development setup, see:
 ### Code Organization
 1. **Feature-based structure**: Group related functionality together
 2. **Clear separation**: Keep UI components, business logic, and data access separate
-3. **Consistent naming**: Use PascalCase for components, camelCase for functions
+3. **Consistent naming**: Use kebab-case for all frontend files, PascalCase for component names, camelCase for functions
 
 ### CRITICAL: Route File Pattern (NO EXCEPTIONS)
 **This is an ABSOLUTE REQUIREMENT for ALL route files in `apps/web/src/routes/`:**
@@ -151,6 +151,8 @@ If you see any route file that doesn't follow this pattern, it MUST be refactore
 8. **UriBuilder Default Ports** - When using UriBuilder for HTTPS URLs, the default port 443 is included. Remove it to avoid URLs like `https://example.com:443/path`. Tests caught this bug!
 9. **Defensive Input Handling** - Functions should handle unsorted input gracefully. The interpolation functions now sort input data before processing to ensure correct results regardless of input order.
 10. **Route File Pattern MANDATORY** - All route files were refactored to follow a minimal pattern. Route files must ONLY contain route definition and a single page component that renders Layout with a feature component. ALL business logic, hooks, and UI must be extracted to feature components. This pattern is now MANDATORY for all routes without exception.
+11. **File Naming Convention Change** - Switched to kebab-case for all new frontend TypeScript files to align with industry standards and shadcn/ui conventions. Component names remain PascalCase but filenames are now kebab-case (e.g., `user-profile.tsx` exports `UserProfile`). Existing PascalCase files remain as-is for now.
+12. **Git File Operations** - Always use `git mv` to rename/move files that are already tracked by git, never use regular `mv`. This prevents git confusion when creating new files with similar names but different case, which can cause tracking issues and merge conflicts.
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
@@ -177,16 +179,17 @@ Keep this file focused on AI code generation guidance only.
 ### MANDATORY: Pre-Commit Checks
 **CRITICAL REQUIREMENT**: Before EVERY commit, you MUST run the following from the root directory:
 ```bash
-npm run format && npm run check:ci && npm run test
+npm run check && npm run test
 ```
 
 This ensures:
-- Code is properly formatted
-- TypeScript compiles without errors
+- TypeScript compiles without errors  
 - ESLint rules pass
-- All tests pass
+- All tests pass (both frontend and backend)
 
 **NEVER skip this step!** The project uses Turborepo for optimization, so always run commands from the root.
+
+**Note**: Use `npm run check` (not `npm run check:ci`) for pre-commit since we don't need format checking if code is already properly formatted.
 
 ### Always Run Comprehensive Checks
 - When checking for code issues during development, run 'npm run check' from the top level folder of the repo (fast)

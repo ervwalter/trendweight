@@ -7,7 +7,8 @@ const chartOptionsTemplate = (): Highstock.Options => ({
   },
   chart: {
     plotBorderWidth: 0.25,
-    plotBorderColor: "#999999",
+    plotBorderColor: "var(--border)",
+    backgroundColor: "var(--background)",
     panning: { enabled: false },
     spacingBottom: 40,
     spacingRight: 0,
@@ -23,7 +24,13 @@ const chartOptionsTemplate = (): Highstock.Options => ({
     enabled: false,
   },
   legend: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "var(--background)",
+    itemStyle: {
+      color: "var(--foreground)",
+    },
+    itemHoverStyle: {
+      color: "var(--foreground)",
+    },
     enabled: true,
     y: 40,
   },
@@ -83,6 +90,11 @@ const chartOptionsTemplate = (): Highstock.Options => ({
     crosshair: true,
     ordinal: false,
     lineWidth: 0,
+    labels: {
+      style: {
+        color: "var(--muted-foreground)",
+      },
+    },
     dateTimeLabelFormats: {
       second: "%H:%M:%S",
       minute: "%H:%M",
@@ -101,11 +113,15 @@ const chartOptionsTemplate = (): Highstock.Options => ({
     startOnTick: true,
     lineWidth: 0,
     gridLineWidth: 0.5,
+    gridLineColor: "var(--border)",
     gridZIndex: 0,
     labels: {
       x: -4,
       y: 4,
       align: "right",
+      style: {
+        color: "var(--muted-foreground)",
+      },
     },
   },
   series: [],

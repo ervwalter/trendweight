@@ -1,9 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { Layout } from "../components/Layout";
-import { InitialSetup } from "../components/initial-setup/InitialSetup";
-import { requireAuth } from "../lib/auth/authGuard";
+import { Layout } from "../components/layout";
+import { InitialSetup } from "../components/initial-setup/initial-setup";
+import { requireAuth } from "../lib/auth/auth-guard";
 import { queryOptions } from "../lib/api/queries";
-import { queryClient } from "../lib/queryClient";
+import { queryClient } from "../lib/query-client";
 
 export const Route = createFileRoute("/initial-setup")({
   beforeLoad: requireAuth,

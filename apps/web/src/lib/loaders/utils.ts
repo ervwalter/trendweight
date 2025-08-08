@@ -1,5 +1,5 @@
 import { redirect } from "@tanstack/react-router";
-import { queryClient } from "../queryClient";
+import { queryClient } from "../query-client";
 import { queryOptions } from "../api/queries";
 
 /**

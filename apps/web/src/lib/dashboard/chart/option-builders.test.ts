@@ -66,7 +66,7 @@ describe("option-builders", () => {
       const firstBand = plotBands![0];
 
       expect(firstBand).toMatchObject({
-        color: "rgba(220, 220, 220, 0.2)",
+        color: "var(--chart-weekend-band)",
         zIndex: 1,
       });
       expect(typeof firstBand.from).toBe("number");
@@ -314,7 +314,7 @@ describe("option-builders", () => {
       const plotBand = (options.yAxis as any)?.plotBands![0];
       expect(plotBand?.from).toBe(goalWeight - 2.5);
       expect(plotBand?.to).toBe(goalWeight + 2.5);
-      expect(plotBand?.color).toBe("rgb(244, 255, 244)");
+      expect(plotBand?.color).toBe("var(--chart-goal-band)");
     });
 
     it("should use metric goal width for metric units", () => {

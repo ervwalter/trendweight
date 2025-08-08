@@ -145,3 +145,38 @@ Agent OS will help maintain development velocity while ensuring proper documenta
 **Negative:**
 - Additional process overhead
 - Learning curve for Agent OS workflows
+
+## 2025-08-06: Frontend File Naming Convention Change
+
+**ID:** DEC-005
+**Status:** Accepted
+**Category:** Technical
+**Stakeholders:** Development Team
+**Related Spec:** @.agent-os/specs/2025-08-06-shadcn-migration/
+
+### Decision
+
+Adopt kebab-case naming for all new frontend TypeScript files, moving away from PascalCase component filenames. This aligns with modern web development standards and shadcn/ui conventions while maintaining PascalCase for actual component names in code.
+
+### Context
+
+During the shadcn/ui migration spec planning, we discovered that the industry standard for component files has shifted to kebab-case (e.g., `user-profile.tsx`) while maintaining PascalCase for the actual component exports (e.g., `UserProfile`). This convention is used by shadcn/ui and many modern React projects, providing better consistency with tooling and industry practices.
+
+### Rationale
+
+- **Industry Alignment**: Matches shadcn/ui and modern React ecosystem conventions
+- **Tooling Consistency**: Better integration with build tools and file system case sensitivity
+- **Future Maintainability**: Aligns with libraries and frameworks we'll be adopting
+- **Developer Experience**: Reduces cognitive load by following established patterns
+
+### Consequences
+
+**Positive:**
+- Consistent with shadcn/ui component naming
+- Better alignment with modern web development practices
+- Improved tooling integration and file system compatibility
+
+**Negative:**
+- Mixed naming conventions during transition period
+- Potential confusion for developers familiar with existing PascalCase files
+- Import path updates needed when refactoring existing components

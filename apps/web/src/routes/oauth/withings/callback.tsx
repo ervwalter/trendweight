@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { WithingsCallback } from "../../../components/providers/WithingsCallback";
-import { Layout } from "../../../components/Layout";
+import { WithingsCallback } from "../../../components/providers/withings-callback";
+import { Layout } from "../../../components/layout";
 
 export const Route = createFileRoute("/oauth/withings/callback")({
   component: WithingsCallbackPage,

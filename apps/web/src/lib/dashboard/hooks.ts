@@ -1,10 +1,10 @@
 import { useContext, useMemo, useState } from "react";
-import { dashboardContext } from "./dashboardContext";
-import type { DashboardData } from "./dashboardContext";
+import { dashboardContext } from "./dashboard-context";
+import type { DashboardData } from "./dashboard-context";
 import { useDashboardQueries } from "../api/queries";
 import type { Mode, TimeRange } from "../core/interfaces";
 import type { ApiSourceData } from "../api/types";
-import { usePersistedState } from "../hooks/usePersistedState";
+import { usePersistedState } from "../hooks/use-persisted-state";
 import { computeDataPoints } from "./computations/data-points";
 import { computeMeasurements } from "./computations/measurements";
 import { computeActiveSlope, computeDeltas, computeWeightSlope } from "./computations/stats";

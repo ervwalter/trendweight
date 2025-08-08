@@ -2,7 +2,7 @@ import { useSuspenseQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { apiRequest, ApiError } from "./client";
 import type { ProfileResponse, ProviderLink, MeasurementsResponse } from "./types";
 import type { ProfileData, SharingData } from "../core/interfaces";
-import { getDemoData, getDemoProfile } from "../demo/demoData";
+import { getDemoData, getDemoProfile } from "../demo/demo-data";
 
 // Query key helpers
 const createQueryKey = <T extends readonly unknown[]>(base: T, sharingCode?: string): T | readonly [...T, string] => {

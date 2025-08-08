@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Home } from "../components/home/Home";
-import { pageTitle } from "../lib/utils/pageTitle";
+import { Home } from "../components/home/home";
+import { pageTitle } from "../lib/utils/page-title";
 
 export const Route = createFileRoute("/")({
   beforeLoad: () => {

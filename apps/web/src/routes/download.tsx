@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Download } from "../components/download/Download";
-import { Layout } from "../components/Layout";
-import { requireAuth } from "../lib/auth/authGuard";
+import { Download } from "../components/download/download";
+import { Layout } from "../components/layout";
+import { requireAuth } from "../lib/auth/auth-guard";
 import { ensureProfile, ensureProviderLinks } from "../lib/loaders/utils";
 
 export const Route = createFileRoute("/download")({

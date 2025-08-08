@@ -32,7 +32,8 @@ describe("chartOptionsTemplate", () => {
 
       expect(options.chart).toEqual({
         plotBorderWidth: 0.25,
-        plotBorderColor: "#999999",
+        plotBorderColor: "var(--border)",
+        backgroundColor: "var(--background)",
         panning: { enabled: false },
         spacingBottom: 40,
         spacingRight: 0,
@@ -79,9 +80,15 @@ describe("chartOptionsTemplate", () => {
       const options = chartOptionsTemplate();
 
       expect(options.legend).toEqual({
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--background)",
         enabled: true,
         y: 40,
+        itemStyle: {
+          color: "var(--foreground)",
+        },
+        itemHoverStyle: {
+          color: "var(--foreground)",
+        },
       });
     });
   });
@@ -281,11 +288,15 @@ describe("chartOptionsTemplate", () => {
         startOnTick: true,
         lineWidth: 0,
         gridLineWidth: 0.5,
+        gridLineColor: "var(--border)",
         gridZIndex: 0,
         labels: {
           x: -4,
           y: 4,
           align: "right",
+          style: {
+            color: "var(--muted-foreground)",
+          },
         },
       });
     });

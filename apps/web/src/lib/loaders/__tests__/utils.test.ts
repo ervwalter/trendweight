@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { redirect } from "@tanstack/react-router";
 import { ensureProviderLinks } from "../utils";
-import { queryClient } from "../../queryClient";
+import { queryClient } from "../../query-client";
 import type { ProviderLink } from "../../api/types";
 
 // Mock dependencies
@@ -11,7 +11,7 @@ vi.mock("@tanstack/react-router", () => ({
   }),
 }));
 
-vi.mock("../../queryClient", () => ({
+vi.mock("../../query-client", () => ({
   queryClient: {
     fetchQuery: vi.fn(),
   },

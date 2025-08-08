@@ -28,7 +28,7 @@ describe("create-chart-series", () => {
       expect(series.id).toBe("trend");
       expect(series.name).toBe("Weight Trend");
       expect(series.data).toBe(sampleData);
-      expect(series.color).toBe("#8b0000"); // weight color
+      expect(series.color).toBe("var(--chart-weight)"); // weight color
       expect(series.lineWidth).toBe(2);
       expect(series.zIndex).toBe(5);
       expect(series.legendIndex).toBe(1);
@@ -41,10 +41,10 @@ describe("create-chart-series", () => {
       const fatMassSeries = createTrendSeries(sampleData, "fatmass", "Fat Mass", false);
       const leanMassSeries = createTrendSeries(sampleData, "leanmass", "Lean Mass", false);
 
-      expect(weightSeries.color).toBe("#8b0000");
-      expect(fatPercentSeries.color).toBe("#660066");
-      expect(fatMassSeries.color).toBe("#336600");
-      expect(leanMassSeries.color).toBe("#000066");
+      expect(weightSeries.color).toBe("var(--chart-weight)");
+      expect(fatPercentSeries.color).toBe("var(--chart-fatpercent)");
+      expect(fatMassSeries.color).toBe("var(--chart-fatmass)");
+      expect(leanMassSeries.color).toBe("var(--chart-leanmass)");
     });
 
     it("should adjust line width for narrow displays", () => {
@@ -72,16 +72,16 @@ describe("create-chart-series", () => {
       expect(series.lineWidth).toBe(0);
       expect(series.marker?.enabled).toBe(true);
       expect(series.marker?.symbol).toBe("diamond");
-      expect(series.marker?.lineColor).toBe("#333333");
-      expect(series.marker?.fillColor).toBe("#ffffff");
+      expect(series.marker?.lineColor).toBe("var(--chart-actual-diamond)");
+      expect(series.marker?.fillColor).toBe("var(--chart-diamond-fill)");
       expect(series.marker?.radius).toBe(4.5);
     });
 
     it("should create diamonds series for interpolated data", () => {
       const series = createDiamondsSeries(sampleDataWithNulls, true, false);
 
-      expect(series.marker?.lineColor).toBe("#e2e2e2");
-      expect(series.marker?.fillColor).toBe("#ffffff");
+      expect(series.marker?.lineColor).toBe("var(--chart-interpolated-diamond)");
+      expect(series.marker?.fillColor).toBe("var(--chart-diamond-fill)");
     });
 
     it("should adjust marker size for narrow displays", () => {
@@ -102,16 +102,16 @@ describe("create-chart-series", () => {
       expect(series.lineWidth).toBe(0);
       expect(series.marker?.enabled).toBe(true);
       expect(series.marker?.symbol).toBe("circle");
-      expect(series.marker?.lineColor).toBe("#333333");
-      expect(series.marker?.fillColor).toBe("#333333");
+      expect(series.marker?.lineColor).toBe("var(--chart-actual-dot)");
+      expect(series.marker?.fillColor).toBe("var(--chart-actual-dot)");
       expect(series.marker?.radius).toBe(2);
     });
 
     it("should create dot series for interpolated data", () => {
       const series = createDotSeries(sampleDataWithNulls, true);
 
-      expect(series.marker?.lineColor).toBe("#e2e2e2");
-      expect(series.marker?.fillColor).toBe("#e2e2e2");
+      expect(series.marker?.lineColor).toBe("var(--chart-interpolated-dot)");
+      expect(series.marker?.fillColor).toBe("var(--chart-interpolated-dot)");
     });
   });
 
@@ -123,7 +123,7 @@ describe("create-chart-series", () => {
       expect(series.id).toBe("actual");
       expect(series.name).toBe("Scale Reading");
       expect(series.lineWidth).toBe(1);
-      expect(series.color).toBe("#aaaaaa");
+      expect(series.color).toBe("var(--chart-actual-line)");
       expect(series.legendIndex).toBe(0);
       expect(series.zIndex).toBe(3);
       expect(series.connectNulls).toBe(true);
@@ -156,7 +156,7 @@ describe("create-chart-series", () => {
       expect(series.id).toBe("projection");
       expect(series.name).toBe("Projected Fat %");
       expect(series.data).toBe(sampleData);
-      expect(series.color).toBe("#660066"); // fatpercent color
+      expect(series.color).toBe("var(--chart-fatpercent)"); // fatpercent color
       expect(series.lineWidth).toBe(2);
       expect(series.dashStyle).toBe("ShortDot");
       expect(series.enableMouseTracking).toBe(false);
@@ -190,7 +190,7 @@ describe("create-chart-series", () => {
       expect(series.showInLegend).toBe(false);
       expect(series.enableMouseTracking).toBe(false);
       expect(series.zIndex).toBe(2);
-      expect(series.color).toBe("#999999");
+      expect(series.color).toBe("var(--chart-actual-sinker)");
       expect(series.pointValKey).toBe("high");
       expect(series.data).toBe(sampleSinkersData);
     });
@@ -200,7 +200,7 @@ describe("create-chart-series", () => {
 
       expect(series.id).toBe("estimated-sinkers");
       expect(series.name).toBe("Estimated Sinkers");
-      expect(series.color).toBe("#e2e2e2");
+      expect(series.color).toBe("var(--chart-interpolated-sinker)");
     });
   });
 
@@ -210,7 +210,7 @@ describe("create-chart-series", () => {
       const projectionSeries = createProjectionSeries(sampleData, "leanmass", "Lean Mass", false);
 
       expect(trendSeries.color).toBe(projectionSeries.color);
-      expect(trendSeries.color).toBe("#000066");
+      expect(trendSeries.color).toBe("var(--chart-leanmass)");
     });
   });
 

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Layout } from "../components/Layout";
-import { Build } from "../components/build/Build";
+import { Layout } from "../components/layout";
+import { Build } from "../components/build/build";
 
 export const Route = createFileRoute("/build")({
   component: BuildDetailsPage,
