@@ -19,11 +19,11 @@ const buttonVariants = cva(
         warning: "bg-warning text-warning-foreground shadow-xs hover:bg-warning/90 active:bg-warning/80",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        xl: "px-6 py-6 text-xl md:py-7 lg:text-2xl",
-        icon: "size-9",
+        default: "px-6 py-3 has-[>svg]:px-4",
+        sm: "px-4 py-2 rounded-md gap-1.5 has-[>svg]:px-3",
+        lg: "px-8 py-4 rounded-md has-[>svg]:px-5",
+        xl: "px-8 py-6 text-xl md:py-7 lg:text-2xl",
+        icon: "size-10 p-0",
       },
     },
     defaultVariants: {

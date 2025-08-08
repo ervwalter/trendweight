@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import { AlertTriangle } from "lucide-react";
 import { useReconnectProvider } from "../../lib/api/mutations";
 import type { ProviderSyncStatus } from "../../lib/api/types";
 import { Button } from "../ui/button";
@@ -42,21 +43,19 @@ const ProviderSyncError: FC<ProviderSyncErrorProps> = ({ provider, status }) => 
       break;
     case "networkerror":
       errorMessage = `Unable to connect to ${providerDisplayName}. Please wait a moment and try again. If this keeps happening, you can try reconnecting.`;
-      buttonText = "Reconnect anyway →";
+      buttonText = "Try reconnecting →";
       break;
     default:
       errorMessage =
         status.message || `${providerDisplayName} sync failed. Please wait a moment and try again. If this keeps happening, you can try reconnecting.`;
-      buttonText = "Reconnect anyway →";
+      buttonText = "Try reconnecting →";
   }
 
   return (
-    <div className="border-warning/30 bg-warning/10 mb-4 flex items-center justify-between rounded-lg border p-4">
+    <div className="border-warning/50 bg-warning/15 mb-4 flex items-center justify-between rounded-lg border p-4">
       <div className="flex items-center space-x-3">
-        <span className="text-warning text-xl" role="img" aria-label="Warning">
-          ⚠️
-        </span>
-        <span className="text-warning flex-1">{errorMessage}</span>
+        <AlertTriangle className="text-warning size-5 shrink-0" aria-hidden="true" />
+        <span className="text-foreground/90 flex-1">{errorMessage}</span>
       </div>
       <Button
         onClick={handleReconnect}

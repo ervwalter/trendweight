@@ -48,7 +48,6 @@ describe("ProviderSyncError", () => {
 
     expect(screen.getByText("Fitbit connection needs to be refreshed.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reconnect →" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Warning" })).toBeInTheDocument();
   });
 
   it("should render authfailed error for Withings", () => {
@@ -64,7 +63,7 @@ describe("ProviderSyncError", () => {
     render(<ProviderSyncError provider="fitbit" status={status} />);
 
     expect(screen.getByText(/Unable to connect to Fitbit/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reconnect anyway →" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try reconnecting →" })).toBeInTheDocument();
   });
 
   it("should render custom error message when provided", () => {
@@ -72,7 +71,7 @@ describe("ProviderSyncError", () => {
     render(<ProviderSyncError provider="fitbit" status={status} />);
 
     expect(screen.getByText("Custom error message")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reconnect anyway →" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try reconnecting →" })).toBeInTheDocument();
   });
 
   it("should render default error message for unknown error types", () => {
@@ -80,7 +79,7 @@ describe("ProviderSyncError", () => {
     render(<ProviderSyncError provider="fitbit" status={status} />);
 
     expect(screen.getByText(/Fitbit sync failed/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reconnect anyway →" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try reconnecting →" })).toBeInTheDocument();
   });
 
   it("should disable button when mutation is pending", () => {
