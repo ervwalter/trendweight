@@ -13,9 +13,6 @@ ENV_VARS=(
     "Clerk__SecretKey"
     "Clerk__Authority"
     
-    # Legacy database connection
-    "LegacyDbConnectionString"
-    
     # Withings configuration
     "Withings__ClientId"
     "Withings__ClientSecret"

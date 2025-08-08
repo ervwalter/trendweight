@@ -18,9 +18,6 @@ public class LegacyMigrationService : ILegacyMigrationService
     // Expired token marker - 1 hour duration for a token received at Unix timestamp 0
     private const int EXPIRED_TOKEN_EXPIRES_IN = 3600;
 
-    // Pounds to kilograms conversion factor
-    private const decimal POUNDS_TO_KG = 0.453592m;
-
     public LegacyMigrationService(
         IProfileService profileService,
         ILegacyDbService legacyDbService,
@@ -78,16 +75,14 @@ public class LegacyMigrationService : ILegacyMigrationService
             Email = email,
             Profile = new ProfileData
             {
-                FirstName = legacyProfile.FirstName,
-                UseMetric = legacyProfile.UseMetric,
+                FirstName = legacyProfile.FirstName ?? string.Empty,
+                UseMetric = legacyProfile.UseMetric ?? false, // Default to Imperial (pounds)
                 GoalStart = legacyProfile.StartDate,
-                GoalWeight = legacyProfile.GoalWeight,
-                PlannedPoundsPerWeek = legacyProfile.UseMetric
-                    ? legacyProfile.PlannedPoundsPerWeek / 2
-                    : legacyProfile.PlannedPoundsPerWeek,
-                DayStartOffset = legacyProfile.DayStartOffset,
+                GoalWeight = legacyProfile.GoalWeight ?? 0,
+                PlannedPoundsPerWeek = legacyProfile.PlannedPoundsPerWeek ?? 0, // Already in correct units
+                DayStartOffset = legacyProfile.DayStartOffset ?? 0,
                 ShowCalories = true, // it was on in the old site
-                SharingToken = legacyProfile.PrivateUrlKey, // Use existing sharing token
+                SharingToken = legacyProfile.PrivateUrlKey ?? string.Empty, // Use existing sharing token
                 SharingEnabled = true, // Always enabled in legacy app
                 IsMigrated = true,
                 IsNewlyMigrated = true
@@ -100,13 +95,13 @@ public class LegacyMigrationService : ILegacyMigrationService
         profile = await _profileService.CreateAsync(profile);
 
         // Create provider links if legacy profile has OAuth tokens
-        if (!string.IsNullOrEmpty(legacyProfile.FitbitRefreshToken) && !string.IsNullOrEmpty(legacyProfile.DeviceType))
+        if (!string.IsNullOrEmpty(legacyProfile.RefreshToken) && !string.IsNullOrEmpty(legacyProfile.DeviceType))
         {
             await MigrateProviderLinkAsync(userGuid, legacyProfile);
         }
 
-        // Migrate legacy measurements for the new user
-        await MigrateLegacyMeasurementsAsync(userGuid, email);
+        // Migrate legacy measurements for the new user (pass already-loaded profile to avoid duplicate query)
+        await MigrateLegacyMeasurementsAsync(userGuid, email, legacyProfile);
 
         return profile;
     }
@@ -116,7 +111,7 @@ public class LegacyMigrationService : ILegacyMigrationService
     /// </summary>
     private async Task MigrateProviderLinkAsync(Guid userId, LegacyProfile legacyProfile)
     {
-        if (string.IsNullOrEmpty(legacyProfile.DeviceType) || string.IsNullOrEmpty(legacyProfile.FitbitRefreshToken))
+        if (string.IsNullOrEmpty(legacyProfile.DeviceType) || string.IsNullOrEmpty(legacyProfile.RefreshToken))
         {
             return;
         }
@@ -126,7 +121,7 @@ public class LegacyMigrationService : ILegacyMigrationService
         // Create an expired token that will trigger refresh on first use
         var expiredToken = new Dictionary<string, object>
         {
-            ["refresh_token"] = legacyProfile.FitbitRefreshToken!,
+            ["refresh_token"] = legacyProfile.RefreshToken!,
             ["access_token"] = "",
             ["token_type"] = "Bearer",
             ["scope"] = "user.metrics",
@@ -143,36 +138,32 @@ public class LegacyMigrationService : ILegacyMigrationService
     /// </summary>
     /// <param name="userId">Supabase UID</param>
     /// <param name="userEmail">User's email address</param>
+    /// <param name="legacyProfile">Optional already-loaded legacy profile to avoid duplicate query</param>
     /// <returns>True if measurements were migrated, false otherwise</returns>
-    public async Task<bool> MigrateLegacyMeasurementsAsync(Guid userId, string userEmail)
+    public async Task<bool> MigrateLegacyMeasurementsAsync(Guid userId, string userEmail, LegacyProfile? legacyProfile = null)
     {
-        // Find legacy profile to get UseMetric setting
-        var legacyProfile = await _legacyDbService.FindProfileByEmailAsync(userEmail);
+        // Use provided profile or fetch it if not provided
         if (legacyProfile == null)
         {
-            _logger.LogInformation("No legacy profile found for email {Email}", userEmail);
-            return false;
+            legacyProfile = await _legacyDbService.FindProfileByEmailAsync(userEmail);
+            if (legacyProfile == null)
+            {
+                _logger.LogInformation("No legacy profile found for email {Email}", userEmail);
+                return false;
+            }
         }
 
-        // Get all legacy measurements
-        var measurements = await _legacyDbService.GetMeasurementsByEmailAsync(userEmail);
-        if (measurements.Count == 0)
+        // Check if there are measurements
+        if (legacyProfile.Measurements == null || legacyProfile.Measurements.Count == 0)
         {
             _logger.LogInformation("No legacy measurements found for email {Email}", userEmail);
             return false;
         }
 
-        _logger.LogInformation("Found {Count} legacy measurements for email {Email}", measurements.Count, userEmail);
+        _logger.LogInformation("Found {Count} legacy measurements for email {Email}", legacyProfile.Measurements.Count, userEmail);
 
-        // Convert measurements to source data format
-        var rawMeasurements = measurements.Select(m => new RawMeasurement
-        {
-            Date = m.Timestamp.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            Time = m.Timestamp.ToString("HH:mm:ss", CultureInfo.InvariantCulture),
-            // Convert weight to kg if legacy profile was in pounds
-            Weight = legacyProfile.UseMetric ? m.Weight : m.Weight * POUNDS_TO_KG,
-            FatRatio = m.FatRatio
-        }).ToList();
+        // Measurements are already in RawMeasurement format and weights are already in kg
+        var rawMeasurements = legacyProfile.Measurements;
 
         // Create source data entry
         var sourceData = new List<SourceData>
@@ -191,7 +182,7 @@ public class LegacyMigrationService : ILegacyMigrationService
         // Create provider link for legacy data
         await _providerLinkService.StoreProviderLinkAsync(userId, "legacy", new Dictionary<string, object>() { { "disabled", false } });
 
-        _logger.LogInformation("Successfully imported {Count} legacy measurements for user {UserId}", measurements.Count, userId);
+        _logger.LogInformation("Successfully imported {Count} legacy measurements for user {UserId}", rawMeasurements.Count, userId);
         return true;
     }
 
