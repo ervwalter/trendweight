@@ -76,7 +76,7 @@ Data refresh logic:
 - **TanStack Router** for routing
 - **TanStack Query** for server state management
 - **Tailwind CSS v4** for styling
-- **Radix UI** for accessible components
+- **shadcn/ui** for pre-built accessible components
 - **Highcharts** for data visualization
 - **@bprogress/react** for progress indicators
 - **@js-joda/core** for date/time handling
@@ -264,12 +264,13 @@ The app uses @bprogress/react for progress indication:
 ### UI Component Standards
 
 #### Component Library
-- Radix UI for accessible, unstyled components (switches, toggles, dialogs, etc.)
+- shadcn/ui for pre-built accessible components (switches, toggles, dialogs, etc.)
+  - Built on Radix UI primitives but pre-styled with Tailwind
 - **react-select for all dropdown/select components** - Our standard dropdown control
   - Use the custom `Select` component at `/components/ui/Select.tsx`
   - Styled with Tailwind classes via `classNames` prop
   - Always use this instead of native HTML select elements
-- Custom styled with Tailwind CSS v4
+- Tailwind CSS v4 for all styling
 - Consistent use of CSS variables for theming
 
 #### Standard UI Components
