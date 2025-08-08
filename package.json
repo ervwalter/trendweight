@@ -30,8 +30,5 @@
     "lint-staged": "16.1.2",
     "turbo": "2.5.5"
   },
-  "version": "2.0.0-alpha.1",
-  "dependencies": {
-    "@clerk/themes": "2.4.5"
-  }
+  "version": "2.0.0-alpha.1"
 }
