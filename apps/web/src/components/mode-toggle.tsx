@@ -19,8 +19,8 @@ export function ModeToggle() {
       onClick={toggleTheme}
       className={cn(
         "text-primary-foreground hover:text-primary-foreground",
-        "hover:bg-background/20",
-        "[&]:hover:bg-background/20", // Higher specificity to override ghost variant
+        "hover:bg-background/20 dark:hover:bg-white/10",
+        "[&]:hover:bg-background/20 dark:[&]:hover:bg-white/10", // Higher specificity to override ghost variant
       )}
     >
       {theme === "light" ? (

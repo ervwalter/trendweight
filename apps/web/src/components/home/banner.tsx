@@ -3,7 +3,7 @@ import { Heading } from "../common/heading";
 
 export function Banner() {
   return (
-    <div className="bg-primary text-white">
+    <div className="bg-primary dark:bg-primary/10 dark:text-link text-white">
       <Container className="py-16">
         <div className="mb-1 flex items-center gap-2">
           <Heading level={1} className="font-logo text-5xl leading-none md:text-6xl" display>

@@ -27,15 +27,15 @@ export function Header() {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="bg-primary text-primary-foreground print:hidden">
+    <header className="bg-primary text-primary-foreground dark:bg-primary/10 print:hidden">
       <Container>
         {/* Desktop Navigation */}
         <nav className="hidden items-stretch justify-between md:flex">
           <div className="flex items-center gap-2 py-3">
-            <Link to={isLoggedIn ? "/dashboard" : "/"} className="font-logo text-3xl leading-tight font-bold">
+            <Link to={isLoggedIn ? "/dashboard" : "/"} className="font-logo dark:text-link text-3xl leading-tight font-bold">
               TrendWeight
             </Link>
-            <Logo className="h-8 w-auto" />
+            <Logo className="dark:text-link h-8 w-auto" />
           </div>
           <div className="flex items-stretch">
             <NavLink to="/" visibility={visibility}>
@@ -60,7 +60,7 @@ export function Header() {
               </NavLink>
             ) : (
               <button
-                className={`hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors ${visibility}`}
+                className={`hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors dark:hover:bg-white/10 ${visibility}`}
                 onClick={() => signOut()}
               >
                 Log Out
@@ -86,10 +86,10 @@ export function Header() {
 
           {/* Logo - Center */}
           <div className="flex items-center gap-1">
-            <Link to={isLoggedIn ? "/dashboard" : "/"} className="font-logo text-2xl leading-tight font-bold">
+            <Link to={isLoggedIn ? "/dashboard" : "/"} className="font-logo dark:text-link text-2xl leading-tight font-bold">
               TrendWeight
             </Link>
-            <Logo className="h-6 w-auto" />
+            <Logo className="dark:text-link h-6 w-auto" />
           </div>
 
           {/* Theme Toggle - Right */}
@@ -98,7 +98,7 @@ export function Header() {
           </div>
         </nav>
         {/* Mobile menu */}
-        <div ref={menuRef} className={`md:hidden ${mobileMenuOpen ? "block" : "hidden"} bg-primary/90 -mx-4 px-4 py-4`}>
+        <div ref={menuRef} className={`md:hidden ${mobileMenuOpen ? "block" : "hidden"} bg-primary/90 dark:bg-primary/10 -mx-4 px-4 py-4`}>
           <div className="flex flex-col space-y-3">
             <MobileNavLink to="/" onClick={() => setMobileMenuOpen(false)} visibility={visibility}>
               Home
@@ -122,7 +122,7 @@ export function Header() {
               </MobileNavLink>
             ) : (
               <button
-                className={`hover:bg-primary/80 text-primary-foreground block w-full rounded px-3 py-2 text-left ${visibility}`}
+                className={`hover:bg-primary/80 text-primary-foreground block w-full rounded px-3 py-2 text-left dark:hover:bg-white/10 ${visibility}`}
                 onClick={async (e) => {
                   e.preventDefault();
                   await signOut();
@@ -154,9 +154,9 @@ function NavLink({ to, children, visibility = "visible" }: NavLinkProps) {
   return (
     <Link
       to={to}
-      className={`hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors ${visibility}`}
+      className={`hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors dark:hover:bg-white/10 ${visibility}`}
       activeProps={{
-        className: "bg-primary/90",
+        className: "bg-background/25 dark:bg-white/5",
       }}
     >
       {children}
@@ -172,9 +172,9 @@ function MobileNavLink({ to, children, onClick, visibility = "visible" }: Mobile
   return (
     <Link
       to={to}
-      className={`hover:bg-primary/80 text-primary-foreground rounded px-3 py-2 ${visibility}`}
+      className={`hover:bg-primary/80 text-primary-foreground rounded px-3 py-2 dark:hover:bg-white/10 ${visibility}`}
       activeProps={{
-        className: "bg-primary/80",
+        className: "bg-background/20 dark:bg-white/5",
       }}
       onClick={onClick}
     >

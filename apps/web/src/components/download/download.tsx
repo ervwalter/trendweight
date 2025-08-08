@@ -47,7 +47,7 @@ export function Download() {
 
       {/* Download button */}
       <div className="mb-4">
-        <Button onClick={handleDownloadCSV} variant="default" size="sm">
+        <Button onClick={handleDownloadCSV} variant="default" size="sm" className="dark:bg-primary/75 dark:hover:bg-primary/65 dark:active:bg-primary/55">
           <DownloadIcon className="mr-2 h-4 w-4" />
           Download as CSV
         </Button>
