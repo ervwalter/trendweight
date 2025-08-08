@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { render } from "@testing-library/react";
 import { DashboardProvider } from "../../lib/dashboard/context";
-import type { DashboardData } from "../../lib/dashboard/dashboardContext";
+import type { DashboardData } from "../../lib/dashboard/dashboard-context";
 import { LocalDate } from "@js-joda/core";
 import type { DataPoint, Measurement } from "../../lib/core/interfaces";
 

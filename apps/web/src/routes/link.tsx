@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Layout } from "../components/Layout";
-import { Link } from "../components/link/Link";
-import { requireAuth } from "../lib/auth/authGuard";
+import { Layout } from "../components/layout";
+import { Link } from "../components/link/link";
+import { requireAuth } from "../lib/auth/auth-guard";
 import { ensureProfile } from "../lib/loaders/utils";
 
 export const Route = createFileRoute("/link")({

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Modes } from "../../core/interfaces";
-import { useIsMobile } from "../../hooks/useMediaQuery";
-import type { DashboardData } from "../dashboardContext";
+import { useIsMobile } from "../../hooks/use-media-query";
+import type { DashboardData } from "../dashboard-context";
 import { transformChartData } from "./data-transformers";
 import { build3MonthOptions, build4WeekOptions, buildExploreOptions, buildLongTermOptions, buildYAxisOptions } from "./option-builders";
 import chartOptionsTemplate from "./options-template";

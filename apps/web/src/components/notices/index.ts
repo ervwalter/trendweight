@@ -1,1 +1,1 @@
-export { NewVersionNotice } from "./NewVersionNotice";
+export { NewVersionNotice } from "./new-version-notice";

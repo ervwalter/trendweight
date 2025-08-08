@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Layout } from "../components/Layout";
-import { Migration } from "../components/migration/Migration";
-import { requireAuth } from "../lib/auth/authGuard";
+import { Layout } from "../components/layout";
+import { Migration } from "../components/migration/migration";
+import { requireAuth } from "../lib/auth/auth-guard";
 
 export const Route = createFileRoute("/migration")({
   beforeLoad: requireAuth,

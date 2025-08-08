@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useChartOptions } from "./use-chart-options";
-import { useIsMobile } from "../../hooks/useMediaQuery";
-import type { DashboardData } from "../dashboardContext";
+import { useIsMobile } from "../../hooks/use-media-query";
+import type { DashboardData } from "../dashboard-context";
 import { LocalDate } from "@js-joda/core";
 
 // Mock dependencies
-vi.mock("../../hooks/useMediaQuery");
+vi.mock("../../hooks/use-media-query");
 vi.mock("./data-transformers");
 vi.mock("./option-builders");
 vi.mock("./options-template", () => ({

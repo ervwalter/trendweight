@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import Dashboard from "../components/dashboard/Dashboard";
-import DashboardPlaceholder from "../components/dashboard/DashboardPlaceholder";
-import { Layout } from "../components/Layout";
+import Dashboard from "../components/dashboard/dashboard";
+import DashboardPlaceholder from "../components/dashboard/dashboard-placeholder";
+import { Layout } from "../components/layout";
 import { ensureProfile, ensureProviderLinks } from "../lib/loaders/utils";
 
 export const Route = createFileRoute("/u/$sharingCode")({
