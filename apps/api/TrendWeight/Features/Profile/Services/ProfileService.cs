@@ -302,6 +302,29 @@ public class ProfileService : IProfileService
                     _logger.LogError(ex, "Failed to delete profile for user {UserId}", userId);
                     // Continue anyway
                 }
+
+                // Step 4b: Delete legacy profile if it exists
+                if (!string.IsNullOrEmpty(profile.Email))
+                {
+                    try
+                    {
+                        var legacyProfiles = await _supabaseService.QueryAsync<DbLegacyProfile>(query =>
+                            query.Filter("email", Supabase.Postgrest.Constants.Operator.Equals, profile.Email)
+                        );
+
+                        var legacyProfile = legacyProfiles.FirstOrDefault();
+                        if (legacyProfile != null)
+                        {
+                            await _supabaseService.DeleteAsync(legacyProfile);
+                            _logger.LogInformation("Deleted legacy profile for email {Email}", profile.Email);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to delete legacy profile for email {Email}", profile.Email);
+                        // Continue anyway - legacy profile deletion is not critical
+                    }
+                }
             }
             else
             {

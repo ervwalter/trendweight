@@ -27,8 +27,9 @@ public interface ILegacyMigrationService
     /// </summary>
     /// <param name="userId">Supabase UID</param>
     /// <param name="userEmail">User's email address</param>
+    /// <param name="legacyProfile">Optional already-loaded legacy profile to avoid duplicate query</param>
     /// <returns>True if measurements were migrated, false otherwise</returns>
-    Task<bool> MigrateLegacyMeasurementsAsync(Guid userId, string userEmail);
+    Task<bool> MigrateLegacyMeasurementsAsync(Guid userId, string userEmail, LegacyProfile? legacyProfile = null);
 
     /// <summary>
     /// Check if legacy data needs to be migrated for an existing migrated user

@@ -91,6 +91,11 @@ npm run check && npm run test
 - Run from root directory only
 - Never skip TypeScript compilation check
 
+### Commit message guidelines:
+- Never use "BREAKING CHANGE" in commit messages
+- This is an application, not a library - there are no breaking changes
+- Use conventional commit format without breaking change notation
+
 ### Command locations:
 - Always run commands from repo root
 - Turborepo handles optimization

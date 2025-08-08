@@ -23,6 +23,5 @@
   "Clerk": {
     "Authority": "https://your-instance.clerk.accounts.dev",
     "SecretKey": "your-clerk-secret-key"
-  },
-  "LegacyDbConnectionString": ""
+  }
 }

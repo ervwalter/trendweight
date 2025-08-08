@@ -8,12 +8,7 @@ namespace TrendWeight.Features.Profile.Services;
 public interface ILegacyDbService
 {
     /// <summary>
-    /// Finds a legacy profile by email address
+    /// Finds a legacy profile by email address (includes measurements)
     /// </summary>
     Task<LegacyProfile?> FindProfileByEmailAsync(string email);
-
-    /// <summary>
-    /// Gets all measurements for a legacy user by email
-    /// </summary>
-    Task<List<LegacyMeasurement>> GetMeasurementsByEmailAsync(string email);
 }
