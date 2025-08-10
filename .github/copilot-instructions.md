@@ -1,238 +1,179 @@
-# TrendWeight Development Instructions
+# CLAUDE.md
 
-**ALWAYS follow these instructions first and only fall back to additional search and context gathering if the information in these instructions is incomplete or found to be in error.**
+AI-specific guidance for working with the TrendWeight codebase.
 
-TrendWeight is a modern web application for tracking weight trends by integrating with smart scales from Withings and Fitbit. It uses a React + TypeScript frontend with Vite and a C# ASP.NET Core 9.0 backend API, organized as a monorepo with npm workspaces and Turborepo.
+## Project Context
 
-## Working Effectively
+- TrendWeight tracks weight trends using smart scales (Withings/Fitbit)
+- C# ASP.NET Core API backend + Vite React TypeScript frontend
+- Clerk for auth (NOT Supabase Auth), Supabase for PostgreSQL only
+- Project name: **TrendWeight** (capital T, capital W, no space)
 
-### Prerequisites and Setup
-CRITICAL: Install these exact prerequisites in this order:
+## Code Search Strategy
 
-1. **Install Node.js 22**:
-   ```bash
-   wget https://nodejs.org/dist/v22.17.1/node-v22.17.1-linux-x64.tar.xz
-   tar -xf node-v22.17.1-linux-x64.tar.xz
-   sudo rm -rf /usr/local/node*
-   sudo mv node-v22.17.1-linux-x64 /usr/local/node
-   sudo ln -sf /usr/local/node/bin/node /usr/local/bin/node
-   sudo ln -sf /usr/local/node/bin/npm /usr/local/bin/npm
-   ```
+### Use Semantic Search (mcp**code-context**search_code) for:
 
-2. **Install .NET 9 SDK**:
-   ```bash
-   curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --install-dir $HOME/.dotnet
-   export PATH="$HOME/.dotnet:$PATH"
-   ```
+- Conceptual searches (finding code by what it does)
+- Algorithm/calculation implementations
+- Feature exploration across files
+- Cross-cutting concerns (auth, error handling, validation)
+- Initial investigation when location unknown
 
-3. **Install tmux and tmuxinator** (for development servers):
-   ```bash
-   sudo apt-get install -y tmux
-   sudo gem install tmuxinator
-   export EDITOR=nano
-   export SHELL=bash
-   ```
+### Use Direct Tools (Read, Grep, Glob) for:
 
-### Bootstrap, Build, and Test
-CRITICAL TIMING WARNINGS: NEVER CANCEL any of these commands. They take significant time to complete.
+- Known file locations
+- Literal string matches, variable names
+- File patterns by extension/naming
+- Configuration values, constants
+- Quick verification of specific lines
 
-1. **Install dependencies** -- takes 2 minutes:
-   ```bash
-   npm install
-   ```
+### Search Performance:
 
-2. **Build the application** -- takes 1 minute. NEVER CANCEL. Set timeout to 90+ minutes for safety:
-   ```bash
-   npm run build
-   ```
+- Semantic excels: business logic, UI components, features, tests
+- Semantic struggles: infrastructure config, connection strings, cache settings
+- Direct excels: exact matches, known patterns, config files, imports
 
-3. **Run tests** -- takes 52 seconds. NEVER CANCEL. Set timeout to 30+ minutes:
-   ```bash
-   npm test
-   ```
+## TypeScript/React Rules
 
-4. **Run checks** (TypeScript + linting) -- takes 17 seconds:
-   ```bash
-   npm run check
-   ```
+- Use kebab-case for all frontend files (`user-profile.tsx`)
+- Component names in files contents remain PascalCase (`UserProfile`)
+- Enable strict mode, avoid `any` type
+- Use functional components with hooks
+- Cache Intl formatters at module level
+- Use TanStack Query for all API calls
+- Use `ExternalLink` component for external URLs
+- Use standard UI components (Button, Heading, Select, etc) never raw HTML
 
-5. **Format code** -- takes 24 seconds:
-   ```bash
-   npm run format
-   ```
+## Tailwind CSS Rules
 
-### Development Servers
+- Use semantic color variables from index.css (e.g., `bg-background`, `text-foreground`)
+- Never use explicit colors (e.g., `bg-gray-500`, `text-blue-600`)
+- Avoid `dark:` prefixes - CSS variables handle theme switching automatically
+- Rare exceptions: only when CSS variables don't cover the specific need
+- Check index.css for available semantic variables before adding styles
+- Semantic colors automatically adapt to light/dark mode
 
-#### Option 1: Using tmuxinator (recommended)
+## Route File Pattern (MANDATORY)
+
+```typescript
+import { createFileRoute } from "@tanstack/react-router";
+import { Layout } from "../components/Layout";
+import { ComponentName } from "../components/feature-folder/ComponentName";
+
+export const Route = createFileRoute("/route-path")({
+  beforeLoad: requireAuth, // Only if needed
+  loader: async () => { }, // Only if needed
+  component: RouteNamePage,
+});
+
+function RouteNamePage() {
+  const { param } = Route.useParams(); // Only if route has params
+  return (
+    <Layout title="Page Title">
+      <ComponentName param={param} />
+    </Layout>
+  );
+}
+```
+
+- Routes must be minimal (<30 lines)
+- NO business logic, hooks, or UI in routes
+- ALL logic in feature components under `apps/web/src/components/`
+- Feature folders match route purpose
+
+## C# Backend Rules
+
+- Use feature folders for organization
+- Inherit from `BaseAuthController` for auth endpoints
+- Keep controllers thin, logic in services
+- Use async/await for all I/O
+- Use IOptions<T> for configuration
+- Use JSONB for flexible data storage
+- Use constants for magic numbers
+- Store timestamps as ISO 8601 strings
+- Store weights in kg
+
+## Development Workflow
+
+### Pre-commit checks (MANDATORY):
+
 ```bash
-npm run dev
-```
-This starts both frontend (http://localhost:5173) and backend (http://localhost:5199) in a tmux session.
-
-To stop:
-```bash
-npm run dev:stop
+npm run check && npm run test
 ```
 
-#### Option 2: Manual startup (if tmuxinator issues)
-Start in separate terminals:
+- Run from root directory only
+- Never skip TypeScript compilation check
 
-**Frontend:**
-```bash
-cd apps/web
-npm run dev
-```
+### Commit message guidelines:
 
-**Backend:**
-```bash
-cd apps/api/TrendWeight
-export PATH="$HOME/.dotnet:$PATH"
-dotnet watch --no-hot-reload
-```
+- Never use "BREAKING CHANGE" in commit messages
+- This is an application, not a library - there are no breaking changes
+- Use conventional commit format without breaking change notation
 
-### Environment Configuration
-REQUIRED: Create a `.env` file in the repository root with these variables:
-```bash
-cp .env.example .env
-```
+### Command locations:
 
-Edit `.env` to include:
-- `VITE_CLERK_PUBLISHABLE_KEY` - Clerk authentication key
-- `Supabase__Url` - Supabase database URL
-- `Supabase__ServiceKey` - Supabase service role key
-- `Clerk__SecretKey` - Clerk secret key
-- `Clerk__Authority` - Clerk authority URL
-- `Jwt__SigningKey` - JWT signing key (minimum 32 characters)
+- Always run commands from repo root
+- Turborepo handles optimization
+- Never run commands in workspace subdirectories
 
-## Validation
+## Testing Requirements
 
-### Manual Testing Requirements
-ALWAYS manually validate changes by:
+### Frontend:
 
-1. **Test both servers start successfully**:
-   - Frontend: `curl http://localhost:5173/` should return HTML
-   - Backend: `curl http://localhost:5199/api/health` should return health status JSON
+- Use MSW for HTTP mocking (never mock fetch directly)
+- Suppress console for expected errors: `vi.spyOn(console, "error").mockImplementation(() => {})`
+- Test business logic, not framework integration
 
-2. **Run complete end-to-end scenarios**:
-   - Navigate to the application in a browser
-   - Test key user workflows like authentication, data viewing, settings
+### Backend:
 
-3. **Always run before committing**:
-   ```bash
-   npm run format && npm run check:ci && npm test
-   ```
+- Use xUnit for all tests
+- Extract business logic to testable services
+- Don't test framework integration directly
 
-### CI/CD Compatibility
-The project uses GitHub Actions that expect:
-- Node.js 22
-- .NET 9 SDK
-- All tests passing
-- All lint checks passing
-- Successful build completion
+## Database Guidelines
 
-## Docker
+- Modify schema in Supabase dashboard
+- Update C# models with `Db` prefix
+- Update schema documentation when changed
+- All timestamps as ISO 8601 strings
+- All weights in kilograms
 
-### Build Docker Image
-Docker builds take significant time but work for production deployment:
-```bash
-docker build -t trendweight:latest --build-arg VITE_CLERK_PUBLISHABLE_KEY=your_key .
-```
+## Common Pitfalls to Avoid
 
-Note: Docker build may fail in some environments due to npm issues in Alpine containers. This is a known limitation.
+- Never add CORS to API (Vite proxy handles it)
+- Never expose exception details to users
+- Avoid unnecessary type assertions
+- Never create files unless absolutely necessary
+- Never proactively create documentation files
+- Always use `git mv` for renaming tracked files
+- Always extract magic numbers to constants
+- Always use standard UI components over raw HTML
 
-### Run Docker Container
-```bash
-docker run -p 8080:8080 \
-  -e Supabase__Url=your_url \
-  -e Supabase__ServiceKey=your_key \
-  -e Clerk__SecretKey=your_secret \
-  -e Clerk__Authority=your_authority \
-  trendweight:latest
-```
+## Lessons Learned
 
-## Key Projects and Structure
+- Functions should sort input data before processing
+- Route files were refactored to minimal pattern - maintain this
 
-### Repository Layout
-```
-/
-├── apps/
-│   ├── api/              # C# ASP.NET Core 9.0 API
-│   │   ├── TrendWeight/     # Main API project
-│   │   └── TrendWeight.Tests/ # API tests
-│   └── web/              # React + TypeScript frontend
-├── .env.example          # Environment variables template
-├── package.json          # Root workspace configuration
-├── turbo.json           # Turborepo configuration
-└── .tmuxinator.yml      # Development server setup
-```
+## File Update Policy
 
-### Frontend (apps/web)
-- **Framework**: React 19 + TypeScript + Vite 7
-- **Routing**: TanStack Router with file-based routing
-- **UI**: Tailwind CSS + Radix UI components
-- **Auth**: Clerk authentication
-- **Testing**: Vitest + Testing Library
-- **Build time**: ~30 seconds
-- **Test time**: ~45 seconds
+**Auto-update this file when learning:**
 
-### Backend (apps/api)
-- **Framework**: ASP.NET Core 9.0
-- **Database**: Supabase (PostgreSQL)
-- **Auth**: Clerk JWT validation
-- **Testing**: xUnit
-- **Build time**: ~30 seconds  
-- **Test time**: ~5 seconds
+- AI-specific coding patterns
+- User coding preferences affecting generation
+- Technical discoveries impacting code generation
+- Lessons that help future AI instances
 
-## Common Commands Reference
+**Do NOT add:**
 
-### Build and Test
-```bash
-npm run build          # Build all workspaces (1 minute)
-npm run test           # Run all tests (52 seconds)
-npm run check          # TypeScript + lint checks (17 seconds)
-npm run format         # Format all code (24 seconds)
-npm run check:ci       # CI checks including format validation
-```
+- General architecture info (→ docs/ARCHITECTURE.md)
+- Feature documentation (→ docs/ARCHITECTURE.md)
+- Setup instructions (→ docs/README.md)
 
-### Development
-```bash
-npm run dev            # Start development servers with tmuxinator
-npm run dev:stop       # Stop development servers
-```
+## CLAUDE.md Format Guidelines
 
-### Maintenance
-```bash
-npm run clean          # Clean build artifacts
-npm run clean:all      # Deep clean including node_modules
-npm outdated           # Check for package updates
-```
-
-## Troubleshooting
-
-### Common Issues
-1. **Build failures**: Ensure .NET 9 is installed and in PATH
-2. **Test failures**: Run `npm run format` first, then tests
-3. **Dev server issues**: Check `.env` file exists with required variables
-4. **Docker build fails**: Use local development instead, Docker may have npm issues
-
-### Performance Notes
-- Turborepo provides intelligent caching for faster subsequent builds
-- Frontend hot reload works in development
-- Backend uses `dotnet watch` for automatic rebuilds
-- All commands use workspaces for optimal dependency management
-
-### Essential Files to Monitor
-When making changes, always check these files:
-- `turbo.json` - Build pipeline configuration
-- `package.json` files in root and workspaces
-- `.env` - Environment configuration
-- Route files in `apps/web/src/routes/` - Follow minimal route pattern (see CLAUDE.md)
-
-## Development Workflow Best Practices
-
-1. **Always build and test before making changes** to understand baseline
-2. **Use provided commands** - don't run workspace commands directly
-3. **Check both frontend and backend** when making API changes
-4. **Run format and check commands** before committing
-5. **Test actual functionality** - don't just rely on builds passing
-6. **Use long timeouts** for build commands to avoid premature cancellation
+- Keep directives as concise bullet points
+- Avoid verbose explanations or human-readable prose
+- Group related items under clear headings
+- Use code examples only when pattern is complex
+- Prefer directive lists over paragraph explanations
+- Remove redundancy - state each rule once
