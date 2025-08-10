@@ -70,7 +70,7 @@ Implement progress-only sync reporting with a frontend-provided progressId, type
   - _Leverage: existing Supabase data access patterns_
   - _Requirements: R2, R3, R4, R5
 
-- [ ] 4. Backend: wire progress into MeasurementSyncService and providers
+- [x] 4. Backend: wire progress into MeasurementSyncService and providers
   - Modify MeasurementSyncService to accept optional ISyncProgressReporter and emit Start/Complete/Fail around refresh
   - FitbitService: emit after each 32-day chunk (current/total, percent, message)
   - WithingsService: emit after each page (current/total if known, percent if derivable, message)

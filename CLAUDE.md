@@ -120,10 +120,14 @@ npm run check && npm run test
 - All weights in kilograms
 
 ## Spec-Workflow Rules (MANDATORY)
-- **ALWAYS load spec-workflow-guide first** when working with specs, especially after conversation compaction
+- **CRITICAL: ALWAYS call `spec-workflow-guide` BEFORE ANY spec work** - this is the first tool to call when:
+  - User mentions working on a spec or task
+  - User asks to execute/implement a task number
+  - Returning to spec work after any break
+  - After conversation compaction
 - **ALWAYS load full spec context** (requirements, design, tasks) via `get-spec-context` before implementing
 - **NEVER read/write spec files directly** - use spec-workflow tools exclusively:
-  - `spec-workflow-guide` - Load workflow guide first
+  - `spec-workflow-guide` - Load workflow guide first (MANDATORY FIRST STEP)
   - `get-spec-context` - Load spec documents before work
   - `manage-tasks` - Update task status and get context
   - `create-spec-doc` - Create/update spec documents

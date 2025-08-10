@@ -9,6 +9,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Withings.Models;
+using TrendWeight.Features.SyncProgress;
 using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Features.Providers.Withings;
@@ -36,8 +37,9 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         IOptions<AppOptions> appOptions,
         IProviderLinkService providerLinkService,
         IProfileService profileService,
+        ISyncProgressReporter? progressReporter,
         ILogger<WithingsService> logger)
-        : base(providerLinkService, profileService, logger)
+        : base(providerLinkService, profileService, progressReporter, logger)
     {
         _httpClient = httpClient;
         _config = appOptions.Value.Withings;
@@ -291,6 +293,19 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         var allMeasurements = new List<RawMeasurement>();
         bool hasMore = true;
         object? offset = null;
+        var pageNumber = 0;
+
+        // Report initial progress
+        if (ProgressReporter != null)
+        {
+            await ProgressReporter.UpdateProviderProgressAsync(
+                "withings",
+                stage: "fetching",
+                current: 0,
+                total: null, // Don't know total pages for Withings
+                percent: null,
+                message: "Retrieving weight readings from Withings servers");
+        }
 
         while (hasMore)
         {
@@ -298,6 +313,36 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             allMeasurements.AddRange(measurements);
             hasMore = more;
             offset = newOffset;
+            pageNumber++;
+
+            // Report progress after each page
+            if (ProgressReporter != null)
+            {
+                // Only show page number if we've gone beyond the first page
+                var message = pageNumber > 1
+                    ? $"Retrieving weight readings from Withings servers (page {pageNumber})"
+                    : "Retrieving weight readings from Withings servers";
+
+                await ProgressReporter.UpdateProviderProgressAsync(
+                    "withings",
+                    stage: "fetching",
+                    current: pageNumber,
+                    total: null, // Withings doesn't tell us total pages
+                    percent: null, // Can't calculate percent without total
+                    message: message);
+            }
+        }
+
+        // Report completion
+        if (ProgressReporter != null)
+        {
+            await ProgressReporter.UpdateProviderProgressAsync(
+                "withings",
+                stage: "done",
+                current: pageNumber,
+                total: pageNumber,
+                percent: 100,
+                message: "Done");
         }
 
         return allMeasurements;

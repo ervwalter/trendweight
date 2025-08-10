@@ -4,6 +4,7 @@ using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.Profile.Services;
+using TrendWeight.Features.SyncProgress;
 using TrendWeight.Infrastructure.DataAccess.Models;
 
 namespace TrendWeight.Features.Providers;
@@ -15,15 +16,18 @@ public abstract class ProviderServiceBase : IProviderService
 {
     protected IProviderLinkService ProviderLinkService { get; }
     protected IProfileService ProfileService { get; }
+    protected ISyncProgressReporter? ProgressReporter { get; }
     protected ILogger Logger { get; }
 
     protected ProviderServiceBase(
         IProviderLinkService providerLinkService,
         IProfileService profileService,
+        ISyncProgressReporter? progressReporter,
         ILogger logger)
     {
         ProviderLinkService = providerLinkService;
         ProfileService = profileService;
+        ProgressReporter = progressReporter;
         Logger = logger;
     }
 
