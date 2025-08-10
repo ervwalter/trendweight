@@ -5,6 +5,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.Providers;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Common.Models;
+using TrendWeight.Features.Common;
 
 namespace TrendWeight.Features.Measurements;
 
@@ -21,17 +22,20 @@ public class MeasurementsController : ControllerBase
     private readonly IProviderIntegrationService _providerIntegrationService;
     private readonly IMeasurementSyncService _measurementSyncService;
     private readonly ILogger<MeasurementsController> _logger;
+    private readonly ICurrentRequestContext _requestContext;
 
     public MeasurementsController(
         IProfileService profileService,
         IProviderIntegrationService providerIntegrationService,
-        IMeasurementSyncService measurementSyncService,
-        ILogger<MeasurementsController> logger)
+    IMeasurementSyncService measurementSyncService,
+    ILogger<MeasurementsController> logger,
+    ICurrentRequestContext requestContext)
     {
         _profileService = profileService;
         _providerIntegrationService = providerIntegrationService;
         _measurementSyncService = measurementSyncService;
         _logger = logger;
+        _requestContext = requestContext;
     }
 
     /// <summary>
@@ -40,21 +44,29 @@ public class MeasurementsController : ControllerBase
     /// </summary>
     /// <returns>MeasurementsResponse with data and provider status</returns>
     [HttpGet]
-    public async Task<ActionResult<MeasurementsResponse>> GetMeasurements()
+    public async Task<ActionResult<MeasurementsResponse>> GetMeasurements([FromQuery] string? progressId = null)
     {
         try
         {
-            // Get Supabase UID from JWT
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            // Populate request context from claims and query
+            var uidClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(uidClaim) || !Guid.TryParse(uidClaim, out var userGuid))
             {
                 return Unauthorized(new ErrorResponse { Error = "User ID not found in token" });
             }
+            _requestContext.UserId = userGuid;
+            var externalId = User.FindFirst("clerk_user_id")?.Value;
+            // External ID is required for RLS updates but may be absent in some test paths; populate when present
+            _requestContext.ExternalId = externalId ?? string.Empty;
+            if (!string.IsNullOrEmpty(progressId) && Guid.TryParse(progressId, out var pid))
+            {
+                _requestContext.ProgressId = pid;
+            }
 
-            _logger.LogInformation("Getting measurements for user ID: {UserId}", userId);
+            _logger.LogInformation("Getting measurements for user ID: {UserId}", userGuid);
 
             // Get user by Supabase UID
-            var user = await _profileService.GetByIdAsync(userId);
+            var user = await _profileService.GetByIdAsync(userGuid);
             if (user == null)
             {
                 return NotFound(new ErrorResponse { Error = "User not found" });

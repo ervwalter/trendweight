@@ -11,6 +11,7 @@ using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.Services;
+using TrendWeight.Features.Common;
 
 namespace TrendWeight.Infrastructure.Extensions;
 
@@ -79,6 +80,9 @@ public static class ServiceCollectionExtensions
 
         // Register provider integration orchestrator
         services.AddScoped<IProviderIntegrationService, ProviderIntegrationService>();
+
+        // Register per-request context
+        services.AddScoped<ICurrentRequestContext, CurrentRequestContext>();
 
         return services;
     }

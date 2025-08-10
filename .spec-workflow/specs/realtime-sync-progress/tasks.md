@@ -38,7 +38,7 @@ Implement progress-only sync reporting with a frontend-provided progressId, type
   - _Leverage: apps/api/TrendWeight/supabase/schema.sql_
   - _Requirements: R3, R5
 
-- [ ] 2. Backend: typed request context (ICurrentRequestContext)
+- [x] 2. Backend: typed request context (ICurrentRequestContext)
   - Files: 
     - apps/api/TrendWeight/Features/Common/ICurrentRequestContext.cs
     - apps/api/TrendWeight/Features/Common/CurrentRequestContext.cs
