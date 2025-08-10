@@ -5,7 +5,7 @@ Implement progress-only sync reporting with a frontend-provided progressId, type
 
 ## Tasks
 
-- [ ] 1. Database: sync_progress table + RLS
+- [x] 1. Database: sync_progress table + RLS
   - File: Supabase dashboard migration (document in apps/api/TrendWeight/supabase/schema.sql)
   - Create table public.sync_progress with columns:
     - id uuid primary key (provided by frontend)
