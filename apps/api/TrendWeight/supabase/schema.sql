@@ -62,47 +62,12 @@ CREATE INDEX IF NOT EXISTS idx_user_accounts_external ON public.user_accounts US
 CREATE INDEX IF NOT EXISTS idx_vendor_links_updated ON public.provider_links USING btree (updated_at);
 CREATE INDEX IF NOT EXISTS idx_source_data_updated ON public.source_data USING btree (updated_at);
 
--- Create sync_progress table for realtime sync status
-CREATE TABLE IF NOT EXISTS public.sync_progress (
-    id UUID PRIMARY KEY, -- Provided by frontend (progressId)
-    uid UUID NOT NULL,
-    external_id TEXT NOT NULL, -- Clerk sub
-    provider TEXT NOT NULL DEFAULT 'all' CHECK (provider IN ('fitbit','withings','all')),
-    status TEXT NOT NULL CHECK (status IN ('running','succeeded','failed')),
-    providers JSONB NULL, -- Array of provider progress objects
-    percent INT NULL, -- 0..100 when determinable
-    message TEXT NULL,
-    started_at TEXT DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-    updated_at TEXT DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-    CONSTRAINT sync_progress_percent_range CHECK (percent IS NULL OR (percent BETWEEN 0 AND 100))
-);
-
--- Indexes for sync_progress
-CREATE INDEX IF NOT EXISTS idx_sync_progress_external_id ON public.sync_progress USING btree (external_id);
-CREATE INDEX IF NOT EXISTS idx_sync_progress_uid ON public.sync_progress USING btree (uid);
-CREATE INDEX IF NOT EXISTS idx_sync_progress_status ON public.sync_progress USING btree (status);
-
--- Trigger to auto-update updated_at on row changes (stores ISO 8601 UTC as TEXT)
-CREATE OR REPLACE FUNCTION public.set_text_updated_at()
-RETURNS trigger AS $$
-BEGIN
-    NEW.updated_at := to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_sync_progress_set_updated_at ON public.sync_progress;
-CREATE TRIGGER trg_sync_progress_set_updated_at
-BEFORE UPDATE ON public.sync_progress
-FOR EACH ROW
-EXECUTE FUNCTION public.set_text_updated_at();
 
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.provider_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.source_data ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sync_progress ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- All tables are admin-only (service role access only)
@@ -165,35 +130,30 @@ CREATE POLICY "Deny all access for anon users"
     TO anon 
     USING (false);
 
--- sync_progress table policies
-DROP POLICY IF EXISTS "Deny all access - admin only through service role" ON public.sync_progress;
-DROP POLICY IF EXISTS "Deny all access for anon users" ON public.sync_progress;
-DROP POLICY IF EXISTS "Select own progress rows" ON public.sync_progress;
--- Deny all by default (authenticated) - only specific SELECT allowed
-CREATE POLICY "Deny all access - admin only through service role" 
-    ON public.sync_progress 
-    FOR ALL 
-    TO authenticated 
-    USING (false);
--- Explicitly deny anon
-CREATE POLICY "Deny all access for anon users" 
-    ON public.sync_progress 
-    FOR ALL 
-    TO anon 
-    USING (false);
--- Allow authenticated users to select only their own rows (RLS for Realtime)
-CREATE POLICY "Select own progress rows"
-    ON public.sync_progress
-    FOR SELECT
-    TO authenticated
-    USING (external_id = (auth.jwt() ->> 'sub'));
 
 -- Grant permissions to service role
 GRANT ALL ON public.profiles TO service_role;
 GRANT ALL ON public.provider_links TO service_role;
 GRANT ALL ON public.source_data TO service_role;
 GRANT ALL ON public.user_accounts TO service_role;
-GRANT ALL ON public.sync_progress TO service_role;
+
+-- ============================================================================
+-- Realtime Broadcast Security Policies
+-- ============================================================================
+
+-- Enable RLS on realtime.messages table to control channel subscriptions
+ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
+
+-- Allow users to subscribe to channels that contain their user ID
+-- Channel format: sync-progress:{clerk-user-id}:{progress-id}
+CREATE POLICY "Users can subscribe to their own sync progress channels"
+    ON realtime.messages
+    FOR SELECT
+    TO authenticated
+    USING (
+        -- Allow subscription to channels that start with sync-progress:{their-user-id}:
+        topic LIKE 'sync-progress:' || (auth.jwt() ->> 'sub') || ':%'
+    );
 
 -- Create legacy_profiles table for migrated legacy data
 CREATE TABLE IF NOT EXISTS public.legacy_profiles (
@@ -243,5 +203,4 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.provider_links TO authenticated, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.source_data TO authenticated, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_accounts TO authenticated, anon;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.sync_progress TO authenticated, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.legacy_profiles TO authenticated, anon;

@@ -1,8 +1,16 @@
 import { Skeleton } from "../ui/skeleton";
+import { Progress } from "../ui/progress";
+import { useRealtimeProgress } from "../../lib/realtime/use-realtime-progress";
 
-const DashboardPlaceholder = () => {
+interface DashboardPlaceholderProps {
+  progressId?: string;
+}
+
+const DashboardPlaceholder = ({ progressId }: DashboardPlaceholderProps) => {
+  const { status, percent, message, providers } = useRealtimeProgress(progressId);
+
   return (
-    <div>
+    <div className="relative">
       {/* Buttons placeholder */}
       <div className="mb-4 flex flex-col-reverse gap-4 md:flex-row">
         <Skeleton className="h-10 w-64" />
@@ -11,7 +19,42 @@ const DashboardPlaceholder = () => {
 
       {/* Chart and Currently section */}
       <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:gap-12">
-        <Skeleton className="h-96 w-full md:w-[475px] lg:w-[650px] xl:w-[840px]" />
+        <div className="relative">
+          <Skeleton className="h-96 w-full md:w-[475px] lg:w-[650px] xl:w-[840px]" />
+
+          {/* Progress overlay - show when we have any status */}
+          {status && (
+            <div className="absolute inset-x-0 bottom-4 mx-4">
+              <div className="bg-background/80 ring-border space-y-2 rounded p-3 shadow ring-1 backdrop-blur">
+                {/* Main progress bar */}
+                {percent !== null ? <Progress value={percent} className="h-2" /> : <Progress className="h-2" />}
+
+                {/* Status message */}
+                {message && (
+                  <p className="text-foreground text-sm" aria-live="polite">
+                    {message}
+                  </p>
+                )}
+
+                {/* Provider-specific progress */}
+                {providers && providers.length > 0 && (
+                  <div className="space-y-1">
+                    {providers.map((provider) => (
+                      <div key={provider.provider} className="text-muted-foreground text-xs">
+                        {provider.provider === "fitbit" ? "Fitbit" : "Withings"}:{" "}
+                        {provider.stage === "fetching" && provider.current !== null && provider.total !== null
+                          ? `${provider.current}/${provider.total} chunks`
+                          : provider.stage === "fetching" && provider.current !== null
+                            ? `page ${provider.current}...`
+                            : provider.message || provider.stage}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="flex flex-col gap-2">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-12 w-48" />

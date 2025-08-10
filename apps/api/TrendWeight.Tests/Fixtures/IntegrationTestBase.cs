@@ -121,6 +121,12 @@ public class TestSupabaseService : ISupabaseService
         return Task.FromResult(true);
     }
 
+    public Task<bool> BroadcastAsync(string topic, string eventName, object payload)
+    {
+        // Simulate successful broadcast for tests
+        return Task.FromResult(true);
+    }
+
     private static object? GetIdProperty(object obj)
     {
         var prop = obj.GetType().GetProperty("Uid") ?? obj.GetType().GetProperty("Id");

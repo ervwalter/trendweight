@@ -7,11 +7,12 @@ interface AuthState {
   isInitializing: boolean;
   isLoggedIn: boolean;
   signOut: (redirectUrl?: string) => Promise<void>;
+  getToken: () => Promise<string | null>;
 }
 
 export function useAuth(): AuthState {
   const { user: clerkUser, isLoaded } = useUser();
-  const { isSignedIn } = useClerkAuth();
+  const { isSignedIn, getToken } = useClerkAuth();
   const { signOut: clerkSignOut } = useClerk();
   const queryClient = useQueryClient();
 
@@ -38,5 +39,6 @@ export function useAuth(): AuthState {
     isInitializing: !isLoaded,
     isLoggedIn: isSignedIn ?? false,
     signOut,
+    getToken,
   };
 }

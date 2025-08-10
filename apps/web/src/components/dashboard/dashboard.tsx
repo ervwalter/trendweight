@@ -4,6 +4,7 @@ import { ApiError } from "../../lib/api/client";
 import { Modes, TimeRanges } from "../../lib/core/interfaces";
 import { DashboardProvider } from "../../lib/dashboard/context";
 import { useComputeDashboardData } from "../../lib/dashboard/hooks";
+import { useRealtimeProgress } from "../../lib/realtime/use-realtime-progress";
 import { Heading } from "../common/heading";
 import Buttons from "./buttons";
 import Chart from "./chart/chart";
@@ -18,10 +19,15 @@ import { NewVersionNotice } from "../notices/new-version-notice";
 
 interface DashboardProps {
   sharingCode?: string;
+  progressId?: string;
 }
 
-const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
-  const dashboardData = useComputeDashboardData(sharingCode);
+const Dashboard: FC<DashboardProps> = ({ sharingCode, progressId }) => {
+  const dashboardData = useComputeDashboardData(sharingCode, progressId);
+
+  // Light subscriber for cases where skeleton is bypassed (warm cache)
+  // This just subscribes to updates but doesn't render anything
+  useRealtimeProgress(progressId);
 
   // Check if profile exists - if not, redirect to initial setup (skip for shared views)
   if (!sharingCode && dashboardData.profileError instanceof ApiError && dashboardData.profileError.status === 404) {

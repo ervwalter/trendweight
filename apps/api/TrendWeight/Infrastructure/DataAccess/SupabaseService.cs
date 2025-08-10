@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Options;
 using Supabase;
 using Supabase.Postgrest.Models;
+using System.Text;
+using System.Text.Json;
 using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Infrastructure.DataAccess;
@@ -214,6 +216,55 @@ public class SupabaseService : ISupabaseService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting auth user {UserId}", userId);
+            return false;
+        }
+    }
+
+    public async Task<bool> BroadcastAsync(string topic, string eventName, object payload)
+    {
+        try
+        {
+            var broadcastPayload = new
+            {
+                messages = new[]
+                {
+                    new
+                    {
+                        topic,
+                        @event = eventName,
+                        payload
+                    }
+                }
+            };
+
+            var json = JsonSerializer.Serialize(broadcastPayload, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            var url = $"{_config.Url}/realtime/v1/api/broadcast";
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Add("apikey", _config.ServiceKey);
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            using var httpClient = _httpClientFactory.CreateClient();
+            var response = await httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("Successfully broadcast message to topic {Topic} with event {Event}", topic, eventName);
+                return true;
+            }
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            _logger.LogError("Failed to broadcast message. Status: {Status}, Response: {Response}",
+                response.StatusCode, responseBody);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception occurred while broadcasting message to topic {Topic}", topic);
             return false;
         }
     }

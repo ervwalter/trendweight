@@ -79,7 +79,7 @@ Implement progress-only sync reporting with a frontend-provided progressId, type
   - _Leverage: existing chunk/page loops_
   - _Requirements: R3, R4
 
-- [ ] 5. Frontend: prop-based progressId + Realtime hook + update existing skeleton UI
+- [x] 5. Frontend: prop-based progressId + Realtime hook + update existing skeleton UI
   - Files:
     - apps/web/src/lib/realtime/client.ts
     - apps/web/src/lib/realtime/use-realtime-progress.ts

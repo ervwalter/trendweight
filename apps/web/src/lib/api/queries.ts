@@ -54,9 +54,13 @@ export const queryOptions = {
     },
     select: selectProfileData,
   }),
-  data: (sharingCode?: string) => ({
-    queryKey: queryKeys.data(sharingCode),
-    queryFn: () => apiRequest<MeasurementsResponse>(sharingCode ? `/data/${sharingCode}` : "/data"),
+  data: (opts?: { sharingCode?: string; progressId?: string }) => ({
+    queryKey: queryKeys.data(opts?.sharingCode),
+    queryFn: () => {
+      const basePath = opts?.sharingCode ? `/data/${opts.sharingCode}` : "/data";
+      const url = opts?.progressId ? `${basePath}?progressId=${opts.progressId}` : basePath;
+      return apiRequest<MeasurementsResponse>(url);
+    },
     staleTime: 60000, // 1 minute (matching legacy React Query config)
   }),
   providerLinks: (sharingCode?: string) => ({
@@ -86,7 +90,7 @@ export function useProfile() {
 }
 
 // Combined profile and measurement data query with suspense (loads in parallel)
-export function useDashboardQueries(sharingCode?: string) {
+export function useDashboardQueries(sharingCode?: string, progressId?: string) {
   // Create demo query options that match the expected types
   const demoQueryOptions = {
     profile: {
@@ -111,7 +115,13 @@ export function useDashboardQueries(sharingCode?: string) {
   };
 
   // Determine which query options to use
-  const queryOptionsToUse = sharingCode === "demo" ? demoQueryOptions : { profile: queryOptions.profile(sharingCode), data: queryOptions.data(sharingCode) };
+  const queryOptionsToUse =
+    sharingCode === "demo"
+      ? demoQueryOptions
+      : {
+          profile: queryOptions.profile(sharingCode),
+          data: queryOptions.data({ sharingCode, progressId }),
+        };
 
   // Always call the hook with consistent types
   const results = useSuspenseQueries({

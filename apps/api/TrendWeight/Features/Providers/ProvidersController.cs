@@ -125,6 +125,21 @@ public class ProvidersController : ControllerBase
                 return StatusCode(500, new ErrorResponse { Error = $"Failed to disconnect {provider}" });
             }
 
+            // Delete source data for this provider (except for legacy provider which keeps data)
+            if (provider != "legacy")
+            {
+                try
+                {
+                    await _sourceDataService.DeleteSourceDataAsync(userGuid, provider);
+                    _logger.LogDebug("Deleted source data for {Provider} user {UserId}", provider, userGuid);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to delete source data for {Provider} user {UserId}", provider, userGuid);
+                    // Don't fail the disconnect operation if source data cleanup fails
+                }
+            }
+
             _logger.LogInformation("Disconnected {Provider} for user {UserId}", provider, userId);
             return Ok(new ProviderOperationResponse { Message = $"{provider} disconnected successfully" });
         }
