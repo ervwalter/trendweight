@@ -92,14 +92,20 @@ Overall fields on the row:
 
 ## Backend integration
 - Typed request context
-  - `ICurrentRequestContext { Guid Uid; string ExternalId; Guid? ProgressId }`
+  - `ICurrentRequestContext { Guid UserId; string ExternalId; Guid? ProgressId }`
   - Scoped; populated in controller; injected where needed.
-- Progress reporter
-  - Create row on start; update providers and overall percent/message; complete/fail terminal updates; compute overall percent as average of provider percents when available.
+- Progress reporter (ISyncProgressReporter/SyncProgressService)
+  - Scoped service that caches row in memory to minimize DB reads
+  - `StartAsync(provider, status)`: Creates initial row when progressId exists
+  - `UpdateProviderProgressAsync(provider, stage, current, total, percent, message)`: Updates specific provider, all fields updated (null clears)
+  - `UpdateStatusAsync(status, message)`: Updates overall status/message
+  - `DisposeAsync()`: Deletes row on request completion for cleanup
+  - No separate NoOpReporter - service handles null progressId by doing nothing
 - Provider emissions
   - Fitbit: update after each 32-day chunk; include `current`, `total`, and `percent` when estimable; message includes chunk range.
-  - Withings: update after each page; `current` increments; `total` when estimable; message reflects `more`/offset; include merging stages.
-  - Rate limits: set overall message with ETA when known.
+  - Withings: update after each page; `current` increments; `total` when estimable (usually not); message reflects page number.
+  - Rate limits: set provider message with wait time when throttled.
+- Overall percent field unused - each provider tracks independently
 
 ## Error handling and fallbacks
 - If Realtime is down: UI can continue to show the static skeleton; optional polling endpoint may be added later (not in this iteration).

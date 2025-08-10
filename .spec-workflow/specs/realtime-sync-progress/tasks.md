@@ -49,7 +49,7 @@ Implement progress-only sync reporting with a frontend-provided progressId, type
   - _Leverage: existing DI setup in Program.cs_
   - _Requirements: R2, R5
 
-- [ ] 3. Backend: SyncProgressService and reporter
+- [x] 3. Backend: SyncProgressService and reporter
   - Files:
     - apps/api/TrendWeight/Features/SyncProgress/ISyncProgressReporter.cs
     - apps/api/TrendWeight/Features/SyncProgress/NoOpProgressReporter.cs
