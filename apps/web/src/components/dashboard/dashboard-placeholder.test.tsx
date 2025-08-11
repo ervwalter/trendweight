@@ -1,8 +1,19 @@
 import { describe, it, expect, vi } from "vitest";
-import { render } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import DashboardPlaceholder from "./dashboard-placeholder";
-import { SyncProgressProvider } from "./sync-progress";
+
+// Mock Supabase client before any other imports
+vi.mock("../../lib/realtime/client", () => ({
+  supabase: {
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn((callback) => {
+        if (callback) callback("subscribed");
+        return vi.fn();
+      }),
+      unsubscribe: vi.fn(),
+    })),
+    removeChannel: vi.fn(),
+  },
+}));
 
 // Mock Clerk hooks
 vi.mock("@clerk/clerk-react", () => ({
@@ -20,6 +31,11 @@ vi.mock("../../lib/realtime/use-realtime-progress", () => ({
     isTerminal: false,
   }),
 }));
+
+import { render } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import DashboardPlaceholder from "./dashboard-placeholder";
+import { SyncProgressProvider } from "./sync-progress";
 
 // Create a test query client
 const createTestQueryClient = () =>
