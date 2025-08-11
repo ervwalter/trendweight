@@ -313,7 +313,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                     var startDate = DateTimeOffset.FromUnixTimeSeconds(startTimestamp).DateTime;
                     var isLongSync = mostRecentYear > 0 && (mostRecentYear - startDate.Year) > 1;
 
-                    if (isLongSync)
+                    if (mostRecentYear > 0)
                     {
                         message = $"Downloading readings from Withings for {mostRecentYear}";
                     }
