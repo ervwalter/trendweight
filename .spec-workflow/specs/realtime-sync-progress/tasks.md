@@ -106,7 +106,7 @@ Implement progress-only sync reporting with a frontend-provided progressId, type
   - _Leverage: existing Layout + DashboardPlaceholder + hooks_
   - _Requirements: R3, R6
 
-- [ ] 6. Frontend tests
+- [x] 6. Frontend tests
   - Hook test: use-realtime-progress handles mocked events and calls onComplete
   - Component test: dashboard-placeholder mounts subscription and displays overlay with shadcn Progress + messages when progressId is provided; overlay is not rendered after the API resolves
   - Multi-provider test: renders two provider rows with differing statuses and updates when new events arrive
@@ -115,14 +115,14 @@ Implement progress-only sync reporting with a frontend-provided progressId, type
   - _Leverage: vitest + MSW_
   - _Requirements: R6
 
-- [ ] 7. Docs & env
+- [x] 7. Docs & env
   - Update docs/ARCHITECTURE.md with short progress flow note and the providers jsonb shape
   - Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY documented/available
   - Purpose: Make setup clear for Realtime integration
   - _Leverage: existing docs structure_
   - _Requirements: R3, R6
 
-- [ ] 8. Quality gates & smoke
+- [x] 8. Quality gates & smoke
   - Run npm run check && npm run test from repo root
   - Build API (TrendWeight.sln) and run minimal smoke (GET /api/health; /api/data with progressId)
   - Purpose: Keep the mainline green and verify end-to-end path

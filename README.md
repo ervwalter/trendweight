@@ -78,10 +78,15 @@ For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.m
    ```
    # Frontend (Vite)
    VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    
    # Backend (ASP.NET Core)
    Clerk__Authority=https://your-instance.clerk.accounts.dev
    Clerk__SecretKey=your_clerk_secret_key
+   Supabase__Url=https://your-project-ref.supabase.co
+   Supabase__AnonKey=your_supabase_anon_key
+   Supabase__ServiceKey=your_supabase_service_role_key
    ```
 
 4. Configure allowed redirect URLs in Clerk:

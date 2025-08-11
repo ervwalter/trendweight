@@ -293,6 +293,31 @@ describe("queries", () => {
       expect(result.current.isMe).toBe(false);
     });
 
+    it("should fetch data with progressId", async () => {
+      const progressId = "550e8400-e29b-41d4-a716-446655440000";
+      let capturedUrl: string | undefined;
+
+      server.use(
+        http.get("/api/profile", () => {
+          return HttpResponse.json(mockProfileResponse);
+        }),
+        http.get("/api/data", ({ request }) => {
+          capturedUrl = request.url;
+          return HttpResponse.json(mockMeasurementsResponse);
+        }),
+      );
+
+      const { result } = renderHook(() => useDashboardQueries(undefined, progressId), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.measurementData).toBeDefined();
+      });
+
+      expect(capturedUrl).toContain(`progressId=${progressId}`);
+    });
+
     it("should handle demo mode", async () => {
       const { result } = renderHook(() => useDashboardQueries("demo"), {
         wrapper: createWrapper(),
