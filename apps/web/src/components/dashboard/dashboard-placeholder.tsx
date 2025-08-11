@@ -21,7 +21,7 @@ const DashboardPlaceholder = () => {
 
             {/* Progress overlay */}
             <div className="absolute inset-0 flex items-center justify-center p-2">
-              <SyncProgressOverlay className="w-full border-none bg-transparent ring-0" />
+              <SyncProgressOverlay className="w-full border-none bg-transparent shadow-none ring-0" />
             </div>
           </div>
         </div>
