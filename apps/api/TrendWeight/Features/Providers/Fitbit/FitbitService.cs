@@ -261,9 +261,7 @@ public class FitbitService : ProviderServiceBase, IFitbitService
 
         // Determine date range
         DateTime startDate;
-        // Add 2 days to handle users in timezones ahead of UTC (up to UTC+14)
-        // This ensures we fetch "today's" data for users in Pacific timezones
-        DateTime endDate = DateTime.UtcNow.Date.AddDays(2);
+        DateTime endDate = DateTime.UtcNow.Date;
 
         if (startTimestamp > 1)
         {
@@ -283,23 +281,8 @@ public class FitbitService : ProviderServiceBase, IFitbitService
 
         // Calculate total days and chunks needed (31-day chunks)
         var totalDays = (endDate - startDate).TotalDays;
-        var estimatedChunks = Math.Ceiling(totalDays / 31);
+        var estimatedChunks = Math.Ceiling(totalDays / 31) + 1;
         Logger.LogInformation("Total days to fetch: {TotalDays}, estimated API calls: {Chunks}", totalDays, estimatedChunks);
-
-        // Report initial progress
-        if (ProgressReporter != null)
-        {
-            // For short syncs (< 120 days), use simple message. For long syncs, show year
-            var isShortSync = totalDays <= 120;
-            var initialMessage = isShortSync ? "Retrieving recent weight readings from Fitbit servers" : "Retrieving weight readings from Fitbit servers";
-
-            await ProgressReporter.ReportProviderProgressAsync(
-                "fitbit",
-                stage: "fetching",
-                message: initialMessage,
-                current: 0,
-                total: (int)estimatedChunks);
-        }
 
         // Fetch data in 32-day chunks (Fitbit's maximum allowed range)
         var currentStart = startDate;
@@ -312,19 +295,12 @@ public class FitbitService : ProviderServiceBase, IFitbitService
                 currentEnd = endDate;
             }
 
-            var measurements = await GetWeightLogAsync(accessToken!, currentStart, currentEnd);
-            allMeasurements.AddRange(measurements);
-
-            chunkIndex++;
-
-            // Report progress after each chunk
+            // Report progress before each chunk
             if (ProgressReporter != null)
             {
-                var percent = (int)((chunkIndex * 100) / estimatedChunks);
-
                 // For short syncs (< 120 days), use simple message. For long syncs, show year
                 var isShortSync = totalDays <= 120;
-                var message = isShortSync ? "Retrieving recent weight readings from Fitbit servers" : $"Retrieving weight readings from Fitbit servers for {currentEnd.Year}";
+                var message = isShortSync ? "Downloading recent readings from Fitbit" : $"Downloading readings from Fitbit for {currentEnd.Year}";
 
                 await ProgressReporter.ReportProviderProgressAsync(
                     "fitbit",
@@ -333,6 +309,11 @@ public class FitbitService : ProviderServiceBase, IFitbitService
                     current: chunkIndex,
                     total: (int)estimatedChunks);
             }
+
+            var measurements = await GetWeightLogAsync(accessToken!, currentStart, currentEnd);
+            allMeasurements.AddRange(measurements);
+
+            chunkIndex++;
 
             currentStart = currentEnd.AddDays(1);
         }

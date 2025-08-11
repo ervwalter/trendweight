@@ -467,8 +467,8 @@ public class FitbitServiceTests : TestBase
         _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
             .ReturnsAsync(providerLink);
 
-        // 30 days ago + today + 2 future days = 33 days total, which exceeds 32-day limit
-        var startDate = DateTime.UtcNow.AddDays(-30);
+        // 32 days ago to today = 33 days total, which exceeds 32-day limit and requires 2 API calls
+        var startDate = DateTime.UtcNow.AddDays(-32);
         var apiCallCount = 0;
 
         _httpMessageHandlerMock

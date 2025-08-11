@@ -55,13 +55,13 @@ const SyncProgressOverlay = ({ className = "" }: SyncProgressOverlayProps) => {
   const percent = hasProviders ? calculateOverallProgress(progress) : 0;
 
   return (
-    <div className={cn("bg-background/70 ring-border space-y-2 rounded px-4 py-8 shadow-xs ring-1 backdrop-blur md:px-8", className)}>
+    <div className={cn("bg-background/70 ring-border space-y-1 rounded px-4 py-8 font-medium shadow-xs ring-1 backdrop-blur md:px-8", className)}>
       {/* Main progress bar - only show when there are providers */}
       {hasProviders && <Progress value={percent} className="h-2" />}
 
       {/* Status message */}
       {progress.message && (
-        <p className="text-foreground text-sm" aria-live="polite">
+        <p className="text-foreground md:text-md text-sm" aria-live="polite">
           {progress.message}
         </p>
       )}
@@ -70,7 +70,7 @@ const SyncProgressOverlay = ({ className = "" }: SyncProgressOverlayProps) => {
       {progress.providers && progress.providers.length > 0 && (
         <div className="space-y-1">
           {progress.providers.map((provider) => (
-            <div key={provider.provider} className="text-muted-foreground text-xs">
+            <div key={provider.provider} className="text-foreground text-xs md:text-sm">
               {provider.provider === "fitbit" ? "Fitbit" : "Withings"}:{" "}
               {provider.message ||
                 (provider.stage === "init"

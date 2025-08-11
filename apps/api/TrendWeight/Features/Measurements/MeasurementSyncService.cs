@@ -94,7 +94,7 @@ public class MeasurementSyncService : IMeasurementSyncService
                 // Start progress reporting if we have a reporter
                 if (_progressReporter != null)
                 {
-                    await _progressReporter.ReportSyncProgressAsync("running", "Fetching data from providers...");
+                    await _progressReporter.ReportSyncProgressAsync("running", "Dowloading data from providers...");
                 }
 
                 var refreshResults = await Task.WhenAll(refreshTasks);
@@ -120,12 +120,12 @@ public class MeasurementSyncService : IMeasurementSyncService
                     var allSuccess = refreshResults.All(r => r.Success);
                     if (allSuccess)
                     {
-                        await _progressReporter.ReportSyncProgressAsync("done", "Sync completed successfully");
+                        await _progressReporter.ReportSyncProgressAsync("done", "Download completed");
                     }
                     else
                     {
                         var failedProviders = refreshResults.Where(r => !r.Success).Select(r => r.Provider);
-                        await _progressReporter.ReportSyncProgressAsync("done", $"Sync failed for: {string.Join(", ", failedProviders)}");
+                        await _progressReporter.ReportSyncProgressAsync("done", $"Download failed for: {string.Join(", ", failedProviders)}");
                     }
                 }
             }

@@ -5,6 +5,7 @@ import { Modes, TimeRanges } from "../../lib/core/interfaces";
 import { DashboardProvider } from "../../lib/dashboard/context";
 import { useComputeDashboardData } from "../../lib/dashboard/hooks";
 import { Heading } from "../common/heading";
+import { NewVersionNotice } from "../notices/new-version-notice";
 import Buttons from "./buttons";
 import Chart from "./chart/chart";
 import Currently from "./currently";
@@ -14,7 +15,6 @@ import { NoDataCard } from "./no-data-card";
 import ProviderSyncErrors from "./provider-sync-errors";
 import RecentReadings from "./recent-readings";
 import Stats from "./stats";
-import { NewVersionNotice } from "../notices/new-version-notice";
 import { SyncProgressOverlay } from "./sync-progress/sync-progress-overlay";
 
 interface DashboardProps {
@@ -72,7 +72,7 @@ const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
             <div className="relative">
               <Chart />
               {/* Sync progress overlay - shows when sync is active */}
-              <div className="absolute inset-x-0 top-1/3 mx-4 flex">
+              <div className="absolute inset-0 flex items-center justify-center p-2 pb-[90px] md:pb-[70px]">
                 <SyncProgressOverlay className="w-full" />
               </div>
             </div>

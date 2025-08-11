@@ -293,71 +293,33 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         var allMeasurements = new List<RawMeasurement>();
         bool hasMore = true;
         object? offset = null;
-        var pageNumber = 0;
-        var mostRecentYear = (int?)null;
-
-        // Report initial progress
-        if (ProgressReporter != null)
-        {
-            await ProgressReporter.ReportProviderProgressAsync(
-                "withings",
-                stage: "fetching",
-                message: "Retrieving weight readings from Withings servers",
-                current: 0,
-                total: null); // Withings API doesn't provide total page count
-        }
+        var pageNumber = 1;
+        var mostRecentYear = 0;
 
         while (hasMore)
         {
-            var (measurements, more, newOffset, timezone) = await GetMeasurementPageAsync(accessToken!, startTimestamp, offset);
-            allMeasurements.AddRange(measurements);
 
-            // Track the most recent year from the first page for progress messages
-            if (pageNumber == 0 && measurements.Count > 0)
-            {
-                // Withings returns measurements in descending order (most recent first)
-                var firstMeasurement = measurements[0];
-                if (DateTime.TryParse(firstMeasurement.Date, out var measurementDate))
-                {
-                    mostRecentYear = measurementDate.Year;
-                }
-            }
-
-            hasMore = more;
-            offset = newOffset;
-            pageNumber++;
-
-            // Report progress after each page
+            // Report progress before each page
             if (ProgressReporter != null)
             {
                 string message;
                 if (pageNumber == 1)
                 {
-                    message = "Retrieving weight readings from Withings servers";
+                    message = "Downloading readings from Withings";
                 }
                 else
                 {
                     // For page 2+, show year-based message if we have multiple years of data
                     var startDate = DateTimeOffset.FromUnixTimeSeconds(startTimestamp).DateTime;
-                    var isLongSync = mostRecentYear.HasValue && mostRecentYear.Value > 0 && (mostRecentYear.Value - startDate.Year) > 1;
+                    var isLongSync = mostRecentYear > 0 && (mostRecentYear - startDate.Year) > 1;
 
-                    if (isLongSync && mostRecentYear.HasValue)
+                    if (isLongSync)
                     {
-                        // Get the year we're currently processing by looking at the last measurement in this page
-                        var currentYear = mostRecentYear.Value;
-                        if (measurements.Count > 0)
-                        {
-                            var lastMeasurement = measurements[measurements.Count - 1];
-                            if (DateTime.TryParse(lastMeasurement.Date, out var lastDate))
-                            {
-                                currentYear = lastDate.Year;
-                            }
-                        }
-                        message = $"Retrieving weight readings from Withings servers for {currentYear}";
+                        message = $"Downloading readings from Withings for {mostRecentYear}";
                     }
                     else
                     {
-                        message = $"Retrieving weight readings from Withings servers (page {pageNumber})";
+                        message = $"Downloading readings from Withings (page {pageNumber})";
                     }
                 }
 
@@ -368,6 +330,31 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                     current: pageNumber,
                     total: null); // Withings API doesn't provide total page count
             }
+
+            var (measurements, more, newOffset, timezone) = await GetMeasurementPageAsync(accessToken!, startTimestamp, offset);
+            allMeasurements.AddRange(measurements);
+
+            // Track the most recent year from the first page for progress messages
+            if (pageNumber == 0 && measurements.Count > 0)
+            {
+                // Find the most recent date from measurements (don't assume any ordering)
+                var mostRecentDate = measurements
+                    .Select(m => DateTime.TryParse(m.Date, out var date) ? date : (DateTime?)null)
+                    .Where(d => d.HasValue)
+                    .OrderByDescending(d => d)
+                    .FirstOrDefault();
+
+                if (mostRecentDate.HasValue)
+                {
+                    mostRecentYear = mostRecentDate.Value.Year;
+                }
+            }
+
+            hasMore = more;
+            offset = newOffset;
+            pageNumber++;
+
+
         }
 
         // Report completion

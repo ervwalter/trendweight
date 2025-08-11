@@ -1,10 +1,10 @@
-import { useSuspenseQuery, useSuspenseQueries } from "@tanstack/react-query";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import { useContext } from "react";
-import { apiRequest, ApiError } from "./client";
-import type { ProfileResponse, ProviderLink, MeasurementsResponse } from "./types";
+import { SyncProgressContext } from "../../components/dashboard/sync-progress/context";
 import type { ProfileData, SharingData } from "../core/interfaces";
 import { getDemoData, getDemoProfile } from "../demo/demo-data";
-import { SyncProgressContext } from "../../components/dashboard/sync-progress/context";
+import { ApiError, apiRequest } from "./client";
+import type { MeasurementsResponse, ProfileResponse, ProviderLink } from "./types";
 
 // Query key helpers
 const createQueryKey = <T extends readonly unknown[]>(base: T, sharingCode?: string): T | readonly [...T, string] => {
@@ -132,7 +132,7 @@ export function useDashboardQueries(sharingCode?: string) {
           ...dataQueryOptions,
           queryFn: async () => {
             // Start client-side progress immediately
-            startProgress("Retrieving measurement data...");
+            startProgress("Getting updated data...");
 
             try {
               // Call the original queryFn
