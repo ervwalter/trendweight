@@ -95,11 +95,11 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
                 providers.Add(providerProgress);
             }
 
-            // Update all fields
+            // Update stage and message everytime, counts only if they are provided
             providerProgress.Stage = stage;
             providerProgress.Message = message;
-            providerProgress.Current = current;
-            providerProgress.Total = total;
+            if (current.HasValue) providerProgress.Current = current.Value;
+            if (total.HasValue) providerProgress.Total = total.Value;
 
             // Update the message
             _currentMessage.Providers = providers;

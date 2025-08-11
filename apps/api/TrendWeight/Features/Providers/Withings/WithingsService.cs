@@ -362,8 +362,8 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         {
             await ProgressReporter.ReportProviderProgressAsync(
                 "withings",
-                stage: "done",
-                message: "Complete",
+                stage: "fetching",
+                message: "Download complete",
                 current: pageNumber,
                 total: pageNumber);
         }

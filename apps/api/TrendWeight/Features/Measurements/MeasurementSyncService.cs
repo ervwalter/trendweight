@@ -113,21 +113,12 @@ public class MeasurementSyncService : IMeasurementSyncService
                             result.Provider, result.Message);
                     }
                 }
+            }
 
-                // Update overall status based on results
-                if (_progressReporter != null)
-                {
-                    var allSuccess = refreshResults.All(r => r.Success);
-                    if (allSuccess)
-                    {
-                        await _progressReporter.ReportSyncProgressAsync("done", "Download completed");
-                    }
-                    else
-                    {
-                        var failedProviders = refreshResults.Where(r => !r.Success).Select(r => r.Provider);
-                        await _progressReporter.ReportSyncProgressAsync("done", $"Download failed for: {string.Join(", ", failedProviders)}");
-                    }
-                }
+            // Update overall status based on results
+            if (_progressReporter != null)
+            {
+                await _progressReporter.ReportSyncProgressAsync("running", "Gathering combined readings...");
             }
 
             // Get the current data (whether refreshed or cached) - only for active providers
@@ -184,6 +175,15 @@ public class MeasurementSyncService : IMeasurementSyncService
             // If sync was successful and we have measurements, merge and store them
             if (result.Success && result.Measurements != null)
             {
+
+                if (_progressReporter != null)
+                {
+                    await _progressReporter.ReportProviderProgressAsync(
+                        provider,
+                        stage: "merging",
+                        message: "Processing new readings");
+                }
+
                 // Get existing data to merge with - only need data for this specific provider
                 var existingSourceData = await _sourceDataService.GetSourceDataAsync(userId, new List<string> { provider });
                 var existingProviderData = existingSourceData?.FirstOrDefault(sd => sd.Source == provider);
@@ -222,6 +222,14 @@ public class MeasurementSyncService : IMeasurementSyncService
                 await _sourceDataService.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
                 _logger.LogInformation("Successfully stored {Count} measurements for {Provider}",
                     mergedMeasurements.Count, provider);
+            }
+
+            if (_progressReporter != null)
+            {
+                await _progressReporter.ReportProviderProgressAsync(
+                    provider,
+                    stage: "done",
+                    message: "Complete");
             }
 
             return result;
