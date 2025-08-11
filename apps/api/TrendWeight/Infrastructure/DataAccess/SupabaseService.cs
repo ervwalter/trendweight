@@ -13,6 +13,7 @@ public class SupabaseService : ISupabaseService
     private readonly SupabaseConfig _config;
     private readonly ILogger<SupabaseService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly JsonSerializerOptions _jsonOptions;
     private Client SupabaseClient => _supabaseClient.Value;
 
     public SupabaseService(IOptions<AppOptions> appOptions, ILogger<SupabaseService> logger, IHttpClientFactory httpClientFactory)
@@ -20,7 +21,10 @@ public class SupabaseService : ISupabaseService
         _config = appOptions.Value.Supabase;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
-
+        _jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
 
         _supabaseClient = new Lazy<Client>(() =>
         {
@@ -237,10 +241,7 @@ public class SupabaseService : ISupabaseService
                 }
             };
 
-            var json = JsonSerializer.Serialize(broadcastPayload, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var json = JsonSerializer.Serialize(broadcastPayload, _jsonOptions);
 
             var url = $"{_config.Url}/realtime/v1/api/broadcast";
 

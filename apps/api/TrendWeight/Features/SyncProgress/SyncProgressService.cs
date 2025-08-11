@@ -1,18 +1,17 @@
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using TrendWeight.Features.Common;
 using TrendWeight.Infrastructure.DataAccess;
 
 namespace TrendWeight.Features.SyncProgress;
 
-public class SyncProgressService : ISyncProgressReporter
+public class SyncProgressService : ISyncProgressReporter, IDisposable
 {
     private readonly ISupabaseService _supabaseService;
     private readonly ICurrentRequestContext _requestContext;
     private readonly ILogger<SyncProgressService> _logger;
     private readonly SemaphoreSlim _messageLock = new(1, 1);
     private SyncProgressMessage? _currentMessage;
+    private bool _disposed;
 
     public SyncProgressService(
         ISupabaseService supabaseService,
@@ -153,5 +152,23 @@ public class SyncProgressService : ISyncProgressReporter
         }
 
         return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _messageLock?.Dispose();
+            }
+            _disposed = true;
+        }
     }
 }

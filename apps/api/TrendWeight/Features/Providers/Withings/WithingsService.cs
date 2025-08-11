@@ -339,7 +339,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                 {
                     // For page 2+, show year-based message if we have multiple years of data
                     var startDate = DateTimeOffset.FromUnixTimeSeconds(startTimestamp).DateTime;
-                    var isLongSync = mostRecentYear.HasValue && (mostRecentYear.Value - startDate.Year) > 1;
+                    var isLongSync = mostRecentYear.HasValue && mostRecentYear.Value > 0 && (mostRecentYear.Value - startDate.Year) > 1;
 
                     if (isLongSync)
                     {
