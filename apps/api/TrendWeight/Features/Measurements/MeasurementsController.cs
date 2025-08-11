@@ -99,13 +99,20 @@ public class MeasurementsController : ControllerBase
     /// Gets measurement data via sharing code, refreshing from providers if needed
     /// </summary>
     /// <param name="sharingCode">The sharing code</param>
+    /// <param name="progressId">Optional progress ID for tracking sync status</param>
     /// <returns>MeasurementsResponse with data and provider status</returns>
     [HttpGet("{sharingCode}")]
     [AllowAnonymous]
-    public async Task<ActionResult<MeasurementsResponse>> GetMeasurementsBySharingCode(string sharingCode)
+    public async Task<ActionResult<MeasurementsResponse>> GetMeasurementsBySharingCode(string sharingCode, [FromQuery] string? progressId = null)
     {
         try
         {
+            // Set progressId in context if provided (for sync progress tracking)
+            if (!string.IsNullOrEmpty(progressId) && Guid.TryParse(progressId, out var progressGuid))
+            {
+                _requestContext.ProgressId = progressGuid;
+            }
+
             // Get user by sharing code
             var user = await _profileService.GetBySharingTokenAsync(sharingCode);
             if (user == null)

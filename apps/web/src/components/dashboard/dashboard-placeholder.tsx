@@ -1,14 +1,12 @@
 import { Skeleton } from "../ui/skeleton";
-import { Progress } from "../ui/progress";
-import { useRealtimeProgress } from "../../lib/realtime/use-realtime-progress";
+import { SyncProgressOverlay } from "./sync-progress-overlay";
 
 interface DashboardPlaceholderProps {
   progressId?: string;
+  sharingCode?: string;
 }
 
-const DashboardPlaceholder = ({ progressId }: DashboardPlaceholderProps) => {
-  const { status, percent, message, providers } = useRealtimeProgress(progressId);
-
+const DashboardPlaceholder = ({ progressId, sharingCode }: DashboardPlaceholderProps) => {
   return (
     <div className="relative">
       {/* Buttons placeholder */}
@@ -19,41 +17,18 @@ const DashboardPlaceholder = ({ progressId }: DashboardPlaceholderProps) => {
 
       {/* Chart and Currently section */}
       <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:gap-12">
-        <div className="relative">
-          <Skeleton className="h-96 w-full md:w-[475px] lg:w-[650px] xl:w-[840px]" />
-
-          {/* Progress overlay - show when we have any status */}
-          {status && (
-            <div className="absolute inset-x-0 bottom-4 mx-4">
-              <div className="bg-background/80 ring-border space-y-2 rounded p-3 shadow ring-1 backdrop-blur">
-                {/* Main progress bar */}
-                {percent !== null ? <Progress value={percent} className="h-2" /> : <Progress className="h-2" />}
-
-                {/* Status message */}
-                {message && (
-                  <p className="text-foreground text-sm" aria-live="polite">
-                    {message}
-                  </p>
-                )}
-
-                {/* Provider-specific progress */}
-                {providers && providers.length > 0 && (
-                  <div className="space-y-1">
-                    {providers.map((provider) => (
-                      <div key={provider.provider} className="text-muted-foreground text-xs">
-                        {provider.provider === "fitbit" ? "Fitbit" : "Withings"}:{" "}
-                        {provider.stage === "fetching" && provider.current !== null && provider.total !== null
-                          ? `${provider.current}/${provider.total} chunks`
-                          : provider.stage === "fetching" && provider.current !== null
-                            ? `page ${provider.current}...`
-                            : provider.message || provider.stage}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+        <div className="w-full md:w-[475px] lg:w-[650px] xl:w-[840px]">
+          <div className="relative">
+            {/* Chart skeleton with aspect ratio matching Highcharts default */}
+            <div className="aspect-[16/10] w-full">
+              <Skeleton className="h-full w-full" />
             </div>
-          )}
+
+            {/* Progress overlay */}
+            <div className="absolute inset-x-0 top-1/3 mx-4 flex">
+              <SyncProgressOverlay progressId={progressId} sharingCode={sharingCode} className="w-full" />
+            </div>
+          </div>
         </div>
         <div className="flex flex-col gap-2">
           <Skeleton className="h-6 w-32" />

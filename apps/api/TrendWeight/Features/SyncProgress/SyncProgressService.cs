@@ -1,19 +1,17 @@
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TrendWeight.Features.Common;
 using TrendWeight.Infrastructure.DataAccess;
 
 namespace TrendWeight.Features.SyncProgress;
 
-public class SyncProgressService : ISyncProgressReporter, IAsyncDisposable
+public class SyncProgressService : ISyncProgressReporter
 {
     private readonly ISupabaseService _supabaseService;
     private readonly ICurrentRequestContext _requestContext;
     private readonly ILogger<SyncProgressService> _logger;
+    private readonly SemaphoreSlim _messageLock = new(1, 1);
     private SyncProgressMessage? _currentMessage;
 
     public SyncProgressService(
@@ -28,66 +26,64 @@ public class SyncProgressService : ISyncProgressReporter, IAsyncDisposable
         _logger.LogInformation("SyncProgressService created with broadcast support");
     }
 
-    public async Task StartAsync(string provider = "all", string status = "running")
+    public async Task ReportSyncProgressAsync(string status, string message)
     {
-        // Get ProgressId from context when StartAsync is called (not from constructor)
-        var progressId = _requestContext.ProgressId;
-
-        _logger.LogInformation("StartAsync called with provider: {Provider}, status: {Status}, progressId: {ProgressId}, currentMessage: {CurrentMessage}, UserId: {UserId}, ExternalId: {ExternalId}",
-            provider, status, progressId, _currentMessage != null ? "exists" : "null", _requestContext.UserId, _requestContext.ExternalId);
-
-        if (!progressId.HasValue || _currentMessage != null)
+        await _messageLock.WaitAsync();
+        try
         {
-            _logger.LogWarning("StartAsync returning early - progressId: {HasProgressId}, currentMessage: {HasCurrentMessage}",
-                progressId.HasValue, _currentMessage != null);
-            return;
+            await EnsureMessageInitializedAsync();
+            if (_currentMessage == null) return;
+
+            _currentMessage.Status = status;
+            _currentMessage.Message = message;
+
+            await BroadcastProgressAsync();
+            _logger.LogDebug("Broadcast sync progress: {Status} - {Message}", status, message);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to broadcast sync progress: {Status} - {Message}", status, message);
+        }
+        finally
+        {
+            _messageLock.Release();
+        }
+    }
+
+    private Task EnsureMessageInitializedAsync()
+    {
+        if (_currentMessage != null) return Task.CompletedTask;
+
+        var progressId = _requestContext.ProgressId;
+        if (!progressId.HasValue) return Task.CompletedTask;
 
         try
         {
             _currentMessage = new SyncProgressMessage
             {
                 Id = progressId.Value,
-                Uid = _requestContext.UserId,
-                ExternalId = _requestContext.ExternalId,
-                Provider = provider,
-                Status = status,
-                Providers = [],
-                StartedAt = DateTime.UtcNow.ToString("yyyy-MM-dd\"T\"HH:mm:ss\"Z\"", CultureInfo.InvariantCulture),
-                UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd\"T\"HH:mm:ss\"Z\"", CultureInfo.InvariantCulture)
+                Status = "running",
+                Providers = []
             };
 
-            await BroadcastProgressAsync();
-            _logger.LogDebug("Broadcast initial progress for {ProgressId} with provider {Provider} and status {Status}",
-                progressId, provider, status);
+            _logger.LogDebug("Initialized progress message for {ProgressId}", progressId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to broadcast initial progress for {ProgressId}", progressId);
+            _logger.LogError(ex, "Failed to initialize progress message for {ProgressId}", progressId);
             _currentMessage = null;
         }
+
+        return Task.CompletedTask;
     }
 
-    public async Task UpdateProviderProgressAsync(
-        string provider,
-        string? stage = null,
-        int? current = null,
-        int? total = null,
-        int? percent = null,
-        string? message = null)
+    public async Task ReportProviderProgressAsync(string provider, string stage, string? message = null, int? current = null, int? total = null)
     {
-        if (!_requestContext.ProgressId.HasValue)
-            return;
-
+        await _messageLock.WaitAsync();
         try
         {
-            // Ensure message is created
-            if (_currentMessage == null)
-            {
-                await StartAsync();
-                if (_currentMessage == null)
-                    return;
-            }
+            await EnsureMessageInitializedAsync();
+            if (_currentMessage == null) return;
 
             // Update the specific provider's progress in memory
             var providers = _currentMessage.Providers ?? [];
@@ -100,88 +96,62 @@ public class SyncProgressService : ISyncProgressReporter, IAsyncDisposable
                 providers.Add(providerProgress);
             }
 
-            // Update all fields (allows clearing by passing null)
+            // Update all fields
             providerProgress.Stage = stage;
+            providerProgress.Message = message;
             providerProgress.Current = current;
             providerProgress.Total = total;
-            providerProgress.Percent = percent;
-            providerProgress.Message = message;
 
             // Update the message
             _currentMessage.Providers = providers;
-            _currentMessage.UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd\"T\"HH:mm:ss\"Z\"", CultureInfo.InvariantCulture);
 
             await BroadcastProgressAsync();
 
-            _logger.LogDebug("Broadcast progress update for provider {Provider}: stage={Stage}, current={Current}, total={Total}",
-                provider, stage, current, total);
+            _logger.LogDebug("Broadcast provider progress for {Provider}: {Stage} - {Message}", provider, stage, message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update progress for {Provider}", provider);
+            _logger.LogError(ex, "Failed to broadcast provider progress for {Provider}", provider);
         }
-    }
-
-    public async Task UpdateStatusAsync(string status, string? message = null)
-    {
-        if (!_requestContext.ProgressId.HasValue || _currentMessage == null)
-            return;
-
-        try
+        finally
         {
-            _currentMessage.Status = status;
-            if (message != null)
-            {
-                _currentMessage.Message = message;
-            }
-            _currentMessage.UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd\"T\"HH:mm:ss\"Z\"", CultureInfo.InvariantCulture);
-
-            await BroadcastProgressAsync();
-
-            _logger.LogDebug("Broadcast progress status update to {Status} with message: {Message}", status, message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update status to {Status}", status);
+            _messageLock.Release();
         }
     }
 
-    public ValueTask DisposeAsync()
-    {
-        // No cleanup needed for broadcast-based progress - messages are ephemeral
-        _logger.LogDebug("SyncProgressService disposed for {ProgressId}", _requestContext.ProgressId);
-        GC.SuppressFinalize(this);
-        return new ValueTask();
-    }
 
-    private async Task BroadcastProgressAsync()
+
+    private Task BroadcastProgressAsync()
     {
         if (_currentMessage == null)
         {
             _logger.LogWarning("Cannot broadcast progress - currentMessage is null");
-            return;
+            return Task.CompletedTask;
         }
 
         try
         {
-            // Use user-specific secure channel with colon separators
-            var topic = $"sync-progress:{_requestContext.ExternalId}:{_currentMessage.Id}";
+            // Validate that progressId is a valid GUID to prevent injection
+            if (!Guid.TryParse(_currentMessage.Id.ToString(), out _))
+            {
+                _logger.LogError("Invalid progress ID format: {ProgressId}", _currentMessage.Id);
+                return Task.CompletedTask;
+            }
+
+            // Use simple progressId-based topic (no user ID needed since progress data isn't sensitive)
+            var topic = $"sync-progress:{_currentMessage.Id}";
             const string eventName = "progress_update";
 
-            var success = await _supabaseService.BroadcastAsync(topic, eventName, _currentMessage);
+            // Fire and forget - don't await to avoid blocking the sync
+            _ = _supabaseService.BroadcastAsync(topic, eventName, _currentMessage);
 
-            if (success)
-            {
-                _logger.LogDebug("Successfully broadcast progress update for {ProgressId}", _currentMessage.Id);
-            }
-            else
-            {
-                _logger.LogWarning("Failed to broadcast progress update for {ProgressId}", _currentMessage.Id);
-            }
+            _logger.LogDebug("Queued progress update broadcast for {ProgressId}", _currentMessage.Id);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception occurred while broadcasting progress update for {ProgressId}", _currentMessage?.Id);
         }
+
+        return Task.CompletedTask;
     }
 }

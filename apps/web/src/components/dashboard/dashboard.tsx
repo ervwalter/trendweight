@@ -16,6 +16,7 @@ import ProviderSyncErrors from "./provider-sync-errors";
 import RecentReadings from "./recent-readings";
 import Stats from "./stats";
 import { NewVersionNotice } from "../notices/new-version-notice";
+import { SyncProgressOverlay } from "./sync-progress-overlay";
 
 interface DashboardProps {
   sharingCode?: string;
@@ -74,7 +75,13 @@ const Dashboard: FC<DashboardProps> = ({ sharingCode, progressId }) => {
                   : `Past ${TimeRanges[dashboardData.timeRange[0]]}`}
               {!dashboardData.isMe && ` for ${dashboardData.profile.firstName}`}
             </Heading>
-            <Chart />
+            <div className="relative">
+              <Chart />
+              {/* Sync progress overlay - shows when react-query is refetching or sync is active */}
+              <div className="absolute inset-x-0 top-1/3 mx-4 flex">
+                <SyncProgressOverlay progressId={progressId} sharingCode={sharingCode} className="w-full" />
+              </div>
+            </div>
           </div>
           <Currently />
         </div>

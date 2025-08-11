@@ -1,12 +1,11 @@
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TrendWeight.Features.Common;
 using TrendWeight.Features.SyncProgress;
-using TrendWeight.Features.SyncProgress.Models;
 using TrendWeight.Infrastructure.DataAccess;
 using Xunit;
 
@@ -39,24 +38,25 @@ public class SyncProgressServiceTests
     }
 
     [Fact]
-    public async Task StartAsync_WithProgressId_CreatesRow()
+    public async Task ReportSyncProgressAsync_WithProgressId_BroadcastsMessage()
     {
         // Act
-        await _sut.StartAsync("all", "running");
+        await _sut.ReportSyncProgressAsync("running", "Sync in progress");
 
-        // Assert
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<SyncProgressRow>(row =>
-            row.Id == _progressId &&
-            row.Uid == _userId &&
-            row.ExternalId == ExternalId &&
-            row.Provider == "all" &&
-            row.Status == "running" &&
-            row.Providers != null &&
-            row.Providers.Count == 0)), Times.Once);
+        // Assert - Should broadcast to user-specific channel
+        var expectedTopic = $"sync-progress:{_progressId}";
+        _supabaseServiceMock.Verify(x => x.BroadcastAsync(
+            expectedTopic,
+            "progress_update",
+            It.Is<SyncProgressMessage>(msg =>
+                msg.Id == _progressId &&
+                msg.Status == "running" &&
+                msg.Message == "Sync in progress" &&
+                msg.Providers != null)), Times.Once);
     }
 
     [Fact]
-    public async Task StartAsync_WithoutProgressId_DoesNothing()
+    public async Task ReportSyncProgressAsync_WithoutProgressId_DoesNothing()
     {
         // Arrange
         _requestContextMock.Setup(x => x.ProgressId).Returns((Guid?)null);
@@ -66,177 +66,48 @@ public class SyncProgressServiceTests
             _loggerMock.Object);
 
         // Act
-        await sut.StartAsync();
+        await sut.ReportSyncProgressAsync("running", "Test message");
 
         // Assert
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<SyncProgressRow>()), Times.Never);
+        _supabaseServiceMock.Verify(x => x.BroadcastAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()), Times.Never);
     }
 
     [Fact]
-    public async Task StartAsync_WhenCalledTwice_OnlyCreatesOnce()
+    public async Task ReportSyncProgressAsync_MultipleCalls_BroadcastsEachTime()
     {
         // Act
-        await _sut.StartAsync();
-        await _sut.StartAsync();
+        await _sut.ReportSyncProgressAsync("running", "First message");
+        await _sut.ReportSyncProgressAsync("succeeded", "Second message");
 
-        // Assert
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<SyncProgressRow>()), Times.Once);
+        // Assert - Should broadcast twice
+        var expectedTopic = $"sync-progress:{_progressId}";
+        _supabaseServiceMock.Verify(x => x.BroadcastAsync(expectedTopic, "progress_update", It.IsAny<SyncProgressMessage>()), Times.Exactly(2));
     }
 
     [Fact]
-    public async Task UpdateProviderProgressAsync_WithExistingRow_UpdatesProvider()
-    {
-        // Arrange
-        await _sut.StartAsync();
-
-        // Act
-        await _sut.UpdateProviderProgressAsync("fitbit", "fetching", 2, 8, 25, "Fetching chunk 2");
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<SyncProgressRow>(row =>
-            row.Providers != null &&
-            row.Providers.Count == 1 &&
-            row.Providers[0].Provider == "fitbit" &&
-            row.Providers[0].Stage == "fetching" &&
-            row.Providers[0].Current == 2 &&
-            row.Providers[0].Total == 8 &&
-            row.Providers[0].Percent == 25 &&
-            row.Providers[0].Message == "Fetching chunk 2")), Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdateProviderProgressAsync_WithoutProgressId_DoesNothing()
-    {
-        // Arrange
-        _requestContextMock.Setup(x => x.ProgressId).Returns((Guid?)null);
-        var sut = new SyncProgressService(
-            _supabaseServiceMock.Object,
-            _requestContextMock.Object,
-            _loggerMock.Object);
-
-        // Act
-        await sut.UpdateProviderProgressAsync("fitbit", "fetching");
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<SyncProgressRow>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task UpdateProviderProgressAsync_AutoCreatesRowIfNeeded()
+    public async Task ReportProviderProgressAsync_WithProgressId_BroadcastsMessage()
     {
         // Act
-        await _sut.UpdateProviderProgressAsync("fitbit", "fetching");
+        await _sut.ReportProviderProgressAsync("fitbit", "fetching", "Fetching chunk 2", 2, 8);
 
         // Assert
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<SyncProgressRow>()), Times.Once);
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<SyncProgressRow>()), Times.Once);
+        var expectedTopic = $"sync-progress:{_progressId}";
+        _supabaseServiceMock.Verify(x => x.BroadcastAsync(
+            expectedTopic,
+            "progress_update",
+            It.Is<SyncProgressMessage>(msg =>
+                msg.Id == _progressId &&
+                msg.Providers != null &&
+                msg.Providers.Count == 1 &&
+                msg.Providers[0].Provider == "fitbit" &&
+                msg.Providers[0].Stage == "fetching" &&
+                msg.Providers[0].Message == "Fetching chunk 2" &&
+                msg.Providers[0].Current == 2 &&
+                msg.Providers[0].Total == 8)), Times.Once);
     }
 
     [Fact]
-    public async Task UpdateProviderProgressAsync_UpdatesExistingProvider()
-    {
-        // Arrange
-        await _sut.StartAsync();
-        await _sut.UpdateProviderProgressAsync("fitbit", "init");
-
-        // Act
-        await _sut.UpdateProviderProgressAsync("fitbit", "fetching", 3, 10);
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<SyncProgressRow>(row =>
-            row.Providers != null &&
-            row.Providers.Count == 1 &&
-            row.Providers[0].Provider == "fitbit" &&
-            row.Providers[0].Stage == "fetching" &&
-            row.Providers[0].Current == 3 &&
-            row.Providers[0].Total == 10)), Times.Exactly(2));
-    }
-
-    [Fact]
-    public async Task UpdateProviderProgressAsync_HandlesMultipleProviders()
-    {
-        // Arrange
-        await _sut.StartAsync();
-
-        // Act - Add two providers
-        await _sut.UpdateProviderProgressAsync("fitbit", "fetching", 2, 8);
-        await _sut.UpdateProviderProgressAsync("withings", "fetching", 3, null, null, "Page 3");
-
-        // Assert - Should have called UpdateAsync twice total (once per provider update)
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<SyncProgressRow>()), Times.Exactly(2));
-    }
-
-    [Fact]
-    public async Task UpdateProviderProgressAsync_ClearsFieldsWhenNullProvided()
-    {
-        // Arrange
-        await _sut.StartAsync();
-        await _sut.UpdateProviderProgressAsync("fitbit", "fetching", 2, 8, 25, "Message");
-
-        // Act - Clear message and percent
-        await _sut.UpdateProviderProgressAsync("fitbit", "done", 8, 8, null, null);
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<SyncProgressRow>(row =>
-            row.Providers != null &&
-            row.Providers[0].Stage == "done" &&
-            row.Providers[0].Current == 8 &&
-            row.Providers[0].Total == 8 &&
-            row.Providers[0].Percent == null &&
-            row.Providers[0].Message == null)), Times.Exactly(2));
-    }
-
-    [Fact]
-    public async Task UpdateStatusAsync_UpdatesRowStatus()
-    {
-        // Arrange
-        await _sut.StartAsync();
-
-        // Act
-        await _sut.UpdateStatusAsync("failed", "Auth error");
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<SyncProgressRow>(row =>
-            row.Status == "failed" &&
-            row.Message == "Auth error")), Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdateStatusAsync_WithoutRow_DoesNothing()
-    {
-        // Act
-        await _sut.UpdateStatusAsync("failed", "Auth error");
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<SyncProgressRow>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task DisposeAsync_DeletesRow()
-    {
-        // Arrange
-        await _sut.StartAsync();
-
-        // Act
-        await _sut.DisposeAsync();
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.Is<SyncProgressRow>(row =>
-            row.Id == _progressId)), Times.Once);
-    }
-
-    [Fact]
-    public async Task DisposeAsync_WithoutRow_DoesNothing()
-    {
-        // Act
-        await _sut.DisposeAsync();
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<SyncProgressRow>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task DisposeAsync_WithoutProgressId_DoesNothing()
+    public async Task ReportProviderProgressAsync_WithoutProgressId_DoesNothing()
     {
         // Arrange
         _requestContextMock.Setup(x => x.ProgressId).Returns((Guid?)null);
@@ -246,9 +117,61 @@ public class SyncProgressServiceTests
             _loggerMock.Object);
 
         // Act
-        await sut.DisposeAsync();
+        await sut.ReportProviderProgressAsync("fitbit", "fetching");
 
         // Assert
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<SyncProgressRow>()), Times.Never);
+        _supabaseServiceMock.Verify(x => x.BroadcastAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReportProviderProgressAsync_MultipleCalls_BroadcastsEachTime()
+    {
+        // Act
+        await _sut.ReportProviderProgressAsync("fitbit", "init", "Initializing");
+        await _sut.ReportProviderProgressAsync("fitbit", "fetching", "Fetching data", 3, 10);
+
+        // Assert - Should broadcast twice
+        var expectedTopic = $"sync-progress:{_progressId}";
+        _supabaseServiceMock.Verify(x => x.BroadcastAsync(expectedTopic, "progress_update", It.IsAny<SyncProgressMessage>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task ReportProviderProgressAsync_HandlesMultipleProviders()
+    {
+        // Act - Add two different providers
+        await _sut.ReportProviderProgressAsync("fitbit", "fetching", "Fitbit data", 2, 8);
+        await _sut.ReportProviderProgressAsync("withings", "fetching", "Page 3", 3, null);
+
+        // Assert - Should have both providers in the final message
+        var expectedTopic = $"sync-progress:{_progressId}";
+        _supabaseServiceMock.Verify(x => x.BroadcastAsync(
+            expectedTopic,
+            "progress_update",
+            It.Is<SyncProgressMessage>(msg =>
+                msg.Providers != null &&
+                msg.Providers.Count == 2 &&
+                msg.Providers.Any(p => p.Provider == "fitbit" && p.Current == 2 && p.Total == 8) &&
+                msg.Providers.Any(p => p.Provider == "withings" && p.Current == 3 && p.Total == null))), Times.AtLeast(1));
+    }
+
+    [Fact]
+    public async Task ReportProviderProgressAsync_UpdatesSingleProviderCorrectly()
+    {
+        // Act - Single provider update to verify final state
+        await _sut.ReportProviderProgressAsync("fitbit", "done", "Complete", 10, 10);
+
+        // Assert
+        var expectedTopic = $"sync-progress:{_progressId}";
+        _supabaseServiceMock.Verify(x => x.BroadcastAsync(
+            expectedTopic,
+            "progress_update",
+            It.Is<SyncProgressMessage>(msg =>
+                msg.Providers != null &&
+                msg.Providers.Count == 1 &&
+                msg.Providers[0].Provider == "fitbit" &&
+                msg.Providers[0].Stage == "done" &&
+                msg.Providers[0].Message == "Complete" &&
+                msg.Providers[0].Current == 10 &&
+                msg.Providers[0].Total == 10)), Times.Once);
     }
 }

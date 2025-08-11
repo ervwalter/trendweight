@@ -135,32 +135,29 @@ public class FitbitServiceProgressTests : TestBase
         result.Success.Should().BeTrue();
 
         // Verify initial progress call (should be "recent" for 90-day sync)
-        _progressReporterMock.Verify(x => x.UpdateProviderProgressAsync(
+        _progressReporterMock.Verify(x => x.ReportProviderProgressAsync(
             "fitbit",
             "fetching",
+            "Retrieving recent weight readings from Fitbit servers",
             0,
-            3, // 90 days = ~3 chunks
-            0,
-            "Retrieving recent weight readings from Fitbit servers"), Times.Once);
+            3), Times.Once);
 
         // Verify progress calls for each chunk (should show "recent" message for short sync)
         // Note: This includes the initial call (0) plus 3 chunks (1, 2, 3)
-        _progressReporterMock.Verify(x => x.UpdateProviderProgressAsync(
+        _progressReporterMock.Verify(x => x.ReportProviderProgressAsync(
             "fitbit",
             "fetching",
+            "Retrieving recent weight readings from Fitbit servers",
             It.IsAny<int?>(),
-            3,
-            It.IsAny<int?>(),
-            "Retrieving recent weight readings from Fitbit servers"), Times.Exactly(4));
+            3), Times.Exactly(4));
 
         // Verify completion call
-        _progressReporterMock.Verify(x => x.UpdateProviderProgressAsync(
+        _progressReporterMock.Verify(x => x.ReportProviderProgressAsync(
             "fitbit",
             "done",
+            "Complete",
             3,
-            3,
-            100,
-            "Done"), Times.Once);
+            3), Times.Once);
     }
 
     [Fact]
@@ -225,13 +222,12 @@ public class FitbitServiceProgressTests : TestBase
         result.Success.Should().BeTrue();
 
         // For long syncs, should report with year
-        _progressReporterMock.Verify(x => x.UpdateProviderProgressAsync(
+        _progressReporterMock.Verify(x => x.ReportProviderProgressAsync(
             "fitbit",
             "fetching",
+            It.Is<string>(s => s.Contains("Retrieving weight readings from Fitbit servers for")),
             It.IsAny<int?>(),
-            It.IsAny<int?>(),
-            It.IsAny<int?>(),
-            It.Is<string>(s => s.Contains("Retrieving weight readings from Fitbit servers for"))), Times.AtLeastOnce);
+            It.IsAny<int?>()), Times.AtLeastOnce);
     }
 
     // NOTE: Rate limit test removed because it would cause actual 15-second delay during test runs.

@@ -144,15 +144,17 @@ GRANT ALL ON public.user_accounts TO service_role;
 -- Enable RLS on realtime.messages table to control channel subscriptions
 ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
 
--- Allow users to subscribe to channels that contain their user ID
--- Channel format: sync-progress:{clerk-user-id}:{progress-id}
-CREATE POLICY "Users can subscribe to their own sync progress channels"
+-- Allow anyone to subscribe to sync progress channels (for receiving broadcasts)
+-- Channel format: sync-progress:{progress-id}
+-- Progress data is not sensitive (just UI feedback) and progressId is a random GUID
+-- The backend broadcasts using service role which bypasses RLS, so no INSERT policy is needed
+CREATE POLICY "Allow anonymous sync-progress subscriptions"
     ON realtime.messages
     FOR SELECT
-    TO authenticated
+    TO anon, authenticated
     USING (
-        -- Allow subscription to channels that start with sync-progress:{their-user-id}:
-        topic LIKE 'sync-progress:' || (auth.jwt() ->> 'sub') || ':%'
+        extension = 'broadcast' 
+        AND topic LIKE 'sync-progress:%'
     );
 
 -- Create legacy_profiles table for migrated legacy data

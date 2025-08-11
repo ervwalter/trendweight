@@ -291,13 +291,12 @@ public class FitbitService : ProviderServiceBase, IFitbitService
             var isShortSync = totalDays <= 120;
             var initialMessage = isShortSync ? "Retrieving recent weight readings from Fitbit servers" : "Retrieving weight readings from Fitbit servers";
 
-            await ProgressReporter.UpdateProviderProgressAsync(
+            await ProgressReporter.ReportProviderProgressAsync(
                 "fitbit",
                 stage: "fetching",
+                message: initialMessage,
                 current: 0,
-                total: (int)estimatedChunks,
-                percent: 0,
-                message: initialMessage);
+                total: (int)estimatedChunks);
         }
 
         // Fetch data in 32-day chunks (Fitbit's maximum allowed range)
@@ -325,13 +324,12 @@ public class FitbitService : ProviderServiceBase, IFitbitService
                 var isShortSync = totalDays <= 120;
                 var message = isShortSync ? "Retrieving recent weight readings from Fitbit servers" : $"Retrieving weight readings from Fitbit servers for {currentEnd.Year}";
 
-                await ProgressReporter.UpdateProviderProgressAsync(
+                await ProgressReporter.ReportProviderProgressAsync(
                     "fitbit",
                     stage: "fetching",
+                    message: message,
                     current: chunkIndex,
-                    total: (int)estimatedChunks,
-                    percent: percent,
-                    message: message);
+                    total: (int)estimatedChunks);
             }
 
             currentStart = currentEnd.AddDays(1);
@@ -340,13 +338,12 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         // Report completion
         if (ProgressReporter != null)
         {
-            await ProgressReporter.UpdateProviderProgressAsync(
+            await ProgressReporter.ReportProviderProgressAsync(
                 "fitbit",
                 stage: "done",
+                message: "Complete",
                 current: (int)estimatedChunks,
-                total: (int)estimatedChunks,
-                percent: 100,
-                message: "Done");
+                total: (int)estimatedChunks);
         }
 
         return allMeasurements;
@@ -367,13 +364,10 @@ public class FitbitService : ProviderServiceBase, IFitbitService
             if (ProgressReporter != null && waitTime.TotalSeconds >= 10)
             {
                 var waitSeconds = (int)Math.Ceiling(waitTime.TotalSeconds);
-                await ProgressReporter.UpdateProviderProgressAsync(
+                await ProgressReporter.ReportProviderProgressAsync(
                     "fitbit",
                     stage: "fetching",
-                    current: null,
-                    total: null,
-                    percent: null,
-                    message: $"Fitbit rate limit reached - waiting {waitSeconds} seconds");
+                    message: $"Rate limited, waiting {waitSeconds} seconds...");
             }
 
             await Task.Delay(waitTime);

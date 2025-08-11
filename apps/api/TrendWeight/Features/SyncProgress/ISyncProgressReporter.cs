@@ -5,10 +5,9 @@ namespace TrendWeight.Features.SyncProgress;
 
 public interface ISyncProgressReporter
 {
-    Task StartAsync(string provider = "all", string status = "running");
+    // Overall sync progress methods
+    Task ReportSyncProgressAsync(string status, string message);
 
-    Task UpdateProviderProgressAsync(string provider, string? stage = null, int? current = null,
-        int? total = null, int? percent = null, string? message = null);
-
-    Task UpdateStatusAsync(string status, string? message = null);
+    // Provider-specific progress methods
+    Task ReportProviderProgressAsync(string provider, string stage, string? message = null, int? current = null, int? total = null);
 }

@@ -294,23 +294,35 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         bool hasMore = true;
         object? offset = null;
         var pageNumber = 0;
+        var mostRecentYear = (int?)null;
 
         // Report initial progress
         if (ProgressReporter != null)
         {
-            await ProgressReporter.UpdateProviderProgressAsync(
+            await ProgressReporter.ReportProviderProgressAsync(
                 "withings",
                 stage: "fetching",
+                message: "Retrieving weight readings from Withings servers",
                 current: 0,
-                total: null, // Don't know total pages for Withings
-                percent: null,
-                message: "Retrieving weight readings from Withings servers");
+                total: null); // Withings API doesn't provide total page count
         }
 
         while (hasMore)
         {
             var (measurements, more, newOffset, timezone) = await GetMeasurementPageAsync(accessToken!, startTimestamp, offset);
             allMeasurements.AddRange(measurements);
+
+            // Track the most recent year from the first page for progress messages
+            if (pageNumber == 0 && measurements.Count > 0)
+            {
+                // Withings returns measurements in descending order (most recent first)
+                var firstMeasurement = measurements[0];
+                if (DateTime.TryParse(firstMeasurement.Date, out var measurementDate))
+                {
+                    mostRecentYear = measurementDate.Year;
+                }
+            }
+
             hasMore = more;
             offset = newOffset;
             pageNumber++;
@@ -318,31 +330,55 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             // Report progress after each page
             if (ProgressReporter != null)
             {
-                // Only show page number if we've gone beyond the first page
-                var message = pageNumber > 1
-                    ? $"Retrieving weight readings from Withings servers (page {pageNumber})"
-                    : "Retrieving weight readings from Withings servers";
+                string message;
+                if (pageNumber == 1)
+                {
+                    message = "Retrieving weight readings from Withings servers";
+                }
+                else
+                {
+                    // For page 2+, show year-based message if we have multiple years of data
+                    var startDate = DateTimeOffset.FromUnixTimeSeconds(startTimestamp).DateTime;
+                    var isLongSync = mostRecentYear.HasValue && (mostRecentYear.Value - startDate.Year) > 1;
 
-                await ProgressReporter.UpdateProviderProgressAsync(
+                    if (isLongSync)
+                    {
+                        // Get the year we're currently processing by looking at the last measurement in this page
+                        var currentYear = mostRecentYear.Value;
+                        if (measurements.Count > 0)
+                        {
+                            var lastMeasurement = measurements[measurements.Count - 1];
+                            if (DateTime.TryParse(lastMeasurement.Date, out var lastDate))
+                            {
+                                currentYear = lastDate.Year;
+                            }
+                        }
+                        message = $"Retrieving weight readings from Withings servers for {currentYear}";
+                    }
+                    else
+                    {
+                        message = $"Retrieving weight readings from Withings servers (page {pageNumber})";
+                    }
+                }
+
+                await ProgressReporter.ReportProviderProgressAsync(
                     "withings",
                     stage: "fetching",
+                    message: message,
                     current: pageNumber,
-                    total: null, // Withings doesn't tell us total pages
-                    percent: null, // Can't calculate percent without total
-                    message: message);
+                    total: null); // Withings API doesn't provide total page count
             }
         }
 
         // Report completion
         if (ProgressReporter != null)
         {
-            await ProgressReporter.UpdateProviderProgressAsync(
+            await ProgressReporter.ReportProviderProgressAsync(
                 "withings",
                 stage: "done",
+                message: "Complete",
                 current: pageNumber,
-                total: pageNumber,
-                percent: 100,
-                message: "Done");
+                total: pageNumber);
         }
 
         return allMeasurements;

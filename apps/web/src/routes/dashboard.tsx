@@ -5,6 +5,7 @@ import DashboardPlaceholder from "../components/dashboard/dashboard-placeholder"
 import { Layout } from "../components/layout";
 import { requireAuth } from "../lib/auth/auth-guard";
 import { ensureProfile, ensureProviderLinks } from "../lib/loaders/utils";
+import { useRealtimeProgress } from "../lib/realtime/use-realtime-progress";
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: async (context) => {
@@ -27,6 +28,9 @@ function DashboardPage() {
 
   // Generate a unique progressId for this dashboard load
   const progressId = useMemo(() => crypto.randomUUID(), []);
+
+  // Establish realtime subscription early, before any Suspense boundaries
+  useRealtimeProgress(progressId);
 
   return (
     <Layout title="Dashboard" suspenseFallback={<DashboardPlaceholder progressId={progressId} />}>
