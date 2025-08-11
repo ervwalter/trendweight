@@ -120,12 +120,12 @@ public class MeasurementSyncService : IMeasurementSyncService
                     var allSuccess = refreshResults.All(r => r.Success);
                     if (allSuccess)
                     {
-                        await _progressReporter.ReportSyncProgressAsync("succeeded", "Sync completed successfully");
+                        await _progressReporter.ReportSyncProgressAsync("done", "Sync completed successfully");
                     }
                     else
                     {
                         var failedProviders = refreshResults.Where(r => !r.Success).Select(r => r.Provider);
-                        await _progressReporter.ReportSyncProgressAsync("failed", $"Sync failed for: {string.Join(", ", failedProviders)}");
+                        await _progressReporter.ReportSyncProgressAsync("done", $"Sync failed for: {string.Join(", ", failedProviders)}");
                     }
                 }
             }

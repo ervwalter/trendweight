@@ -4,7 +4,6 @@ import { ApiError } from "../../lib/api/client";
 import { Modes, TimeRanges } from "../../lib/core/interfaces";
 import { DashboardProvider } from "../../lib/dashboard/context";
 import { useComputeDashboardData } from "../../lib/dashboard/hooks";
-import { useRealtimeProgress } from "../../lib/realtime/use-realtime-progress";
 import { Heading } from "../common/heading";
 import Buttons from "./buttons";
 import Chart from "./chart/chart";
@@ -16,19 +15,14 @@ import ProviderSyncErrors from "./provider-sync-errors";
 import RecentReadings from "./recent-readings";
 import Stats from "./stats";
 import { NewVersionNotice } from "../notices/new-version-notice";
-import { SyncProgressOverlay } from "./sync-progress-overlay";
+import { SyncProgressOverlay } from "./sync-progress/sync-progress-overlay";
 
 interface DashboardProps {
   sharingCode?: string;
-  progressId?: string;
 }
 
-const Dashboard: FC<DashboardProps> = ({ sharingCode, progressId }) => {
-  const dashboardData = useComputeDashboardData(sharingCode, progressId);
-
-  // Light subscriber for cases where skeleton is bypassed (warm cache)
-  // This just subscribes to updates but doesn't render anything
-  useRealtimeProgress(progressId);
+const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
+  const dashboardData = useComputeDashboardData(sharingCode);
 
   // Check if profile exists - if not, redirect to initial setup (skip for shared views)
   if (!sharingCode && dashboardData.profileError instanceof ApiError && dashboardData.profileError.status === 404) {
@@ -77,9 +71,9 @@ const Dashboard: FC<DashboardProps> = ({ sharingCode, progressId }) => {
             </Heading>
             <div className="relative">
               <Chart />
-              {/* Sync progress overlay - shows when react-query is refetching or sync is active */}
+              {/* Sync progress overlay - shows when sync is active */}
               <div className="absolute inset-x-0 top-1/3 mx-4 flex">
-                <SyncProgressOverlay progressId={progressId} sharingCode={sharingCode} className="w-full" />
+                <SyncProgressOverlay className="w-full" />
               </div>
             </div>
           </div>

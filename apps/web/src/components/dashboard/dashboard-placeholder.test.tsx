@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import DashboardPlaceholder from "./dashboard-placeholder";
+import { SyncProgressProvider } from "./sync-progress";
 
 // Mock Clerk hooks
 vi.mock("@clerk/clerk-react", () => ({
@@ -32,7 +33,11 @@ const createTestQueryClient = () =>
 describe("DashboardPlaceholder", () => {
   const renderWithProviders = (ui: React.ReactElement) => {
     const queryClient = createTestQueryClient();
-    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <SyncProgressProvider>{ui}</SyncProgressProvider>
+      </QueryClientProvider>,
+    );
   };
 
   it("should render without crashing", () => {

@@ -293,8 +293,7 @@ describe("queries", () => {
       expect(result.current.isMe).toBe(false);
     });
 
-    it("should fetch data with progressId", async () => {
-      const progressId = "550e8400-e29b-41d4-a716-446655440000";
+    it("should fetch data without progressId when no context", async () => {
       let capturedUrl: string | undefined;
 
       server.use(
@@ -307,7 +306,7 @@ describe("queries", () => {
         }),
       );
 
-      const { result } = renderHook(() => useDashboardQueries(undefined, progressId), {
+      const { result } = renderHook(() => useDashboardQueries(undefined), {
         wrapper: createWrapper(),
       });
 
@@ -315,7 +314,9 @@ describe("queries", () => {
         expect(result.current.measurementData).toBeDefined();
       });
 
-      expect(capturedUrl).toContain(`progressId=${progressId}`);
+      // Without context, progressId should not be in URL
+      expect(capturedUrl).toBeDefined();
+      expect(capturedUrl).not.toContain("progressId");
     });
 
     it("should handle demo mode", async () => {

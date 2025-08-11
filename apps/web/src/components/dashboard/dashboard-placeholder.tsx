@@ -1,12 +1,7 @@
 import { Skeleton } from "../ui/skeleton";
-import { SyncProgressOverlay } from "./sync-progress-overlay";
+import { SyncProgressOverlay } from "./sync-progress/sync-progress-overlay";
 
-interface DashboardPlaceholderProps {
-  progressId?: string;
-  sharingCode?: string;
-}
-
-const DashboardPlaceholder = ({ progressId, sharingCode }: DashboardPlaceholderProps) => {
+const DashboardPlaceholder = () => {
   return (
     <div className="relative">
       {/* Buttons placeholder */}
@@ -25,8 +20,8 @@ const DashboardPlaceholder = ({ progressId, sharingCode }: DashboardPlaceholderP
             </div>
 
             {/* Progress overlay */}
-            <div className="absolute inset-x-0 top-1/3 mx-4 flex">
-              <SyncProgressOverlay progressId={progressId} sharingCode={sharingCode} className="w-full" />
+            <div className="absolute inset-0 flex items-center justify-center p-2">
+              <SyncProgressOverlay className="w-full border-none bg-transparent ring-0" />
             </div>
           </div>
         </div>
