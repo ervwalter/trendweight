@@ -14,6 +14,7 @@ using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
 using TrendWeight.Tests.Fixtures;
 using Xunit;
+using TrendWeight.Features.Common;
 
 namespace TrendWeight.Tests.Features.Measurements.Controllers;
 
@@ -23,6 +24,7 @@ public class MeasurementsControllerTests : TestBase
     private readonly Mock<IProviderIntegrationService> _providerIntegrationServiceMock;
     private readonly Mock<IMeasurementSyncService> _measurementSyncServiceMock;
     private readonly Mock<ILogger<MeasurementsController>> _loggerMock;
+    private readonly Mock<ICurrentRequestContext> _requestContextMock;
     private readonly MeasurementsController _sut;
 
     public MeasurementsControllerTests()
@@ -31,12 +33,15 @@ public class MeasurementsControllerTests : TestBase
         _providerIntegrationServiceMock = new Mock<IProviderIntegrationService>();
         _measurementSyncServiceMock = new Mock<IMeasurementSyncService>();
         _loggerMock = new Mock<ILogger<MeasurementsController>>();
+        _requestContextMock = new Mock<ICurrentRequestContext>();
+        _requestContextMock.SetupAllProperties();
 
         _sut = new MeasurementsController(
             _profileServiceMock.Object,
             _providerIntegrationServiceMock.Object,
             _measurementSyncServiceMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            _requestContextMock.Object);
     }
 
     #region GetMeasurements Tests
@@ -50,7 +55,7 @@ public class MeasurementsControllerTests : TestBase
         var sourceData = CreateTestSourceData();
 
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings", "fitbit" });
         _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
@@ -102,7 +107,7 @@ public class MeasurementsControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync((DbProfile?)null);
 
         // Act
         var result = await _sut.GetMeasurements();
@@ -123,7 +128,7 @@ public class MeasurementsControllerTests : TestBase
         var providerService = new Mock<IProviderService>();
 
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings" });
         _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
@@ -157,7 +162,7 @@ public class MeasurementsControllerTests : TestBase
         var providerService = new Mock<IProviderService>();
 
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "withings" });
 
@@ -197,8 +202,8 @@ public class MeasurementsControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(It.IsAny<string>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _profileServiceMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
+                .ThrowsAsync(new Exception("Database error"));
 
         // Act
         var result = await _sut.GetMeasurements();
@@ -297,7 +302,7 @@ public class MeasurementsControllerTests : TestBase
         var user = CreateTestProfile(userId);
 
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
         _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
             .ReturnsAsync(new List<string> { "unknown-provider" });
         _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,

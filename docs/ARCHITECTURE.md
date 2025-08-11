@@ -41,6 +41,37 @@ Data refresh logic:
 - Full resync: Clears all data then fetches entire history
 - No provider dependencies on storage layer - clean separation of concerns
 
+### Real-time Sync Progress
+
+The application provides real-time sync progress updates using Supabase Realtime Broadcast:
+
+**Architecture:**
+- Backend broadcasts progress updates via `SyncProgressService` using fire-and-forget pattern
+- Frontend subscribes to progress updates via `useRealtimeProgress` hook
+- Progress tracked per-provider with overall percentage calculation
+- No persistent storage - uses ephemeral broadcast messages
+
+**Provider Progress Shape:**
+```typescript
+interface ProviderProgressInfo {
+  provider: "fitbit" | "withings";
+  stage: "init" | "fetching" | "merging" | "done";
+  message?: string;
+  current?: number;  // Current chunk/page
+  total?: number;    // Total chunks/pages (if known)
+}
+```
+
+**Progress Calculation:**
+- Fitbit: Precise progress based on chunks (current/total * 100)
+- Withings: Estimated progress based on pages (no total known upfront)
+- Overall: Average of all provider percentages
+
+**Security:**
+- Progress topics use GUID-based IDs validated on both frontend and backend
+- RLS policies allow anonymous subscriptions (progress data is non-sensitive)
+- Service role used for broadcasting (bypasses RLS)
+
 ### Key Directory Structure
 
 ```

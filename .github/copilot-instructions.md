@@ -9,30 +9,6 @@ AI-specific guidance for working with the TrendWeight codebase.
 - Clerk for auth (NOT Supabase Auth), Supabase for PostgreSQL only
 - Project name: **TrendWeight** (capital T, capital W, no space)
 
-## Code Search Strategy
-
-### Use Semantic Search (mcp**code-context**search_code) for:
-
-- Conceptual searches (finding code by what it does)
-- Algorithm/calculation implementations
-- Feature exploration across files
-- Cross-cutting concerns (auth, error handling, validation)
-- Initial investigation when location unknown
-
-### Use Direct Tools (Read, Grep, Glob) for:
-
-- Known file locations
-- Literal string matches, variable names
-- File patterns by extension/naming
-- Configuration values, constants
-- Quick verification of specific lines
-
-### Search Performance:
-
-- Semantic excels: business logic, UI components, features, tests
-- Semantic struggles: infrastructure config, connection strings, cache settings
-- Direct excels: exact matches, known patterns, config files, imports
-
 ## TypeScript/React Rules
 
 - Use kebab-case for all frontend files (`user-profile.tsx`)

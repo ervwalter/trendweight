@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Providers;
 using TrendWeight.Features.Providers.Models;
+using TrendWeight.Features.SyncProgress;
 
 namespace TrendWeight.Features.Measurements;
 
@@ -14,6 +15,7 @@ public class MeasurementSyncService : IMeasurementSyncService
     private readonly IProviderIntegrationService _providerIntegrationService;
     private readonly ISourceDataService _sourceDataService;
     private readonly ILogger<MeasurementSyncService> _logger;
+    private readonly ISyncProgressReporter? _progressReporter;
     private readonly int _cacheDurationSeconds;
 
     // Data is considered fresh for 5 minutes in production
@@ -25,11 +27,13 @@ public class MeasurementSyncService : IMeasurementSyncService
         IProviderIntegrationService providerIntegrationService,
         ISourceDataService sourceDataService,
         ILogger<MeasurementSyncService> logger,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        ISyncProgressReporter? progressReporter = null)
     {
         _providerIntegrationService = providerIntegrationService;
         _sourceDataService = sourceDataService;
         _logger = logger;
+        _progressReporter = progressReporter;
 
         _cacheDurationSeconds = environment.IsDevelopment()
             ? CACHE_DURATION_SECONDS_DEVELOPMENT
@@ -87,6 +91,12 @@ public class MeasurementSyncService : IMeasurementSyncService
             // Wait for all refresh tasks to complete
             if (refreshTasks.Count > 0)
             {
+                // Start progress reporting if we have a reporter
+                if (_progressReporter != null)
+                {
+                    await _progressReporter.ReportSyncProgressAsync("running", "Fetching data from providers...");
+                }
+
                 var refreshResults = await Task.WhenAll(refreshTasks);
                 foreach (var result in refreshResults)
                 {
@@ -101,6 +111,21 @@ public class MeasurementSyncService : IMeasurementSyncService
                     {
                         _logger.LogWarning("Failed to refresh data for provider {Provider}: {Error}",
                             result.Provider, result.Message);
+                    }
+                }
+
+                // Update overall status based on results
+                if (_progressReporter != null)
+                {
+                    var allSuccess = refreshResults.All(r => r.Success);
+                    if (allSuccess)
+                    {
+                        await _progressReporter.ReportSyncProgressAsync("done", "Sync completed successfully");
+                    }
+                    else
+                    {
+                        var failedProviders = refreshResults.Where(r => !r.Success).Select(r => r.Provider);
+                        await _progressReporter.ReportSyncProgressAsync("done", $"Sync failed for: {string.Join(", ", failedProviders)}");
                     }
                 }
             }

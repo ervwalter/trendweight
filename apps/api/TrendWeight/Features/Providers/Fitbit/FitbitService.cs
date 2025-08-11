@@ -11,6 +11,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Fitbit.Models;
+using TrendWeight.Features.SyncProgress;
 using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Features.Providers.Fitbit;
@@ -37,8 +38,9 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         IOptions<AppOptions> appOptions,
         IProviderLinkService providerLinkService,
         IProfileService profileService,
+        ISyncProgressReporter? progressReporter,
         ILogger<FitbitService> logger)
-        : base(providerLinkService, profileService, logger)
+        : base(providerLinkService, profileService, progressReporter, logger)
     {
         _httpClient = httpClient;
 
@@ -277,13 +279,29 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         Logger.LogInformation("Fetching Fitbit measurements from {StartDate} to {EndDate}",
             startDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), endDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
 
-        // Calculate total days and chunks needed
+        // Calculate total days and chunks needed (31-day chunks)
         var totalDays = (endDate - startDate).TotalDays;
-        var estimatedChunks = Math.Ceiling(totalDays / 32);
+        var estimatedChunks = Math.Ceiling(totalDays / 31);
         Logger.LogInformation("Total days to fetch: {TotalDays}, estimated API calls: {Chunks}", totalDays, estimatedChunks);
+
+        // Report initial progress
+        if (ProgressReporter != null)
+        {
+            // For short syncs (< 120 days), use simple message. For long syncs, show year
+            var isShortSync = totalDays <= 120;
+            var initialMessage = isShortSync ? "Retrieving recent weight readings from Fitbit servers" : "Retrieving weight readings from Fitbit servers";
+
+            await ProgressReporter.ReportProviderProgressAsync(
+                "fitbit",
+                stage: "fetching",
+                message: initialMessage,
+                current: 0,
+                total: (int)estimatedChunks);
+        }
 
         // Fetch data in 32-day chunks (Fitbit's maximum allowed range)
         var currentStart = startDate;
+        var chunkIndex = 0;
         while (currentStart <= endDate)
         {
             var currentEnd = currentStart.AddDays(31); // 32 days total
@@ -295,9 +313,38 @@ public class FitbitService : ProviderServiceBase, IFitbitService
             var measurements = await GetWeightLogAsync(accessToken!, currentStart, currentEnd);
             allMeasurements.AddRange(measurements);
 
+            chunkIndex++;
+
+            // Report progress after each chunk
+            if (ProgressReporter != null)
+            {
+                var percent = (int)((chunkIndex * 100) / estimatedChunks);
+
+                // For short syncs (< 120 days), use simple message. For long syncs, show year
+                var isShortSync = totalDays <= 120;
+                var message = isShortSync ? "Retrieving recent weight readings from Fitbit servers" : $"Retrieving weight readings from Fitbit servers for {currentEnd.Year}";
+
+                await ProgressReporter.ReportProviderProgressAsync(
+                    "fitbit",
+                    stage: "fetching",
+                    message: message,
+                    current: chunkIndex,
+                    total: (int)estimatedChunks);
+            }
+
             currentStart = currentEnd.AddDays(1);
         }
 
+        // Report completion
+        if (ProgressReporter != null)
+        {
+            await ProgressReporter.ReportProviderProgressAsync(
+                "fitbit",
+                stage: "done",
+                message: "Complete",
+                current: (int)estimatedChunks,
+                total: (int)estimatedChunks);
+        }
 
         return allMeasurements;
     }
@@ -312,6 +359,17 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         {
             var waitTime = _rateLimitResetTime - DateTimeOffset.UtcNow;
             Logger.LogWarning("Rate limit nearly exhausted. Waiting {WaitTime} seconds before next request", waitTime.TotalSeconds);
+
+            // Only report to user if wait is significant (10+ seconds)
+            if (ProgressReporter != null && waitTime.TotalSeconds >= 10)
+            {
+                var waitSeconds = (int)Math.Ceiling(waitTime.TotalSeconds);
+                await ProgressReporter.ReportProviderProgressAsync(
+                    "fitbit",
+                    stage: "fetching",
+                    message: $"Rate limited, waiting {waitSeconds} seconds...");
+            }
+
             await Task.Delay(waitTime);
         }
 

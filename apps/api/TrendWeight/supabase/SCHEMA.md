@@ -4,7 +4,7 @@ This document describes the database schema for TrendWeight's Supabase backend.
 
 ## Overview
 
-The database consists of four main tables that handle user profiles, authentication mapping, and weight tracking data from fitness providers (Fitbit and Withings).
+The database consists of five main tables that handle user profiles, authentication mapping, weight tracking data from fitness providers (Fitbit and Withings), and legacy data migration.
 
 ## Tables
 
@@ -13,21 +13,23 @@ Stores user profile information and settings.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| uid | UUID | Primary key, references auth.users(id) |
+| uid | UUID | Primary key (no foreign key constraint) |
 | email | VARCHAR | User's email address |
 | profile | JSONB | User settings and preferences |
-| created_at | TEXT | ISO 8601 timestamp of creation |
-| updated_at | TEXT | ISO 8601 timestamp of last update |
+| created_at | TEXT | ISO 8601 timestamp (default: now()) |
+| updated_at | TEXT | ISO 8601 timestamp (default: now()) |
 
 **JSONB Profile Structure:**
 ```json
 {
-  "metric": boolean,          // true for metric units, false for imperial
-  "username": string,         // optional public username
-  "bio": string,             // optional user bio
-  "isPublic": boolean,       // whether profile is publicly visible
-  "syncing": boolean,        // whether data sync is in progress
-  "lastSync": string         // ISO 8601 timestamp of last sync
+  "firstName": string,        // User's first name
+  "useMetric": boolean,       // true for metric units, false for imperial
+  "goalStart": string,        // ISO date string for goal start
+  "goalWeight": number,       // Goal weight in user's preferred units
+  "goalRate": number,         // Weight loss rate per week
+  "sharingEnabled": boolean,  // Whether sharing is enabled
+  "sharingCode": string,      // Unique code for shared dashboards
+  "dayStartOffset": number    // Hours offset for day boundaries
 }
 ```
 
@@ -62,8 +64,9 @@ Stores raw weight measurement data from providers.
 [
   {
     "date": "2024-01-23",      // YYYY-MM-DD format
+    "time": "06:30:00",        // HH:mm:ss format
     "weight": 80.5,            // Weight in kg
-    "bodyfat": 22.5            // Optional body fat percentage
+    "fatRatio": 0.225          // Optional body fat ratio (0-1)
   }
 ]
 ```
@@ -73,13 +76,33 @@ Maps external authentication provider IDs to internal user IDs.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| uid | UUID | Internal user ID (primary key) |
+| uid | UUID | Internal user ID (primary key, auto-generated) |
 | external_id | VARCHAR | External provider's user ID |
-| provider | VARCHAR | Auth provider name ('clerk', 'supabase') |
-| created_at | TEXT | ISO 8601 timestamp of creation |
-| updated_at | TEXT | ISO 8601 timestamp of last update |
+| provider | VARCHAR | Auth provider name (default: 'clerk') |
+| created_at | TEXT | ISO 8601 timestamp with UTC timezone |
+| updated_at | TEXT | ISO 8601 timestamp with UTC timezone |
 
 **Unique Constraint:** (external_id, provider)
+
+### legacy_profiles
+Stores migrated data from the legacy TrendWeight system.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| email | VARCHAR | Primary key - user's email |
+| username | VARCHAR | User's login username for lookup |
+| first_name | VARCHAR | User's first name |
+| use_metric | BOOLEAN | True for metric units |
+| start_date | DATE | Goal start date |
+| goal_weight | DECIMAL | Goal weight |
+| planned_pounds_per_week | DECIMAL | Weight loss rate (already converted for metric) |
+| day_start_offset | INTEGER | Hours offset for day boundaries |
+| private_url_key | VARCHAR | Legacy sharing key |
+| device_type | VARCHAR | Legacy device type |
+| refresh_token | VARCHAR | OAuth refresh token |
+| measurements | JSONB | Pre-converted RawMeasurement array |
+| created_at | TIMESTAMP | Creation timestamp |
+| updated_at | TIMESTAMP | Last update timestamp |
 
 ## Security
 
@@ -89,11 +112,19 @@ All tables have RLS enabled with policies that deny all access except through th
 - All data access must go through the API backend
 - The API uses the service role key to access data on behalf of authenticated users
 
+### Realtime Broadcast Policies
+The `realtime.messages` table has RLS policies for broadcast subscriptions:
+- **sync-progress channels**: Anonymous and authenticated users can subscribe to `sync-progress:*` channels
+- Progress data is non-sensitive (UI feedback only)
+- Backend broadcasts using service role (bypasses RLS)
+
 ### Indexes
-- `idx_users_email` - For efficient email lookups
+- `idx_users_email` - For efficient email lookups on profiles table
 - `idx_vendor_links_updated` - For tracking recently updated provider links
 - `idx_source_data_updated` - For tracking recently synced data
 - `idx_user_accounts_external` - For efficient lookups by external ID and provider
+- `idx_legacy_profiles_email` - For email lookups on legacy profiles
+- `idx_legacy_profiles_username` - For username lookups on legacy profiles
 
 ## Data Conventions
 

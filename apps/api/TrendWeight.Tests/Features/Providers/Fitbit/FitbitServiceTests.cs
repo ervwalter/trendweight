@@ -65,6 +65,7 @@ public class FitbitServiceTests : TestBase
             _appOptionsMock.Object,
             _providerLinkServiceMock.Object,
             _profileServiceMock.Object,
+            null, // ISyncProgressReporter
             _loggerMock.Object);
     }
 

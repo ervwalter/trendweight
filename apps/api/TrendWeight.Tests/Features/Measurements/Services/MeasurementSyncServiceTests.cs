@@ -34,7 +34,8 @@ public class MeasurementSyncServiceTests : TestBase
             _providerIntegrationServiceMock.Object,
             _sourceDataServiceMock.Object,
             _loggerMock.Object,
-            _environmentMock.Object);
+            _environmentMock.Object,
+            null); // ISyncProgressReporter
     }
 
     #region Constructor Tests
@@ -51,7 +52,8 @@ public class MeasurementSyncServiceTests : TestBase
             _providerIntegrationServiceMock.Object,
             _sourceDataServiceMock.Object,
             _loggerMock.Object,
-            _environmentMock.Object);
+            _environmentMock.Object,
+            null); // ISyncProgressReporter
 
         service.Should().NotBeNull();
     }
@@ -67,7 +69,8 @@ public class MeasurementSyncServiceTests : TestBase
             _providerIntegrationServiceMock.Object,
             _sourceDataServiceMock.Object,
             _loggerMock.Object,
-            _environmentMock.Object);
+            _environmentMock.Object,
+            null); // ISyncProgressReporter
 
         // Assert - This will be tested indirectly through the GetMeasurementsForUserAsync tests
         service.Should().NotBeNull();
@@ -592,7 +595,8 @@ public class MeasurementSyncServiceTests : TestBase
             _providerIntegrationServiceMock.Object,
             _sourceDataServiceMock.Object,
             _loggerMock.Object,
-            environmentMock.Object);
+            environmentMock.Object,
+            null); // ISyncProgressReporter
 
         var userId = Guid.NewGuid();
         var activeProviders = new List<string> { "withings" };

@@ -293,6 +293,32 @@ describe("queries", () => {
       expect(result.current.isMe).toBe(false);
     });
 
+    it("should fetch data without progressId when no context", async () => {
+      let capturedUrl: string | undefined;
+
+      server.use(
+        http.get("/api/profile", () => {
+          return HttpResponse.json(mockProfileResponse);
+        }),
+        http.get("/api/data", ({ request }) => {
+          capturedUrl = request.url;
+          return HttpResponse.json(mockMeasurementsResponse);
+        }),
+      );
+
+      const { result } = renderHook(() => useDashboardQueries(undefined), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.measurementData).toBeDefined();
+      });
+
+      // Without context, progressId should not be in URL
+      expect(capturedUrl).toBeDefined();
+      expect(capturedUrl).not.toContain("progressId");
+    });
+
     it("should handle demo mode", async () => {
       const { result } = renderHook(() => useDashboardQueries("demo"), {
         wrapper: createWrapper(),

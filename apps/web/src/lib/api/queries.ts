@@ -1,8 +1,10 @@
 import { useSuspenseQuery, useSuspenseQueries } from "@tanstack/react-query";
+import { useContext } from "react";
 import { apiRequest, ApiError } from "./client";
 import type { ProfileResponse, ProviderLink, MeasurementsResponse } from "./types";
 import type { ProfileData, SharingData } from "../core/interfaces";
 import { getDemoData, getDemoProfile } from "../demo/demo-data";
+import { SyncProgressContext } from "../../components/dashboard/sync-progress/context";
 
 // Query key helpers
 const createQueryKey = <T extends readonly unknown[]>(base: T, sharingCode?: string): T | readonly [...T, string] => {
@@ -54,9 +56,13 @@ export const queryOptions = {
     },
     select: selectProfileData,
   }),
-  data: (sharingCode?: string) => ({
-    queryKey: queryKeys.data(sharingCode),
-    queryFn: () => apiRequest<MeasurementsResponse>(sharingCode ? `/data/${sharingCode}` : "/data"),
+  data: (opts?: { sharingCode?: string; progressId?: string }) => ({
+    queryKey: queryKeys.data(opts?.sharingCode),
+    queryFn: () => {
+      const basePath = opts?.sharingCode ? `/data/${opts.sharingCode}` : "/data";
+      const url = opts?.progressId ? `${basePath}?progressId=${opts.progressId}` : basePath;
+      return apiRequest<MeasurementsResponse>(url);
+    },
     staleTime: 60000, // 1 minute (matching legacy React Query config)
   }),
   providerLinks: (sharingCode?: string) => ({
@@ -87,6 +93,11 @@ export function useProfile() {
 
 // Combined profile and measurement data query with suspense (loads in parallel)
 export function useDashboardQueries(sharingCode?: string) {
+  // Try to get sync progress context if available
+  const syncProgress = useContext(SyncProgressContext);
+  const progressId = syncProgress?.progressId;
+  const startProgress = syncProgress?.startProgress;
+  const endProgress = syncProgress?.endProgress;
   // Create demo query options that match the expected types
   const demoQueryOptions = {
     profile: {
@@ -110,8 +121,47 @@ export function useDashboardQueries(sharingCode?: string) {
     },
   };
 
+  // Build the base data query options
+  const dataQueryOptions = sharingCode === "demo" ? demoQueryOptions.data : queryOptions.data({ sharingCode, progressId });
+
+  // Wrap the queryFn to add progress lifecycle (not for demo, and only if context available)
+  const enhancedDataQuery =
+    sharingCode === "demo" || !startProgress || !endProgress
+      ? dataQueryOptions
+      : {
+          ...dataQueryOptions,
+          queryFn: async () => {
+            // Start client-side progress immediately
+            startProgress("Retrieving measurement data...");
+
+            try {
+              // Call the original queryFn
+              const result = await dataQueryOptions.queryFn();
+
+              // End client-side progress after data loads
+              // (only clears if no server progress received)
+              endProgress();
+
+              return result;
+            } catch (error) {
+              // Also end on error
+              endProgress();
+              throw error;
+            }
+          },
+        };
+
   // Determine which query options to use
-  const queryOptionsToUse = sharingCode === "demo" ? demoQueryOptions : { profile: queryOptions.profile(sharingCode), data: queryOptions.data(sharingCode) };
+  const queryOptionsToUse =
+    sharingCode === "demo"
+      ? {
+          profile: demoQueryOptions.profile,
+          data: enhancedDataQuery,
+        }
+      : {
+          profile: queryOptions.profile(sharingCode),
+          data: enhancedDataQuery,
+        };
 
   // Always call the hook with consistent types
   const results = useSuspenseQueries({

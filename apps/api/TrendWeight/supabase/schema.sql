@@ -62,6 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_user_accounts_external ON public.user_accounts US
 CREATE INDEX IF NOT EXISTS idx_vendor_links_updated ON public.provider_links USING btree (updated_at);
 CREATE INDEX IF NOT EXISTS idx_source_data_updated ON public.source_data USING btree (updated_at);
 
+
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.provider_links ENABLE ROW LEVEL SECURITY;
@@ -129,11 +130,32 @@ CREATE POLICY "Deny all access for anon users"
     TO anon 
     USING (false);
 
+
 -- Grant permissions to service role
 GRANT ALL ON public.profiles TO service_role;
 GRANT ALL ON public.provider_links TO service_role;
 GRANT ALL ON public.source_data TO service_role;
 GRANT ALL ON public.user_accounts TO service_role;
+
+-- ============================================================================
+-- Realtime Broadcast Security Policies
+-- ============================================================================
+
+-- Enable RLS on realtime.messages table to control channel subscriptions
+ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
+
+-- Allow anyone to subscribe to sync progress channels (for receiving broadcasts)
+-- Channel format: sync-progress:{progress-id}
+-- Progress data is not sensitive (just UI feedback) and progressId is a random GUID
+-- The backend broadcasts using service role which bypasses RLS, so no INSERT policy is needed
+CREATE POLICY "Allow anonymous sync-progress subscriptions"
+    ON realtime.messages
+    FOR SELECT
+    TO anon, authenticated
+    USING (
+        extension = 'broadcast' 
+        AND topic LIKE 'sync-progress:%'
+    );
 
 -- Create legacy_profiles table for migrated legacy data
 CREATE TABLE IF NOT EXISTS public.legacy_profiles (

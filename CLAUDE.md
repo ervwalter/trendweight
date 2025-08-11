@@ -119,6 +119,20 @@ npm run check && npm run test
 - All timestamps as ISO 8601 strings
 - All weights in kilograms
 
+## Spec-Workflow Rules (MANDATORY)
+- **CRITICAL: ALWAYS call `spec-workflow-guide` BEFORE ANY spec work** - this is the first tool to call when:
+  - User mentions working on a spec or task
+  - User asks to execute/implement a task number
+  - Returning to spec work after any break
+  - After conversation compaction
+- **ALWAYS load full spec context** (requirements, design, tasks) via `get-spec-context` before implementing
+- **NEVER read/write spec files directly** - use spec-workflow tools exclusively:
+  - `spec-workflow-guide` - Load workflow guide first (MANDATORY FIRST STEP)
+  - `get-spec-context` - Load spec documents before work
+  - `manage-tasks` - Update task status and get context
+  - `create-spec-doc` - Create/update spec documents
+- **NEVER assume spec details** from memory after conversation compaction
+
 ## Common Pitfalls to Avoid
 - Never add CORS to API (Vite proxy handles it)
 - Never expose exception details to users

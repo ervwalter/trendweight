@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Dashboard from "../components/dashboard/dashboard";
 import DashboardPlaceholder from "../components/dashboard/dashboard-placeholder";
+import { SyncProgressProvider } from "../components/dashboard/sync-progress";
 import { Layout } from "../components/layout";
 import { ensureProfile, ensureProviderLinks } from "../lib/loaders/utils";
 
@@ -25,9 +26,12 @@ export const Route = createFileRoute("/u/$sharingCode")({
 function SharedDashboard() {
   const { sharingCode } = Route.useParams();
   const isDemo = sharingCode === "demo";
+
   return (
-    <Layout suspenseFallback={<DashboardPlaceholder />} noIndex={!isDemo}>
-      <Dashboard sharingCode={sharingCode} />
-    </Layout>
+    <SyncProgressProvider>
+      <Layout suspenseFallback={<DashboardPlaceholder />} noIndex={!isDemo}>
+        <Dashboard sharingCode={sharingCode} />
+      </Layout>
+    </SyncProgressProvider>
   );
 }

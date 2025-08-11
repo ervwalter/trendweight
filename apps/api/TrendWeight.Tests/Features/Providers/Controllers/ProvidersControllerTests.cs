@@ -218,6 +218,9 @@ public class ProvidersControllerTests : TestBase
 
         response.Message.Should().Be($"{provider} disconnected successfully");
         providerService.Verify(x => x.RemoveProviderLinkAsync(userId), Times.Once);
+
+        // Verify source data was deleted for non-legacy provider
+        _sourceDataServiceMock.Verify(x => x.DeleteSourceDataAsync(userId, provider), Times.Once);
     }
 
     [Theory]

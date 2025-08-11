@@ -1,8 +1,9 @@
 import { Skeleton } from "../ui/skeleton";
+import { SyncProgressOverlay } from "./sync-progress/sync-progress-overlay";
 
 const DashboardPlaceholder = () => {
   return (
-    <div>
+    <div className="relative">
       {/* Buttons placeholder */}
       <div className="mb-4 flex flex-col-reverse gap-4 md:flex-row">
         <Skeleton className="h-10 w-64" />
@@ -11,7 +12,19 @@ const DashboardPlaceholder = () => {
 
       {/* Chart and Currently section */}
       <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:gap-12">
-        <Skeleton className="h-96 w-full md:w-[475px] lg:w-[650px] xl:w-[840px]" />
+        <div className="w-full md:w-[475px] lg:w-[650px] xl:w-[840px]">
+          <div className="relative">
+            {/* Chart skeleton with aspect ratio matching Highcharts default */}
+            <div className="aspect-[16/10] w-full">
+              <Skeleton className="h-full w-full" />
+            </div>
+
+            {/* Progress overlay */}
+            <div className="absolute inset-0 flex items-center justify-center p-2">
+              <SyncProgressOverlay className="w-full border-none bg-transparent ring-0" />
+            </div>
+          </div>
+        </div>
         <div className="flex flex-col gap-2">
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-12 w-48" />
