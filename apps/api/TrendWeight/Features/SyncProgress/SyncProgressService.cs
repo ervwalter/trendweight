@@ -84,29 +84,37 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
             await EnsureMessageInitializedAsync();
             if (_currentMessage == null) return;
 
-            // Update the specific provider's progress in memory
-            var providers = _currentMessage.Providers ?? [];
-            var providerProgress = providers.FirstOrDefault(p => p.Provider == provider);
+            // Normalize provider name to lowercase
+            provider = provider.ToLowerInvariant();
 
-            if (providerProgress == null)
-            {
-                // First time seeing this provider - add it
-                providerProgress = new ProviderProgressInfo { Provider = provider };
-                providers.Add(providerProgress);
-            }
+            // Use a dictionary for clean, duplicate-free provider management
+            var providerDict = (_currentMessage.Providers ?? new List<ProviderProgressInfo>())
+                .ToDictionary(p => p.Provider, p => p);
 
-            // Update stage and message everytime, counts only if they are provided
+            // Update or add the provider (dictionary ensures no duplicates)
+            var providerProgress = providerDict.TryGetValue(provider, out var existing)
+                ? existing
+                : new ProviderProgressInfo { Provider = provider };
+
+            // Update the provider's properties
             providerProgress.Stage = stage;
             providerProgress.Message = message;
             if (current.HasValue) providerProgress.Current = current.Value;
             if (total.HasValue) providerProgress.Total = total.Value;
+
+            // Store back in dictionary
+            providerDict[provider] = providerProgress;
+
+            // Convert back to list for the message, sorted by provider name for consistency
+            var providers = providerDict.Values.OrderBy(p => p.Provider).ToList();
 
             // Update the message
             _currentMessage.Providers = providers;
 
             await BroadcastProgressAsync();
 
-            _logger.LogDebug("Broadcast provider progress for {Provider}: {Stage} - {Message}", provider, stage, message);
+            _logger.LogDebug("Broadcast provider progress for {Provider}: {Stage} - {Message} (Total providers: {Count})",
+                provider, stage, message, providers.Count);
         }
         catch (Exception ex)
         {
