@@ -1,13 +1,14 @@
-import { useMemo } from "react";
-import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender, type ColumnDef } from "@tanstack/react-table";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Button } from "../ui/button";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-import { PaginationContent, PaginationItem } from "../ui/pagination";
-import { formatMeasurement } from "../../lib/core/numbers";
-import { LocalDate, convert } from "@js-joda/core";
-import type { ScaleReading } from "./types";
 import { cn } from "@/lib/utils";
+import { LocalDate, convert } from "@js-joda/core";
+import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { useMemo } from "react";
+import { formatMeasurement } from "../../lib/core/numbers";
+import { SyncProgressOverlay } from "../dashboard/sync-progress/sync-progress-overlay";
+import { Button } from "../ui/button";
+import { PaginationContent, PaginationItem } from "../ui/pagination";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import type { ScaleReading } from "./types";
 
 interface ScaleReadingsDataTableProps {
   readings: ScaleReading[];
@@ -182,31 +183,35 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
         </div>
       )}
 
-      {/* Table */}
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="border-border border-b">
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="pr-6 pb-2 pl-6 text-left font-semibold">
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row, index) => (
-            <TableRow key={row.id} className={cn("border-border border-b", index % 2 === 1 && "bg-muted")}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className="py-2 pr-6 pl-6">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="relative">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="border-border border-b">
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="pr-6 pb-2 pl-6 text-left font-semibold">
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row, index) => (
+              <TableRow key={row.id} className={cn("border-border border-b", index % 2 === 1 && "bg-muted")}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} className="py-2 pr-6 pl-6">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <div className="absolute inset-0 top-2 p-2">
+          <SyncProgressOverlay className="w-full" />
+        </div>
+      </div>
 
       {/* Bottom pagination */}
       {showPagination && (

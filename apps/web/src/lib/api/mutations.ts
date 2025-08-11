@@ -64,13 +64,13 @@ export function useEnableProvider() {
   });
 }
 
-export function useResyncProvider() {
+export function useClearProviderData() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (provider: string) => apiRequest(`/providers/${provider}/resync`, { method: "POST" }),
+    mutationFn: (provider: string) => apiRequest(`/providers/${provider}/clear-data`, { method: "POST" }),
     onSuccess: () => {
-      // Invalidate data query to refresh measurements after resync
+      // Invalidate data query to refresh measurements after clearing
       queryClient.invalidateQueries({ queryKey: queryKeys.data() });
     },
   });

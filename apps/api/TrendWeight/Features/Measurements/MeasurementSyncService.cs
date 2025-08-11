@@ -176,7 +176,8 @@ public class MeasurementSyncService : IMeasurementSyncService
             if (result.Success && result.Measurements != null)
             {
 
-                if (_progressReporter != null)
+                // Don't report progress for legacy provider
+                if (_progressReporter != null && provider != "legacy")
                 {
                     await _progressReporter.ReportProviderProgressAsync(
                         provider,
@@ -224,7 +225,8 @@ public class MeasurementSyncService : IMeasurementSyncService
                     mergedMeasurements.Count, provider);
             }
 
-            if (_progressReporter != null)
+            // Don't report progress for legacy provider
+            if (_progressReporter != null && provider != "legacy")
             {
                 await _progressReporter.ReportProviderProgressAsync(
                     provider,
@@ -247,10 +249,9 @@ public class MeasurementSyncService : IMeasurementSyncService
         }
     }
 
-    public async Task<ProviderSyncResult> ResyncProviderAsync(
+    public async Task<ProviderSyncResult> ClearProviderDataAsync(
         Guid userId,
-        string provider,
-        bool useMetric)
+        string provider)
     {
         try
         {
@@ -258,18 +259,22 @@ public class MeasurementSyncService : IMeasurementSyncService
             await _sourceDataService.ClearSourceDataAsync(userId, provider);
             _logger.LogInformation("Cleared source data for {Provider} for user {UserId}", provider, userId);
 
-            // Now refresh - it will fetch all data since LastSync is null
-            return await RefreshProviderAsync(userId, provider, useMetric);
+            return new ProviderSyncResult
+            {
+                Provider = provider,
+                Success = true,
+                Message = $"Successfully cleared {provider} data"
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error resyncing {Provider} data", provider);
+            _logger.LogError(ex, "Error clearing {Provider} data", provider);
             return new ProviderSyncResult
             {
                 Provider = provider,
                 Success = false,
                 Error = ProviderSyncError.Unknown,
-                Message = $"Unexpected error resyncing {provider} data"
+                Message = $"Unexpected error clearing {provider} data"
             };
         }
     }

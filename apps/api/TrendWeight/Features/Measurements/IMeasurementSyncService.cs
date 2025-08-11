@@ -21,14 +21,12 @@ public interface IMeasurementSyncService
         bool useMetric);
 
     /// <summary>
-    /// Forces a full resync of a specific provider for a user
+    /// Clears source data for a specific provider
     /// </summary>
     /// <param name="userId">User's Supabase UID</param>
-    /// <param name="provider">Provider name to resync</param>
-    /// <param name="useMetric">Whether user prefers metric units</param>
-    /// <returns>Sync result with success status</returns>
-    Task<ProviderSyncResult> ResyncProviderAsync(
+    /// <param name="provider">Provider name to clear data for</param>
+    /// <returns>Result with success status</returns>
+    Task<ProviderSyncResult> ClearProviderDataAsync(
         Guid userId,
-        string provider,
-        bool useMetric);
+        string provider);
 }

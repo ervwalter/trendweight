@@ -1,8 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// Mock Supabase client before any other imports
+vi.mock("../../lib/realtime/client", () => ({
+  supabase: {
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn((callback) => {
+        if (callback) callback("subscribed");
+        return vi.fn();
+      }),
+      unsubscribe: vi.fn(),
+    })),
+    removeChannel: vi.fn(),
+  },
+}));
+
+// Mock realtime progress hook to return null (no progress)
+vi.mock("../../lib/realtime/use-realtime-progress", () => ({
+  useRealtimeProgress: () => ({
+    status: null,
+    message: null,
+    providers: null,
+    isTerminal: false,
+  }),
+}));
+
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ScaleReadingsDataTable } from "./scale-readings-data-table";
 import { LocalDate } from "@js-joda/core";
 import type { ScaleReading } from "./types";
+import { SyncProgressProvider } from "../dashboard/sync-progress";
 
 describe("ScaleReadingsDataTable", () => {
   const createMockReadings = (count: number): ScaleReading[] => {
@@ -21,12 +48,17 @@ describe("ScaleReadingsDataTable", () => {
     useMetric: false,
   };
 
+  // Helper to render with providers
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(<SyncProgressProvider>{ui}</SyncProgressProvider>);
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("should render table with correct headers for computed view", () => {
-    render(<ScaleReadingsDataTable {...defaultProps} />);
+    renderWithProviders(<ScaleReadingsDataTable {...defaultProps} />);
 
     expect(screen.getByText("Date")).toBeInTheDocument();
     expect(screen.getByText("Actual Weight")).toBeInTheDocument();
@@ -37,7 +69,7 @@ describe("ScaleReadingsDataTable", () => {
   });
 
   it("should render table with correct headers for provider view", () => {
-    render(<ScaleReadingsDataTable {...defaultProps} viewType="fitbit" />);
+    renderWithProviders(<ScaleReadingsDataTable {...defaultProps} viewType="fitbit" />);
 
     expect(screen.getByText("Date")).toBeInTheDocument();
     expect(screen.getByText("Time")).toBeInTheDocument();
@@ -48,7 +80,7 @@ describe("ScaleReadingsDataTable", () => {
   });
 
   it("should display pagination controls when more than 50 items", () => {
-    render(<ScaleReadingsDataTable {...defaultProps} />);
+    renderWithProviders(<ScaleReadingsDataTable {...defaultProps} />);
 
     // We have top and bottom pagination, so we'll have multiple buttons
     expect(screen.getAllByRole("button", { name: /previous/i })).toHaveLength(2);
@@ -59,7 +91,7 @@ describe("ScaleReadingsDataTable", () => {
 
   it("should not display pagination controls when 50 or fewer items", () => {
     const props = { ...defaultProps, readings: createMockReadings(50) };
-    render(<ScaleReadingsDataTable {...props} />);
+    renderWithProviders(<ScaleReadingsDataTable {...props} />);
 
     expect(screen.queryByRole("button", { name: /previous/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /next/i })).not.toBeInTheDocument();
@@ -67,7 +99,7 @@ describe("ScaleReadingsDataTable", () => {
   });
 
   it("should paginate data correctly", () => {
-    render(<ScaleReadingsDataTable {...defaultProps} />);
+    renderWithProviders(<ScaleReadingsDataTable {...defaultProps} />);
 
     // Check first page shows 50 items
     const rows = screen.getAllByRole("row");
@@ -76,7 +108,7 @@ describe("ScaleReadingsDataTable", () => {
   });
 
   it("should handle page navigation", () => {
-    render(<ScaleReadingsDataTable {...defaultProps} />);
+    renderWithProviders(<ScaleReadingsDataTable {...defaultProps} />);
 
     // Get the first next button (from top pagination)
     const nextButtons = screen.getAllByRole("button", { name: /next/i });
@@ -93,7 +125,7 @@ describe("ScaleReadingsDataTable", () => {
   });
 
   it("should disable previous button on first page", () => {
-    render(<ScaleReadingsDataTable {...defaultProps} />);
+    renderWithProviders(<ScaleReadingsDataTable {...defaultProps} />);
 
     // Both previous buttons should be disabled on first page
     const prevButtons = screen.getAllByRole("button", { name: /previous/i });
@@ -102,7 +134,7 @@ describe("ScaleReadingsDataTable", () => {
   });
 
   it("should disable next button on last page", () => {
-    render(<ScaleReadingsDataTable {...defaultProps} />);
+    renderWithProviders(<ScaleReadingsDataTable {...defaultProps} />);
 
     const nextButtons = screen.getAllByRole("button", { name: /next/i });
 
@@ -119,7 +151,7 @@ describe("ScaleReadingsDataTable", () => {
   });
 
   it("should handle first and last page navigation", () => {
-    render(<ScaleReadingsDataTable {...defaultProps} />);
+    renderWithProviders(<ScaleReadingsDataTable {...defaultProps} />);
 
     // Go to page 2
     const nextButtons = screen.getAllByRole("button", { name: /next/i });
@@ -149,7 +181,7 @@ describe("ScaleReadingsDataTable", () => {
       },
     ];
 
-    render(<ScaleReadingsDataTable readings={readings} viewType="computed" useMetric={false} />);
+    renderWithProviders(<ScaleReadingsDataTable readings={readings} viewType="computed" useMetric={false} />);
 
     // Check date format
     expect(screen.getByText(/Jan 15, 2024/)).toBeInTheDocument();
@@ -172,7 +204,7 @@ describe("ScaleReadingsDataTable", () => {
       },
     ];
 
-    render(<ScaleReadingsDataTable readings={readings} viewType="computed" useMetric={true} />);
+    renderWithProviders(<ScaleReadingsDataTable readings={readings} viewType="computed" useMetric={true} />);
 
     // Check metric weight formatting (with units)
     expect(screen.getByText("81.6 kg")).toBeInTheDocument();
@@ -190,7 +222,7 @@ describe("ScaleReadingsDataTable", () => {
       },
     ];
 
-    const { container } = render(<ScaleReadingsDataTable readings={readings} viewType="fitbit" useMetric={false} />);
+    const { container } = renderWithProviders(<ScaleReadingsDataTable readings={readings} viewType="fitbit" useMetric={false} />);
 
     // Check for italic styling on interpolated values
     // The spans inside the td cells have the italic class
@@ -209,7 +241,7 @@ describe("ScaleReadingsDataTable", () => {
       },
     ];
 
-    render(<ScaleReadingsDataTable readings={readings} viewType="computed" useMetric={false} />);
+    renderWithProviders(<ScaleReadingsDataTable readings={readings} viewType="computed" useMetric={false} />);
 
     // Should show dashes for missing data
     const dashes = screen.getAllByText("-");
@@ -225,13 +257,13 @@ describe("ScaleReadingsDataTable", () => {
       },
     ];
 
-    render(<ScaleReadingsDataTable readings={readings} viewType="fitbit" useMetric={false} />);
+    renderWithProviders(<ScaleReadingsDataTable readings={readings} viewType="fitbit" useMetric={false} />);
 
     expect(screen.getByText(/8:30/)).toBeInTheDocument();
   });
 
   it("should handle empty readings array", () => {
-    render(<ScaleReadingsDataTable readings={[]} viewType="computed" useMetric={false} />);
+    renderWithProviders(<ScaleReadingsDataTable readings={[]} viewType="computed" useMetric={false} />);
 
     // Should still render headers
     expect(screen.getByText("Date")).toBeInTheDocument();
@@ -244,7 +276,7 @@ describe("ScaleReadingsDataTable", () => {
 
   it("should apply striped row styling", () => {
     const readings = createMockReadings(3);
-    const { container } = render(<ScaleReadingsDataTable readings={readings} viewType="computed" useMetric={false} />);
+    const { container } = renderWithProviders(<ScaleReadingsDataTable readings={readings} viewType="computed" useMetric={false} />);
 
     const rows = container.querySelectorAll("tbody tr");
     expect(rows[0]).not.toHaveClass("bg-muted");

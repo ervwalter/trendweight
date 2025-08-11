@@ -1,8 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// Mock Supabase client before any other imports
+vi.mock("../../lib/realtime/client", () => ({
+  supabase: {
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn((callback) => {
+        if (callback) callback("subscribed");
+        return vi.fn();
+      }),
+      unsubscribe: vi.fn(),
+    })),
+    removeChannel: vi.fn(),
+  },
+}));
+
+// Mock realtime progress hook to return null (no progress)
+vi.mock("../../lib/realtime/use-realtime-progress", () => ({
+  useRealtimeProgress: () => ({
+    status: null,
+    message: null,
+    providers: null,
+    isTerminal: false,
+  }),
+}));
+
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Download } from "./download";
 import { LocalDate } from "@js-joda/core";
+import type { ProviderLink } from "../../lib/api/types";
+import { SyncProgressProvider } from "../dashboard/sync-progress";
 
 // Mock dependencies
 vi.mock("../../lib/api/queries", () => ({
@@ -15,6 +43,18 @@ vi.mock("../../lib/download/use-scale-readings-data", () => ({
 
 vi.mock("../../lib/download/csv-export", () => ({
   downloadScaleReadingsCSV: vi.fn(),
+}));
+
+// Mock the provider display utility
+vi.mock("../../lib/utils/provider-display", () => ({
+  getProviderDisplayName: (provider: string) => {
+    const names: Record<string, string> = {
+      withings: "Withings",
+      fitbit: "Fitbit",
+      legacy: "Legacy Data",
+    };
+    return names[provider] || provider;
+  },
 }));
 
 // Mock UI components
@@ -89,6 +129,13 @@ import { useScaleReadingsData } from "../../lib/download/use-scale-readings-data
 import { downloadScaleReadingsCSV } from "../../lib/download/csv-export";
 
 describe("Download", () => {
+  const createProviderLink = (provider: string, isDisabled = false): ProviderLink => ({
+    provider,
+    connectedAt: "2024-01-01T00:00:00Z",
+    hasToken: true,
+    isDisabled,
+  });
+
   const mockProviderLinks = [
     { provider: "fitbit", hasToken: true, connectedAt: "2024-01-01T00:00:00Z" },
     { provider: "withings", hasToken: false, connectedAt: "2024-01-01T00:00:00Z" },
@@ -105,6 +152,11 @@ describe("Download", () => {
     firstName: "John",
   };
 
+  // Helper to render with providers
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(<SyncProgressProvider>{ui}</SyncProgressProvider>);
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useProviderLinks).mockReturnValue({ data: mockProviderLinks } as any);
@@ -115,7 +167,7 @@ describe("Download", () => {
   });
 
   it("should render download page with controls", () => {
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     expect(screen.getByText("Download Your Data")).toBeInTheDocument();
     expect(screen.getByTestId("view-toggle-buttons")).toBeInTheDocument();
@@ -126,7 +178,7 @@ describe("Download", () => {
   it("should show message when no providers are connected", () => {
     vi.mocked(useProviderLinks).mockReturnValue({ data: [] } as any);
 
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     expect(screen.getByText("Download Your Data")).toBeInTheDocument();
     expect(screen.getByText("No providers connected. Please connect a scale provider from the settings page.")).toBeInTheDocument();
@@ -138,14 +190,14 @@ describe("Download", () => {
       data: [{ provider: "fitbit", hasToken: false, connectedAt: "2024-01-01T00:00:00Z" }],
     } as any);
 
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     expect(screen.getByText("No providers connected. Please connect a scale provider from the settings page.")).toBeInTheDocument();
   });
 
   it("should handle view type changes", async () => {
     const user = userEvent.setup();
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     // Initially should be computed view
     expect(vi.mocked(useScaleReadingsData)).toHaveBeenCalledWith("computed", true);
@@ -159,7 +211,7 @@ describe("Download", () => {
 
   it("should update view when changing views", async () => {
     const user = userEvent.setup();
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     // Initially should show computed view
     expect(screen.getByTestId("scale-readings-table")).toHaveTextContent("View: computed");
@@ -174,7 +226,7 @@ describe("Download", () => {
 
   it("should handle sort toggle", async () => {
     const user = userEvent.setup();
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     expect(screen.getByText("Sort: Newest First")).toBeInTheDocument();
     expect(vi.mocked(useScaleReadingsData)).toHaveBeenCalledWith("computed", true);
@@ -188,7 +240,7 @@ describe("Download", () => {
 
   it("should handle CSV download", async () => {
     const user = userEvent.setup();
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     const downloadButton = screen.getByText("Download as CSV");
     await user.click(downloadButton);
@@ -197,7 +249,7 @@ describe("Download", () => {
   });
 
   it("should display data table with pagination info", () => {
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     const table = screen.getByTestId("scale-readings-table");
 
@@ -219,7 +271,7 @@ describe("Download", () => {
       profile: mockProfile,
     });
 
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     expect(screen.getByText("No data available for the selected view.")).toBeInTheDocument();
     expect(screen.queryByTestId("scale-readings-table")).not.toBeInTheDocument();
@@ -227,7 +279,7 @@ describe("Download", () => {
   });
 
   it("should pass correct props to ScaleReadingsTable", () => {
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     const table = screen.getByTestId("scale-readings-table");
     expect(table).toHaveTextContent("View: computed");
@@ -241,18 +293,103 @@ describe("Download", () => {
       profile: { useMetric: true, firstName: "John" },
     });
 
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     const table = screen.getByTestId("scale-readings-table");
     expect(table).toHaveTextContent("Metric: true");
   });
 
   it("should only show provider buttons for connected providers", () => {
-    render(<Download />);
+    renderWithProviders(<Download />);
 
     const viewToggle = screen.getByTestId("view-toggle-buttons");
     expect(viewToggle).toHaveTextContent("Computed");
     expect(viewToggle).toHaveTextContent("fitbit");
     expect(viewToggle).not.toHaveTextContent("withings"); // Not connected
+  });
+
+  // Tests from __tests__ version for legacy provider handling
+  it("should show download interface when providers are connected", () => {
+    vi.mocked(useProviderLinks).mockReturnValue({
+      data: [createProviderLink("withings")],
+    } as any);
+
+    renderWithProviders(<Download />);
+
+    expect(screen.getByText("Download Your Data")).toBeInTheDocument();
+    expect(screen.getByText("Download as CSV")).toBeInTheDocument();
+  });
+
+  it("should include enabled legacy provider in the view toggle", () => {
+    vi.mocked(useProviderLinks).mockReturnValue({
+      data: [createProviderLink("withings"), createProviderLink("legacy", false)],
+    } as any);
+
+    renderWithProviders(<Download />);
+
+    const viewToggle = screen.getByTestId("view-toggle-buttons");
+    expect(viewToggle).toHaveTextContent("Computed");
+    expect(viewToggle).toHaveTextContent("withings");
+    expect(viewToggle).toHaveTextContent("legacy");
+  });
+
+  it("should exclude disabled legacy provider from the view toggle", () => {
+    vi.mocked(useProviderLinks).mockReturnValue({
+      data: [createProviderLink("withings"), createProviderLink("legacy", true)],
+    } as any);
+
+    renderWithProviders(<Download />);
+
+    const viewToggle = screen.getByTestId("view-toggle-buttons");
+    expect(viewToggle).toHaveTextContent("Computed");
+    expect(viewToggle).toHaveTextContent("withings");
+    expect(viewToggle).not.toHaveTextContent("legacy");
+  });
+
+  it("should filter out disabled providers from connected count", () => {
+    vi.mocked(useProviderLinks).mockReturnValue({
+      data: [createProviderLink("withings", true), createProviderLink("legacy", true)],
+    } as any);
+
+    renderWithProviders(<Download />);
+
+    expect(screen.getByText("No providers connected. Please connect a scale provider from the settings page.")).toBeInTheDocument();
+  });
+
+  it("should show data when readings are available", () => {
+    vi.mocked(useProviderLinks).mockReturnValue({
+      data: [createProviderLink("legacy", false)],
+    } as any);
+
+    vi.mocked(useScaleReadingsData).mockReturnValue({
+      readings: [
+        {
+          date: LocalDate.parse("2024-01-01"),
+          weight: 70,
+          provider: "legacy",
+        },
+      ],
+      profile: { useMetric: true },
+    } as any);
+
+    renderWithProviders(<Download />);
+
+    expect(screen.getByText("Download as CSV")).toBeInTheDocument();
+    expect(screen.queryByText("No data available for the selected view.")).not.toBeInTheDocument();
+  });
+
+  it("should show message when no data is available for selected view", () => {
+    vi.mocked(useProviderLinks).mockReturnValue({
+      data: [createProviderLink("withings")],
+    } as any);
+
+    vi.mocked(useScaleReadingsData).mockReturnValue({
+      readings: [],
+      profile: { useMetric: false },
+    } as any);
+
+    renderWithProviders(<Download />);
+
+    expect(screen.getByText("No data available for the selected view.")).toBeInTheDocument();
   });
 });

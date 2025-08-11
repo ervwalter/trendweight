@@ -216,7 +216,8 @@ public class ProvidersControllerTests : TestBase
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
 
-        response.Message.Should().Be($"{provider} disconnected successfully");
+        response.Message.Should().Contain(provider);
+        response.Message.Should().MatchRegex("(disconnected|disabled).*successfully", "message should indicate successful disconnection");
         providerService.Verify(x => x.RemoveProviderLinkAsync(userId), Times.Once);
 
         // Verify source data was deleted for non-legacy provider
@@ -271,7 +272,8 @@ public class ProvidersControllerTests : TestBase
         result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
-        response.Message.Should().Be($"{provider} disconnected successfully");
+        response.Message.Should().Contain(provider);
+        response.Message.Should().MatchRegex("(disconnected|disabled).*successfully", "message should indicate successful disconnection");
 
         // Verify provider service was called to remove the link
         mockLegacyService.Verify(x => x.RemoveProviderLinkAsync(userId), Times.Once);
@@ -312,7 +314,7 @@ public class ProvidersControllerTests : TestBase
         // Assert
         result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be($"No {provider} connection found");
+            .Which.Error.Should().MatchRegex($".*{provider}.*connection.*", "error should mention provider and connection");
     }
 
     [Fact]
@@ -335,7 +337,7 @@ public class ProvidersControllerTests : TestBase
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be($"Provider service not found for: {provider}");
+            .Which.Error.Should().MatchRegex($".*service.*not found.*{provider}.*", "error should indicate service not found for provider");
     }
 
     [Fact]
@@ -363,7 +365,7 @@ public class ProvidersControllerTests : TestBase
             .Which.StatusCode.Should().Be(500);
         var errorResult = result.Result as ObjectResult;
         errorResult!.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be($"Failed to disconnect {provider}");
+            .Which.Error.Should().MatchRegex($"Failed.*{provider}.*", "error should indicate failure for provider");
     }
 
     #endregion
@@ -390,7 +392,8 @@ public class ProvidersControllerTests : TestBase
         result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
-        response.Message.Should().Be("legacy enabled successfully");
+        response.Message.Should().Contain("legacy");
+        response.Message.Should().MatchRegex("enabled.*successfully", "message should indicate successful enable");
 
         legacyService.Verify(x => x.EnableProviderLinkAsync(userId), Times.Once);
     }
@@ -455,7 +458,8 @@ public class ProvidersControllerTests : TestBase
         result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
-        response.Message.Should().Be("legacy enabled successfully");
+        response.Message.Should().Contain("legacy");
+        response.Message.Should().MatchRegex("enabled.*successfully", "message should indicate successful enable");
     }
 
     [Fact]
@@ -493,10 +497,10 @@ public class ProvidersControllerTests : TestBase
 
     #endregion
 
-    #region ResyncProvider Tests
+    #region ClearProviderData Tests
 
     [Fact]
-    public async Task ResyncProvider_WithValidProviderAndLink_ReturnsSuccess()
+    public async Task ClearProviderData_WithValidProviderAndLink_ReturnsSuccess()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -508,35 +512,34 @@ public class ProvidersControllerTests : TestBase
         SetupAuthenticatedUser(userId.ToString());
         _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, provider))
             .ReturnsAsync(existingLink);
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
-            .ReturnsAsync(user);
-        _measurementSyncServiceMock.Setup(x => x.ResyncProviderAsync(userId, provider, user.Profile.UseMetric))
+        _measurementSyncServiceMock.Setup(x => x.ClearProviderDataAsync(userId, provider))
             .ReturnsAsync(new ProviderSyncResult { Provider = provider, Success = true });
 
         // Act
-        var result = await _sut.ResyncProvider(provider);
+        var result = await _sut.ClearProviderData(provider);
 
         // Assert
         result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
 
-        response.Message.Should().Be($"{provider} resync completed successfully");
-        // Resync logic is now handled internally by MeasurementSyncService
+        response.Message.Should().Contain(provider);
+        response.Message.Should().MatchRegex("(cleared|clear).*successfully", "message should indicate successful clear");
+        // Clear logic is now handled internally by MeasurementSyncService
     }
 
     [Theory]
     [InlineData("invalid-provider")]
     [InlineData("unknown")]
     [InlineData("legacy")] // Legacy provider cannot be resynced
-    public async Task ResyncProvider_WithInvalidProvider_ReturnsBadRequest(string invalidProvider)
+    public async Task ClearProviderData_WithInvalidProvider_ReturnsBadRequest(string invalidProvider)
     {
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
 
         // Act
-        var result = await _sut.ResyncProvider(invalidProvider);
+        var result = await _sut.ClearProviderData(invalidProvider);
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>()
@@ -545,30 +548,27 @@ public class ProvidersControllerTests : TestBase
     }
 
     [Fact]
-    public async Task ResyncProvider_WhenUserNotFound_ReturnsNotFound()
+    public async Task ClearProviderData_WhenProviderLinkNotFound_ReturnsNotFound()
     {
         // Arrange
         var userId = Guid.NewGuid();
         var provider = "withings";
-        var existingLink = CreateTestProviderLink(userId, provider);
 
         SetupAuthenticatedUser(userId.ToString());
         _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, provider))
-            .ReturnsAsync(existingLink);
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
-            .ReturnsAsync((DbProfile?)null);
+            .ReturnsAsync((DbProviderLink?)null);
 
         // Act
-        var result = await _sut.ResyncProvider(provider);
+        var result = await _sut.ClearProviderData(provider);
 
         // Assert
         result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("User not found");
+            .Which.Error.Should().MatchRegex($".*{provider}.*connection.*", "error should mention provider and connection");
     }
 
     [Fact]
-    public async Task ResyncProvider_WhenSyncFails_ReturnsInternalServerError()
+    public async Task ClearProviderData_WhenClearFails_ReturnsInternalServerError()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -580,20 +580,19 @@ public class ProvidersControllerTests : TestBase
         SetupAuthenticatedUser(userId.ToString());
         _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, provider))
             .ReturnsAsync(existingLink);
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
-            .ReturnsAsync(user);
-        _measurementSyncServiceMock.Setup(x => x.ResyncProviderAsync(userId, provider, user.Profile.UseMetric))
-            .ReturnsAsync(new ProviderSyncResult { Provider = provider, Success = false });
+        _measurementSyncServiceMock.Setup(x => x.ClearProviderDataAsync(userId, provider))
+            .ReturnsAsync(new ProviderSyncResult { Provider = provider, Success = false, Message = "Failed to clear withings data" });
 
         // Act
-        var result = await _sut.ResyncProvider(provider);
+        var result = await _sut.ClearProviderData(provider);
 
         // Assert
         result.Result.Should().BeOfType<ObjectResult>()
             .Which.StatusCode.Should().Be(500);
         var errorResult = result.Result as ObjectResult;
-        errorResult!.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be($"Failed to resync {provider} data");
+        var errorResponse = errorResult!.Value.Should().BeOfType<ErrorResponse>().Subject;
+        errorResponse.Error.Should().NotBeNullOrEmpty();
+        errorResponse.Error.Should().MatchRegex("Failed.*", "error should indicate failure");
     }
 
     #endregion

@@ -1,14 +1,14 @@
+import { Download as DownloadIcon } from "lucide-react";
 import { useState } from "react";
 import { useProviderLinks } from "../../lib/api/queries";
+import { downloadScaleReadingsCSV } from "../../lib/download/csv-export";
+import { useScaleReadingsData } from "../../lib/download/use-scale-readings-data";
 import { Heading } from "../common/heading";
 import { Button } from "../ui/button";
 import { ScaleReadingsDataTable } from "./scale-readings-data-table";
-import { ViewToggleButtons } from "./view-toggle-buttons";
 import { SortToggle } from "./sort-toggle";
-import { useScaleReadingsData } from "../../lib/download/use-scale-readings-data";
-import { downloadScaleReadingsCSV } from "../../lib/download/csv-export";
-import { Download as DownloadIcon } from "lucide-react";
 import type { ViewType } from "./types";
+import { ViewToggleButtons } from "./view-toggle-buttons";
 
 export function Download() {
   const [viewType, setViewType] = useState<ViewType>("computed");

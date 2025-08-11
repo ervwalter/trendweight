@@ -1,3 +1,5 @@
+import { SyncProgressProvider } from "@/components/dashboard/sync-progress";
+import { SyncProgressOverlay } from "@/components/dashboard/sync-progress/sync-progress-overlay";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download } from "../components/download/download";
 import { Layout } from "../components/layout";
@@ -17,8 +19,10 @@ export const Route = createFileRoute("/download")({
 
 function ScaleReadingsPage() {
   return (
-    <Layout title="Download Your Data" suspenseFallback={<div className="py-8 text-center">Loading scale readings...</div>}>
-      <Download />
-    </Layout>
+    <SyncProgressProvider>
+      <Layout title="Download Your Data" suspenseFallback={<SyncProgressOverlay className="w-full" />}>
+        <Download />
+      </Layout>
+    </SyncProgressProvider>
   );
 }

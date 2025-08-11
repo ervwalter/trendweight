@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { redirect } from "@tanstack/react-router";
-import { ensureProviderLinks } from "../utils";
-import { queryClient } from "../../query-client";
-import type { ProviderLink } from "../../api/types";
+import { ensureProviderLinks } from "./utils";
+import { queryClient } from "../query-client";
+import type { ProviderLink } from "../api/types";
 
 // Mock dependencies
 vi.mock("@tanstack/react-router", () => ({
@@ -11,13 +11,13 @@ vi.mock("@tanstack/react-router", () => ({
   }),
 }));
 
-vi.mock("../../query-client", () => ({
+vi.mock("../query-client", () => ({
   queryClient: {
     fetchQuery: vi.fn(),
   },
 }));
 
-vi.mock("../../api/queries", () => ({
+vi.mock("../api/queries", () => ({
   queryOptions: {
     providerLinks: vi.fn((sharingCode?: string) => ({
       queryKey: ["providerLinks", sharingCode],

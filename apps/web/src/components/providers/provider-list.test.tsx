@@ -3,7 +3,7 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProviderList } from "./provider-list";
 import { useProviderLinks } from "../../lib/api/queries";
-import { useDisconnectProvider, useResyncProvider } from "../../lib/api/mutations";
+import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "../../lib/api/mutations";
 import { apiRequest } from "../../lib/api/client";
 import { useToast } from "../../lib/hooks/use-toast";
 
@@ -25,10 +25,17 @@ vi.mock("../ui/confirm-dialog", () => ({
     ) : null,
 }));
 
+// Mock useNavigate
+const mockNavigate = vi.fn();
+vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => mockNavigate,
+}));
+
 describe("ProviderList", () => {
   const mockShowToast = vi.fn();
   const mockDisconnectMutate = vi.fn();
-  const mockResyncMutate = vi.fn();
+  const mockClearDataMutate = vi.fn();
+  const mockEnableMutate = vi.fn();
 
   const mockProviderLinks = [
     {
@@ -40,6 +47,7 @@ describe("ProviderList", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNavigate.mockClear();
 
     // Spy on window.location.assign
     Object.defineProperty(window, "location", {
@@ -54,8 +62,13 @@ describe("ProviderList", () => {
       isPending: false,
       variables: undefined,
     } as any);
-    vi.mocked(useResyncProvider).mockReturnValue({
-      mutate: mockResyncMutate,
+    vi.mocked(useClearProviderData).mockReturnValue({
+      mutate: mockClearDataMutate,
+      isPending: false,
+      variables: undefined,
+    } as any);
+    vi.mocked(useEnableProvider).mockReturnValue({
+      mutate: mockEnableMutate,
       isPending: false,
       variables: undefined,
     } as any);
@@ -140,14 +153,14 @@ describe("ProviderList", () => {
       consoleErrorSpy.mockRestore();
     });
 
-    it("should handle resync action", async () => {
+    it("should handle clear data action", async () => {
       const user = userEvent.setup();
 
       render(<ProviderList variant="link" />);
 
       await user.click(screen.getByText("Resync Data"));
 
-      expect(mockResyncMutate).toHaveBeenCalledWith(
+      expect(mockClearDataMutate).toHaveBeenCalledWith(
         "withings",
         expect.objectContaining({
           onSuccess: expect.any(Function),
@@ -156,19 +169,16 @@ describe("ProviderList", () => {
       );
 
       // Simulate success callback
-      const successCallback = mockResyncMutate.mock.calls[0][1].onSuccess;
+      const successCallback = mockClearDataMutate.mock.calls[0][1].onSuccess;
       successCallback();
 
-      expect(mockShowToast).toHaveBeenCalledWith({
-        title: "Resync Complete",
-        description: "Withings data has been resynced successfully.",
-        variant: "success",
-      });
+      // Should navigate to dashboard on success
+      expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard" });
     });
 
-    it("should show resync pending state", () => {
-      vi.mocked(useResyncProvider).mockReturnValue({
-        mutate: mockResyncMutate,
+    it("should show clear data pending state", () => {
+      vi.mocked(useClearProviderData).mockReturnValue({
+        mutate: mockClearDataMutate,
         isPending: true,
         variables: "withings",
       } as any);
@@ -280,7 +290,7 @@ describe("ProviderList", () => {
   });
 
   describe("error handling", () => {
-    it("should handle resync error", async () => {
+    it("should handle clear data error", async () => {
       const user = userEvent.setup();
 
       render(<ProviderList variant="link" />);
@@ -288,7 +298,7 @@ describe("ProviderList", () => {
       await user.click(screen.getByText("Resync Data"));
 
       // Simulate error callback
-      const errorCallback = mockResyncMutate.mock.calls[0][1].onError;
+      const errorCallback = mockClearDataMutate.mock.calls[0][1].onError;
       errorCallback();
 
       expect(mockShowToast).toHaveBeenCalledWith({
@@ -337,8 +347,8 @@ describe("ProviderList", () => {
     });
 
     it("should disable buttons during mutations", () => {
-      vi.mocked(useResyncProvider).mockReturnValue({
-        mutate: mockResyncMutate,
+      vi.mocked(useClearProviderData).mockReturnValue({
+        mutate: mockClearDataMutate,
         isPending: true,
         variables: "withings",
       } as any);

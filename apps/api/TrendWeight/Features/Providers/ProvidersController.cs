@@ -151,12 +151,12 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
-    /// Triggers a data resync for a specific provider
+    /// Clears data for a specific provider (will trigger resync on next dashboard load)
     /// </summary>
-    /// <param name="provider">The provider to resync (withings, fitbit)</param>
+    /// <param name="provider">The provider to clear data for (withings, fitbit)</param>
     /// <returns>Success or error response</returns>
-    [HttpPost("{provider}/resync")]
-    public async Task<ActionResult<ProviderOperationResponse>> ResyncProvider(string provider)
+    [HttpPost("{provider}/clear-data")]
+    public async Task<ActionResult<ProviderOperationResponse>> ClearProviderData(string provider)
     {
         try
         {
@@ -182,29 +182,22 @@ public class ProvidersController : ControllerBase
                 return NotFound(new ErrorResponse { Error = $"No {provider} connection found" });
             }
 
-            // Get user to check metric preference
-            var user = await _profileService.GetByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound(new ErrorResponse { Error = "User not found" });
-            }
+            // Clear the provider data
+            var result = await _measurementSyncService.ClearProviderDataAsync(userGuid, provider);
 
-            // Use the measurement sync service to handle the resync
-            var syncResult = await _measurementSyncService.ResyncProviderAsync(userGuid, provider, user.Profile.UseMetric);
-
-            if (syncResult.Success)
+            if (result.Success)
             {
-                return Ok(new ProviderOperationResponse { Message = $"{provider} resync completed successfully" });
+                return Ok(new ProviderOperationResponse { Message = $"{provider} data cleared successfully" });
             }
             else
             {
-                _logger.LogError("Failed to resync {Provider} for user {UserId}: {Error}", provider, userId, syncResult.Message);
-                return StatusCode(500, new ErrorResponse { Error = syncResult.Message ?? $"Failed to resync {provider} data" });
+                _logger.LogError("Failed to clear {Provider} data for user {UserId}: {Error}", provider, userId, result.Message);
+                return StatusCode(500, new ErrorResponse { Error = result.Message ?? $"Failed to clear {provider} data" });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error resyncing provider {Provider} for user", provider);
+            _logger.LogError(ex, "Error clearing data for provider {Provider} for user", provider);
             return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
         }
     }

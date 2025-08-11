@@ -87,26 +87,24 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
             // Normalize provider name to lowercase
             provider = provider.ToLowerInvariant();
 
-            // Use a dictionary for clean, duplicate-free provider management
-            var providerDict = (_currentMessage.Providers ?? new List<ProviderProgressInfo>())
-                .ToDictionary(p => p.Provider, p => p);
+            // Get or create the providers list
+            var providers = _currentMessage.Providers ?? new List<ProviderProgressInfo>();
 
-            // Update or add the provider (dictionary ensures no duplicates)
-            var providerProgress = providerDict.TryGetValue(provider, out var existing)
-                ? existing
-                : new ProviderProgressInfo { Provider = provider };
+            // Find existing provider
+            var providerProgress = providers.FirstOrDefault(p => p.Provider == provider);
 
-            // Update the provider's properties
+            if (providerProgress == null)
+            {
+                // First time seeing this provider - add it to maintain order
+                providerProgress = new ProviderProgressInfo { Provider = provider };
+                providers.Add(providerProgress);
+            }
+
+            // Update stage and message everytime, counts only if they are provided
             providerProgress.Stage = stage;
             providerProgress.Message = message;
             if (current.HasValue) providerProgress.Current = current.Value;
             if (total.HasValue) providerProgress.Total = total.Value;
-
-            // Store back in dictionary
-            providerDict[provider] = providerProgress;
-
-            // Convert back to list for the message, sorted by provider name for consistency
-            var providers = providerDict.Values.OrderBy(p => p.Provider).ToList();
 
             // Update the message
             _currentMessage.Providers = providers;

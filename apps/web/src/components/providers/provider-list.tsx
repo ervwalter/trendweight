@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { CheckCircle } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { apiRequest } from "../../lib/api/client";
-import { useDisconnectProvider, useResyncProvider, useEnableProvider } from "../../lib/api/mutations";
+import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "../../lib/api/mutations";
 import { useProviderLinks } from "../../lib/api/queries";
 import { useToast } from "../../lib/hooks/use-toast";
 import { Button } from "../ui/button";
@@ -25,10 +26,11 @@ interface ProviderListProps {
 export function ProviderList({ variant = "link", showHeader = true }: ProviderListProps) {
   const { data: providerLinks } = useProviderLinks();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [disconnectProvider, setDisconnectProvider] = useState<{ id: string; name: string } | null>(null);
 
   const disconnectMutation = useDisconnectProvider();
-  const resyncMutation = useResyncProvider();
+  const clearDataMutation = useClearProviderData();
   const enableMutation = useEnableProvider();
 
   const connectedProviders = new Set(providerLinks?.map((link) => link.provider) || []);
@@ -108,13 +110,10 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                       <Button
                         type="button"
                         onClick={() => {
-                          resyncMutation.mutate(provider.id, {
+                          clearDataMutation.mutate(provider.id, {
                             onSuccess: () => {
-                              showToast({
-                                title: "Resync Complete",
-                                description: `${provider.name} data has been resynced successfully.`,
-                                variant: "success",
-                              });
+                              // Navigate to dashboard which will trigger automatic sync
+                              navigate({ to: "/dashboard" });
                             },
                             onError: () => {
                               showToast({
@@ -125,11 +124,11 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                             },
                           });
                         }}
-                        disabled={resyncMutation.isPending}
+                        disabled={clearDataMutation.isPending}
                         variant="default"
                         size="sm"
                       >
-                        {resyncMutation.isPending ? "Syncing..." : "Resync"}
+                        {clearDataMutation.isPending && clearDataMutation.variables === provider.id ? "Syncing..." : "Resync"}
                       </Button>
                       <Button
                         type="button"
@@ -178,13 +177,10 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                     <div className="flex flex-col gap-2 @sm:flex-row">
                       <Button
                         onClick={() => {
-                          resyncMutation.mutate(provider.id, {
+                          clearDataMutation.mutate(provider.id, {
                             onSuccess: () => {
-                              showToast({
-                                title: "Resync Complete",
-                                description: `${provider.name} data has been resynced successfully.`,
-                                variant: "success",
-                              });
+                              // Navigate to dashboard which will trigger automatic sync
+                              navigate({ to: "/dashboard" });
                             },
                             onError: () => {
                               showToast({
@@ -195,12 +191,12 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                             },
                           });
                         }}
-                        disabled={resyncMutation.isPending}
+                        disabled={clearDataMutation.isPending}
                         variant="default"
                         size="sm"
                         className="@sm:px-6"
                       >
-                        {resyncMutation.isPending && resyncMutation.variables === provider.id ? "Syncing..." : "Resync Data"}
+                        {clearDataMutation.isPending && clearDataMutation.variables === provider.id ? "Syncing..." : "Resync Data"}
                       </Button>
                       <Button
                         onClick={() => setDisconnectProvider({ id: provider.id, name: provider.name })}

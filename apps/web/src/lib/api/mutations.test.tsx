@@ -6,7 +6,7 @@ import { server } from "../../test/mocks/server";
 import {
   useUpdateProfile,
   useDisconnectProvider,
-  useResyncProvider,
+  useClearProviderData,
   useReconnectProvider,
   useToggleSharing,
   useGenerateShareToken,
@@ -270,17 +270,17 @@ describe("mutations", () => {
     });
   });
 
-  describe("useResyncProvider", () => {
-    it("should resync provider successfully", async () => {
+  describe("useClearProviderData", () => {
+    it("should clear provider data successfully", async () => {
       const provider = "withings";
 
       server.use(
-        http.post(`/api/providers/${provider}/resync`, () => {
+        http.post(`/api/providers/${provider}/clear-data`, () => {
           return new HttpResponse(null, { status: 204 });
         }),
       );
 
-      const { result } = renderHook(() => useResyncProvider(), {
+      const { result } = renderHook(() => useClearProviderData(), {
         wrapper: createWrapper(),
       });
 
@@ -297,7 +297,7 @@ describe("mutations", () => {
       const provider = "fitbit";
 
       server.use(
-        http.post(`/api/providers/${provider}/resync`, () => {
+        http.post(`/api/providers/${provider}/clear-data`, () => {
           return new HttpResponse(null, { status: 204 });
         }),
       );
@@ -313,7 +313,7 @@ describe("mutations", () => {
 
       const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 
-      const { result } = renderHook(() => useResyncProvider(), { wrapper });
+      const { result } = renderHook(() => useClearProviderData(), { wrapper });
 
       act(() => {
         result.current.mutate(provider);
