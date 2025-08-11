@@ -419,8 +419,8 @@ public class FitbitServiceTests : TestBase
         _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
             .ReturnsAsync(providerLink);
 
-        // Exactly 32 days
-        var startDate = DateTime.UtcNow.AddDays(-31);
+        // Adjust for 2-day timezone buffer: 29 days ago + today + 2 future days = 32 days total
+        var startDate = DateTime.UtcNow.AddDays(-29);
         var apiCallCount = 0;
 
         _httpMessageHandlerMock
@@ -449,6 +449,54 @@ public class FitbitServiceTests : TestBase
 
         // Assert
         apiCallCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetMeasurementsAsync_With30DayRange_MakesTwoRequestsDueToTimezoneBuffer()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var fitbitUserId = "ABCDEF";
+        var token = CreateValidToken(fitbitUserId);
+        var providerLink = new DbProviderLink
+        {
+            Provider = "fitbit",
+            Token = token
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(providerLink);
+
+        // 30 days ago + today + 2 future days = 33 days total, which exceeds 32-day limit
+        var startDate = DateTime.UtcNow.AddDays(-30);
+        var apiCallCount = 0;
+
+        _httpMessageHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("/body/log/weight/date")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                apiCallCount++;
+                var weightData = new FitbitWeightLog { Weight = new List<FitbitWeightLogEntry>() };
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(weightData), Encoding.UTF8, "application/json")
+                };
+                response.Headers.Add("fitbit-rate-limit-limit", "150");
+                response.Headers.Add("fitbit-rate-limit-remaining", "149");
+                response.Headers.Add("fitbit-rate-limit-reset", "3600");
+                return response;
+            });
+
+        // Act
+        await _sut.GetMeasurementsAsync(userId, true, startDate);
+
+        // Assert - Expects 2 API calls because 33 days exceeds the 32-day limit
+        apiCallCount.Should().Be(2);
     }
 
     [Fact]
