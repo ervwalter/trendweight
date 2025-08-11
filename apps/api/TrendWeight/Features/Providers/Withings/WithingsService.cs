@@ -341,7 +341,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                     var startDate = DateTimeOffset.FromUnixTimeSeconds(startTimestamp).DateTime;
                     var isLongSync = mostRecentYear.HasValue && mostRecentYear.Value > 0 && (mostRecentYear.Value - startDate.Year) > 1;
 
-                    if (isLongSync)
+                    if (isLongSync && mostRecentYear.HasValue)
                     {
                         // Get the year we're currently processing by looking at the last measurement in this page
                         var currentYear = mostRecentYear.Value;
