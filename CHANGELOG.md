@@ -1,5 +1,53 @@
 # Changelog
 
+## [2.5.0](https://github.com/ervwalter/trendweight/compare/v2.4.2...v2.5.0) (2025-08-12)
+
+
+### Features
+
+* **dashboard:** real-time sync progress and improved UX for long-running syncs([#316](https://github.com/ervwalter/trendweight/issues/316)) ([35bb890](https://github.com/ervwalter/trendweight/commit/35bb890c42861bba3e3cb075934dbb5ae06461ae))
+* **db:** migrate legacy profiles to Supabase; deprecate MSSQL ([#315](https://github.com/ervwalter/trendweight/issues/315)) ([304745a](https://github.com/ervwalter/trendweight/commit/304745a729506fdb8e0ff9ff4b236864a1eada99))
+* migrate UI to shadcn/ui with dark mode support ([#309](https://github.com/ervwalter/trendweight/issues/309)) ([1ee05f3](https://github.com/ervwalter/trendweight/commit/1ee05f3096fa0cfaa03df0ec6e444835ad5208a2))
+* **vscode:** add MCP configuration for spec workflow and Supabase environments ([c7a7ba5](https://github.com/ervwalter/trendweight/commit/c7a7ba5d6f0df9a6c773231e4ceb9916fbd06a1f))
+
+
+### Fixes
+
+* **dashboard:** update SyncProgressOverlay class to include shadow-none for improved styling ([4bc8fe5](https://github.com/ervwalter/trendweight/commit/4bc8fe59d04b46c798ce59c4844e53f5914e6dee))
+* **fitbit:** adjust endDate calculation to account for users in timezones ahead of UTC ([a406006](https://github.com/ervwalter/trendweight/commit/a40600661ef3b106a6d59bd305b1b38c3a81ab96))
+* **ui:** improve form input padding and provider sync warning ([43a3c65](https://github.com/ervwalter/trendweight/commit/43a3c6528e997040ef0d128cd653f0428d86b2a9))
+* **withings service:** fix withings sync status message ([a19bf20](https://github.com/ervwalter/trendweight/commit/a19bf204706a9557954c297ade1fe8715065e7c7))
+
+
+### Documentation
+
+* Add comprehensive GitHub Copilot instructions for TrendWeight development ([#312](https://github.com/ervwalter/trendweight/issues/312)) ([8f23877](https://github.com/ervwalter/trendweight/commit/8f23877fc0bca476ec4b9ab89c5f8317de46cde1))
+* clean up AI guidance ([da75ea5](https://github.com/ervwalter/trendweight/commit/da75ea589503f0f2e82d74083abcd7b31862c019))
+* remove completed specs ([99c1a8b](https://github.com/ervwalter/trendweight/commit/99c1a8bc68204bb32a001a3dc1b09f235a1efd54))
+* update architecture documentation and component library references ([3badc7b](https://github.com/ervwalter/trendweight/commit/3badc7b68f5602aa587ac0499780fb4d02332494))
+
+
+### Refactoring
+
+* **fitbit tests:** update progress reporting message for clarity ([5f7a4f1](https://github.com/ervwalter/trendweight/commit/5f7a4f1bf871fc7a4961c168fa0a91c27c80fb15))
+* **fitbit, withings:** update progress reporting messages for clarity and consistency ([0744937](https://github.com/ervwalter/trendweight/commit/0744937f2a3609560e3d7152db29ed81c2429367))
+* reorganize test files and improve resync functionality ([7312c88](https://github.com/ervwalter/trendweight/commit/7312c885dec00f8810e4fbb2553c398d8401be93))
+* **sync progress:** add logging for received broadcast messages ([84c4c23](https://github.com/ervwalter/trendweight/commit/84c4c23d359d384c575e52e652791fe43bdaf5b0))
+* **sync progress:** enhance progress estimation for providers without known total ([aa589f3](https://github.com/ervwalter/trendweight/commit/aa589f3d76bed28d95128e21e496cd6deebe5dd5))
+* **sync progress:** improve provider progress management and logging ([29efde2](https://github.com/ervwalter/trendweight/commit/29efde206841f91db658acc67df590ac3cd60780))
+* **sync progress:** update progress reporting messages for clarity and consistency ([9b3dc9b](https://github.com/ervwalter/trendweight/commit/9b3dc9b11f12a4323529e737c68abf51510a781a))
+* **withings service:** improve progress message tracking by considering all measurement pages ([54700c1](https://github.com/ervwalter/trendweight/commit/54700c12e8c2832c8efb67397a62f68326fe80a1))
+
+
+### Dependencies
+
+* update actions/checkout action to v5 ([#317](https://github.com/ervwalter/trendweight/issues/317)) ([ab490a5](https://github.com/ervwalter/trendweight/commit/ab490a5ab30542122b411f8fa566c7118997027d))
+* update akhilmhdh/contributors-readme-action action to v2.3.11 ([#302](https://github.com/ervwalter/trendweight/issues/302)) ([f33ce0b](https://github.com/ervwalter/trendweight/commit/f33ce0bdb7013e1c14923e5b54cc462cb4e893f9))
+* update dependency @vitejs/plugin-react to v5 ([#314](https://github.com/ervwalter/trendweight/issues/314)) ([e7f2c48](https://github.com/ervwalter/trendweight/commit/e7f2c4801d21fe6a2d9c45ce801661f765d6202f))
+* update npm dependencies ([#304](https://github.com/ervwalter/trendweight/issues/304)) ([1d7f459](https://github.com/ervwalter/trendweight/commit/1d7f459c97e00d9740036decec033284ef0775aa))
+* update npm dependencies ([#307](https://github.com/ervwalter/trendweight/issues/307)) ([860bce1](https://github.com/ervwalter/trendweight/commit/860bce1e15aaed741504a6e4fbe84e5ffbf1eb4f))
+* update nuget dependencies to 9.0.8 ([#313](https://github.com/ervwalter/trendweight/issues/313)) ([9ccc9fe](https://github.com/ervwalter/trendweight/commit/9ccc9fe706599a506eccb3dd25bbd483b62d0d12))
+
 ## [2.4.2](https://github.com/ervwalter/trendweight/compare/v2.4.1...v2.4.2) (2025-08-01)
 
 
