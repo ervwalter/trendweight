@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.1](https://github.com/ervwalter/trendweight/compare/v2.5.0...v2.5.1) (2025-08-12)
+
+
+### Fixes
+
+* conditionally render sync progress overlay to prevent tooltip blocking ([18c467b](https://github.com/ervwalter/trendweight/commit/18c467b21fc3df37befb8700c28cdd85b16d9d9c))
+
 ## [2.5.0](https://github.com/ervwalter/trendweight/compare/v2.4.2...v2.5.0) (2025-08-12)
 
 
