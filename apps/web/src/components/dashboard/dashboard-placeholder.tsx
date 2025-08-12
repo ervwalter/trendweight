@@ -1,7 +1,9 @@
 import { Skeleton } from "../ui/skeleton";
+import { useSyncProgress } from "./sync-progress/hooks";
 import { SyncProgressOverlay } from "./sync-progress/sync-progress-overlay";
 
 const DashboardPlaceholder = () => {
+  const { progress } = useSyncProgress();
   return (
     <div className="relative">
       {/* Buttons placeholder */}
@@ -20,9 +22,11 @@ const DashboardPlaceholder = () => {
             </div>
 
             {/* Progress overlay */}
-            <div className="absolute inset-0 flex items-center justify-center p-2">
-              <SyncProgressOverlay className="w-full" />
-            </div>
+            {progress && (
+              <div className="absolute inset-0 flex items-center justify-center p-2">
+                <SyncProgressOverlay className="w-full" />
+              </div>
+            )}
           </div>
         </div>
         <div className="flex flex-col gap-2">
