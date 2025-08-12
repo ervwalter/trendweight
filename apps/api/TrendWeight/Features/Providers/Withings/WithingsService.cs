@@ -334,8 +334,8 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             var (measurements, more, newOffset, timezone) = await GetMeasurementPageAsync(accessToken!, startTimestamp, offset);
             allMeasurements.AddRange(measurements);
 
-            // Track the most recent year from the first page for progress messages
-            if (pageNumber == 0 && measurements.Count > 0)
+            // Track the most recent year from each page for progress messages
+            if (measurements.Count > 0)
             {
                 // Find the most recent date from measurements (don't assume any ordering)
                 var mostRecentDate = measurements
