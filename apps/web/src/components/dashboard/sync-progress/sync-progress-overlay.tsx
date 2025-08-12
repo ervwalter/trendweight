@@ -19,21 +19,20 @@ const calculateOverallProgress = (data: SyncProgress) => {
 
     if (provider.stage === "done") {
       providerPercent = 100;
-    } else if (provider.stage === "fetching" && provider.current !== null) {
+    } else if (provider.current !== null) {
       if (provider.total !== null && provider.total > 0) {
         // Use precise current/total for fetching progress (Fitbit-style with known total)
         providerPercent = Math.round((provider.current / provider.total) * 100);
       } else {
-        // For providers without known total (Withings), estimate based on current page
-        // First page = 20%, subsequent pages add diminishing returns
-        providerPercent = Math.min(20 + provider.current * 15, 80);
+        const current = Math.max(provider.current, 1);
+        // For providers without known total (Withings), use diminishing returns that approaches 99% but never reaches it.
+        // Anchors at 20% for the first page and asymptotically approaches 99%.
+        const start = 20; // percent at page 1
+        const asymptote = 99; // never reached
+        const decay = 0.95; // 0 < decay < 1, higher = slower approach
+        const estimated = asymptote - (asymptote - start) * Math.pow(decay, current - 1);
+        providerPercent = Math.floor(estimated); // floor ensures we never hit 99
       }
-    } else if (provider.stage === "init") {
-      providerPercent = 5;
-    } else if (provider.stage === "fetching") {
-      providerPercent = 10; // fallback if no current/total
-    } else if (provider.stage === "merging") {
-      providerPercent = 90;
     }
 
     return total + providerPercent;
