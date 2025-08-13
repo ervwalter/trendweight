@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.5.2](https://github.com/ervwalter/trendweight/compare/v2.5.1...v2.5.2) (2025-08-13)
+
+
+### Fixes
+
+* **ui:** prevent ToggleGroup deselection to maintain radio button behavior ([dd376e0](https://github.com/ervwalter/trendweight/commit/dd376e03a1ea11888b1c9bff77d6547e0dfe0ebd))
+
+
+### Refactoring
+
+* **auth:** simplify auth guard and remove window.Clerk dependencies ([329f805](https://github.com/ervwalter/trendweight/commit/329f805e338fd391f4759a59eb9c25a28d66b03d))
+
+
+### Dependencies
+
+* update npm dependencies ([#318](https://github.com/ervwalter/trendweight/issues/318)) ([6528e70](https://github.com/ervwalter/trendweight/commit/6528e70b849780a117107aa229459ce09d49b9c0))
+
 ## [2.5.1](https://github.com/ervwalter/trendweight/compare/v2.5.0...v2.5.1) (2025-08-12)
 
 
