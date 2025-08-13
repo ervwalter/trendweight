@@ -38,6 +38,24 @@ describe("ToggleGroup", () => {
     expect(handleValueChange).toHaveBeenCalledWith("b");
   });
 
+  it("allows deselection in single mode by default", async () => {
+    const handleValueChange = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <ToggleGroup type="single" onValueChange={handleValueChange} defaultValue="a">
+        <ToggleGroupItem value="a">Option A</ToggleGroupItem>
+        <ToggleGroupItem value="b">Option B</ToggleGroupItem>
+      </ToggleGroup>,
+    );
+
+    const optionA = screen.getByRole("radio", { name: "Option A" });
+
+    // Click the already selected option to deselect it
+    await user.click(optionA);
+    expect(handleValueChange).toHaveBeenCalledWith("");
+  });
+
   it("handles multiple selection mode", async () => {
     const handleValueChange = vi.fn();
     const user = userEvent.setup();

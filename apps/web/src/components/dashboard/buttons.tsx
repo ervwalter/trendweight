@@ -20,7 +20,15 @@ const Buttons = () => {
 
   return (
     <div className="flex flex-col-reverse gap-4 md:flex-row print:hidden">
-      <ToggleGroup type="single" value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)} defaultValue="4w" aria-label="Time Range">
+      <ToggleGroup
+        type="single"
+        value={timeRange}
+        onValueChange={(value) => {
+          if (value && value !== "") setTimeRange(value as TimeRange);
+        }}
+        defaultValue="4w"
+        aria-label="Time Range"
+      >
         <ToggleGroupItem value="4w">
           <span className="lg:hidden">4 wk</span>
           <span className="hidden lg:inline">4 weeks</span>
@@ -41,7 +49,15 @@ const Buttons = () => {
         {!isMobile && <ToggleGroupItem value="explore">Explore</ToggleGroupItem>}
       </ToggleGroup>
 
-      <ToggleGroup type="single" value={mode} onValueChange={(value) => setMode(value as Mode)} defaultValue="weight" aria-label="Mode">
+      <ToggleGroup
+        type="single"
+        value={mode}
+        onValueChange={(value) => {
+          if (value && value !== "") setMode(value as Mode);
+        }}
+        defaultValue="weight"
+        aria-label="Mode"
+      >
         <ToggleGroupItem value="weight">Weight</ToggleGroupItem>
         <ToggleGroupItem value="fatpercent">Fat %</ToggleGroupItem>
         <ToggleGroupItem value="fatmass">Fat Mass</ToggleGroupItem>
