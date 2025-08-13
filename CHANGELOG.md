@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.3](https://github.com/ervwalter/trendweight/compare/v2.5.2...v2.5.3) (2025-08-13)
+
+
+### Fixes
+
+* **auth:** add authentication tokens to missing API mutations ([7a4129b](https://github.com/ervwalter/trendweight/commit/7a4129bc52fb258d3b78db3f35aa99191e02b413))
+
 ## [2.5.2](https://github.com/ervwalter/trendweight/compare/v2.5.1...v2.5.2) (2025-08-13)
 
 
