@@ -147,13 +147,17 @@ export function useToggleSharing() {
 }
 
 export function useGenerateShareToken() {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () =>
-      apiRequest<SharingData>("/profile/generate-token", {
+    mutationFn: async () => {
+      const token = await getToken();
+      return apiRequest<SharingData>("/profile/generate-token", {
         method: "POST",
-      }),
+        token,
+      });
+    },
     onSuccess: (data) => {
       // Update the cache with the new data
       queryClient.setQueryData(queryKeys.sharing, data);
@@ -164,8 +168,13 @@ export function useGenerateShareToken() {
 }
 
 export function useDeleteAccount() {
+  const { getToken } = useAuth();
+
   return useMutation({
-    mutationFn: () => apiRequest("/profile", { method: "DELETE" }),
+    mutationFn: async () => {
+      const token = await getToken();
+      return apiRequest("/profile", { method: "DELETE", token });
+    },
   });
 }
 
@@ -179,14 +188,18 @@ interface ExchangeTokenResponse {
 }
 
 export function useExchangeFitbitToken() {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ code }: ExchangeTokenRequest) =>
-      apiRequest<ExchangeTokenResponse>("/fitbit/exchange-token", {
+    mutationFn: async ({ code }: ExchangeTokenRequest) => {
+      const token = await getToken();
+      return apiRequest<ExchangeTokenResponse>("/fitbit/exchange-token", {
         method: "POST",
         body: JSON.stringify({ code }),
-      }),
+        token,
+      });
+    },
     onSuccess: () => {
       // Invalidate provider links to show the new connection
       queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
@@ -195,14 +208,18 @@ export function useExchangeFitbitToken() {
 }
 
 export function useExchangeWithingsToken() {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ code }: ExchangeTokenRequest) =>
-      apiRequest<ExchangeTokenResponse>("/withings/exchange-token", {
+    mutationFn: async ({ code }: ExchangeTokenRequest) => {
+      const token = await getToken();
+      return apiRequest<ExchangeTokenResponse>("/withings/exchange-token", {
         method: "POST",
         body: JSON.stringify({ code }),
-      }),
+        token,
+      });
+    },
     onSuccess: () => {
       // Invalidate provider links to show the new connection
       queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
@@ -211,13 +228,17 @@ export function useExchangeWithingsToken() {
 }
 
 export function useCompleteMigration() {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () =>
-      apiRequest("/profile/complete-migration", {
+    mutationFn: async () => {
+      const token = await getToken();
+      return apiRequest("/profile/complete-migration", {
         method: "POST",
-      }),
+        token,
+      });
+    },
     onSuccess: async () => {
       // Invalidate and refetch profile query to ensure the migration flag is updated
       await queryClient.invalidateQueries({ queryKey: queryKeys.profile() });
