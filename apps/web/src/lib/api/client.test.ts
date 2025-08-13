@@ -4,22 +4,11 @@ import { server } from "../../test/mocks/server";
 import { apiRequest, ApiError } from "./client";
 import { apiHandlers } from "../../test/mocks/handlers";
 
-// Mock window.Clerk
-const mockClerk = {
-  user: null as any,
-  loaded: true,
-  session: null as any,
-};
-
-// @ts-expect-error - Mock window.Clerk for testing
-global.window = {
-  Clerk: mockClerk,
-};
+// No longer need to mock window.Clerk since we pass tokens directly
 
 describe("api/client with MSW", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockClerk.session = null;
   });
 
   describe("ApiError", () => {
@@ -48,8 +37,6 @@ describe("api/client with MSW", () => {
     it("should make successful request without authentication", async () => {
       const mockResponse = { data: "test" };
 
-      mockClerk.session = null;
-
       server.use(
         http.get("/api/test", () => {
           return HttpResponse.json(mockResponse);
@@ -61,13 +48,9 @@ describe("api/client with MSW", () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it("should include auth token when session exists", async () => {
+    it("should include auth token when provided", async () => {
       const mockToken = "test-jwt-token";
       const mockResponse = { data: "authenticated" };
-
-      mockClerk.session = {
-        getToken: vi.fn().mockResolvedValue(mockToken),
-      };
 
       // Use MSW to verify the authorization header
       let receivedHeaders: Headers | undefined;
@@ -78,18 +61,12 @@ describe("api/client with MSW", () => {
         }),
       );
 
-      await apiRequest("/protected");
+      await apiRequest("/protected", { token: mockToken });
 
-      expect(mockClerk.session.getToken).toHaveBeenCalled();
       expect(receivedHeaders?.get("Authorization")).toBe(`Bearer ${mockToken}`);
     });
 
-    it("should handle getToken failure gracefully", async () => {
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      mockClerk.session = {
-        getToken: vi.fn().mockRejectedValue(new Error("Token error")),
-      };
-
+    it("should work without token when none provided", async () => {
       server.use(
         http.get("/api/test", () => {
           return HttpResponse.json({ data: "test" });
@@ -99,14 +76,9 @@ describe("api/client with MSW", () => {
       const result = await apiRequest("/test");
 
       expect(result).toEqual({ data: "test" });
-      expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to get Clerk token:", expect.any(Error));
-
-      consoleErrorSpy.mockRestore();
     });
 
     it("should merge custom headers with defaults", async () => {
-      mockClerk.session = null;
-
       let receivedHeaders: Headers | undefined;
       server.use(
         http.get("/api/test", ({ request }) => {
@@ -126,8 +98,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should pass through request options", async () => {
-      mockClerk.session = null;
-
       let receivedBody: unknown;
       let receivedMethod: string | undefined;
 
@@ -149,8 +119,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should throw ApiError on failed request with JSON error response", async () => {
-      mockClerk.session = null;
-
       server.use(
         http.get("/api/test", () => {
           return HttpResponse.json(
@@ -179,8 +147,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle non-JSON error response", async () => {
-      mockClerk.session = null;
-
       server.use(
         http.get("/api/test", () => {
           return new HttpResponse("Internal Server Error", {
@@ -205,8 +171,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 401 unauthorized errors", async () => {
-      mockClerk.session = null;
-
       server.use(apiHandlers.unauthorized("/api/protected"));
 
       try {
@@ -220,10 +184,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 403 forbidden errors", async () => {
-      mockClerk.session = {
-        getToken: vi.fn().mockResolvedValue("valid-token"),
-      };
-
       server.use(apiHandlers.forbidden("/api/admin"));
 
       try {
@@ -236,8 +196,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 404 not found errors", async () => {
-      mockClerk.session = null;
-
       server.use(apiHandlers.notFound("/api/missing"));
 
       try {
@@ -251,8 +209,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 500 server errors with retry flag", async () => {
-      mockClerk.session = null;
-
       server.use(
         http.get("/api/test", () => {
           return HttpResponse.json(
@@ -278,16 +234,12 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle network errors", async () => {
-      mockClerk.session = null;
-
       server.use(apiHandlers.networkError("/api/test"));
 
       await expect(apiRequest("/test")).rejects.toThrow();
     });
 
     it("should handle different HTTP methods", async () => {
-      mockClerk.session = null;
-
       // Test POST
       server.use(
         http.post("/api/test", () => {
@@ -326,8 +278,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle empty response body", async () => {
-      mockClerk.session = null;
-
       server.use(
         http.get("/api/test", () => {
           return HttpResponse.json(null);
@@ -339,8 +289,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle complex nested paths", async () => {
-      mockClerk.session = null;
-
       server.use(
         http.get("/api/users/123/settings/preferences", () => {
           return HttpResponse.json({ theme: "dark" });
@@ -352,8 +300,6 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle query parameters in path", async () => {
-      mockClerk.session = null;
-
       let receivedUrl: URL | undefined;
       server.use(
         http.get("/api/users", ({ request }) => {

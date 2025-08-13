@@ -1,6 +1,5 @@
 import "@bprogress/core/css";
-import { ProgressProvider } from "@bprogress/react";
-import { ClerkLoaded, ClerkLoading, ClerkProvider } from "@clerk/clerk-react";
+import { ClerkProvider } from "@clerk/clerk-react";
 import { shadcn } from "@clerk/themes";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -8,9 +7,8 @@ import { RouterProvider } from "@tanstack/react-router";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/sonner";
-import { BackgroundQueryProgress } from "./lib/progress/background-query-progress";
+import { useAuth } from "./lib/auth/use-auth";
 import "./lib/progress/progress.css";
-import { ProgressManager } from "./lib/progress/progress-manager";
 import { queryClient } from "./lib/query-client";
 import { setupVersionSkewHandler } from "./lib/version-skew/setup-version-skew-handler";
 import { router } from "./router";
@@ -36,6 +34,19 @@ const clerkLocalization = {
   socialButtonsBlockButtonManyInView: "Continue with {{provider}}",
 };
 
+function InnerApp() {
+  const auth = useAuth();
+  if (!auth.isLoaded) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="border-border h-8 w-8 animate-spin rounded-full border-2 border-t-gray-400" />
+      </div>
+    );
+  }
+
+  return <RouterProvider router={router} context={{ auth }} />;
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -57,18 +68,7 @@ function App() {
           }}
         >
           <QueryClientProvider client={queryClient}>
-            <ProgressProvider color="#eef5ff" height="3px" delay={250} spinnerPosition="top-right">
-              <ProgressManager />
-              <BackgroundQueryProgress />
-              <ClerkLoading>
-                <div className="flex h-screen items-center justify-center">
-                  <div className="border-border h-8 w-8 animate-spin rounded-full border-2 border-t-gray-400" />
-                </div>
-              </ClerkLoading>
-              <ClerkLoaded>
-                <RouterProvider router={router} />
-              </ClerkLoaded>
-            </ProgressProvider>
+            <InnerApp />
             <Toaster />
             <ReactQueryDevtools initialIsOpen={false} />
           </QueryClientProvider>

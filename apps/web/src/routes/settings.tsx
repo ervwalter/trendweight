@@ -5,10 +5,10 @@ import { requireAuth } from "../lib/auth/auth-guard";
 import { ensureProfile } from "../lib/loaders/utils";
 
 export const Route = createFileRoute("/settings")({
-  beforeLoad: requireAuth,
-  loader: async () => {
+  beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),
+  loader: async ({ context }) => {
     // Ensure user has a profile
-    await ensureProfile();
+    await ensureProfile(context.auth.getToken);
     return null;
   },
   component: SettingsPage,

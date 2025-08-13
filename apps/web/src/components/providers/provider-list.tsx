@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CheckCircle } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { apiRequest } from "../../lib/api/client";
+import { useAuth } from "../../lib/auth/use-auth";
 import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "../../lib/api/mutations";
 import { useProviderLinks } from "../../lib/api/queries";
 import { useToast } from "../../lib/hooks/use-toast";
@@ -25,6 +26,7 @@ interface ProviderListProps {
 
 export function ProviderList({ variant = "link", showHeader = true }: ProviderListProps) {
   const { data: providerLinks } = useProviderLinks();
+  const { getToken } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [disconnectProvider, setDisconnectProvider] = useState<{ id: string; name: string } | null>(null);
@@ -39,7 +41,8 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
   const handleConnect = async (providerId: string) => {
     try {
       const endpoint = providerId === "fitbit" ? "/fitbit/link" : "/withings/link";
-      const response = await apiRequest<{ url?: string; authorizationUrl?: string }>(endpoint);
+      const token = await getToken();
+      const response = await apiRequest<{ url?: string; authorizationUrl?: string }>(endpoint, { token });
       const redirectUrl = response.authorizationUrl || response.url;
       if (redirectUrl) {
         window.location.assign(redirectUrl);

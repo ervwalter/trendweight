@@ -4,7 +4,7 @@ import { Migration } from "../components/migration/migration";
 import { requireAuth } from "../lib/auth/auth-guard";
 
 export const Route = createFileRoute("/migration")({
-  beforeLoad: requireAuth,
+  beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),
   component: MigrationPage,
 });
 

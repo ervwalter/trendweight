@@ -1,6 +1,7 @@
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import { useContext } from "react";
 import { SyncProgressContext } from "../../components/dashboard/sync-progress/context";
+import { useAuth, type GetToken } from "../auth/use-auth";
 import type { ProfileData, SharingData } from "../core/interfaces";
 import { getDemoData, getDemoProfile } from "../demo/demo-data";
 import { ApiError, apiRequest } from "./client";
@@ -38,14 +39,15 @@ const selectProfileData = (data: ProfileResponse | null): ProfileData | null => 
   };
 };
 
-// Query options for reuse
+// Query options for reuse - now accepts getToken function
 export const queryOptions = {
-  profile: (sharingCode?: string) => ({
+  profile: (getToken: GetToken, sharingCode?: string) => ({
     queryKey: queryKeys.profile(sharingCode),
     queryFn: async () => {
       try {
         const endpoint = sharingCode ? `/profile/${sharingCode}` : "/profile";
-        return await apiRequest<ProfileResponse>(endpoint);
+        const token = await getToken();
+        return await apiRequest<ProfileResponse>(endpoint, { token });
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           // Return null for 404s (user exists but no profile yet)
@@ -56,21 +58,23 @@ export const queryOptions = {
     },
     select: selectProfileData,
   }),
-  data: (opts?: { sharingCode?: string; progressId?: string }) => ({
+  data: (getToken: GetToken, opts?: { sharingCode?: string; progressId?: string }) => ({
     queryKey: queryKeys.data(opts?.sharingCode),
-    queryFn: () => {
+    queryFn: async () => {
       const basePath = opts?.sharingCode ? `/data/${opts.sharingCode}` : "/data";
       const url = opts?.progressId ? `${basePath}?progressId=${opts.progressId}` : basePath;
-      return apiRequest<MeasurementsResponse>(url);
+      const token = await getToken();
+      return apiRequest<MeasurementsResponse>(url, { token });
     },
     staleTime: 60000, // 1 minute (matching legacy React Query config)
   }),
-  providerLinks: (sharingCode?: string) => ({
+  providerLinks: (getToken: GetToken, sharingCode?: string) => ({
     queryKey: queryKeys.providerLinks(sharingCode),
     queryFn: async () => {
       try {
         const endpoint = sharingCode ? `/providers/links/${sharingCode}` : "/providers/links";
-        return await apiRequest<ProviderLink[]>(endpoint);
+        const token = await getToken();
+        return await apiRequest<ProviderLink[]>(endpoint, { token });
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           // Return empty array for 404s (no provider links yet)
@@ -80,19 +84,24 @@ export const queryOptions = {
       }
     },
   }),
-  sharing: {
+  sharing: (getToken: GetToken) => ({
     queryKey: queryKeys.sharing,
-    queryFn: () => apiRequest<SharingData>("/sharing"),
-  },
+    queryFn: async () => {
+      const token = await getToken();
+      return apiRequest<SharingData>("/sharing", { token });
+    },
+  }),
 };
 
 // Profile query (with suspense) - returns ProfileData
 export function useProfile() {
-  return useSuspenseQuery(queryOptions.profile());
+  const { getToken } = useAuth();
+  return useSuspenseQuery(queryOptions.profile(getToken));
 }
 
 // Combined profile and measurement data query with suspense (loads in parallel)
 export function useDashboardQueries(sharingCode?: string) {
+  const { getToken } = useAuth();
   // Try to get sync progress context if available
   const syncProgress = useContext(SyncProgressContext);
   const progressId = syncProgress?.progressId;
@@ -122,7 +131,7 @@ export function useDashboardQueries(sharingCode?: string) {
   };
 
   // Build the base data query options
-  const dataQueryOptions = sharingCode === "demo" ? demoQueryOptions.data : queryOptions.data({ sharingCode, progressId });
+  const dataQueryOptions = sharingCode === "demo" ? demoQueryOptions.data : queryOptions.data(getToken, { sharingCode, progressId });
 
   // Wrap the queryFn to add progress lifecycle (not for demo, and only if context available)
   const enhancedDataQuery =
@@ -132,7 +141,7 @@ export function useDashboardQueries(sharingCode?: string) {
           ...dataQueryOptions,
           queryFn: async () => {
             // Start client-side progress immediately
-            startProgress("Getting updated data...");
+            queueMicrotask(() => startProgress("Getting updated data..."));
 
             try {
               // Call the original queryFn
@@ -159,7 +168,7 @@ export function useDashboardQueries(sharingCode?: string) {
           data: enhancedDataQuery,
         }
       : {
-          profile: queryOptions.profile(sharingCode),
+          profile: queryOptions.profile(getToken, sharingCode),
           data: enhancedDataQuery,
         };
 
@@ -183,10 +192,12 @@ export function useDashboardQueries(sharingCode?: string) {
 
 // Provider links query
 export function useProviderLinks() {
-  return useSuspenseQuery(queryOptions.providerLinks());
+  const { getToken } = useAuth();
+  return useSuspenseQuery(queryOptions.providerLinks(getToken));
 }
 
 // Sharing settings query
 export function useSharingSettings() {
-  return useSuspenseQuery(queryOptions.sharing);
+  const { getToken } = useAuth();
+  return useSuspenseQuery(queryOptions.sharing(getToken));
 }

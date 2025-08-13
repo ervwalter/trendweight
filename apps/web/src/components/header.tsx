@@ -7,8 +7,7 @@ import { Logo } from "./logo";
 import { ModeToggle } from "./mode-toggle";
 
 export function Header() {
-  const { isInitializing, isLoggedIn, signOut } = useAuth();
-  const visibility = isInitializing ? "invisible" : "visible";
+  const { isLoggedIn, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -38,29 +37,19 @@ export function Header() {
             <Logo className="dark:text-link h-8 w-auto" />
           </div>
           <div className="flex items-stretch">
-            <NavLink to="/" visibility={visibility}>
-              Home
-            </NavLink>
+            <NavLink to="/">Home</NavLink>
             {isLoggedIn && (
               <>
-                <NavLink to="/dashboard" visibility={visibility}>
-                  Dashboard
-                </NavLink>
-                <NavLink to="/settings" visibility={visibility}>
-                  Settings
-                </NavLink>
+                <NavLink to="/dashboard">Dashboard</NavLink>
+                <NavLink to="/settings">Settings</NavLink>
               </>
             )}
-            <NavLink to="/about" visibility={visibility}>
-              Learn
-            </NavLink>
+            <NavLink to="/about">Learn</NavLink>
             {!isLoggedIn ? (
-              <NavLink to="/login" visibility={visibility}>
-                Log In
-              </NavLink>
+              <NavLink to="/login">Log In</NavLink>
             ) : (
               <button
-                className={`hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors dark:hover:bg-white/10 ${visibility}`}
+                className={`hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors dark:hover:bg-white/10`}
                 onClick={() => signOut()}
               >
                 Log Out
@@ -100,29 +89,29 @@ export function Header() {
         {/* Mobile menu */}
         <div ref={menuRef} className={`md:hidden ${mobileMenuOpen ? "block" : "hidden"} bg-primary/90 dark:bg-primary/10 -mx-4 px-4 py-4`}>
           <div className="flex flex-col space-y-3">
-            <MobileNavLink to="/" onClick={() => setMobileMenuOpen(false)} visibility={visibility}>
+            <MobileNavLink to="/" onClick={() => setMobileMenuOpen(false)}>
               Home
             </MobileNavLink>
             {isLoggedIn && (
               <>
-                <MobileNavLink to="/dashboard" onClick={() => setMobileMenuOpen(false)} visibility={visibility}>
+                <MobileNavLink to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                   Dashboard
                 </MobileNavLink>
-                <MobileNavLink to="/settings" onClick={() => setMobileMenuOpen(false)} visibility={visibility}>
+                <MobileNavLink to="/settings" onClick={() => setMobileMenuOpen(false)}>
                   Settings
                 </MobileNavLink>
               </>
             )}
-            <MobileNavLink to="/about" onClick={() => setMobileMenuOpen(false)} visibility={visibility}>
+            <MobileNavLink to="/about" onClick={() => setMobileMenuOpen(false)}>
               Learn
             </MobileNavLink>
             {!isLoggedIn ? (
-              <MobileNavLink to="/login" onClick={() => setMobileMenuOpen(false)} visibility={visibility}>
+              <MobileNavLink to="/login" onClick={() => setMobileMenuOpen(false)}>
                 Log In
               </MobileNavLink>
             ) : (
               <button
-                className={`hover:bg-primary/80 text-primary-foreground block w-full rounded px-3 py-2 text-left dark:hover:bg-white/10 ${visibility}`}
+                className={`hover:bg-primary/80 text-primary-foreground $ block w-full rounded px-3 py-2 text-left dark:hover:bg-white/10`}
                 onClick={async (e) => {
                   e.preventDefault();
                   await signOut();

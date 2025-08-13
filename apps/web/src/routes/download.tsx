@@ -7,11 +7,11 @@ import { requireAuth } from "../lib/auth/auth-guard";
 import { ensureProfile, ensureProviderLinks } from "../lib/loaders/utils";
 
 export const Route = createFileRoute("/download")({
-  beforeLoad: requireAuth,
-  loader: async () => {
+  beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),
+  loader: async ({ context }) => {
     // Ensure user has profile and provider links
-    await ensureProfile();
-    await ensureProviderLinks();
+    await ensureProfile(context.auth.getToken);
+    await ensureProviderLinks(context.auth.getToken);
     return null;
   },
   component: ScaleReadingsPage,

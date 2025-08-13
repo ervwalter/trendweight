@@ -15,8 +15,10 @@ export const Route = createFileRoute("/u/$sharingCode")({
     }
 
     // Only validate profile and provider links in the loader
-    await ensureProfile(sharingCode);
-    await ensureProviderLinks(sharingCode);
+    // For sharing codes, we use null token getter since these don't require auth
+    const nullTokenGetter = async () => null;
+    await ensureProfile(nullTokenGetter, sharingCode);
+    await ensureProviderLinks(nullTokenGetter, sharingCode);
 
     return null;
   },

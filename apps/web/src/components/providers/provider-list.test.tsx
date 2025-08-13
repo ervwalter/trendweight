@@ -6,12 +6,14 @@ import { useProviderLinks } from "../../lib/api/queries";
 import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "../../lib/api/mutations";
 import { apiRequest } from "../../lib/api/client";
 import { useToast } from "../../lib/hooks/use-toast";
+import { useAuth } from "../../lib/auth/use-auth";
 
 // Mock dependencies
 vi.mock("../../lib/api/queries");
 vi.mock("../../lib/api/mutations");
 vi.mock("../../lib/api/client");
 vi.mock("../../lib/hooks/use-toast");
+vi.mock("../../lib/auth/use-auth");
 
 // Mock ConfirmDialog
 vi.mock("../ui/confirm-dialog", () => ({
@@ -72,6 +74,13 @@ describe("ProviderList", () => {
       isPending: false,
       variables: undefined,
     } as any);
+    vi.mocked(useAuth).mockReturnValue({
+      user: { uid: "test-user", email: "test@example.com", displayName: "Test User" },
+      isLoaded: true,
+      isLoggedIn: true,
+      signOut: vi.fn(),
+      getToken: vi.fn().mockResolvedValue("mock-token"),
+    } as any);
   });
 
   describe("link variant", () => {
@@ -127,7 +136,7 @@ describe("ProviderList", () => {
 
       await user.click(screen.getByText("Connect Fitbit Account"));
 
-      expect(apiRequest).toHaveBeenCalledWith("/fitbit/link");
+      expect(apiRequest).toHaveBeenCalledWith("/fitbit/link", { token: "mock-token" });
       expect(window.location.assign).toHaveBeenCalledWith("https://fitbit.com/auth");
     });
 
@@ -274,7 +283,7 @@ describe("ProviderList", () => {
       const connectButtons = screen.getAllByText("Connect");
       await user.click(connectButtons[0]); // First is Withings
 
-      expect(apiRequest).toHaveBeenCalledWith("/withings/link");
+      expect(apiRequest).toHaveBeenCalledWith("/withings/link", { token: "mock-token" });
       expect(window.location.assign).toHaveBeenCalledWith("https://withings.com/auth");
     });
   });

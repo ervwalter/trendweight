@@ -1,15 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Lightbulb, Rss, ShoppingCart } from "lucide-react";
-import { Heading } from "../common/heading";
 import { useAuth } from "../../lib/auth/use-auth";
-import { ExternalLink } from "../common/external-link";
-import { Button } from "../ui/button";
 import { useTheme } from "../../lib/hooks/use-theme";
+import { ExternalLink } from "../common/external-link";
+import { Heading } from "../common/heading";
+import { Button } from "../ui/button";
 
 export function About() {
-  const { isInitializing, user } = useAuth();
+  const { user } = useAuth();
   const { theme } = useTheme();
-  const getStarted = isInitializing || !user ? { label: "Log In / Sign Up", href: "/login" } : { label: "Go to Dashboard", href: "/dashboard" };
+  const getStarted = user ? { label: "Go to Dashboard", href: "/dashboard" } : { label: "Log In / Sign Up", href: "/login" };
   const screenshotSrc = theme === "dark" ? "/screenshot-large-dark.png" : "/screenshot-large.png";
 
   return (

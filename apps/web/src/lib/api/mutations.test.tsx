@@ -19,6 +19,17 @@ import { queryKeys } from "./queries";
 import type { ProfileResponse } from "./types";
 import type { SharingData } from "../core/interfaces";
 
+// Mock useAuth hook
+vi.mock("../auth/use-auth", () => ({
+  useAuth: vi.fn(() => ({
+    user: { uid: "test-user", email: "test@example.com", displayName: "Test User" },
+    isLoaded: true,
+    isLoggedIn: true,
+    signOut: vi.fn(),
+    getToken: vi.fn().mockResolvedValue("mock-token"),
+  })),
+}));
+
 // Create wrapper for React Query
 function createWrapper() {
   const queryClient = new QueryClient({

@@ -1,18 +1,22 @@
-import { useUser, useAuth as useClerkAuth, useClerk } from "@clerk/clerk-react";
+import { useClerk, useAuth as useClerkAuth, useUser } from "@clerk/clerk-react";
+import type { GetToken } from "@clerk/types";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "../../types/user";
 
-interface AuthState {
+// Re-export GetToken so other files don't need to import from Clerk directly
+export type { GetToken };
+
+export interface AuthState {
   user: User | null;
-  isInitializing: boolean;
+  isLoaded: boolean;
   isLoggedIn: boolean;
   signOut: (redirectUrl?: string) => Promise<void>;
-  getToken: () => Promise<string | null>;
+  getToken: GetToken;
 }
 
 export function useAuth(): AuthState {
-  const { user: clerkUser, isLoaded } = useUser();
-  const { isSignedIn, getToken } = useClerkAuth();
+  const { isLoaded, isSignedIn, getToken } = useClerkAuth();
+  const { user: clerkUser } = useUser();
   const { signOut: clerkSignOut } = useClerk();
   const queryClient = useQueryClient();
 
@@ -27,16 +31,14 @@ export function useAuth(): AuthState {
       : null;
 
   const signOut = async (redirectUrl?: string) => {
-    console.log("[useAuth] signOut called with redirectUrl:", redirectUrl || "/");
     await clerkSignOut({ redirectUrl: redirectUrl || "/" });
     // Clear all React Query caches on sign out
     queryClient.clear();
-    console.log("[useAuth] signOut completed, caches cleared");
   };
 
   return {
     user,
-    isInitializing: !isLoaded,
+    isLoaded,
     isLoggedIn: isSignedIn ?? false,
     signOut,
     getToken,

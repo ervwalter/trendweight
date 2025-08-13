@@ -8,6 +8,17 @@ import { useProfile, useDashboardQueries, useProviderLinks, useSharingSettings, 
 import type { ProfileResponse, MeasurementsResponse, ProviderLink } from "./types";
 import type { SharingData } from "../core/interfaces";
 
+// Mock useAuth hook
+vi.mock("../auth/use-auth", () => ({
+  useAuth: vi.fn(() => ({
+    user: { uid: "test-user", email: "test@example.com", displayName: "Test User" },
+    isLoaded: true,
+    isLoggedIn: true,
+    signOut: vi.fn(),
+    getToken: vi.fn().mockResolvedValue("mock-token"),
+  })),
+}));
+
 // Error boundary for testing suspense errors
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
@@ -396,12 +407,14 @@ describe("queries", () => {
 
   describe("queryOptions", () => {
     it("should have correct stale time for data queries", () => {
-      const options = queryOptions.data();
+      const mockGetToken = vi.fn().mockResolvedValue("mock-token");
+      const options = queryOptions.data(mockGetToken);
       expect(options.staleTime).toBe(60000); // 1 minute
     });
 
     it("should handle profile query errors correctly", async () => {
-      const options = queryOptions.profile();
+      const mockGetToken = vi.fn().mockResolvedValue("mock-token");
+      const options = queryOptions.profile(mockGetToken);
 
       // Mock the API request function
       global.fetch = vi.fn().mockResolvedValueOnce({

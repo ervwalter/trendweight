@@ -1,64 +1,50 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { requireAuth } from "./auth-guard";
 import { redirect } from "@tanstack/react-router";
+import type { RouterContext } from "../../router";
+import type { ParsedLocation } from "@tanstack/router-core";
 
 // Mock dependencies
 vi.mock("@tanstack/react-router", () => ({
   redirect: vi.fn(),
 }));
 
-// Mock window.Clerk
-const mockClerk = {
-  user: null as any,
-  loaded: true,
-};
-
-// @ts-expect-error - Mock window.Clerk for testing
-global.window = {
-  Clerk: mockClerk,
-};
-
 describe("authGuard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockClerk.user = null;
   });
 
   describe("requireAuth", () => {
-    it("should allow access when user is authenticated", async () => {
-      mockClerk.user = { id: "user_123" };
-
-      const context = {
-        location: {
-          pathname: "/dashboard",
-          href: "http://localhost/dashboard",
-          search: {},
-        },
+    it("should allow access when user is authenticated", () => {
+      const context: RouterContext = {
+        auth: { isLoggedIn: true } as any,
       };
 
+      const location: ParsedLocation = {
+        pathname: "/dashboard",
+      } as ParsedLocation;
+
       // Should not throw when authenticated
-      await expect(requireAuth(context)).resolves.toBeUndefined();
+      expect(() => requireAuth(context, location)).not.toThrow();
       expect(redirect).not.toHaveBeenCalled();
     });
 
-    it("should redirect to login when user is not authenticated", async () => {
-      mockClerk.user = null;
+    it("should redirect to login when user is not authenticated", () => {
+      const context: RouterContext = {
+        auth: { isLoggedIn: false } as any,
+      };
+
+      const location: ParsedLocation = {
+        pathname: "/dashboard",
+      } as ParsedLocation;
 
       const mockRedirect = new Error("Redirect");
       vi.mocked(redirect).mockImplementation(() => {
         throw mockRedirect;
       });
 
-      const context = {
-        location: {
-          pathname: "/dashboard",
-          href: "http://localhost/dashboard",
-          search: {},
-        },
-      };
-
       // Should throw redirect error
-      await expect(requireAuth(context)).rejects.toThrow(mockRedirect);
+      expect(() => requireAuth(context, location)).toThrow(mockRedirect);
 
       expect(redirect).toHaveBeenCalledWith({
         to: "/login",
@@ -68,23 +54,21 @@ describe("authGuard", () => {
       });
     });
 
-    it("should preserve original path in redirect", async () => {
-      mockClerk.user = null;
+    it("should preserve original path in redirect", () => {
+      const context: RouterContext = {
+        auth: { isLoggedIn: false } as any,
+      };
+
+      const location: ParsedLocation = {
+        pathname: "/settings/profile",
+      } as ParsedLocation;
 
       const mockRedirect = new Error("Redirect");
       vi.mocked(redirect).mockImplementation(() => {
         throw mockRedirect;
       });
 
-      const context = {
-        location: {
-          pathname: "/settings/profile",
-          href: "http://localhost/settings/profile",
-          search: { tab: "basic" },
-        },
-      };
-
-      await expect(requireAuth(context)).rejects.toThrow(mockRedirect);
+      expect(() => requireAuth(context, location)).toThrow(mockRedirect);
 
       expect(redirect).toHaveBeenCalledWith({
         to: "/login",
@@ -94,23 +78,21 @@ describe("authGuard", () => {
       });
     });
 
-    it("should handle root path redirect", async () => {
-      mockClerk.user = null;
+    it("should handle root path redirect", () => {
+      const context: RouterContext = {
+        auth: { isLoggedIn: false } as any,
+      };
+
+      const location: ParsedLocation = {
+        pathname: "/",
+      } as ParsedLocation;
 
       const mockRedirect = new Error("Redirect");
       vi.mocked(redirect).mockImplementation(() => {
         throw mockRedirect;
       });
 
-      const context = {
-        location: {
-          pathname: "/",
-          href: "http://localhost/",
-          search: {},
-        },
-      };
-
-      await expect(requireAuth(context)).rejects.toThrow(mockRedirect);
+      expect(() => requireAuth(context, location)).toThrow(mockRedirect);
 
       expect(redirect).toHaveBeenCalledWith({
         to: "/login",

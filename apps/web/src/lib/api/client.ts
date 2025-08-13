@@ -12,38 +12,25 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
-  // Get the current session's access token from Clerk if authenticated
-  let token: string | null = null;
-
-  // @ts-expect-error - Clerk may not be initialized yet
-  if (window.Clerk?.session) {
-    try {
-      // @ts-expect-error - Clerk session API
-      token = await window.Clerk.session.getToken();
-    } catch (error) {
-      console.error("Failed to get Clerk token:", error);
-    }
-  }
+export async function apiRequest<T>(path: string, options?: RequestInit & { token?: string | null }): Promise<T> {
+  // Extract token from options, if provided
+  const { token, ...requestOptions } = options || {};
 
   // Use a relative path for the API base URL to work with the Vite proxy
   const apiBaseUrl = "/api";
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...((options?.headers as Record<string, string>) || {}),
+    ...((requestOptions?.headers as Record<string, string>) || {}),
   };
 
-  // Add Authorization header with Clerk JWT token if available
+  // Add Authorization header with token if available
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  // Extract headers to handle them separately
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { headers: _customHeaders, ...optionsWithoutHeaders } = options || {};
   const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...optionsWithoutHeaders,
+    ...requestOptions,
     headers,
   });
 

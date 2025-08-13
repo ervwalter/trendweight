@@ -10,9 +10,11 @@ interface SyncProgressProviderProps {
 export function SyncProgressProvider({ children }: SyncProgressProviderProps) {
   const progressId = useMemo(() => crypto.randomUUID(), []);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
+  const [isActive, setIsActive] = useState(false);
 
   const startProgress = useCallback(
     (message: string) => {
+      setIsActive(true);
       setProgress({
         id: progressId,
         status: "starting",
@@ -24,12 +26,18 @@ export function SyncProgressProvider({ children }: SyncProgressProviderProps) {
   );
 
   const endProgress = useCallback(() => {
-    // Clear progress entirely
+    // Mark as inactive and clear progress entirely
+    setIsActive(false);
     setProgress(null);
   }, []);
 
   const setServerProgress = useCallback(
     (serverProgress: SyncProgress) => {
+      // Ignore broadcasts if no active progress session
+      if (!isActive) {
+        return;
+      }
+
       // If server says done, clear the progress entirely
       if (serverProgress.status === "done") {
         endProgress();
@@ -37,7 +45,7 @@ export function SyncProgressProvider({ children }: SyncProgressProviderProps) {
         setProgress(serverProgress);
       }
     },
-    [endProgress],
+    [isActive, endProgress],
   );
 
   // Subscribe to realtime updates

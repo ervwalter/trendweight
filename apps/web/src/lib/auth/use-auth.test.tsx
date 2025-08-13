@@ -30,10 +30,11 @@ describe("useAuth", () => {
         primaryEmailAddress: { emailAddress: "test@example.com" },
         fullName: "Test User",
       },
-      isLoaded: true,
     });
     mockUseClerkAuth.mockReturnValue({
+      isLoaded: true,
       isSignedIn: true,
+      getToken: vi.fn(),
     });
     mockUseClerk.mockReturnValue({
       signOut: vi.fn(),
@@ -47,16 +48,17 @@ describe("useAuth", () => {
       displayName: "Test User",
     });
     expect(result.current.isLoggedIn).toBe(true);
-    expect(result.current.isInitializing).toBe(false);
+    expect(result.current.isLoaded).toBe(true);
   });
 
   it("should return null user when not logged in", () => {
     mockUseUser.mockReturnValue({
       user: null,
-      isLoaded: true,
     });
     mockUseClerkAuth.mockReturnValue({
+      isLoaded: true,
       isSignedIn: false,
+      getToken: vi.fn(),
     });
     mockUseClerk.mockReturnValue({
       signOut: vi.fn(),
@@ -66,16 +68,17 @@ describe("useAuth", () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.isLoggedIn).toBe(false);
-    expect(result.current.isInitializing).toBe(false);
+    expect(result.current.isLoaded).toBe(true);
   });
 
-  it("should return initializing state when Clerk is not loaded", () => {
+  it("should return not loaded state when Clerk is not loaded", () => {
     mockUseUser.mockReturnValue({
       user: null,
-      isLoaded: false,
     });
     mockUseClerkAuth.mockReturnValue({
+      isLoaded: false,
       isSignedIn: false,
+      getToken: vi.fn(),
     });
     mockUseClerk.mockReturnValue({
       signOut: vi.fn(),
@@ -83,7 +86,7 @@ describe("useAuth", () => {
 
     const { result } = renderHook(() => useAuth());
 
-    expect(result.current.isInitializing).toBe(true);
+    expect(result.current.isLoaded).toBe(false);
     expect(result.current.isLoggedIn).toBe(false);
   });
 
@@ -94,10 +97,11 @@ describe("useAuth", () => {
         primaryEmailAddress: { emailAddress: "test@example.com" },
         fullName: null,
       },
-      isLoaded: true,
     });
     mockUseClerkAuth.mockReturnValue({
+      isLoaded: true,
       isSignedIn: true,
+      getToken: vi.fn(),
     });
     mockUseClerk.mockReturnValue({
       signOut: vi.fn(),
@@ -117,10 +121,11 @@ describe("useAuth", () => {
         primaryEmailAddress: { emailAddress: "test@example.com" },
         fullName: "Test User",
       },
-      isLoaded: true,
     });
     mockUseClerkAuth.mockReturnValue({
+      isLoaded: true,
       isSignedIn: true,
+      getToken: vi.fn(),
     });
     mockUseClerk.mockReturnValue({
       signOut: mockSignOut,
@@ -148,10 +153,11 @@ describe("useAuth", () => {
         primaryEmailAddress: { emailAddress: "test@example.com" },
         fullName: "Test User",
       },
-      isLoaded: true,
     });
     mockUseClerkAuth.mockReturnValue({
+      isLoaded: true,
       isSignedIn: true,
+      getToken: vi.fn(),
     });
     mockUseClerk.mockReturnValue({
       signOut: mockSignOut,

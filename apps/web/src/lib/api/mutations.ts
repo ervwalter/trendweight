@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../auth/use-auth";
 import { apiRequest } from "./client";
 import { queryKeys } from "./queries";
 import type { ProfileResponse } from "./types";
@@ -16,19 +17,22 @@ interface UpdateProfileData {
 }
 
 export function useUpdateProfile() {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UpdateProfileData) => {
+    mutationFn: async (data: UpdateProfileData) => {
       // Transform empty strings to undefined for proper API handling
       const cleanedData = {
         ...data,
         goalStart: data.goalStart === "" ? undefined : data.goalStart,
       };
 
+      const token = await getToken();
       return apiRequest<ProfileResponse>("/profile", {
         method: "PUT",
         body: JSON.stringify(cleanedData),
+        token,
       });
     },
     onSuccess: (data) => {
@@ -41,10 +45,14 @@ export function useUpdateProfile() {
 }
 
 export function useDisconnectProvider() {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (provider: string) => apiRequest(`/providers/${provider}`, { method: "DELETE" }),
+    mutationFn: async (provider: string) => {
+      const token = await getToken();
+      return apiRequest(`/providers/${provider}`, { method: "DELETE", token });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
       queryClient.invalidateQueries({ queryKey: queryKeys.data() });
@@ -53,10 +61,14 @@ export function useDisconnectProvider() {
 }
 
 export function useEnableProvider() {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (provider: string) => apiRequest(`/providers/${provider}/enable`, { method: "POST" }),
+    mutationFn: async (provider: string) => {
+      const token = await getToken();
+      return apiRequest(`/providers/${provider}/enable`, { method: "POST", token });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
       queryClient.invalidateQueries({ queryKey: queryKeys.data() });
@@ -65,10 +77,14 @@ export function useEnableProvider() {
 }
 
 export function useClearProviderData() {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (provider: string) => apiRequest(`/providers/${provider}/clear-data`, { method: "POST" }),
+    mutationFn: async (provider: string) => {
+      const token = await getToken();
+      return apiRequest(`/providers/${provider}/clear-data`, { method: "POST", token });
+    },
     onSuccess: () => {
       // Invalidate data query to refresh measurements after clearing
       queryClient.invalidateQueries({ queryKey: queryKeys.data() });
@@ -77,23 +93,30 @@ export function useClearProviderData() {
 }
 
 export function useReconnectProvider() {
+  const { getToken } = useAuth();
+
   return useMutation({
     mutationFn: async (provider: string) => {
       const endpoint = provider === "fitbit" ? "/fitbit/link" : "/withings/link";
-      return apiRequest<{ url?: string; authorizationUrl?: string }>(endpoint);
+      const token = await getToken();
+      return apiRequest<{ url?: string; authorizationUrl?: string }>(endpoint, { token });
     },
   });
 }
 
 export function useToggleSharing() {
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (enabled: boolean) =>
-      apiRequest<SharingData>("/sharing/toggle", {
+    mutationFn: async (enabled: boolean) => {
+      const token = await getToken();
+      return apiRequest<SharingData>("/sharing/toggle", {
         method: "POST",
         body: JSON.stringify({ enabled }),
-      }),
+        token,
+      });
+    },
     onMutate: async (enabled) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.sharing });

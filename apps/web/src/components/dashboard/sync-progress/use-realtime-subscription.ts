@@ -22,7 +22,7 @@ export function useRealtimeSubscription(progressId: string | undefined, onProgre
       .on("broadcast", { event: "progress_update" }, (payload) => {
         // The backend sends the progress message in payload.payload
         if (payload.payload && payload.payload.id === progressId) {
-          console.log("[sync-progress] Received broadcast:", payload.payload);
+          // console.log("[sync-progress] Received broadcast:", payload.payload);
           onProgressUpdate(payload.payload as SyncProgress);
         }
       })

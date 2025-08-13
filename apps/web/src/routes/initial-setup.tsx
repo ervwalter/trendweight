@@ -6,10 +6,10 @@ import { queryOptions } from "../lib/api/queries";
 import { queryClient } from "../lib/query-client";
 
 export const Route = createFileRoute("/initial-setup")({
-  beforeLoad: requireAuth,
-  loader: async () => {
+  beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),
+  loader: async ({ context }) => {
     // Check if user already has a profile
-    const profile = await queryClient.fetchQuery(queryOptions.profile());
+    const profile = await queryClient.fetchQuery(queryOptions.profile(context.auth.getToken));
 
     if (profile) {
       // User already has a profile, redirect to settings
