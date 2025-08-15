@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.5.4](https://github.com/ervwalter/trendweight/compare/v2.5.3...v2.5.4) (2025-08-15)
+
+
+### Refactoring
+
+* replace sync progress overlay with toast notification ([7f8a3ca](https://github.com/ervwalter/trendweight/commit/7f8a3ca245450b4a7253addc7eb3cb7e0ab45fd1))
+
+
+### Dependencies
+
+* update dependency fluentassertions to 8.6.0 ([#325](https://github.com/ervwalter/trendweight/issues/325)) ([5c495a7](https://github.com/ervwalter/trendweight/commit/5c495a721e08b03e00188cb9491ead29376ce1a8))
+* update npm dependencies ([#323](https://github.com/ervwalter/trendweight/issues/323)) ([9e211bd](https://github.com/ervwalter/trendweight/commit/9e211bd03073ae166d011d25a0146af433e7acf5))
+
 ## [2.5.3](https://github.com/ervwalter/trendweight/compare/v2.5.2...v2.5.3) (2025-08-13)
 
 
