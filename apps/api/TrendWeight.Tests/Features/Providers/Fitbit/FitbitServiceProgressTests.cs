@@ -142,11 +142,11 @@ public class FitbitServiceProgressTests : TestBase
             It.IsAny<int?>(),
             It.IsAny<int?>()), Times.AtLeastOnce());
 
-        // Verify completion call (should report "Download complete" with matching current/total)
+        // Verify completion call (should report "Finishing up..." with matching current/total)
         _progressReporterMock.Verify(x => x.ReportProviderProgressAsync(
             "fitbit",
             "fetching",
-            "Download complete",
+            "Finishing up...",
             It.Is<int?>(v => v.HasValue),
             It.Is<int?>(v => v.HasValue)), Times.Once);
     }

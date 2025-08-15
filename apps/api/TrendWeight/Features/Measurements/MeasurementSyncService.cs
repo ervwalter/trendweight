@@ -118,7 +118,7 @@ public class MeasurementSyncService : IMeasurementSyncService
             // Update overall status based on results
             if (_progressReporter != null)
             {
-                await _progressReporter.ReportSyncProgressAsync("running", "Gathering combined readings...");
+                await _progressReporter.ReportSyncProgressAsync("running", "Finishing up...");
             }
 
             // Get the current data (whether refreshed or cached) - only for active providers
@@ -182,7 +182,7 @@ public class MeasurementSyncService : IMeasurementSyncService
                     await _progressReporter.ReportProviderProgressAsync(
                         provider,
                         stage: "merging",
-                        message: "Processing new readings");
+                        message: "Finishing up...");
                 }
 
                 // Get existing data to merge with - only need data for this specific provider

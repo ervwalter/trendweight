@@ -324,7 +324,7 @@ public class FitbitService : ProviderServiceBase, IFitbitService
             await ProgressReporter.ReportProviderProgressAsync(
                 "fitbit",
                 stage: "fetching",
-                message: "Download complete",
+                message: "Finishing up...",
                 current: (int)estimatedChunks,
                 total: (int)estimatedChunks);
         }
