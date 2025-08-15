@@ -4,8 +4,6 @@ import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable, type
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useMemo } from "react";
 import { formatMeasurement } from "../../lib/core/numbers";
-import { useSyncProgress } from "../dashboard/sync-progress/hooks";
-import { SyncProgressOverlay } from "../dashboard/sync-progress/sync-progress-overlay";
 import { Button } from "../ui/button";
 import { PaginationContent, PaginationItem } from "../ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
@@ -43,7 +41,6 @@ const formatTime = (time: string) => {
 
 export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleReadingsDataTableProps) {
   const isComputed = viewType === "computed";
-  const { progress } = useSyncProgress();
 
   // Define columns based on view type
   const columns = useMemo<ColumnDef<ScaleReading>[]>(() => {
@@ -210,11 +207,7 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
             ))}
           </TableBody>
         </Table>
-        {progress && (
-          <div className="absolute inset-0 top-2 p-2">
-            <SyncProgressOverlay className="w-full" />
-          </div>
-        )}
+        {/* Toast will automatically appear when sync is active */}
       </div>
 
       {/* Bottom pagination */}

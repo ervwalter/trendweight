@@ -1,7 +1,7 @@
 import { SyncProgressProvider } from "@/components/dashboard/sync-progress";
-import { SyncProgressOverlay } from "@/components/dashboard/sync-progress/sync-progress-overlay";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download } from "../components/download/download";
+import { DownloadPlaceholder } from "../components/download/download-placeholder";
 import { Layout } from "../components/layout";
 import { requireAuth } from "../lib/auth/auth-guard";
 import { ensureProfile, ensureProviderLinks } from "../lib/loaders/utils";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/download")({
 function ScaleReadingsPage() {
   return (
     <SyncProgressProvider>
-      <Layout title="Download Your Data" suspenseFallback={<SyncProgressOverlay className="w-full" />}>
+      <Layout title="Download Your Data" suspenseFallback={<DownloadPlaceholder />}>
         <Download />
       </Layout>
     </SyncProgressProvider>

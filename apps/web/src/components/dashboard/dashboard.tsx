@@ -16,7 +16,6 @@ import ProviderSyncErrors from "./provider-sync-errors";
 import RecentReadings from "./recent-readings";
 import Stats from "./stats";
 import { useSyncProgress } from "./sync-progress/hooks";
-import { SyncProgressOverlay } from "./sync-progress/sync-progress-overlay";
 
 interface DashboardProps {
   sharingCode?: string;
@@ -24,7 +23,7 @@ interface DashboardProps {
 
 const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
   const dashboardData = useComputeDashboardData(sharingCode);
-  const { progress } = useSyncProgress();
+  useSyncProgress(); // Auto-manages toast when sync is active
 
   // Check if profile exists - if not, redirect to initial setup (skip for shared views)
   if (!sharingCode && dashboardData.profileError instanceof ApiError && dashboardData.profileError.status === 404) {
@@ -73,12 +72,6 @@ const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
             </Heading>
             <div className="relative">
               <Chart />
-              {/* Sync progress overlay - shows when sync is active */}
-              {progress && (
-                <div className="absolute inset-0 flex items-center justify-center p-2 pb-[90px] md:pb-[70px]">
-                  <SyncProgressOverlay className="w-full" />
-                </div>
-              )}
             </div>
           </div>
           <Currently />

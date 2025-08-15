@@ -1,9 +1,8 @@
 import { Skeleton } from "../ui/skeleton";
 import { useSyncProgress } from "./sync-progress/hooks";
-import { SyncProgressOverlay } from "./sync-progress/sync-progress-overlay";
 
 const DashboardPlaceholder = () => {
-  const { progress } = useSyncProgress();
+  useSyncProgress(); // Auto-manages toast when sync is active
   return (
     <div className="relative">
       {/* Buttons placeholder */}
@@ -21,12 +20,7 @@ const DashboardPlaceholder = () => {
               <Skeleton className="h-full w-full" />
             </div>
 
-            {/* Progress overlay */}
-            {progress && (
-              <div className="absolute inset-0 flex items-center justify-center p-2">
-                <SyncProgressOverlay className="w-full" />
-              </div>
-            )}
+            {/* Toast will automatically appear when sync is active */}
           </div>
         </div>
         <div className="flex flex-col gap-2">
