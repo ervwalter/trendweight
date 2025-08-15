@@ -41,5 +41,8 @@
     "ohlc",
     "resetpassword"
   ],
-  "dotnet.defaultSolution": "apps/api/TrendWeight.sln"
+  "dotnet.defaultSolution": "apps/api/TrendWeight.sln",
+  "dotrush.roslyn.projectOrSolutionFiles": [
+    "/Users/erv/development/trendweight/apps/api/TrendWeight.sln"
+  ]
 }
