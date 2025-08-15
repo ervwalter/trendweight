@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.5.5](https://github.com/ervwalter/trendweight/compare/v2.5.4...v2.5.5) (2025-08-15)
+
+
+### Refactoring
+
+* remove progress bar components and custom type definitions ([352cf56](https://github.com/ervwalter/trendweight/commit/352cf5666ffc4f2537b6898ba5f393d1bd9c29b0))
+* standardize progress messages to 'Finishing up...' ([b5b656b](https://github.com/ervwalter/trendweight/commit/b5b656b39a9d79db2c240f15ae03f3860a2b544f))
+
 ## [2.5.4](https://github.com/ervwalter/trendweight/compare/v2.5.3...v2.5.4) (2025-08-15)
 
 
