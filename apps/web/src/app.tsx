@@ -1,4 +1,3 @@
-import "@bprogress/core/css";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { shadcn } from "@clerk/themes";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -8,7 +7,6 @@ import { ErrorBoundary } from "./components/error-boundary";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/sonner";
 import { useAuth } from "./lib/auth/use-auth";
-import "./lib/progress/progress.css";
 import { queryClient } from "./lib/query-client";
 import { setupVersionSkewHandler } from "./lib/version-skew/setup-version-skew-handler";
 import { router } from "./router";

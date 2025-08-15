@@ -19,7 +19,6 @@
     "clean": "rm -rf dist coverage .turbo *.tsbuildinfo src/routeTree.gen.ts"
   },
   "dependencies": {
-    "@bprogress/react": "1.2.7",
     "@clerk/clerk-react": "5.42.1",
     "@clerk/themes": "2.4.10",
     "@fontsource/zilla-slab": "5.2.6",
