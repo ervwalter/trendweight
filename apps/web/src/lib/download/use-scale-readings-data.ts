@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { LocalDate, LocalTime } from "@js-joda/core";
 import { useDownloadData, useProfile } from "../api/queries";
 import type { ScaleReading, ViewType } from "../../components/download/types";
+import { convertMeasurements } from "../dashboard/computations/conversion";
 
 export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolean) {
   // Get profile data directly
@@ -15,9 +16,10 @@ export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolea
     let data: ScaleReading[] = [];
 
     if (viewType === "computed") {
-      // Use computed measurements from download data
-      data = computedMeasurements.map((m) => ({
-        date: LocalDate.parse(m.date),
+      // Use computed measurements with proper unit conversion
+      const convertedMeasurements = convertMeasurements(computedMeasurements, profile);
+      data = convertedMeasurements.map((m) => ({
+        date: m.date,
         weight: m.actualWeight,
         trend: m.trendWeight,
         fatRatio: m.actualFatPercent,
@@ -55,7 +57,7 @@ export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolea
     });
 
     return data;
-  }, [viewType, apiSourceData, computedMeasurements, profile?.useMetric, sortNewestFirst]);
+  }, [viewType, apiSourceData, computedMeasurements, profile, sortNewestFirst]);
 
   return {
     readings,

@@ -1,44 +1,44 @@
-import { LocalDate, LocalTime } from "@js-joda/core";
-import type { ProfileData, SourceData, SourceMeasurement } from "../../core/interfaces";
+import { LocalDate } from "@js-joda/core";
+import type { Measurement, ProfileData } from "../../core/interfaces";
+import type { ApiComputedMeasurement } from "../../api/types";
 
 /**
- * Converts raw source data into source measurements with proper date/time handling
+ * Converts backend computed measurements to frontend format with proper unit conversion
  */
-export function convertToSourceMeasurements(data: SourceData[], profile: ProfileData): SourceMeasurement[] {
-  const dayStartOffset = profile.dayStartOffset || 0;
-  const useMetric = profile.useMetric || false;
-  const conversionFactor = useMetric ? 1 : 2.20462262;
+export function convertMeasurements(computedMeasurements: ApiComputedMeasurement[], profile: ProfileData | null): Measurement[] {
+  if (!computedMeasurements) return [];
 
-  // Convert all measurements first
-  let allMeasurements = data
-    .map((sourceData) => {
-      if (!sourceData.measurements) {
-        return [];
-      }
-      return sourceData.measurements.map((sourceMeasurement) => {
-        // Parse date and time to create LocalDateTime
-        const localDateTime = LocalDate.parse(sourceMeasurement.date).atTime(LocalTime.parse(sourceMeasurement.time));
+  // Determine conversion factor (backend stores in kg, convert to lbs for non-metric users)
+  const useMetric = profile?.useMetric ?? false;
+  const conversionFactor = useMetric ? 1 : 2.20462262; // kg to lbs
 
-        // Apply dayStartOffset to determine which date this belongs to
-        const adjustedDateTime = localDateTime.minusHours(dayStartOffset);
+  return computedMeasurements.map((computed: ApiComputedMeasurement) => {
+    // Parse date string to LocalDate
+    const date = LocalDate.parse(computed.date);
 
-        return {
-          date: adjustedDateTime.toLocalDate(),
-          timestamp: adjustedDateTime, // Keep original for intra-day sorting
-          source: sourceData.source,
-          weight: sourceMeasurement.weight * conversionFactor, // Convert kg to lbs if needed
-          fatRatio: sourceMeasurement.fatRatio,
-          weightIsInterpolated: false,
-        };
-      });
-    })
-    .flat();
+    // Convert weights from kg to user's preferred unit
+    const actualWeight = computed.actualWeight * conversionFactor;
+    const trendWeight = computed.trendWeight * conversionFactor;
 
-  // Filter if needed
-  if (profile.hideDataBeforeStart && profile.goalStart && profile.goalStart.trim() !== "") {
-    const startDate = LocalDate.parse(profile.goalStart);
-    allMeasurements = allMeasurements.filter((measurement) => !measurement.date.isBefore(startDate));
-  }
+    // Calculate fat/lean mass if fat data is available (already in correct units after weight conversion)
+    const actualFatMass = computed.actualFatPercent ? actualWeight * computed.actualFatPercent : undefined;
+    const actualLeanMass = computed.actualFatPercent ? actualWeight * (1 - computed.actualFatPercent) : undefined;
+    const trendFatMass = computed.trendFatPercent ? trendWeight * computed.trendFatPercent : undefined;
+    const trendLeanMass = computed.trendFatPercent ? trendWeight * (1 - computed.trendFatPercent) : undefined;
 
-  return allMeasurements;
+    return {
+      date,
+      source: "computed", // Default source since it's not in the optimized response
+      actualWeight,
+      trendWeight,
+      weightIsInterpolated: computed.weightIsInterpolated,
+      fatIsInterpolated: computed.fatIsInterpolated,
+      actualFatPercent: computed.actualFatPercent,
+      trendFatPercent: computed.trendFatPercent,
+      actualFatMass,
+      actualLeanMass,
+      trendFatMass,
+      trendLeanMass,
+    };
+  });
 }

@@ -3,11 +3,10 @@ import { dashboardContext } from "./dashboard-context";
 import type { DashboardData } from "./dashboard-context";
 import { useDashboardQueries } from "../api/queries";
 import type { Mode, TimeRange } from "../core/interfaces";
-import type { ApiComputedMeasurement } from "../api/types";
-import { LocalDate } from "@js-joda/core";
 import { usePersistedState } from "../hooks/use-persisted-state";
 import { computeDataPoints } from "./computations/data-points";
 import { computeActiveSlope, computeDeltas, computeWeightSlope } from "./computations/stats";
+import { convertMeasurements } from "./computations/conversion";
 
 export const useDashboardData = (): DashboardData => {
   const data = useContext(dashboardContext);
@@ -22,38 +21,12 @@ export const useComputeDashboardData = (sharingCode?: string): DashboardData => 
   const [timeRange, setTimeRange] = usePersistedState<TimeRange>("timeRange", "4w");
 
   // Get profile and measurement data in parallel
-  const { profile, measurementData: apiComputedMeasurements, providerStatus, profileError, isMe } = useDashboardQueries(sharingCode);
+  const { profile, measurementData: computedMeasurements, providerStatus, profileError, isMe } = useDashboardQueries(sharingCode);
 
-  // Transform computed measurements from backend to frontend format
+  // Transform computed measurements from backend to frontend format with unit conversion
   const measurements = useMemo(() => {
-    if (!apiComputedMeasurements) return [];
-
-    return apiComputedMeasurements.map((computed: ApiComputedMeasurement) => {
-      // Parse date string to LocalDate
-      const date = LocalDate.parse(computed.date);
-
-      // Calculate fat/lean mass if fat data is available
-      const actualFatMass = computed.actualFatPercent ? computed.actualWeight * computed.actualFatPercent : undefined;
-      const actualLeanMass = computed.actualFatPercent ? computed.actualWeight * (1 - computed.actualFatPercent) : undefined;
-      const trendFatMass = computed.trendFatPercent ? computed.trendWeight * computed.trendFatPercent : undefined;
-      const trendLeanMass = computed.trendFatPercent ? computed.trendWeight * (1 - computed.trendFatPercent) : undefined;
-
-      return {
-        date,
-        source: "computed", // Default source since it's not in the optimized response
-        actualWeight: computed.actualWeight,
-        trendWeight: computed.trendWeight,
-        weightIsInterpolated: computed.weightIsInterpolated,
-        fatIsInterpolated: computed.fatIsInterpolated,
-        actualFatPercent: computed.actualFatPercent,
-        trendFatPercent: computed.trendFatPercent,
-        actualFatMass,
-        actualLeanMass,
-        trendFatMass,
-        trendLeanMass,
-      };
-    });
-  }, [apiComputedMeasurements]);
+    return convertMeasurements(computedMeasurements, profile);
+  }, [computedMeasurements, profile]);
 
   const dataPoints = useMemo(() => computeDataPoints(mode, measurements), [measurements, mode]);
 

@@ -148,6 +148,8 @@ docs: restructure documentation with steering documents and commit guidelines
 
 Only use footers for major topics - group related changes together rather than creating a footer for every small change. Footers can be multi-line to provide details.
 
+**Important**: Don't create footers that simply restate the main commit message. Only use footers when you have genuinely different types of changes that deserve separate changelog entries.
+
 #### Rules
 - **Never use "BREAKING CHANGE"** - this is an application, not a library
 - **Use footers for multi-topic commits** rather than multiple commits when changes are related
