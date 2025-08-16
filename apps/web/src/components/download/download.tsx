@@ -21,7 +21,7 @@ export function Download() {
   const connectedProviders = providerLinks?.filter((link) => link.hasToken && !link.isDisabled) || [];
 
   const handleDownloadCSV = () => {
-    downloadScaleReadingsCSV(readings, viewType, profile.useMetric);
+    downloadScaleReadingsCSV(readings, viewType, profile?.useMetric ?? false);
   };
 
   if (connectedProviders.length === 0) {
@@ -57,7 +57,7 @@ export function Download() {
       {readings.length === 0 ? (
         <p className="text-muted-foreground">No data available for the selected view.</p>
       ) : (
-        <ScaleReadingsDataTable readings={readings} viewType={viewType} useMetric={profile.useMetric} />
+        <ScaleReadingsDataTable readings={readings} viewType={viewType} useMetric={profile?.useMetric ?? false} />
       )}
     </>
   );

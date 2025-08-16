@@ -7,6 +7,7 @@ using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Providers;
 using TrendWeight.Features.Providers.Models;
+using TrendWeight.Features.SyncProgress;
 using TrendWeight.Tests.Fixtures;
 using Xunit;
 
@@ -35,7 +36,7 @@ public class MeasurementSyncServiceTests : TestBase
             _sourceDataServiceMock.Object,
             _loggerMock.Object,
             _environmentMock.Object,
-            null); // ISyncProgressReporter
+            Mock.Of<ISyncProgressReporter>()); // ISyncProgressReporter
     }
 
     #region Constructor Tests
@@ -53,7 +54,7 @@ public class MeasurementSyncServiceTests : TestBase
             _sourceDataServiceMock.Object,
             _loggerMock.Object,
             _environmentMock.Object,
-            null); // ISyncProgressReporter
+            Mock.Of<ISyncProgressReporter>()); // ISyncProgressReporter
 
         service.Should().NotBeNull();
     }
@@ -70,7 +71,7 @@ public class MeasurementSyncServiceTests : TestBase
             _sourceDataServiceMock.Object,
             _loggerMock.Object,
             _environmentMock.Object,
-            null); // ISyncProgressReporter
+            Mock.Of<ISyncProgressReporter>()); // ISyncProgressReporter
 
         // Assert - This will be tested indirectly through the GetMeasurementsForUserAsync tests
         service.Should().NotBeNull();
@@ -596,7 +597,7 @@ public class MeasurementSyncServiceTests : TestBase
             _sourceDataServiceMock.Object,
             _loggerMock.Object,
             environmentMock.Object,
-            null); // ISyncProgressReporter
+            Mock.Of<ISyncProgressReporter>()); // ISyncProgressReporter
 
         var userId = Guid.NewGuid();
         var activeProviders = new List<string> { "withings" };

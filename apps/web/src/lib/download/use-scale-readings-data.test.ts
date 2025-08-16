@@ -2,28 +2,24 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { LocalDate } from "@js-joda/core";
 import { useScaleReadingsData } from "./use-scale-readings-data";
-import { useDashboardQueries } from "../api/queries";
-import { useComputeDashboardData } from "../dashboard/hooks";
-
+import { useDownloadData, useProfile } from "../api/queries";
 // Mock dependencies
 vi.mock("../api/queries");
-vi.mock("../dashboard/hooks");
+vi.mock("../../components/dashboard/sync-progress/hooks", () => ({
+  useSyncProgress: () => ({
+    progressId: "test-progress-id",
+    progress: null,
+    startProgress: vi.fn(),
+    endProgress: vi.fn(),
+  }),
+}));
 
 describe("useScaleReadingsData", () => {
-  const mockMeasurement = {
-    date: LocalDate.of(2024, 1, 15),
-    actualWeight: 75.5,
-    trendWeight: 75.2,
-    actualFatPercent: 22.5,
-    trendFatPercent: 22.3,
-    weightIsInterpolated: false,
-    fatIsInterpolated: false,
-  };
-
   const mockApiData = {
-    measurementData: [
+    sourceData: [
       {
         source: "withings",
+        lastUpdate: "2024-01-16T10:00:00Z",
         measurements: [
           {
             date: "2024-01-15",
@@ -47,6 +43,7 @@ describe("useScaleReadingsData", () => {
       },
       {
         source: "fitbit",
+        lastUpdate: "2024-01-15T10:00:00Z",
         measurements: [
           {
             date: "2024-01-15",
@@ -59,33 +56,57 @@ describe("useScaleReadingsData", () => {
     ],
   };
 
-  const mockDashboardData = {
-    measurements: [
-      mockMeasurement,
-      {
-        ...mockMeasurement,
-        date: LocalDate.of(2024, 1, 16),
-        actualWeight: 75.3,
-        trendWeight: 75.25,
-        weightIsInterpolated: true,
-      },
-      {
-        ...mockMeasurement,
-        date: LocalDate.of(2024, 1, 14),
-        actualWeight: 75.8,
-        trendWeight: 75.4,
-      },
-    ],
-    profile: {
-      name: "Test User",
-      email: "test@example.com",
-      useMetric: true, // Set to true so tests expect kg values
-    },
-  };
-
   beforeEach(() => {
-    vi.mocked(useDashboardQueries).mockReturnValue(mockApiData as any);
-    vi.mocked(useComputeDashboardData).mockReturnValue(mockDashboardData as any);
+    vi.mocked(useDownloadData).mockReturnValue({
+      computedMeasurements: [
+        {
+          date: "2024-01-15",
+          actualWeight: 75.5,
+          trendWeight: 75.2,
+          actualFatPercent: 22.5,
+          trendFatPercent: 22.3,
+          weightIsInterpolated: false,
+          fatIsInterpolated: false,
+        },
+        {
+          date: "2024-01-16",
+          actualWeight: 75.3,
+          trendWeight: 75.25,
+          actualFatPercent: null,
+          trendFatPercent: null,
+          weightIsInterpolated: true,
+          fatIsInterpolated: false,
+        },
+        {
+          date: "2024-01-14",
+          actualWeight: 75.8,
+          trendWeight: 75.4,
+          actualFatPercent: 22.5,
+          trendFatPercent: 22.3,
+          weightIsInterpolated: false,
+          fatIsInterpolated: false,
+        },
+      ],
+      sourceData: mockApiData.sourceData,
+      providerStatus: {},
+      isMe: true,
+    } as any);
+    vi.mocked(useProfile).mockReturnValue({
+      data: {
+        firstName: "Test User",
+        useMetric: true,
+        goalStart: null,
+        goalWeight: null,
+        plannedPoundsPerWeek: null,
+        dayStartOffset: 0,
+        showCalories: false,
+        hideDataBeforeStart: false,
+        sharingToken: null,
+        sharingEnabled: false,
+        isMigrated: true,
+        isNewlyMigrated: false,
+      },
+    } as any);
   });
 
   describe("computed view", () => {
@@ -126,9 +147,18 @@ describe("useScaleReadingsData", () => {
       const { result } = renderHook(() => useScaleReadingsData("computed", false));
 
       expect(result.current.profile).toEqual({
-        name: "Test User",
-        email: "test@example.com",
+        firstName: "Test User",
         useMetric: true,
+        goalStart: null,
+        goalWeight: null,
+        plannedPoundsPerWeek: null,
+        dayStartOffset: 0,
+        showCalories: false,
+        hideDataBeforeStart: false,
+        sharingToken: null,
+        sharingEnabled: false,
+        isMigrated: true,
+        isNewlyMigrated: false,
       });
     });
   });
@@ -209,9 +239,10 @@ describe("useScaleReadingsData", () => {
 
     it("should handle undefined weight as undefined", () => {
       const dataWithNullWeight = {
-        measurementData: [
+        sourceData: [
           {
             source: "withings",
+            lastUpdate: "2024-01-15T10:00:00Z",
             measurements: [
               {
                 date: "2024-01-15",
@@ -224,7 +255,7 @@ describe("useScaleReadingsData", () => {
         ],
       };
 
-      vi.mocked(useDashboardQueries).mockReturnValue(dataWithNullWeight as any);
+      vi.mocked(useDownloadData).mockReturnValue(dataWithNullWeight as any);
 
       const { result } = renderHook(() => useScaleReadingsData("withings", false));
 
@@ -236,9 +267,10 @@ describe("useScaleReadingsData", () => {
   describe("sorting edge cases", () => {
     it("should handle readings without time fields", () => {
       const dataWithoutTime = {
-        measurementData: [
+        sourceData: [
           {
             source: "manual",
+            lastUpdate: "2024-01-16T12:00:00Z",
             measurements: [
               {
                 date: "2024-01-15",
@@ -255,7 +287,7 @@ describe("useScaleReadingsData", () => {
         ],
       };
 
-      vi.mocked(useDashboardQueries).mockReturnValue(dataWithoutTime as any);
+      vi.mocked(useDownloadData).mockReturnValue(dataWithoutTime as any);
 
       const { result } = renderHook(() => useScaleReadingsData("manual", false));
 
@@ -283,9 +315,11 @@ describe("useScaleReadingsData", () => {
 
   describe("empty data handling", () => {
     it("should handle empty dashboard measurements", () => {
-      vi.mocked(useComputeDashboardData).mockReturnValue({
-        measurements: [],
-        profile: mockDashboardData.profile,
+      vi.mocked(useDownloadData).mockReturnValue({
+        computedMeasurements: [],
+        sourceData: [],
+        providerStatus: {},
+        isMe: true,
       } as any);
 
       const { result } = renderHook(() => useScaleReadingsData("computed", false));
@@ -295,8 +329,8 @@ describe("useScaleReadingsData", () => {
     });
 
     it("should handle missing provider data", () => {
-      vi.mocked(useDashboardQueries).mockReturnValue({
-        measurementData: [],
+      vi.mocked(useDownloadData).mockReturnValue({
+        sourceData: [],
       } as any);
 
       const { result } = renderHook(() => useScaleReadingsData("withings", false));
@@ -305,10 +339,11 @@ describe("useScaleReadingsData", () => {
     });
 
     it("should handle provider with empty measurements", () => {
-      vi.mocked(useDashboardQueries).mockReturnValue({
-        measurementData: [
+      vi.mocked(useDownloadData).mockReturnValue({
+        sourceData: [
           {
             source: "withings",
+            lastUpdate: "2024-01-15T10:00:00Z",
             measurements: [],
           },
         ],

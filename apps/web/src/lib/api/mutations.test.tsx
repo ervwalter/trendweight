@@ -214,7 +214,7 @@ describe("mutations", () => {
         queryKey: queryKeys.providerLinks(),
       });
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-        queryKey: queryKeys.data(),
+        queryKey: queryKeys.allData(),
       });
     });
   });
@@ -276,7 +276,7 @@ describe("mutations", () => {
         queryKey: queryKeys.providerLinks(),
       });
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-        queryKey: queryKeys.data(),
+        queryKey: queryKeys.allData(),
       });
     });
   });
@@ -335,7 +335,7 @@ describe("mutations", () => {
       });
 
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-        queryKey: queryKeys.data(),
+        queryKey: queryKeys.allData(),
       });
     });
   });

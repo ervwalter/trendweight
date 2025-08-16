@@ -1,3 +1,3 @@
 export { SyncProgressProvider } from "./sync-progress-context";
-export { useSyncProgress, useSyncProgressId } from "./hooks";
+export { useSyncProgress } from "./hooks";
 export type { SyncProgress, ProviderProgress } from "./types";

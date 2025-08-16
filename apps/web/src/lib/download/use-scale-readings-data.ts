@@ -1,21 +1,23 @@
 import { useMemo } from "react";
 import { LocalDate, LocalTime } from "@js-joda/core";
-import { useDashboardQueries } from "../api/queries";
-import { useComputeDashboardData } from "../dashboard/hooks";
+import { useDownloadData, useProfile } from "../api/queries";
 import type { ScaleReading, ViewType } from "../../components/download/types";
 
 export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolean) {
-  const dashboardData = useComputeDashboardData();
-  const { measurementData: apiSourceData } = useDashboardQueries();
+  // Get profile data directly
+  const { data: profile } = useProfile();
+
+  // Get both computed measurements and source data for downloads
+  const { computedMeasurements, sourceData: apiSourceData } = useDownloadData();
 
   // Transform data based on view type
   const readings = useMemo(() => {
     let data: ScaleReading[] = [];
 
     if (viewType === "computed") {
-      // Use measurements for computed view to get body fat data
-      data = dashboardData.measurements.map((m) => ({
-        date: m.date,
+      // Use computed measurements from download data
+      data = computedMeasurements.map((m) => ({
+        date: LocalDate.parse(m.date),
         weight: m.actualWeight,
         trend: m.trendWeight,
         fatRatio: m.actualFatPercent,
@@ -25,10 +27,10 @@ export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolea
       }));
     } else {
       // Single provider data
-      const providerData = apiSourceData.find((d) => d.source === viewType);
+      const providerData = apiSourceData?.find((d) => d.source === viewType);
       if (providerData?.measurements) {
         // Apply conversion factor for non-metric users
-        const conversionFactor = dashboardData.profile.useMetric ? 1 : 2.20462262;
+        const conversionFactor = profile?.useMetric ? 1 : 2.20462262;
         data = providerData.measurements.map((m) => ({
           date: LocalDate.parse(m.date),
           time: m.time,
@@ -53,10 +55,10 @@ export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolea
     });
 
     return data;
-  }, [viewType, apiSourceData, dashboardData.measurements, dashboardData.profile.useMetric, sortNewestFirst]);
+  }, [viewType, apiSourceData, computedMeasurements, profile?.useMetric, sortNewestFirst]);
 
   return {
     readings,
-    profile: dashboardData.profile,
+    profile,
   };
 }

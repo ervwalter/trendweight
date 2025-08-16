@@ -42,11 +42,24 @@ export interface ProviderSyncStatus {
   message?: string;
 }
 
+// Computed measurement from backend (optimized)
+export interface ApiComputedMeasurement {
+  date: string; // YYYY-MM-DD format (converted to LocalDate in queries)
+  actualWeight: number;
+  trendWeight: number;
+  weightIsInterpolated: boolean;
+  fatIsInterpolated: boolean;
+  actualFatPercent?: number; // 0-1 ratio
+  trendFatPercent?: number; // 0-1 ratio
+  // Note: Fat/lean mass calculated on frontend, source info in includeSource
+}
+
 // Enhanced measurements response from /api/data endpoint
 export interface MeasurementsResponse {
-  data: ApiSourceData[];
-  providerStatus: Record<string, ProviderSyncStatus>;
-  isMe?: boolean;
+  computedMeasurements: ApiComputedMeasurement[];
+  sourceData?: ApiSourceData[]; // Only when includeSource=true
+  providerStatus?: Record<string, ProviderSyncStatus>;
+  isMe: boolean;
 }
 
 // API error response with error codes

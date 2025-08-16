@@ -28,7 +28,7 @@ public class MeasurementSyncService : IMeasurementSyncService
         ISourceDataService sourceDataService,
         ILogger<MeasurementSyncService> logger,
         IWebHostEnvironment environment,
-        ISyncProgressReporter? progressReporter = null)
+        ISyncProgressReporter progressReporter)
     {
         _providerIntegrationService = providerIntegrationService;
         _sourceDataService = sourceDataService;

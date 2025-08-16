@@ -23,6 +23,7 @@ public class MeasurementsControllerTests : TestBase
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<IProviderIntegrationService> _providerIntegrationServiceMock;
     private readonly Mock<IMeasurementSyncService> _measurementSyncServiceMock;
+    private readonly Mock<IMeasurementComputationService> _measurementComputationServiceMock;
     private readonly Mock<ILogger<MeasurementsController>> _loggerMock;
     private readonly Mock<ICurrentRequestContext> _requestContextMock;
     private readonly MeasurementsController _sut;
@@ -32,6 +33,7 @@ public class MeasurementsControllerTests : TestBase
         _profileServiceMock = new Mock<IProfileService>();
         _providerIntegrationServiceMock = new Mock<IProviderIntegrationService>();
         _measurementSyncServiceMock = new Mock<IMeasurementSyncService>();
+        _measurementComputationServiceMock = new Mock<IMeasurementComputationService>();
         _loggerMock = new Mock<ILogger<MeasurementsController>>();
         _requestContextMock = new Mock<ICurrentRequestContext>();
         _requestContextMock.SetupAllProperties();
@@ -40,6 +42,7 @@ public class MeasurementsControllerTests : TestBase
             _profileServiceMock.Object,
             _providerIntegrationServiceMock.Object,
             _measurementSyncServiceMock.Object,
+            _measurementComputationServiceMock.Object,
             _loggerMock.Object,
             _requestContextMock.Object);
     }
@@ -69,6 +72,8 @@ public class MeasurementsControllerTests : TestBase
                     { "fitbit", new ProviderSyncStatus { Success = true } }
                 }
             });
+        _measurementComputationServiceMock.Setup(x => x.ComputeMeasurements(sourceData, user.Profile))
+            .Returns(new List<ComputedMeasurement>());
 
         // Act
         var result = await _sut.GetMeasurements();
@@ -78,7 +83,8 @@ public class MeasurementsControllerTests : TestBase
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
         response.IsMe.Should().Be(true);
-        response.Data.Should().BeEquivalentTo(sourceData);
+        response.ComputedMeasurements.Should().NotBeNull();
+        response.SourceData.Should().BeNull(); // Default includeSource=false
         response.ProviderStatus.Should().NotBeNull();
 
         response.ProviderStatus.Should().HaveCount(2);
@@ -141,6 +147,8 @@ public class MeasurementsControllerTests : TestBase
                     { "withings", new ProviderSyncStatus { Success = true } }
                 }
             });
+        _measurementComputationServiceMock.Setup(x => x.ComputeMeasurements(sourceData, user.Profile))
+            .Returns(new List<ComputedMeasurement>());
 
         // Act
         var result = await _sut.GetMeasurements();
@@ -149,7 +157,8 @@ public class MeasurementsControllerTests : TestBase
         result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
-        response.Data.Should().BeEquivalentTo(sourceData);
+        response.ComputedMeasurements.Should().NotBeNull();
+        response.SourceData.Should().BeNull(); // Default includeSource=false
     }
 
     [Fact]
@@ -241,6 +250,8 @@ public class MeasurementsControllerTests : TestBase
                     { "withings", new ProviderSyncStatus { Success = true } }
                 }
             });
+        _measurementComputationServiceMock.Setup(x => x.ComputeMeasurements(sourceData, user.Profile))
+            .Returns(new List<ComputedMeasurement>());
 
         // Act
         var result = await _sut.GetMeasurementsBySharingCode(sharingCode);
@@ -250,7 +261,8 @@ public class MeasurementsControllerTests : TestBase
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
         response.IsMe.Should().Be(false);
-        response.Data.Should().BeEquivalentTo(sourceData);
+        response.ComputedMeasurements.Should().NotBeNull();
+        response.SourceData.Should().BeNull(); // Default includeSource=false
         response.ProviderStatus.Should().BeNull(); // No provider status for shared view
     }
 

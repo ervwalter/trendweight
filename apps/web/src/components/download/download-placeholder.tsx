@@ -24,10 +24,10 @@ const DownloadPlaceholder = () => {
       <Skeleton className="h-9 w-36" />
 
       {/* Table skeleton */}
-      <div className="space-y-4">
+      <div className="inline-block min-w-[700px] space-y-4">
         {/* Table info and pagination top */}
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-5 w-32" />
+        <div className="flex items-center justify-between gap-4">
+          <Skeleton className="h-5 w-32 shrink-0" />
           <div className="flex gap-1">
             <Skeleton className="h-8 w-8" />
             <Skeleton className="h-8 w-8" />
@@ -38,26 +38,30 @@ const DownloadPlaceholder = () => {
         </div>
 
         {/* Table */}
-        <div className="space-y-3">
-          {/* Table header */}
-          <div className="flex gap-6 border-b pb-2">
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-5 w-20" />
-            <Skeleton className="h-5 w-20" />
-            <Skeleton className="h-5 w-20" />
-          </div>
-
-          {/* Table rows */}
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="flex gap-6 py-1">
-              <Skeleton className="h-5 w-16" />
-              <Skeleton className="h-5 w-16" />
-              <Skeleton className="h-5 w-20" />
-              <Skeleton className="h-5 w-20" />
-              <Skeleton className="h-5 w-20" />
+        <div className="relative">
+          <div className="space-y-3">
+            {/* Table header */}
+            <div className="flex border-b pb-2">
+              <Skeleton className="mr-6 ml-6 h-5 w-24" />
+              <Skeleton className="mr-6 h-5 w-20" />
+              <Skeleton className="mr-6 h-5 w-28" />
+              <Skeleton className="mr-6 h-5 w-28" />
+              <Skeleton className="mr-6 h-5 w-24" />
+              <Skeleton className="mr-6 h-5 w-24" />
             </div>
-          ))}
+
+            {/* Table rows */}
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="flex border-b py-2">
+                <Skeleton className="mr-6 ml-6 h-5 w-24" />
+                <Skeleton className="mr-6 h-5 w-20" />
+                <Skeleton className="mr-6 h-5 w-28" />
+                <Skeleton className="mr-6 h-5 w-28" />
+                <Skeleton className="mr-6 h-5 w-24" />
+                <Skeleton className="mr-6 h-5 w-24" />
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Table pagination bottom */}

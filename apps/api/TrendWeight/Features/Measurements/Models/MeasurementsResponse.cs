@@ -8,9 +8,14 @@ namespace TrendWeight.Features.Measurements.Models;
 public class MeasurementsResponse
 {
     /// <summary>
-    /// The measurement data from all sources
+    /// Computed measurements with trends (always included)
     /// </summary>
-    public required List<SourceData> Data { get; init; }
+    public required List<ComputedMeasurement> ComputedMeasurements { get; init; }
+
+    /// <summary>
+    /// Raw source data (only when includeSource=true)
+    /// </summary>
+    public List<SourceData>? SourceData { get; init; }
 
     /// <summary>
     /// Whether this is the authenticated user's own data

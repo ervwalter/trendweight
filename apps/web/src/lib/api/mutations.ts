@@ -55,7 +55,7 @@ export function useDisconnectProvider() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.data() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.allData() });
     },
   });
 }
@@ -71,7 +71,7 @@ export function useEnableProvider() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.data() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.allData() });
     },
   });
 }
@@ -87,7 +87,7 @@ export function useClearProviderData() {
     },
     onSuccess: () => {
       // Invalidate data query to refresh measurements after clearing
-      queryClient.invalidateQueries({ queryKey: queryKeys.data() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.allData() });
     },
   });
 }

@@ -1,6 +1,5 @@
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
-import { useContext } from "react";
-import { SyncProgressContext } from "../../components/dashboard/sync-progress/context";
+import { useSyncProgress } from "../../components/dashboard/sync-progress/hooks";
 import { useAuth, type GetToken } from "../auth/use-auth";
 import type { ProfileData, SharingData } from "../core/interfaces";
 import { getDemoData, getDemoProfile } from "../demo/demo-data";
@@ -8,16 +7,19 @@ import { ApiError, apiRequest } from "./client";
 import type { MeasurementsResponse, ProfileResponse, ProviderLink } from "./types";
 
 // Query key helpers
-const createQueryKey = <T extends readonly unknown[]>(base: T, sharingCode?: string): T | readonly [...T, string] => {
-  return sharingCode ? ([...base, sharingCode] as const) : base;
+const createQueryKey = <T extends readonly unknown[]>(base: T, sharingCode?: string): T | readonly [string, ...T] => {
+  return sharingCode ? ([sharingCode, ...base] as const) : base;
 };
 
 // Query keys
 export const queryKeys = {
   profile: (sharingCode?: string) => createQueryKey(["profile"] as const, sharingCode),
-  data: (sharingCode?: string) => createQueryKey(["data"] as const, sharingCode),
+  dashboardData: (sharingCode?: string) => createQueryKey(["data", "dashboard"] as const, sharingCode),
+  downloadData: () => ["data", "download"] as const,
   providerLinks: (sharingCode?: string) => createQueryKey(["providerLinks"] as const, sharingCode),
   sharing: ["sharing"] as const,
+  // Helper for invalidating all data queries
+  allData: (sharingCode?: string) => createQueryKey(["data"] as const, sharingCode),
 };
 
 // Helper function to transform ProfileResponse to ProfileData
@@ -39,6 +41,38 @@ const selectProfileData = (data: ProfileResponse | null): ProfileData | null => 
   };
 };
 
+// Custom hook to wrap query options with progress lifecycle
+function useWithProgress<T>(baseQueryOptions: T & { queryFn: () => Promise<unknown> }, progressMessage: string, shouldUseProgress: boolean = true): T {
+  const { startProgress, endProgress } = useSyncProgress();
+
+  if (!shouldUseProgress) {
+    return baseQueryOptions;
+  }
+
+  return {
+    ...baseQueryOptions,
+    queryFn: async () => {
+      // Start client-side progress immediately
+      queueMicrotask(() => startProgress(progressMessage));
+
+      try {
+        // Call the original queryFn
+        const result = await baseQueryOptions.queryFn();
+
+        // End client-side progress after data loads
+        // (only clears if no server progress received)
+        endProgress();
+
+        return result;
+      } catch (error) {
+        // Also end on error
+        endProgress();
+        throw error;
+      }
+    },
+  } as T;
+}
+
 // Query options for reuse - now accepts getToken function
 export const queryOptions = {
   profile: (getToken: GetToken, sharingCode?: string) => ({
@@ -58,11 +92,25 @@ export const queryOptions = {
     },
     select: selectProfileData,
   }),
-  data: (getToken: GetToken, opts?: { sharingCode?: string; progressId?: string }) => ({
-    queryKey: queryKeys.data(opts?.sharingCode),
+  dashboardData: (getToken: GetToken, opts?: { sharingCode?: string; progressId?: string }) => ({
+    queryKey: queryKeys.dashboardData(opts?.sharingCode),
     queryFn: async () => {
       const basePath = opts?.sharingCode ? `/data/${opts.sharingCode}` : "/data";
-      const url = opts?.progressId ? `${basePath}?progressId=${opts.progressId}` : basePath;
+      const params = new URLSearchParams();
+      if (opts?.progressId) params.set("progressId", opts.progressId);
+      const url = params.toString() ? `${basePath}?${params}` : basePath;
+      const token = await getToken();
+      return apiRequest<MeasurementsResponse>(url, { token });
+    },
+    staleTime: 60000, // 1 minute (matching legacy React Query config)
+  }),
+  downloadData: (getToken: GetToken, opts?: { progressId?: string }) => ({
+    queryKey: queryKeys.downloadData(),
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (opts?.progressId) params.set("progressId", opts.progressId);
+      params.set("includeSource", "true");
+      const url = `/data?${params}`;
       const token = await getToken();
       return apiRequest<MeasurementsResponse>(url, { token });
     },
@@ -102,11 +150,8 @@ export function useProfile() {
 // Combined profile and measurement data query with suspense (loads in parallel)
 export function useDashboardQueries(sharingCode?: string) {
   const { getToken } = useAuth();
-  // Try to get sync progress context if available
-  const syncProgress = useContext(SyncProgressContext);
-  const progressId = syncProgress?.progressId;
-  const startProgress = syncProgress?.startProgress;
-  const endProgress = syncProgress?.endProgress;
+  const { progressId } = useSyncProgress();
+
   // Create demo query options that match the expected types
   const demoQueryOptions = {
     profile: {
@@ -131,46 +176,16 @@ export function useDashboardQueries(sharingCode?: string) {
   };
 
   // Build the base data query options
-  const dataQueryOptions = sharingCode === "demo" ? demoQueryOptions.data : queryOptions.data(getToken, { sharingCode, progressId });
+  const dataQueryOptions = sharingCode === "demo" ? demoQueryOptions.data : queryOptions.dashboardData(getToken, { sharingCode, progressId });
 
-  // Wrap the queryFn to add progress lifecycle (not for demo, and only if context available)
-  const enhancedDataQuery =
-    sharingCode === "demo" || !startProgress || !endProgress
-      ? dataQueryOptions
-      : {
-          ...dataQueryOptions,
-          queryFn: async () => {
-            // Start client-side progress immediately
-            queueMicrotask(() => startProgress("Getting updated data..."));
-
-            try {
-              // Call the original queryFn
-              const result = await dataQueryOptions.queryFn();
-
-              // End client-side progress after data loads
-              // (only clears if no server progress received)
-              endProgress();
-
-              return result;
-            } catch (error) {
-              // Also end on error
-              endProgress();
-              throw error;
-            }
-          },
-        };
+  // Always call hook, but only apply progress for non-demo
+  const enhancedDataQuery = useWithProgress(dataQueryOptions, "Getting updated data...", sharingCode !== "demo");
 
   // Determine which query options to use
-  const queryOptionsToUse =
-    sharingCode === "demo"
-      ? {
-          profile: demoQueryOptions.profile,
-          data: enhancedDataQuery,
-        }
-      : {
-          profile: queryOptions.profile(getToken, sharingCode),
-          data: enhancedDataQuery,
-        };
+  const queryOptionsToUse = {
+    profile: sharingCode === "demo" ? demoQueryOptions.profile : queryOptions.profile(getToken, sharingCode),
+    data: enhancedDataQuery,
+  };
 
   // Always call the hook with consistent types
   const results = useSuspenseQueries({
@@ -179,11 +194,12 @@ export function useDashboardQueries(sharingCode?: string) {
 
   const profileResult = results[0];
   const dataResult = results[1];
-  const measurementsResponse = dataResult.data;
+  const measurementsResponse = dataResult.data as MeasurementsResponse;
 
   return {
     profile: profileResult.data,
-    measurementData: measurementsResponse.data,
+    measurementData: measurementsResponse.computedMeasurements,
+    sourceData: measurementsResponse.sourceData,
     providerStatus: measurementsResponse.providerStatus,
     profileError: profileResult.data === null ? new ApiError(404, "Profile not found") : null,
     isMe: measurementsResponse.isMe ?? true,
@@ -200,4 +216,25 @@ export function useProviderLinks() {
 export function useSharingSettings() {
   const { getToken } = useAuth();
   return useSuspenseQuery(queryOptions.sharing(getToken));
+}
+
+// Download data query (includes source data for provider-specific downloads)
+export function useDownloadData() {
+  const { getToken } = useAuth();
+  const { progressId } = useSyncProgress();
+
+  // Build the base download query options
+  const baseDownloadQuery = queryOptions.downloadData(getToken, { progressId });
+
+  // Wrap with progress lifecycle
+  const enhancedDownloadQuery = useWithProgress(baseDownloadQuery, "Getting download data...");
+
+  const { data: measurementsResponse } = useSuspenseQuery(enhancedDownloadQuery);
+
+  return {
+    computedMeasurements: measurementsResponse.computedMeasurements,
+    sourceData: measurementsResponse.sourceData,
+    providerStatus: measurementsResponse.providerStatus,
+    isMe: measurementsResponse.isMe ?? true,
+  };
 }

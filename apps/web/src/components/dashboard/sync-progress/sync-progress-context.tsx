@@ -1,7 +1,10 @@
-import { useState, useMemo, useCallback, type ReactNode } from "react";
+import { useState, useMemo, useCallback, useEffect, type ReactNode } from "react";
+import { toast } from "sonner";
+import { createElement } from "react";
 import type { SyncProgress } from "./types";
 import { useRealtimeSubscription } from "./use-realtime-subscription";
 import { SyncProgressContext } from "./context";
+import { SyncProgressToast } from "./sync-progress-toast";
 
 interface SyncProgressProviderProps {
   children: ReactNode;
@@ -11,6 +14,36 @@ export function SyncProgressProvider({ children }: SyncProgressProviderProps) {
   const progressId = useMemo(() => crypto.randomUUID(), []);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const [toastId, setToastId] = useState<string | null>(null);
+
+  // Manage toast lifecycle at the provider level
+  useEffect(() => {
+    if (progress && !toastId) {
+      // Create toast
+      const id = toast(createElement(SyncProgressToast, { progress }), {
+        duration: Infinity,
+        dismissible: false,
+        closeButton: false,
+      });
+      setToastId(id as string);
+    } else if (progress && toastId) {
+      // Update existing toast
+      toast(createElement(SyncProgressToast, { progress }), { id: toastId });
+    } else if (!progress && toastId) {
+      // Dismiss and clear
+      toast.dismiss(toastId);
+      setToastId(null);
+    }
+  }, [progress, toastId]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (toastId) {
+        toast.dismiss(toastId);
+      }
+    };
+  }, [toastId]);
 
   const startProgress = useCallback(
     (message: string) => {

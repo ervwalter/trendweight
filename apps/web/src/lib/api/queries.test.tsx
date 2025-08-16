@@ -19,6 +19,16 @@ vi.mock("../auth/use-auth", () => ({
   })),
 }));
 
+// Mock useSyncProgress hook
+vi.mock("../../components/dashboard/sync-progress/hooks", () => ({
+  useSyncProgress: () => ({
+    progressId: "test-progress-id",
+    progress: null,
+    startProgress: vi.fn(),
+    endProgress: vi.fn(),
+  }),
+}));
+
 // Error boundary for testing suspense errors
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
@@ -72,7 +82,18 @@ const mockProfileResponse: ProfileResponse = {
 };
 
 const mockMeasurementsResponse: MeasurementsResponse = {
-  data: [
+  computedMeasurements: [
+    {
+      date: "2024-01-15",
+      actualWeight: 75.5,
+      trendWeight: 75.2,
+      weightIsInterpolated: false,
+      fatIsInterpolated: false,
+      actualFatPercent: 0.15,
+      trendFatPercent: 0.16,
+    },
+  ],
+  sourceData: [
     {
       source: "withings",
       lastUpdate: "2024-01-15T10:00:00Z",
@@ -117,15 +138,19 @@ describe("queries", () => {
   describe("queryKeys", () => {
     it("should generate correct query keys without sharing code", () => {
       expect(queryKeys.profile()).toEqual(["profile"]);
-      expect(queryKeys.data()).toEqual(["data"]);
+      expect(queryKeys.dashboardData()).toEqual(["data", "dashboard"]);
+      expect(queryKeys.downloadData()).toEqual(["data", "download"]);
       expect(queryKeys.providerLinks()).toEqual(["providerLinks"]);
       expect(queryKeys.sharing).toEqual(["sharing"]);
+      expect(queryKeys.allData()).toEqual(["data"]);
     });
 
     it("should generate correct query keys with sharing code", () => {
-      expect(queryKeys.profile("abc123")).toEqual(["profile", "abc123"]);
-      expect(queryKeys.data("abc123")).toEqual(["data", "abc123"]);
-      expect(queryKeys.providerLinks("abc123")).toEqual(["providerLinks", "abc123"]);
+      expect(queryKeys.profile("abc123")).toEqual(["abc123", "profile"]);
+      expect(queryKeys.dashboardData("abc123")).toEqual(["abc123", "data", "dashboard"]);
+      expect(queryKeys.downloadData()).toEqual(["data", "download"]);
+      expect(queryKeys.providerLinks("abc123")).toEqual(["abc123", "providerLinks"]);
+      expect(queryKeys.allData("abc123")).toEqual(["abc123", "data"]);
     });
   });
 
@@ -245,7 +270,7 @@ describe("queries", () => {
         firstName: "Test",
         useMetric: true,
       });
-      expect(result.current.measurementData).toEqual(mockMeasurementsResponse.data);
+      expect(result.current.measurementData).toEqual(mockMeasurementsResponse.computedMeasurements);
       expect(result.current.providerStatus).toEqual(mockMeasurementsResponse.providerStatus);
       expect(result.current.isMe).toBe(true);
       expect(result.current.profileError).toBeNull();
@@ -302,32 +327,6 @@ describe("queries", () => {
       });
 
       expect(result.current.isMe).toBe(false);
-    });
-
-    it("should fetch data without progressId when no context", async () => {
-      let capturedUrl: string | undefined;
-
-      server.use(
-        http.get("/api/profile", () => {
-          return HttpResponse.json(mockProfileResponse);
-        }),
-        http.get("/api/data", ({ request }) => {
-          capturedUrl = request.url;
-          return HttpResponse.json(mockMeasurementsResponse);
-        }),
-      );
-
-      const { result } = renderHook(() => useDashboardQueries(undefined), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.measurementData).toBeDefined();
-      });
-
-      // Without context, progressId should not be in URL
-      expect(capturedUrl).toBeDefined();
-      expect(capturedUrl).not.toContain("progressId");
     });
 
     it("should handle demo mode", async () => {
@@ -408,7 +407,7 @@ describe("queries", () => {
   describe("queryOptions", () => {
     it("should have correct stale time for data queries", () => {
       const mockGetToken = vi.fn().mockResolvedValue("mock-token");
-      const options = queryOptions.data(mockGetToken);
+      const options = queryOptions.dashboardData(mockGetToken);
       expect(options.staleTime).toBe(60000); // 1 minute
     });
 
