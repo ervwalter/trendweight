@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.6.0](https://github.com/ervwalter/trendweight/compare/v2.5.4...v2.6.0) (2025-08-17)
+
+
+### Features
+
+* **api:** add MeasurementComputationService for server-side trend calculations ([a2abe82](https://github.com/ervwalter/trendweight/commit/a2abe8299c6f4ec3ad69c4d12266f1a6feac167e))
+* implement backend computation with progress tracking improvements ([a2abe82](https://github.com/ervwalter/trendweight/commit/a2abe8299c6f4ec3ad69c4d12266f1a6feac167e))
+* implement query string parameters and embed mode for sharing links ([6de966e](https://github.com/ervwalter/trendweight/commit/6de966e811761b02f6e0945cfdfa660cfdc1f699))
+
+
+### Fixes
+
+* add missing weight unit conversion for computed measurements ([6b62bd5](https://github.com/ervwalter/trendweight/commit/6b62bd578f5308b652b726bd35316ef2eef05491))
+* convert demo weight data from pounds to kilograms ([5c3ef08](https://github.com/ervwalter/trendweight/commit/5c3ef08e8ebc76b9e2454021dfaf4106f89f3d97))
+* improve display consistency and readability for stats ([47275de](https://github.com/ervwalter/trendweight/commit/47275deeb0d1461b0289640234e0020c0170abe3)), closes [#284](https://github.com/ervwalter/trendweight/issues/284)
+* prevent ToggleGroup deselection in single mode ([7fece15](https://github.com/ervwalter/trendweight/commit/7fece15e6baddf991855c742e9ac564773e1de2f))
+* **settings:** weight unit toggle now marks form as dirty ([7fece15](https://github.com/ervwalter/trendweight/commit/7fece15e6baddf991855c742e9ac564773e1de2f))
+* **web:** download page skeleton width now matches actual table dimensions ([a2abe82](https://github.com/ervwalter/trendweight/commit/a2abe8299c6f4ec3ad69c4d12266f1a6feac167e))
+
+
+### Documentation
+
+* clarify commit message guidelines to prevent duplicate changelog entries ([7fece15](https://github.com/ervwalter/trendweight/commit/7fece15e6baddf991855c742e9ac564773e1de2f))
+* restructure documentation with steering documents and commit guidelines ([a2abe82](https://github.com/ervwalter/trendweight/commit/a2abe8299c6f4ec3ad69c4d12266f1a6feac167e))
+
+
+### Refactoring
+
+* remove progress bar components and custom type definitions ([352cf56](https://github.com/ervwalter/trendweight/commit/352cf5666ffc4f2537b6898ba5f393d1bd9c29b0))
+* replace all relative imports with @/ alias ([8604ac9](https://github.com/ervwalter/trendweight/commit/8604ac99bc9709eede83a32ad2135d8db0bbdd12))
+* standardize progress messages to 'Finishing up...' ([b5b656b](https://github.com/ervwalter/trendweight/commit/b5b656b39a9d79db2c240f15ae03f3860a2b544f))
+* **web:** improve progress tracking system and remove client-side computation ([a2abe82](https://github.com/ervwalter/trendweight/commit/a2abe8299c6f4ec3ad69c4d12266f1a6feac167e))
+
 ## [2.5.4](https://github.com/ervwalter/trendweight/compare/v2.5.3...v2.5.4) (2025-08-15)
 
 
