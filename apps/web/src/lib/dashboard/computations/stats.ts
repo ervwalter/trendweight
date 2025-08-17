@@ -22,17 +22,19 @@ export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => 
     return deltas;
   }
 
-  const mostRecentTrendValue = points[0].trend;
+  // Round to 1 decimal place to match UI display formatting
+  const mostRecentTrendValue = Math.round(points[0].trend * 10) / 10;
   let index: number;
 
   // Yesterday
   if (daysSinceMostRecent <= 1 && points.length > 1) {
     const comparisonDataPoint = points[1];
     if (comparisonDataPoint.date.until(points[0].date, ChronoUnit.DAYS) === 1) {
+      const comparisonTrendValue = Math.round(comparisonDataPoint.trend * 10) / 10;
       deltas.push({
         period: 1,
         description: "yesterday",
-        delta: mostRecentTrendValue - comparisonDataPoint.trend,
+        delta: mostRecentTrendValue - comparisonTrendValue,
       });
     }
   }
@@ -42,10 +44,11 @@ export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => 
   index = points.findIndex((m) => m.date.equals(targetDate7));
   // Needs to be at least 4 readings between now and a week ago for a valid trend comparison
   if (index >= 4) {
+    const comparisonTrendValue = Math.round(points[index].trend * 10) / 10;
     deltas.push({
       period: 7,
       description: "last week",
-      delta: mostRecentTrendValue - points[index].trend,
+      delta: mostRecentTrendValue - comparisonTrendValue,
     });
   }
 
@@ -53,10 +56,11 @@ export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => 
   const targetDate14 = points[0].date.minusDays(14);
   index = points.findIndex((m) => m.date.equals(targetDate14));
   if (index >= 9) {
+    const comparisonTrendValue = Math.round(points[index].trend * 10) / 10;
     deltas.push({
       period: 14,
       description: "two weeks ago",
-      delta: mostRecentTrendValue - points[index].trend,
+      delta: mostRecentTrendValue - comparisonTrendValue,
     });
   }
 
@@ -64,10 +68,11 @@ export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => 
   const targetDate28 = points[0].date.minusDays(28);
   index = points.findIndex((m) => m.date.equals(targetDate28));
   if (index >= 19) {
+    const comparisonTrendValue = Math.round(points[index].trend * 10) / 10;
     deltas.push({
       period: 28,
       description: "a month ago",
-      delta: mostRecentTrendValue - points[index].trend,
+      delta: mostRecentTrendValue - comparisonTrendValue,
     });
   }
 

@@ -183,7 +183,7 @@ describe("stats", () => {
         expect(result).toHaveLength(1);
         expect(result[0].period).toBe(1);
         expect(result[0].description).toBe("yesterday");
-        expect(result[0].delta).toBeCloseTo(-0.01, 5);
+        expect(result[0].delta).toBeCloseTo(-0.1, 5);
       });
     });
   });

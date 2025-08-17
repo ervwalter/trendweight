@@ -1,9 +1,9 @@
-import { ChronoUnit, LocalDate, Period } from "@js-joda/core";
-import { shortDate } from "@/lib/core/dates";
-import type { Measurement } from "@/lib/core/interfaces";
-import { formatNumber, formatPlannedWeight, formatWeight } from "@/lib/core/numbers";
-import { useDashboardData } from "@/lib/dashboard/hooks";
 import { Heading } from "@/components/common/heading";
+import { formatGoalDate } from "@/lib/core/dates";
+import type { Measurement } from "@/lib/core/interfaces";
+import { formatInteger, formatPlannedWeight, formatWeight } from "@/lib/core/numbers";
+import { useDashboardData } from "@/lib/dashboard/hooks";
+import { ChronoUnit, LocalDate, Period } from "@js-joda/core";
 
 const Stats = () => {
   const {
@@ -52,28 +52,33 @@ const Stats = () => {
                 {isMe ? "You have" : "They have"} <strong>{formatWeight(Math.abs(distanceToGoal), useMetric)}</strong> to {distanceToGoal > 0 ? "lose" : "gain"}{" "}
                 to reach {isMe ? "your" : "their"} goal.
               </li>
-              {dateOfGoal && LocalDate.now().until(dateOfGoal, ChronoUnit.YEARS) < 3 && (
-                <li>
-                  {isMe ? "You" : "They"} will reach {isMe ? "your" : "their"} goal around <strong>{shortDate(dateOfGoal)}</strong>
-                </li>
-              )}
+              {dateOfGoal &&
+                LocalDate.now().until(dateOfGoal, ChronoUnit.YEARS) < 3 &&
+                (() => {
+                  const goalDateInfo = formatGoalDate(dateOfGoal);
+                  return (
+                    <li>
+                      {isMe ? "You" : "They"} will reach {isMe ? "your" : "their"} goal {goalDateInfo.preposition} <strong>{goalDateInfo.date}</strong>
+                    </li>
+                  );
+                })()}
             </>
           ))}
         {showCalories && plannedPoundsPerWeek !== undefined && plannedPoundsPerWeek <= 0 && (
           <>
             <li className="mt-4">
-              {isMe ? "You are" : "They are"} burning <strong>{formatNumber(Math.abs(actualCaloriesPerWeek / 7))} cal/day</strong>{" "}
+              {isMe ? "You are" : "They are"} burning <strong>{formatInteger(Math.abs(actualCaloriesPerWeek / 7))} cal/day</strong>{" "}
               {weightSlope > 0 ? "less" : "more"} than {isMe ? "you are" : "they are"} eating.
             </li>
             <li>
               {caloriesVsPlan < 0 ? (
                 <>
-                  {isMe ? "You are" : "They are"} burning <strong>{formatNumber(Math.abs(caloriesVsPlan))} cal/day</strong> beyond {isMe ? "your" : "their"}{" "}
+                  {isMe ? "You are" : "They are"} burning <strong>{formatInteger(Math.abs(caloriesVsPlan))} cal/day</strong> beyond {isMe ? "your" : "their"}{" "}
                   plan.
                 </>
               ) : (
                 <>
-                  {isMe ? "You" : "They"} must cut <strong>{formatNumber(Math.abs(caloriesVsPlan))} cal/day</strong> to lose{" "}
+                  {isMe ? "You" : "They"} must cut <strong>{formatInteger(Math.abs(caloriesVsPlan))} cal/day</strong> to lose{" "}
                   {formatPlannedWeight(Math.abs(plannedPoundsPerWeek), useMetric)}
                   /week.
                 </>

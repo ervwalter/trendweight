@@ -216,7 +216,7 @@ describe("Stats", () => {
 
       render(<Stats />);
 
-      expect(screen.getByText(/You will reach your goal around/)).toBeInTheDocument();
+      expect(screen.getByText(/You will reach your goal on\/around/)).toBeInTheDocument();
     });
 
     it("does not show goal date when moving away from goal", () => {
@@ -232,7 +232,7 @@ describe("Stats", () => {
 
       render(<Stats />);
 
-      expect(screen.queryByText(/will reach your goal around/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/will reach your goal (on|in)\/around/)).not.toBeInTheDocument();
     });
 
     it("does not show goal date if too far in future", () => {
@@ -248,7 +248,7 @@ describe("Stats", () => {
 
       render(<Stats />);
 
-      expect(screen.queryByText(/will reach your goal around/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/will reach your goal (on|in)\/around/)).not.toBeInTheDocument();
     });
   });
 
@@ -270,11 +270,11 @@ describe("Stats", () => {
       const burningTexts = screen.getAllByText(/You are burning/);
       expect(burningTexts).toHaveLength(2);
 
-      expect(screen.getByText("700.0 cal/day")).toBeInTheDocument(); // 0.2 * 3500
+      expect(screen.getByText("700 cal/day")).toBeInTheDocument(); // 0.2 * 3500
       expect(screen.getByText(/more than you are eating/)).toBeInTheDocument();
 
       // Exceeding plan
-      expect(screen.getByText("200.0 cal/day")).toBeInTheDocument(); // (1.4 - 1) * 500
+      expect(screen.getByText("200 cal/day")).toBeInTheDocument(); // (1.4 - 1) * 500
       expect(screen.getByText(/beyond your plan/)).toBeInTheDocument();
     });
 
@@ -294,12 +294,12 @@ describe("Stats", () => {
       // First calorie output
       const burningTexts = screen.getAllByText(/You are burning/);
       expect(burningTexts).toHaveLength(1);
-      expect(screen.getByText("350.0 cal/day")).toBeInTheDocument();
+      expect(screen.getByText("350 cal/day")).toBeInTheDocument();
       expect(screen.getByText(/less than you are eating/)).toBeInTheDocument();
 
       // Not meeting plan
       expect(screen.getByText(/You must cut/)).toBeInTheDocument();
-      expect(screen.getByText("850.0 cal/day")).toBeInTheDocument(); // Correct calculation based on actual logic
+      expect(screen.getByText("850 cal/day")).toBeInTheDocument(); // Correct calculation based on actual logic
       expect(screen.getByText(/to lose 1.0 lb/)).toBeInTheDocument();
     });
 
@@ -395,7 +395,7 @@ describe("Stats", () => {
       expect(() => render(<Stats />)).not.toThrow();
 
       // Should not show goal date (since slope is zero)
-      expect(screen.queryByText(/will reach your goal around/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/will reach your goal (on|in)\/around/)).not.toBeInTheDocument();
 
       // Should still show basic stats
       expect(screen.getByText(/You are losing/)).toBeInTheDocument();

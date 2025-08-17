@@ -11,6 +11,11 @@ const numberDeltaFormatter = Intl.NumberFormat([], {
   signDisplay: "always",
 });
 
+const integerFormatter = Intl.NumberFormat([], {
+  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+});
+
 const metricFormatter = Intl.NumberFormat([], {
   maximumFractionDigits: 1,
   minimumFractionDigits: 1,
@@ -106,6 +111,10 @@ export const formatNumber = (value: number, sign = false) => {
   } else {
     return numberFormatter.format(value);
   }
+};
+
+export const formatInteger = (value: number) => {
+  return integerFormatter.format(value);
 };
 
 export const formatMeasurement: (value: number, options: FormatOptions) => string = (value: number, { type, sign = false, units = true, metric = false }) => {
