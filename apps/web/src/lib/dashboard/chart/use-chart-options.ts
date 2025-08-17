@@ -6,7 +6,7 @@ import { transformChartData } from "./data-transformers";
 import { build3MonthOptions, build4WeekOptions, buildExploreOptions, buildLongTermOptions, buildYAxisOptions } from "./option-builders";
 import chartOptionsTemplate from "./options-template";
 
-export const useChartOptions = (data: DashboardData) => {
+export const useChartOptions = (data: DashboardData, heightOverride?: string) => {
   const isNarrow = useIsMobile();
 
   const {
@@ -20,7 +20,10 @@ export const useChartOptions = (data: DashboardData) => {
   return useMemo(() => {
     const options = chartOptionsTemplate();
 
-    if (isNarrow && options.chart) {
+    // Apply height override first, then mobile override if no override provided
+    if (heightOverride && options.chart) {
+      options.chart.height = heightOverride;
+    } else if (isNarrow && options.chart) {
       options.chart.height = "75%";
     }
 
@@ -65,5 +68,5 @@ export const useChartOptions = (data: DashboardData) => {
     buildYAxisOptions(options, mode, useMetric, goalWeight);
 
     return options;
-  }, [dataPoints, activeSlope, goalWeight, isNarrow, mode, timeRange, useMetric]);
+  }, [dataPoints, activeSlope, goalWeight, isNarrow, mode, timeRange, useMetric, heightOverride]);
 };

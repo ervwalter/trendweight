@@ -8,9 +8,10 @@ import { SyncProgressToast } from "./sync-progress-toast";
 
 interface SyncProgressProviderProps {
   children: ReactNode;
+  disableUI?: boolean;
 }
 
-export function SyncProgressProvider({ children }: SyncProgressProviderProps) {
+export function SyncProgressProvider({ children, disableUI = false }: SyncProgressProviderProps) {
   const progressId = useMemo(() => crypto.randomUUID(), []);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
   const [isActive, setIsActive] = useState(false);
@@ -18,6 +19,11 @@ export function SyncProgressProvider({ children }: SyncProgressProviderProps) {
 
   // Manage toast lifecycle at the provider level
   useEffect(() => {
+    // Skip toast management if UI is disabled
+    if (disableUI) {
+      return;
+    }
+
     if (progress && !toastId) {
       // Create toast
       const id = toast(createElement(SyncProgressToast, { progress }), {
@@ -34,7 +40,7 @@ export function SyncProgressProvider({ children }: SyncProgressProviderProps) {
       toast.dismiss(toastId);
       setToastId(null);
     }
-  }, [progress, toastId]);
+  }, [progress, toastId, disableUI]);
 
   // Cleanup on unmount
   useEffect(() => {

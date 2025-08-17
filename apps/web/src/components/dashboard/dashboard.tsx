@@ -4,6 +4,9 @@ import { ApiError } from "../../lib/api/client";
 import { Modes, TimeRanges } from "../../lib/core/interfaces";
 import { DashboardProvider } from "../../lib/dashboard/context";
 import { useComputeDashboardData } from "../../lib/dashboard/hooks";
+import { useSharingCode } from "../../lib/hooks/use-sharing-code";
+import { useEmbedParams } from "../../lib/hooks/use-embed-params";
+import { EmbedDashboard } from "./embed-dashboard";
 import { Heading } from "../common/heading";
 import { NewVersionNotice } from "../notices/new-version-notice";
 import Buttons from "./buttons";
@@ -17,12 +20,11 @@ import RecentReadings from "./recent-readings";
 import Stats from "./stats";
 import { useSyncProgress } from "./sync-progress/hooks";
 
-interface DashboardProps {
-  sharingCode?: string;
-}
+const Dashboard: FC = () => {
+  const sharingCode = useSharingCode();
+  const { embed } = useEmbedParams();
 
-const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
-  const dashboardData = useComputeDashboardData(sharingCode);
+  const dashboardData = useComputeDashboardData();
   useSyncProgress(); // Auto-manages toast when sync is active
 
   // Check if profile exists - if not, redirect to initial setup (skip for shared views)
@@ -33,6 +35,11 @@ const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
   // If shared view and profile not found, redirect to home
   if (sharingCode && sharingCode !== "demo" && dashboardData.profileError instanceof ApiError && dashboardData.profileError.status === 404) {
     return <Navigate to="/" replace />;
+  }
+
+  // Embed mode: use dedicated embed component (handles its own no data case)
+  if (embed) {
+    return <EmbedDashboard dashboardData={dashboardData} />;
   }
 
   // If profile exists but no measurements
@@ -53,6 +60,7 @@ const Dashboard: FC<DashboardProps> = ({ sharingCode }) => {
     );
   }
 
+  // Normal mode: full dashboard
   return (
     <DashboardProvider data={dashboardData}>
       <div className="flex flex-col gap-4">

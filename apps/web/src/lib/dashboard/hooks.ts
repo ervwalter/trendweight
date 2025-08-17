@@ -4,6 +4,8 @@ import type { DashboardData } from "./dashboard-context";
 import { useDashboardQueries } from "../api/queries";
 import type { Mode, TimeRange } from "../core/interfaces";
 import { usePersistedState } from "../hooks/use-persisted-state";
+import { useSharingCode } from "../hooks/use-sharing-code";
+import { useSharingSearchParams } from "../hooks/use-sharing-search-params";
 import { computeDataPoints } from "./computations/data-points";
 import { computeActiveSlope, computeDeltas, computeWeightSlope } from "./computations/stats";
 import { convertMeasurements } from "./computations/conversion";
@@ -16,9 +18,18 @@ export const useDashboardData = (): DashboardData => {
   return data;
 };
 
-export const useComputeDashboardData = (sharingCode?: string): DashboardData => {
-  const [mode, setMode] = useState<Mode>("weight");
-  const [timeRange, setTimeRange] = usePersistedState<TimeRange>("timeRange", "4w");
+export const useComputeDashboardData = (): DashboardData => {
+  const sharingCode = useSharingCode();
+  const searchParams = useSharingSearchParams();
+
+  // Use search params for initial values, otherwise use defaults/persisted
+  // Don't persist to localStorage when search params are present
+  const [mode, setMode] = useState<Mode>(searchParams.mode || "weight");
+  const [timeRange, setTimeRange] = usePersistedState<TimeRange>(
+    "timeRange",
+    searchParams.range || "4w",
+    !searchParams.range, // Only persist if no range param
+  );
 
   // Get profile and measurement data in parallel
   const { profile, measurementData: computedMeasurements, providerStatus, profileError, isMe } = useDashboardQueries(sharingCode);

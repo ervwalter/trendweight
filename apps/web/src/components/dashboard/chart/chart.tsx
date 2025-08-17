@@ -6,10 +6,12 @@ import "highcharts/modules/offline-exporting";
 import { useEffect, useRef, useState } from "react";
 import { useChartOptions } from "../../../lib/dashboard/chart/use-chart-options";
 import { useDashboardData } from "../../../lib/dashboard/hooks";
+import { useEmbedParams } from "../../../lib/hooks/use-embed-params";
 
 const Chart = () => {
   const data = useDashboardData();
-  const options = useChartOptions(data);
+  const { embed } = useEmbedParams();
+  const options = useChartOptions(data, embed ? "60%" : undefined);
   const chartRef = useRef<HighchartsReact.RefObject>(null);
   const printImageRef = useRef<HTMLImageElement>(null);
   const [printImageUrl, setPrintImageUrl] = useState<string | null>(null);
