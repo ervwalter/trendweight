@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { http, HttpResponse } from "msw";
-import { server } from "../../test/mocks/server";
+import { server } from "@/test/mocks/server";
 import { apiRequest, ApiError } from "./client";
-import { apiHandlers } from "../../test/mocks/handlers";
+import { apiHandlers } from "@/test/mocks/handlers";
 
 // No longer need to mock window.Clerk since we pass tokens directly
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { LocalDate } from "@js-joda/core";
 import { downloadScaleReadingsCSV } from "./csv-export";
-import type { ScaleReading } from "../../components/download/types";
+import type { ScaleReading } from "@/components/download/types";
 
 // Mock the DOM APIs
 global.URL = {

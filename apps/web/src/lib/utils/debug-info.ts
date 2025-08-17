@@ -1,6 +1,6 @@
-import { getBrowserInfo } from "../build/browser-info";
-import type { BuildTimeInfo } from "../build/formatters";
-import { formatBuildTime } from "../build/formatters";
+import { getBrowserInfo } from "@/lib/build/browser-info";
+import type { BuildTimeInfo } from "@/lib/build/formatters";
+import { formatBuildTime } from "@/lib/build/formatters";
 
 export interface BuildInfo {
   environment: string;

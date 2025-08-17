@@ -3,10 +3,10 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm } from "react-hook-form";
 import { GoalSection } from "./goal-section";
-import type { ProfileData } from "../../lib/core/interfaces";
+import type { ProfileData } from "@/lib/core/interfaces";
 
 // Mock Select component
-vi.mock("../ui/select", () => ({
+vi.mock("@/components/ui/select", () => ({
   Select: ({ children, ...props }: any) => (
     <div data-testid="select" {...props}>
       {children}

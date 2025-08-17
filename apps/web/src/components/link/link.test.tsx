@@ -9,12 +9,12 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 const mockShowToast = vi.fn();
-vi.mock("../../lib/hooks/use-toast", () => ({
+vi.mock("@/lib/hooks/use-toast", () => ({
   useToast: () => ({ showToast: mockShowToast }),
 }));
 
 // Mock ProviderList component
-vi.mock("../providers/provider-list", () => ({
+vi.mock("@/components/providers/provider-list", () => ({
   ProviderList: ({ variant, showHeader }: any) => (
     <div data-testid="provider-list">
       <div>Variant: {variant}</div>

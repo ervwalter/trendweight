@@ -1,5 +1,5 @@
-import { Skeleton } from "../ui/skeleton";
-import { useSyncProgress } from "../dashboard/sync-progress/hooks";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSyncProgress } from "@/components/dashboard/sync-progress/hooks";
 
 const DownloadPlaceholder = () => {
   useSyncProgress(); // Auto-manages toast when sync is active

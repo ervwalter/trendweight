@@ -1,6 +1,6 @@
 import { LocalDate } from "@js-joda/core";
-import { Modes } from "../../core/interfaces";
-import type { DashboardData } from "../dashboard-context";
+import { Modes } from "@/lib/core/interfaces";
+import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 
 const toEpoch = (date: LocalDate) => date.toEpochDay() * 86400000;
 

@@ -1,7 +1,7 @@
 import { redirect } from "@tanstack/react-router";
-import { queryClient } from "../query-client";
-import { queryOptions } from "../api/queries";
-import { type GetToken } from "../auth/use-auth";
+import { queryClient } from "@/lib/query-client";
+import { queryOptions } from "@/lib/api/queries";
+import { type GetToken } from "@/lib/auth/use-auth";
 
 /**
  * Ensures the user has a profile, redirecting to initial setup if not.

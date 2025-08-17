@@ -1,10 +1,10 @@
 import { Download as DownloadIcon } from "lucide-react";
 import { useState } from "react";
-import { useProviderLinks } from "../../lib/api/queries";
-import { downloadScaleReadingsCSV } from "../../lib/download/csv-export";
-import { useScaleReadingsData } from "../../lib/download/use-scale-readings-data";
-import { Heading } from "../common/heading";
-import { Button } from "../ui/button";
+import { useProviderLinks } from "@/lib/api/queries";
+import { downloadScaleReadingsCSV } from "@/lib/download/csv-export";
+import { useScaleReadingsData } from "@/lib/download/use-scale-readings-data";
+import { Heading } from "@/components/common/heading";
+import { Button } from "@/components/ui/button";
 import { ScaleReadingsDataTable } from "./scale-readings-data-table";
 import { SortToggle } from "./sort-toggle";
 import type { ViewType } from "./types";

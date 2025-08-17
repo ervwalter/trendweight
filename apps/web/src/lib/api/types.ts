@@ -1,4 +1,4 @@
-import type { ProfileData } from "../core/interfaces";
+import type { ProfileData } from "@/lib/core/interfaces";
 
 // Response structure from the profile API endpoint
 export interface ProfileResponse {

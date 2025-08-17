@@ -1,4 +1,4 @@
-import { Footer } from "../footer";
+import { Footer } from "@/components/footer";
 import { Banner } from "./banner";
 import { MainContent } from "./main-content";
 

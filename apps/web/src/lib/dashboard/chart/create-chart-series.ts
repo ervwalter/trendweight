@@ -1,5 +1,5 @@
 import type { SeriesHlcOptions, SeriesLineOptions } from "highcharts/highstock";
-import type { Mode } from "../../core/interfaces";
+import type { Mode } from "@/lib/core/interfaces";
 
 const getColors = () => ({
   weight: "var(--chart-weight)",

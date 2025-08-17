@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { LocalDate, LocalTime } from "@js-joda/core";
-import { useDownloadData, useProfile } from "../api/queries";
-import type { ScaleReading, ViewType } from "../../components/download/types";
-import { convertMeasurements } from "../dashboard/computations/conversion";
+import { useDownloadData, useProfile } from "@/lib/api/queries";
+import type { ScaleReading, ViewType } from "@/components/download/types";
+import { convertMeasurements } from "@/lib/dashboard/computations/conversion";
 
 export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolean) {
   // Get profile data directly

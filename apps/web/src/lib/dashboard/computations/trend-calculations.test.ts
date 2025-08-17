@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { LocalDate } from "@js-joda/core";
 import { computeWeightTrends, computeFatTrends } from "./trend-calculations";
-import type { SourceMeasurement } from "../../core/interfaces";
+import type { SourceMeasurement } from "@/lib/core/interfaces";
 
 describe("trend-calculations", () => {
   // Helper to create source measurements

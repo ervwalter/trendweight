@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Layout } from "../components/layout";
-import { Link } from "../components/link/link";
-import { requireAuth } from "../lib/auth/auth-guard";
-import { ensureProfile } from "../lib/loaders/utils";
+import { Layout } from "@/components/layout";
+import { Link } from "@/components/link/link";
+import { requireAuth } from "@/lib/auth/auth-guard";
+import { ensureProfile } from "@/lib/loaders/utils";
 
 export const Route = createFileRoute("/link")({
   beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),

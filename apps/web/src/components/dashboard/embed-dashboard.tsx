@@ -1,8 +1,8 @@
 import type { FC } from "react";
-import { Modes, TimeRanges } from "../../lib/core/interfaces";
-import { formatMeasurement } from "../../lib/core/numbers";
-import { DashboardProvider } from "../../lib/dashboard/context";
-import type { DashboardData } from "../../lib/dashboard/dashboard-context";
+import { Modes, TimeRanges } from "@/lib/core/interfaces";
+import { formatMeasurement } from "@/lib/core/numbers";
+import { DashboardProvider } from "@/lib/dashboard/context";
+import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 import Chart from "./chart/chart";
 
 interface EmbedDashboardProps {

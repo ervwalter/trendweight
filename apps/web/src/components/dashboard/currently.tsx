@@ -1,10 +1,10 @@
 import { LocalDate } from "@js-joda/core";
-import { Modes } from "../../lib/core/interfaces";
-import type { DataPoint } from "../../lib/core/interfaces";
-import { formatMeasurement } from "../../lib/core/numbers";
-import { shortDate } from "../../lib/core/dates";
+import { Modes } from "@/lib/core/interfaces";
+import type { DataPoint } from "@/lib/core/interfaces";
+import { formatMeasurement } from "@/lib/core/numbers";
+import { shortDate } from "@/lib/core/dates";
 import ChangeArrow from "./change-arrow";
-import { useDashboardData } from "../../lib/dashboard/hooks";
+import { useDashboardData } from "@/lib/dashboard/hooks";
 
 const Currently = () => {
   const {

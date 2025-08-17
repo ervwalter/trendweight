@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm } from "react-hook-form";
 import { BasicProfileSettings } from "./basic-profile-settings";
-import type { ProfileData } from "../../lib/core/interfaces";
+import type { ProfileData } from "@/lib/core/interfaces";
 
 // Test wrapper component
 function TestWrapper({ errors = {}, defaultValues = {} }: { errors?: any; defaultValues?: Partial<ProfileData> }) {

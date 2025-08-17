@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
-import { usePersistedState } from "../../lib/hooks/use-persisted-state";
-import { Button } from "../ui/button";
-import { ExternalLink } from "../common/external-link";
+import { usePersistedState } from "@/lib/hooks/use-persisted-state";
+import { Button } from "@/components/ui/button";
+import { ExternalLink } from "@/components/common/external-link";
 
 interface NewVersionNoticeProps {
   onDismiss?: () => void;

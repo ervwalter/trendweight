@@ -1,11 +1,11 @@
 import { useContext, useMemo, useState } from "react";
 import { dashboardContext } from "./dashboard-context";
 import type { DashboardData } from "./dashboard-context";
-import { useDashboardQueries } from "../api/queries";
-import type { Mode, TimeRange } from "../core/interfaces";
-import { usePersistedState } from "../hooks/use-persisted-state";
-import { useSharingCode } from "../hooks/use-sharing-code";
-import { useSharingSearchParams } from "../hooks/use-sharing-search-params";
+import { useDashboardQueries } from "@/lib/api/queries";
+import type { Mode, TimeRange } from "@/lib/core/interfaces";
+import { usePersistedState } from "@/lib/hooks/use-persisted-state";
+import { useSharingCode } from "@/lib/hooks/use-sharing-code";
+import { useSharingSearchParams } from "@/lib/hooks/use-sharing-search-params";
 import { computeDataPoints } from "./computations/data-points";
 import { computeActiveSlope, computeDeltas, computeWeightSlope } from "./computations/stats";
 import { convertMeasurements } from "./computations/conversion";

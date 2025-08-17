@@ -27,14 +27,27 @@ This document outlines the coding standards and conventions for the TrendWeight 
 - Use `ExternalLink` component for external URLs
 - Use standard UI components (Button, Heading, Select, etc) never raw HTML
 
+### Import Conventions
+
+- **Always use `@/` alias** for imports from the src root directory
+- **Never use `../` relative imports** that navigate up the directory tree
+- **Only use `./` imports** for files in the same directory or immediate subdirectories
+- **Examples:**
+  - ✅ `import { Component } from "@/components/ui/button"`
+  - ✅ `import { utils } from "@/lib/utils"`
+  - ✅ `import { LocalComponent } from "./local-component"`
+  - ✅ `import { SubComponent } from "./subfolder/sub-component"`
+  - ❌ `import { Component } from "../components/ui/button"`
+  - ❌ `import { utils } from "../../lib/utils"`
+
 ### Route File Pattern (MANDATORY)
 
 Routes must follow this exact pattern and be minimal (<30 lines):
 
 ```typescript
 import { createFileRoute } from "@tanstack/react-router";
-import { Layout } from "../components/Layout";
-import { ComponentName } from "../components/feature-folder/ComponentName";
+import { Layout } from "@/components/Layout";
+import { ComponentName } from "@/components/feature-folder/ComponentName";
 
 export const Route = createFileRoute("/route-path")({
   beforeLoad: requireAuth, // Only if needed

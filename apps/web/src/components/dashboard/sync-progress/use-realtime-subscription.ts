@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { supabase } from "../../../lib/realtime/client";
+import { supabase } from "@/lib/realtime/client";
 import type { SyncProgress } from "./types";
 
 export function useRealtimeSubscription(progressId: string | undefined, onProgressUpdate: (progress: SyncProgress) => void) {

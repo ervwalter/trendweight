@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock Supabase client before any other imports
-vi.mock("../../lib/realtime/client", () => ({
+vi.mock("@/lib/realtime/client", () => ({
   supabase: {
     channel: vi.fn(() => ({
       on: vi.fn().mockReturnThis(),
@@ -16,7 +16,7 @@ vi.mock("../../lib/realtime/client", () => ({
 }));
 
 // Mock realtime progress hook to return null (no progress)
-vi.mock("../../lib/realtime/use-realtime-progress", () => ({
+vi.mock("@/lib/realtime/use-realtime-progress", () => ({
   useRealtimeProgress: () => ({
     status: null,
     message: null,
@@ -29,7 +29,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { ScaleReadingsDataTable } from "./scale-readings-data-table";
 import { LocalDate } from "@js-joda/core";
 import type { ScaleReading } from "./types";
-import { SyncProgressProvider } from "../dashboard/sync-progress";
+import { SyncProgressProvider } from "@/components/dashboard/sync-progress";
 
 describe("ScaleReadingsDataTable", () => {
   const createMockReadings = (count: number): ScaleReading[] => {

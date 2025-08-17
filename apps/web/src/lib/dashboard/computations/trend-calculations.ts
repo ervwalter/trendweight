@@ -1,4 +1,4 @@
-import type { Measurement, SourceMeasurement } from "../../core/interfaces";
+import type { Measurement, SourceMeasurement } from "@/lib/core/interfaces";
 
 const TREND_SMOOTHING_FACTOR = 0.1;
 

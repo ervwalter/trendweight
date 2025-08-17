@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { pageTitle } from "../lib/utils/page-title";
+import { pageTitle } from "@/lib/utils/page-title";
 import { Container } from "./container";
 import { Button } from "./ui/button";
 

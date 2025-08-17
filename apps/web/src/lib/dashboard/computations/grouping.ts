@@ -1,4 +1,4 @@
-import type { SourceMeasurement } from "../../core/interfaces";
+import type { SourceMeasurement } from "@/lib/core/interfaces";
 
 /**
  * Groups measurements by day and selects the first measurement of each day

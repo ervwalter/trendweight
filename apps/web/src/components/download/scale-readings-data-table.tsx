@@ -3,10 +3,10 @@ import { LocalDate, convert } from "@js-joda/core";
 import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useMemo } from "react";
-import { formatMeasurement } from "../../lib/core/numbers";
-import { Button } from "../ui/button";
-import { PaginationContent, PaginationItem } from "../ui/pagination";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { formatMeasurement } from "@/lib/core/numbers";
+import { Button } from "@/components/ui/button";
+import { PaginationContent, PaginationItem } from "@/components/ui/pagination";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ScaleReading } from "./types";
 
 interface ScaleReadingsDataTableProps {

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSearch } from "@tanstack/react-router";
-import { ProviderList } from "../providers/provider-list";
-import { useToast } from "../../lib/hooks/use-toast";
+import { ProviderList } from "@/components/providers/provider-list";
+import { useToast } from "@/lib/hooks/use-toast";
 
 export function Link() {
   const search = useSearch({ from: "/link" });

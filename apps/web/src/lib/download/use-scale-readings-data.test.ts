@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { LocalDate } from "@js-joda/core";
 import { useScaleReadingsData } from "./use-scale-readings-data";
-import { useDownloadData, useProfile } from "../api/queries";
+import { useDownloadData, useProfile } from "@/lib/api/queries";
 // Mock dependencies
-vi.mock("../api/queries");
-vi.mock("../../components/dashboard/sync-progress/hooks", () => ({
+vi.mock("@/lib/api/queries");
+vi.mock("@/components/dashboard/sync-progress/hooks", () => ({
   useSyncProgress: () => ({
     progressId: "test-progress-id",
     progress: null,

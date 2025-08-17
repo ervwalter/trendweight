@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider } from "./theme-provider";
-import { useTheme } from "../lib/hooks/use-theme";
+import { useTheme } from "@/lib/hooks/use-theme";
 
 // Test component to access theme context
 function TestComponent() {

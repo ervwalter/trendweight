@@ -1,4 +1,4 @@
-import { Heading } from "../common/heading";
+import { Heading } from "@/components/common/heading";
 
 export function Blurb() {
   return (

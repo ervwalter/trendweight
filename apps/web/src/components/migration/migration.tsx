@@ -1,8 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useCompleteMigration } from "../../lib/api/mutations";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { ExternalLink } from "../common/external-link";
+import { useCompleteMigration } from "@/lib/api/mutations";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExternalLink } from "@/components/common/external-link";
 
 export function Migration() {
   const navigate = useNavigate();

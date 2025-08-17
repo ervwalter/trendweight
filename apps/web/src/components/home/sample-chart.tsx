@@ -1,4 +1,4 @@
-import { useTheme } from "../../lib/hooks/use-theme";
+import { useTheme } from "@/lib/hooks/use-theme";
 
 export function SampleChart() {
   const { theme } = useTheme();

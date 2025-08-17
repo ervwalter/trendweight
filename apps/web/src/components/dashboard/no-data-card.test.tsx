@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NoDataCard } from "./no-data-card";
-import type { ProviderSyncStatus } from "../../lib/api/types";
+import type { ProviderSyncStatus } from "@/lib/api/types";
 
 describe("NoDataCard", () => {
   it("renders waiting for data message when no providers", () => {

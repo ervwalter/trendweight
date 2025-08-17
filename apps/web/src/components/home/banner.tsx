@@ -1,5 +1,5 @@
-import { Container } from "../container";
-import { Heading } from "../common/heading";
+import { Container } from "@/components/container";
+import { Heading } from "@/components/common/heading";
 
 export function Banner() {
   return (

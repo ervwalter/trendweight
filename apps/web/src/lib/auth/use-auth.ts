@@ -1,7 +1,7 @@
 import { useClerk, useAuth as useClerkAuth, useUser } from "@clerk/clerk-react";
 import type { GetToken } from "@clerk/types";
 import { useQueryClient } from "@tanstack/react-query";
-import type { User } from "../../types/user";
+import type { User } from "@/types/user";
 
 // Re-export GetToken so other files don't need to import from Clerk directly
 export type { GetToken };

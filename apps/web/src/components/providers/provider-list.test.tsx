@@ -2,21 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProviderList } from "./provider-list";
-import { useProviderLinks } from "../../lib/api/queries";
-import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "../../lib/api/mutations";
-import { apiRequest } from "../../lib/api/client";
-import { useToast } from "../../lib/hooks/use-toast";
-import { useAuth } from "../../lib/auth/use-auth";
+import { useProviderLinks } from "@/lib/api/queries";
+import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "@/lib/api/mutations";
+import { apiRequest } from "@/lib/api/client";
+import { useToast } from "@/lib/hooks/use-toast";
+import { useAuth } from "@/lib/auth/use-auth";
 
 // Mock dependencies
-vi.mock("../../lib/api/queries");
-vi.mock("../../lib/api/mutations");
-vi.mock("../../lib/api/client");
-vi.mock("../../lib/hooks/use-toast");
-vi.mock("../../lib/auth/use-auth");
+vi.mock("@/lib/api/queries");
+vi.mock("@/lib/api/mutations");
+vi.mock("@/lib/api/client");
+vi.mock("@/lib/hooks/use-toast");
+vi.mock("@/lib/auth/use-auth");
 
 // Mock ConfirmDialog
-vi.mock("../ui/confirm-dialog", () => ({
+vi.mock("@/components/ui/confirm-dialog", () => ({
   ConfirmDialog: ({ open, onConfirm, title, description, confirmText }: any) =>
     open ? (
       <div data-testid="confirm-dialog">

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { LocalDate } from "@js-joda/core";
 import { transformChartData } from "./data-transformers";
-import type { DataPoint } from "../../core/interfaces";
+import type { DataPoint } from "@/lib/core/interfaces";
 
 describe("data-transformers", () => {
   const createDataPoint = (date: LocalDate, actual: number | null, trend: number, isInterpolated = false, source = "test"): DataPoint => ({

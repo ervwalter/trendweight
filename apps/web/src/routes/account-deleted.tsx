@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Layout } from "../components/layout";
-import { AccountDeleted } from "../components/account-deleted/account-deleted";
+import { Layout } from "@/components/layout";
+import { AccountDeleted } from "@/components/account-deleted/account-deleted";
 
 export const Route = createFileRoute("/account-deleted")({
   beforeLoad: () => {

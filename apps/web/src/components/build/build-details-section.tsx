@@ -1,5 +1,5 @@
-import { ExternalLink } from "../common/external-link";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { ExternalLink } from "@/components/common/external-link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface BuildDetailsSectionProps {
   environment: string;

@@ -33,8 +33,8 @@ AI-specific guidance for working with the TrendWeight codebase.
 
 ```typescript
 import { createFileRoute } from "@tanstack/react-router";
-import { Layout } from "../components/Layout";
-import { ComponentName } from "../components/feature-folder/ComponentName";
+import { Layout } from "@/components/Layout";
+import { ComponentName } from "@/components/feature-folder/ComponentName";
 
 export const Route = createFileRoute("/route-path")({
   beforeLoad: requireAuth, // Only if needed

@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Lightbulb, Rss, ShoppingCart } from "lucide-react";
-import { useAuth } from "../../lib/auth/use-auth";
-import { useTheme } from "../../lib/hooks/use-theme";
-import { ExternalLink } from "../common/external-link";
-import { Heading } from "../common/heading";
-import { Button } from "../ui/button";
+import { useAuth } from "@/lib/auth/use-auth";
+import { useTheme } from "@/lib/hooks/use-theme";
+import { ExternalLink } from "@/components/common/external-link";
+import { Heading } from "@/components/common/heading";
+import { Button } from "@/components/ui/button";
 
 export function About() {
   const { user } = useAuth();

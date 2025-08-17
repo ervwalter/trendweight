@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { LocalDate } from "@js-joda/core";
 import { computeDeltas, computeWeightSlope, computeActiveSlope } from "./stats";
-import type { DataPoint, Measurement } from "../../core/interfaces";
+import type { DataPoint, Measurement } from "@/lib/core/interfaces";
 
 describe("stats", () => {
   // Mock current date for consistent testing

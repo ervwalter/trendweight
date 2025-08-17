@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import ProviderSyncErrors from "./provider-sync-errors";
-import type { ProviderSyncStatus } from "../../lib/api/types";
+import type { ProviderSyncStatus } from "@/lib/api/types";
 
 // Mock the ProviderSyncError component
 vi.mock("./provider-sync-error", () => ({

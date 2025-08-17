@@ -1,10 +1,10 @@
 import { SyncProgressProvider } from "@/components/dashboard/sync-progress";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download } from "../components/download/download";
-import { DownloadPlaceholder } from "../components/download/download-placeholder";
-import { Layout } from "../components/layout";
-import { requireAuth } from "../lib/auth/auth-guard";
-import { ensureProfile, ensureProviderLinks } from "../lib/loaders/utils";
+import { Download } from "@/components/download/download";
+import { DownloadPlaceholder } from "@/components/download/download-placeholder";
+import { Layout } from "@/components/layout";
+import { requireAuth } from "@/lib/auth/auth-guard";
+import { ensureProfile, ensureProviderLinks } from "@/lib/loaders/utils";
 
 export const Route = createFileRoute("/download")({
   beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),

@@ -8,7 +8,7 @@ vi.mock("@clerk/clerk-react", () => ({
 }));
 
 // Mock dependencies
-vi.mock("../notices/new-version-notice", () => ({
+vi.mock("@/components/notices/new-version-notice", () => ({
   NewVersionNotice: () => <div data-testid="new-version-notice">New Version Notice</div>,
 }));
 

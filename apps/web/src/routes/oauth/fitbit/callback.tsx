@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FitbitCallback } from "../../../components/providers/fitbit-callback";
-import { Layout } from "../../../components/layout";
+import { FitbitCallback } from "@/components/providers/fitbit-callback";
+import { Layout } from "@/components/layout";
 
 export const Route = createFileRoute("/oauth/fitbit/callback")({
   component: FitbitCallbackPage,

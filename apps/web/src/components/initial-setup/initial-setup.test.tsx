@@ -14,7 +14,7 @@ const mockUpdateProfile = {
   mutateAsync: mockMutateAsync,
   isError: false,
 };
-vi.mock("../../lib/api/mutations", () => ({
+vi.mock("@/lib/api/mutations", () => ({
   useUpdateProfile: () => mockUpdateProfile,
 }));
 
@@ -23,21 +23,21 @@ const mockUser = {
   email: "test@example.com",
   displayName: "John Doe Smith",
 };
-vi.mock("../../lib/auth/use-auth", () => ({
+vi.mock("@/lib/auth/use-auth", () => ({
   useAuth: vi.fn(() => ({ user: mockUser })),
 }));
 
-vi.mock("../../lib/utils/locale", () => ({
+vi.mock("@/lib/utils/locale", () => ({
   shouldUseMetric: () => false,
   extractFirstName: (name: string) => name.split(" ")[0],
 }));
 
 // Mock UI components
-vi.mock("../ui/heading", () => ({
+vi.mock("@/components/ui/heading", () => ({
   Heading: ({ children }: any) => <h1>{children}</h1>,
 }));
 
-vi.mock("../ui/button", () => ({
+vi.mock("@/components/ui/button", () => ({
   Button: ({ children, onClick, disabled, type, variant }: any) => (
     <button onClick={onClick} disabled={disabled} type={type} data-variant={variant}>
       {children}
@@ -46,7 +46,7 @@ vi.mock("../ui/button", () => ({
 }));
 
 // Mock BasicProfileSettings
-vi.mock("../settings/basic-profile-settings", () => ({
+vi.mock("@/components/settings/basic-profile-settings", () => ({
   BasicProfileSettings: ({ register, errors }: any) => (
     <div data-testid="basic-profile-settings">
       <input {...register("firstName", { required: "First name is required" })} data-testid="first-name" />
@@ -57,7 +57,7 @@ vi.mock("../settings/basic-profile-settings", () => ({
 }));
 
 // Mock StartDateSettings
-vi.mock("../settings/start-date-settings", () => ({
+vi.mock("@/components/settings/start-date-settings", () => ({
   StartDateSettings: ({ register }: any) => (
     <div data-testid="start-date-settings">
       <input {...register("goalStart")} type="date" data-testid="goal-start" />

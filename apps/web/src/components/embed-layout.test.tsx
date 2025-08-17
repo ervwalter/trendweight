@@ -3,16 +3,16 @@ import { render, screen } from "@testing-library/react";
 import { EmbedLayout } from "./embed-layout";
 
 // Mock the hooks
-vi.mock("../lib/hooks/use-embed-params", () => ({
+vi.mock("@/lib/hooks/use-embed-params", () => ({
   useEmbedParams: vi.fn(),
 }));
 
 // Mock page title utility
-vi.mock("../lib/utils/page-title", () => ({
+vi.mock("@/lib/utils/page-title", () => ({
   pageTitle: vi.fn((title) => (title ? `${title} - TrendWeight` : "TrendWeight")),
 }));
 
-const mockUseEmbedParams = vi.mocked(await import("../lib/hooks/use-embed-params")).useEmbedParams;
+const mockUseEmbedParams = vi.mocked(await import("@/lib/hooks/use-embed-params")).useEmbedParams;
 
 describe("EmbedLayout", () => {
   beforeEach(() => {

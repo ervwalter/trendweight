@@ -1,7 +1,7 @@
 import { Container } from "./container";
-import { pageTitle } from "../lib/utils/page-title";
+import { pageTitle } from "@/lib/utils/page-title";
 import { Button } from "./ui/button";
-import { getDebugInfo } from "../lib/utils/debug-info";
+import { getDebugInfo } from "@/lib/utils/debug-info";
 
 interface ErrorUIProps {
   error?: Error;

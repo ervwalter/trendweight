@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { CheckCircle } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { apiRequest } from "../../lib/api/client";
-import { useAuth } from "../../lib/auth/use-auth";
-import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "../../lib/api/mutations";
-import { useProviderLinks } from "../../lib/api/queries";
-import { useToast } from "../../lib/hooks/use-toast";
-import { Button } from "../ui/button";
-import { ConfirmDialog } from "../ui/confirm-dialog";
-import { ExternalLink } from "../common/external-link";
-import { Heading } from "../common/heading";
-import { getProviderDisplayName, getOAuthProviders } from "../../lib/utils/provider-display";
+import { apiRequest } from "@/lib/api/client";
+import { useAuth } from "@/lib/auth/use-auth";
+import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "@/lib/api/mutations";
+import { useProviderLinks } from "@/lib/api/queries";
+import { useToast } from "@/lib/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ExternalLink } from "@/components/common/external-link";
+import { Heading } from "@/components/common/heading";
+import { getProviderDisplayName, getOAuthProviders } from "@/lib/utils/provider-display";
 
 // Simple date formatter for connection dates
 const connectionDateFormatter = new Intl.DateTimeFormat([], {

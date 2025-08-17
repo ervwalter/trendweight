@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
-import { useDashboardData } from "../../lib/dashboard/hooks";
-import { useIsMobile } from "../../lib/hooks/use-media-query";
-import type { Mode, TimeRange } from "../../lib/core/interfaces";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useDashboardData } from "@/lib/dashboard/hooks";
+import { useIsMobile } from "@/lib/hooks/use-media-query";
+import type { Mode, TimeRange } from "@/lib/core/interfaces";
 
 const Buttons = () => {
   const {

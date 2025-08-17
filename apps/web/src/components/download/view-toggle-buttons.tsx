@@ -1,7 +1,7 @@
-import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { ViewType } from "./types";
-import type { ProviderLink } from "../../lib/api/types";
-import { getProviderDisplayName } from "../../lib/utils/provider-display";
+import type { ProviderLink } from "@/lib/api/types";
+import { getProviderDisplayName } from "@/lib/utils/provider-display";
 
 interface ViewToggleButtonsProps {
   viewType: ViewType;

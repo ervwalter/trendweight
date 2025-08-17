@@ -1,6 +1,6 @@
 import { createContext } from "react";
-import type { DataPoint, Delta, Measurement, Mode, ProfileData, TimeRange } from "../core/interfaces";
-import type { ProviderSyncStatus } from "../api/types";
+import type { DataPoint, Delta, Measurement, Mode, ProfileData, TimeRange } from "@/lib/core/interfaces";
+import type { ProviderSyncStatus } from "@/lib/api/types";
 
 export interface DashboardData {
   dataPoints: DataPoint[];

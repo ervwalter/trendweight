@@ -1,5 +1,5 @@
-import { formatMeasurement } from "../core/numbers";
-import type { ScaleReading, ViewType } from "../../components/download/types";
+import { formatMeasurement } from "@/lib/core/numbers";
+import type { ScaleReading, ViewType } from "@/components/download/types";
 
 export function downloadScaleReadingsCSV(readings: ScaleReading[], viewType: ViewType, useMetric: boolean) {
   let headers: string[];

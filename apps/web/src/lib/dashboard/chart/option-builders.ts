@@ -1,6 +1,6 @@
 import { DayOfWeek, LocalDate } from "@js-joda/core";
 import type { Options, XAxisOptions } from "highcharts";
-import { Modes } from "../../core/interfaces";
+import { Modes } from "@/lib/core/interfaces";
 import { createDiamondsSeries, createDotSeries, createLineSeries, createProjectionSeries, createSinkersSeries, createTrendSeries } from "./create-chart-series";
 
 const toEpoch = (date: LocalDate) => date.toEpochDay() * 86400000;

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { requireAuth } from "./auth-guard";
 import { redirect } from "@tanstack/react-router";
-import type { RouterContext } from "../../router";
+import type { RouterContext } from "@/router";
 import type { ParsedLocation } from "@tanstack/router-core";
 
 // Mock dependencies

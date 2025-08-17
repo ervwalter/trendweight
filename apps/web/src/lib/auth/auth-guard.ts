@@ -1,6 +1,6 @@
 import { redirect } from "@tanstack/react-router";
 import type { ParsedLocation } from "@tanstack/router-core";
-import type { RouterContext } from "../../router";
+import type { RouterContext } from "@/router";
 
 /**
  * Simple auth guard that checks if user is logged in and redirects to login if not.

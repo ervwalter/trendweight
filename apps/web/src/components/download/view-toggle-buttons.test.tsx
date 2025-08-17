@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ViewToggleButtons } from "./view-toggle-buttons";
-import type { ProviderLink } from "../../lib/api/types";
+import type { ProviderLink } from "@/lib/api/types";
 
 // Mock the providerDisplay utility
-vi.mock("../../lib/utils/provider-display", () => ({
+vi.mock("@/lib/utils/provider-display", () => ({
   getProviderDisplayName: (provider: string) => {
     const names: Record<string, string> = {
       withings: "Withings",

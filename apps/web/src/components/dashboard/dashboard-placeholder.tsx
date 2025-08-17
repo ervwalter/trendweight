@@ -1,4 +1,4 @@
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSyncProgress } from "./sync-progress/hooks";
 
 const DashboardPlaceholder = () => {

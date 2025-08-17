@@ -5,7 +5,7 @@ import { Settings } from "./settings";
 
 // Mock dependencies
 const mockNavigationGuard = vi.fn();
-vi.mock("../../lib/hooks/use-navigation-guard", () => ({
+vi.mock("@/lib/hooks/use-navigation-guard", () => ({
   useNavigationGuard: (isDirty: boolean) => mockNavigationGuard(isDirty),
 }));
 
@@ -29,16 +29,16 @@ const mockUpdateProfile = {
   isSuccess: false,
 };
 
-vi.mock("../../lib/api/queries", () => ({
+vi.mock("@/lib/api/queries", () => ({
   useProfile: () => ({ data: mockProfileData }),
 }));
 
-vi.mock("../../lib/api/mutations", () => ({
+vi.mock("@/lib/api/mutations", () => ({
   useUpdateProfile: () => mockUpdateProfile,
 }));
 
 // Mock UI components
-vi.mock("../ui/button", () => ({
+vi.mock("@/components/ui/button", () => ({
   Button: ({ children, onClick, disabled, type, variant }: any) => (
     <button onClick={onClick} disabled={disabled} type={type} data-variant={variant}>
       {children}

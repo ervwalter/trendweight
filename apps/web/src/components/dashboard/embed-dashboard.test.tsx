@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { EmbedDashboard } from "./embed-dashboard";
-import type { DashboardData } from "../../lib/dashboard/dashboard-context";
+import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 
 // Mock the Chart component
 vi.mock("./chart/chart", () => ({
@@ -9,12 +9,12 @@ vi.mock("./chart/chart", () => ({
 }));
 
 // Mock the DashboardProvider
-vi.mock("../../lib/dashboard/context", () => ({
+vi.mock("@/lib/dashboard/context", () => ({
   DashboardProvider: ({ children }: { children: React.ReactNode }) => <div data-testid="dashboard-provider">{children}</div>,
 }));
 
 // Mock formatMeasurement function
-vi.mock("../../lib/core/numbers", () => ({
+vi.mock("@/lib/core/numbers", () => ({
   formatMeasurement: vi.fn((value, options) => {
     if (options.type === "weight") {
       return options.metric ? `${value} kg` : `${value} lbs`;

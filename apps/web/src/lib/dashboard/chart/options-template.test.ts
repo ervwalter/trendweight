@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import chartOptionsTemplate from "./options-template";
-import { formatNumber } from "../../core/numbers";
+import { formatNumber } from "@/lib/core/numbers";
 
 // Mock Highstock
 vi.mock("highcharts/highstock", () => ({
@@ -13,7 +13,7 @@ vi.mock("highcharts/highstock", () => ({
 }));
 
 // Mock formatNumber
-vi.mock("../../core/numbers", () => ({
+vi.mock("@/lib/core/numbers", () => ({
   formatNumber: vi.fn((num: number) => num.toFixed(1)),
 }));
 

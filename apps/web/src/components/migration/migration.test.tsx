@@ -17,16 +17,16 @@ const mockCompleteMigration = {
   isPending: false,
 };
 
-vi.mock("../../lib/api/mutations", () => ({
+vi.mock("@/lib/api/mutations", () => ({
   useCompleteMigration: () => mockCompleteMigration,
 }));
 
 // Mock UI components
-vi.mock("../ui/heading", () => ({
+vi.mock("@/components/ui/heading", () => ({
   Heading: ({ children }: any) => <h1>{children}</h1>,
 }));
 
-vi.mock("../ui/button", () => ({
+vi.mock("@/components/ui/button", () => ({
   Button: ({ children, onClick, disabled, variant, className }: any) => (
     <button onClick={onClick} disabled={disabled} className={`${variant} ${className}`}>
       {children}

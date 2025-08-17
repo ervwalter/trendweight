@@ -10,7 +10,7 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 // Mock Layout component
-vi.mock("../layout", () => ({
+vi.mock("@/components/layout", () => ({
   Layout: ({ children }: { children: React.ReactNode }) => <div data-testid="layout">{children}</div>,
 }));
 

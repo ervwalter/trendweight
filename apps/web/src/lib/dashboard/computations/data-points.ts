@@ -1,4 +1,4 @@
-import type { DataPoint, Measurement, Mode } from "../../core/interfaces";
+import type { DataPoint, Measurement, Mode } from "@/lib/core/interfaces";
 
 export const computeDataPoints = (mode: Mode, measurements: Measurement[]): DataPoint[] => {
   const propertyMap = {

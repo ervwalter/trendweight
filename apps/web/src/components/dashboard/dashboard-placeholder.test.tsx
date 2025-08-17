@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 
 // Mock Supabase client before any other imports
-vi.mock("../../lib/realtime/client", () => ({
+vi.mock("@/lib/realtime/client", () => ({
   supabase: {
     channel: vi.fn(() => ({
       on: vi.fn().mockReturnThis(),
@@ -23,7 +23,7 @@ vi.mock("@clerk/clerk-react", () => ({
 }));
 
 // Mock realtime progress hook to return null (no progress)
-vi.mock("../../lib/realtime/use-realtime-progress", () => ({
+vi.mock("@/lib/realtime/use-realtime-progress", () => ({
   useRealtimeProgress: () => ({
     status: null,
     message: null,

@@ -1,8 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Route } from "../../routes/oauth/fitbit/callback";
-import { useExchangeFitbitToken } from "../../lib/api/mutations";
-import { ApiError } from "../../lib/api/client";
+import { Route } from "@/routes/oauth/fitbit/callback";
+import { useExchangeFitbitToken } from "@/lib/api/mutations";
+import { ApiError } from "@/lib/api/client";
 import { OAuthCallbackUI } from "./oauth-callback-ui";
 
 export function FitbitCallback() {

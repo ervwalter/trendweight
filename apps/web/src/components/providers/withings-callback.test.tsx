@@ -14,7 +14,7 @@ let mockSearch = {
   state: undefined as string | undefined,
 };
 
-vi.mock("../../routes/oauth/withings/callback", () => ({
+vi.mock("@/routes/oauth/withings/callback", () => ({
   Route: {
     useSearch: () => mockSearch,
   },
@@ -28,7 +28,7 @@ let mockIsPending = false;
 let mockIsError = false;
 let mockError: Error | null = null;
 
-vi.mock("../../lib/api/mutations", () => ({
+vi.mock("@/lib/api/mutations", () => ({
   useExchangeWithingsToken: () => ({
     mutate: mockMutate,
     status: mockStatus,

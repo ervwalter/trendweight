@@ -1,5 +1,5 @@
 import { useSearch } from "@tanstack/react-router";
-import type { Mode, TimeRange } from "../core/interfaces";
+import type { Mode, TimeRange } from "@/lib/core/interfaces";
 
 interface SharingSearchParams {
   range?: TimeRange;

@@ -1,9 +1,9 @@
-import { recentDate } from "../../lib/core/dates";
-import { Modes } from "../../lib/core/interfaces";
-import { formatMeasurement } from "../../lib/core/numbers";
-import { useDashboardData } from "../../lib/dashboard/hooks";
-import { Heading } from "../common/heading";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { recentDate } from "@/lib/core/dates";
+import { Modes } from "@/lib/core/interfaces";
+import { formatMeasurement } from "@/lib/core/numbers";
+import { useDashboardData } from "@/lib/dashboard/hooks";
+import { Heading } from "@/components/common/heading";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const RecentReadings = () => {
   const {

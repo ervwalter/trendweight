@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Heading } from "../common/heading";
+import { Heading } from "@/components/common/heading";
 
 interface SettingsLayoutProps {
   children: ReactNode;

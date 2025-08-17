@@ -4,9 +4,9 @@ import Highstock from "highcharts/highstock";
 import "highcharts/modules/exporting";
 import "highcharts/modules/offline-exporting";
 import { useEffect, useRef, useState } from "react";
-import { useChartOptions } from "../../../lib/dashboard/chart/use-chart-options";
-import { useDashboardData } from "../../../lib/dashboard/hooks";
-import { useEmbedParams } from "../../../lib/hooks/use-embed-params";
+import { useChartOptions } from "@/lib/dashboard/chart/use-chart-options";
+import { useDashboardData } from "@/lib/dashboard/hooks";
+import { useEmbedParams } from "@/lib/hooks/use-embed-params";
 
 const Chart = () => {
   const data = useDashboardData();

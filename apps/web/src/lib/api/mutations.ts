@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "../auth/use-auth";
+import { useAuth } from "@/lib/auth/use-auth";
 import { apiRequest } from "./client";
 import { queryKeys } from "./queries";
 import type { ProfileResponse } from "./types";
-import type { SharingData } from "../core/interfaces";
+import type { SharingData } from "@/lib/core/interfaces";
 
 interface UpdateProfileData {
   firstName?: string;

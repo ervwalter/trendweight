@@ -6,8 +6,8 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import mathContent from "./math-of-trendweight.md?raw";
-import { Heading } from "../common/heading";
-import { Button } from "../ui/button";
+import { Heading } from "@/components/common/heading";
+import { Button } from "@/components/ui/button";
 
 export function Math() {
   const [showBackToTop, setShowBackToTop] = useState(false);

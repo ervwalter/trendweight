@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from "react";
-import { pageTitle } from "../lib/utils/page-title";
+import { pageTitle } from "@/lib/utils/page-title";
 import { Container } from "./container";
 import { Footer } from "./footer";
 import { Header } from "./header";

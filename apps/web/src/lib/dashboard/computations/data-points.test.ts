@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { LocalDate } from "@js-joda/core";
 import { computeDataPoints } from "./data-points";
-import type { Measurement, Mode } from "../../core/interfaces";
+import type { Measurement, Mode } from "@/lib/core/interfaces";
 
 describe("data-points", () => {
   // Helper to create measurements

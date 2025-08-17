@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { ExternalLink } from "../common/external-link";
-import { Heading } from "../common/heading";
+import { ExternalLink } from "@/components/common/external-link";
+import { Heading } from "@/components/common/heading";
 import { Question } from "./question";
 
 export function Faq() {

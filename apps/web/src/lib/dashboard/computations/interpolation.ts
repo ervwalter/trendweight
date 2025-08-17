@@ -1,5 +1,5 @@
 import { ChronoUnit } from "@js-joda/core";
-import type { SourceMeasurement } from "../../core/interfaces";
+import type { SourceMeasurement } from "@/lib/core/interfaces";
 
 /**
  * Interpolates missing weight measurements between existing measurements

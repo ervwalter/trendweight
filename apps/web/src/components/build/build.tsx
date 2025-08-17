@@ -1,13 +1,13 @@
-import { Container } from "../container";
-import { Heading } from "../common/heading";
+import { Container } from "@/components/container";
+import { Heading } from "@/components/common/heading";
 import { useState } from "react";
 import { ChangelogSection } from "./changelog-section";
 import { BuildDetailsSection } from "./build-details-section";
 import { BrowserInfoSection } from "./browser-info-section";
 import { QuickActionsSection } from "./quick-actions-section";
-import { getBrowserInfo } from "../../lib/build/browser-info";
-import { getDebugInfo, getBuildInfo } from "../../lib/utils/debug-info";
-import { useChangelog } from "../../lib/build/use-changelog";
+import { getBrowserInfo } from "@/lib/build/browser-info";
+import { getDebugInfo, getBuildInfo } from "@/lib/utils/debug-info";
+import { useChangelog } from "@/lib/build/use-changelog";
 
 export function Build() {
   const [copied, setCopied] = useState(false);

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Layout } from "../components/layout";
-import { TipJar } from "../components/tipjar/tip-jar";
+import { Layout } from "@/components/layout";
+import { TipJar } from "@/components/tipjar/tip-jar";
 
 export const Route = createFileRoute("/tipjar")({
   component: TipJarPage,

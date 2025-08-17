@@ -5,11 +5,11 @@ import { Build } from "./build";
 // Mock environment variables
 
 // Mock dependencies
-vi.mock("../container", () => ({
+vi.mock("@/components/container", () => ({
   Container: ({ children }: any) => <div data-testid="container">{children}</div>,
 }));
 
-vi.mock("../common/heading", () => ({
+vi.mock("@/components/common/heading", () => ({
   Heading: ({ children, className, display }: any) => (
     <h1 className={className} data-display={display}>
       {children}
@@ -60,7 +60,7 @@ vi.mock("./browser-info-section", () => ({
   ),
 }));
 
-vi.mock("../../lib/build/formatters", () => ({
+vi.mock("@/lib/build/formatters", () => ({
   formatBuildTime: (time: string) => {
     if (time === "2024-01-15T10:30:45Z") {
       return {
@@ -72,7 +72,7 @@ vi.mock("../../lib/build/formatters", () => ({
   },
 }));
 
-vi.mock("../../lib/build/browser-info", () => ({
+vi.mock("@/lib/build/browser-info", () => ({
   getBrowserInfo: () => ({
     browser: "Chrome 120.0",
     os: "macOS 14.0",
@@ -81,7 +81,7 @@ vi.mock("../../lib/build/browser-info", () => ({
   }),
 }));
 
-vi.mock("../../lib/utils/debug-info", () => ({
+vi.mock("@/lib/utils/debug-info", () => ({
   getDebugInfo: () => "Debug Information:\nVersion: v2.0.0\nBrowser: Chrome 120.0",
   getBuildInfo: () => ({
     environment: "test",
@@ -93,7 +93,7 @@ vi.mock("../../lib/utils/debug-info", () => ({
   }),
 }));
 
-vi.mock("../../lib/build/use-changelog", () => ({
+vi.mock("@/lib/build/use-changelog", () => ({
   useChangelog: () => ({
     changelog: "## v2.0.0\n- New features\n- Bug fixes",
     loadingChangelog: false,

@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { LocalDate } from "@js-joda/core";
 import Currently from "./currently";
-import type { DashboardData } from "../../lib/dashboard/dashboard-context";
+import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 
 // Mock the dashboard hooks
-vi.mock("../../lib/dashboard/hooks", () => ({
+vi.mock("@/lib/dashboard/hooks", () => ({
   useDashboardData: vi.fn(),
 }));
 
-import { useDashboardData } from "../../lib/dashboard/hooks";
+import { useDashboardData } from "@/lib/dashboard/hooks";
 
 const mockUseDashboardData = vi.mocked(useDashboardData);
 

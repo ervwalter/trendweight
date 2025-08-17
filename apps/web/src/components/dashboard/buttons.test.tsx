@@ -4,16 +4,16 @@ import { userEvent } from "@testing-library/user-event";
 import Buttons from "./buttons";
 
 // Mock the dependencies
-vi.mock("../../lib/dashboard/hooks", () => ({
+vi.mock("@/lib/dashboard/hooks", () => ({
   useDashboardData: vi.fn(),
 }));
 
-vi.mock("../../lib/hooks/use-media-query", () => ({
+vi.mock("@/lib/hooks/use-media-query", () => ({
   useIsMobile: vi.fn(),
 }));
 
-const mockUseDashboardData = vi.mocked(await import("../../lib/dashboard/hooks")).useDashboardData;
-const mockUseIsMobile = vi.mocked(await import("../../lib/hooks/use-media-query")).useIsMobile;
+const mockUseDashboardData = vi.mocked(await import("@/lib/dashboard/hooks")).useDashboardData;
+const mockUseIsMobile = vi.mocked(await import("@/lib/hooks/use-media-query")).useIsMobile;
 
 describe("Buttons", () => {
   const mockSetMode = vi.fn();

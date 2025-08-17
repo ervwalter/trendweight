@@ -1,5 +1,5 @@
-import type { ApiComputedMeasurement, MeasurementsResponse, ProviderSyncStatus } from "../api/types";
-import type { ProfileData } from "../core/interfaces";
+import type { ApiComputedMeasurement, MeasurementsResponse, ProviderSyncStatus } from "@/lib/api/types";
+import type { ProfileData } from "@/lib/core/interfaces";
 
 // Demo profile data
 export const demoProfile: ProfileData = {

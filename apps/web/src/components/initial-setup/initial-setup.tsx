@@ -1,14 +1,14 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { useEffect } from "react";
-import { BasicProfileSettings } from "../settings/basic-profile-settings";
-import { StartDateSettings } from "../settings/start-date-settings";
-import { useUpdateProfile } from "../../lib/api/mutations";
-import { shouldUseMetric, extractFirstName } from "../../lib/utils/locale";
-import { useAuth } from "../../lib/auth/use-auth";
-import type { ProfileData } from "../../lib/core/interfaces";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
-import { Button } from "../ui/button";
+import { BasicProfileSettings } from "@/components/settings/basic-profile-settings";
+import { StartDateSettings } from "@/components/settings/start-date-settings";
+import { useUpdateProfile } from "@/lib/api/mutations";
+import { shouldUseMetric, extractFirstName } from "@/lib/utils/locale";
+import { useAuth } from "@/lib/auth/use-auth";
+import type { ProfileData } from "@/lib/core/interfaces";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export function InitialSetup() {
   const navigate = useNavigate();

@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
-import { server } from "../../test/mocks/server";
+import { server } from "@/test/mocks/server";
 import React from "react";
 import { useProfile, useDashboardQueries, useProviderLinks, useSharingSettings, queryKeys, queryOptions } from "./queries";
 import type { ProfileResponse, MeasurementsResponse, ProviderLink } from "./types";
-import type { SharingData } from "../core/interfaces";
+import type { SharingData } from "@/lib/core/interfaces";
 
 // Mock useAuth hook
-vi.mock("../auth/use-auth", () => ({
+vi.mock("@/lib/auth/use-auth", () => ({
   useAuth: vi.fn(() => ({
     user: { uid: "test-user", email: "test@example.com", displayName: "Test User" },
     isLoaded: true,
@@ -20,7 +20,7 @@ vi.mock("../auth/use-auth", () => ({
 }));
 
 // Mock useSyncProgress hook
-vi.mock("../../components/dashboard/sync-progress/hooks", () => ({
+vi.mock("@/components/dashboard/sync-progress/hooks", () => ({
   useSyncProgress: () => ({
     progressId: "test-progress-id",
     progress: null,

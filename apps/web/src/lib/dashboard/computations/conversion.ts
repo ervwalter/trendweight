@@ -1,6 +1,6 @@
 import { LocalDate } from "@js-joda/core";
-import type { Measurement, ProfileData } from "../../core/interfaces";
-import type { ApiComputedMeasurement } from "../../api/types";
+import type { Measurement, ProfileData } from "@/lib/core/interfaces";
+import type { ApiComputedMeasurement } from "@/lib/api/types";
 
 /**
  * Converts backend computed measurements to frontend format with proper unit conversion

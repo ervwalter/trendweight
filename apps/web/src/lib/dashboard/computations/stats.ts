@@ -1,5 +1,5 @@
 import { ChronoUnit, LocalDate } from "@js-joda/core";
-import type { DataPoint, Delta, Measurement, Mode } from "../../core/interfaces";
+import type { DataPoint, Delta, Measurement, Mode } from "@/lib/core/interfaces";
 
 export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => {
   const deltas: Delta[] = [];

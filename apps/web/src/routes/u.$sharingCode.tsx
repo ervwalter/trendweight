@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import Dashboard from "../components/dashboard/dashboard";
-import DashboardPlaceholder from "../components/dashboard/dashboard-placeholder";
-import { SyncProgressProvider } from "../components/dashboard/sync-progress";
-import { Layout } from "../components/layout";
-import { EmbedLayout } from "../components/embed-layout";
-import { ensureProfile, ensureProviderLinks } from "../lib/loaders/utils";
-import type { Mode, TimeRange } from "../lib/core/interfaces";
+import Dashboard from "@/components/dashboard/dashboard";
+import DashboardPlaceholder from "@/components/dashboard/dashboard-placeholder";
+import { SyncProgressProvider } from "@/components/dashboard/sync-progress";
+import { Layout } from "@/components/layout";
+import { EmbedLayout } from "@/components/embed-layout";
+import { ensureProfile, ensureProviderLinks } from "@/lib/loaders/utils";
+import type { Mode, TimeRange } from "@/lib/core/interfaces";
 
 export const Route = createFileRoute("/u/$sharingCode")({
   validateSearch: (search: Record<string, unknown>) => {

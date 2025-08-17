@@ -1,8 +1,8 @@
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
-import { useSyncProgress } from "../../components/dashboard/sync-progress/hooks";
-import { useAuth, type GetToken } from "../auth/use-auth";
-import type { ProfileData, SharingData } from "../core/interfaces";
-import { getDemoData, getDemoProfile } from "../demo/demo-data";
+import { useSyncProgress } from "@/components/dashboard/sync-progress/hooks";
+import { useAuth, type GetToken } from "@/lib/auth/use-auth";
+import type { ProfileData, SharingData } from "@/lib/core/interfaces";
+import { getDemoData, getDemoProfile } from "@/lib/demo/demo-data";
 import { ApiError, apiRequest } from "./client";
 import type { MeasurementsResponse, ProfileResponse, ProviderLink } from "./types";
 

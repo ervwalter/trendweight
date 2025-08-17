@@ -1,4 +1,4 @@
-import { Container } from "../container";
+import { Container } from "@/components/container";
 import { Blurb } from "./blurb";
 import { InfoButtons } from "./info-buttons";
 import { SampleChart } from "./sample-chart";

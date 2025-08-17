@@ -1,5 +1,5 @@
-import { ExternalLink } from "../common/external-link";
-import { Heading } from "../common/heading";
+import { ExternalLink } from "@/components/common/external-link";
+import { Heading } from "@/components/common/heading";
 
 export function TipJar() {
   return (

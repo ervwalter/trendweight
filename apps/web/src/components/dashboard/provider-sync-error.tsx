@@ -1,8 +1,8 @@
 import type { FC } from "react";
 import { AlertTriangle } from "lucide-react";
-import { useReconnectProvider } from "../../lib/api/mutations";
-import type { ProviderSyncStatus } from "../../lib/api/types";
-import { Button } from "../ui/button";
+import { useReconnectProvider } from "@/lib/api/mutations";
+import type { ProviderSyncStatus } from "@/lib/api/types";
+import { Button } from "@/components/ui/button";
 
 interface ProviderSyncErrorProps {
   provider: string;

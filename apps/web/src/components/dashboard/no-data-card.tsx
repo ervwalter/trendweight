@@ -1,6 +1,6 @@
 import { Clock } from "lucide-react";
-import type { ProviderSyncStatus } from "../../lib/api/types";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import type { ProviderSyncStatus } from "@/lib/api/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface NoDataCardProps {
   providerStatus?: Record<string, ProviderSyncStatus>;

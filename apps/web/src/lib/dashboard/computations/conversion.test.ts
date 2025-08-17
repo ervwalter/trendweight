@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { LocalDate } from "@js-joda/core";
 import { convertMeasurements } from "./conversion";
-import type { ProfileData } from "../../core/interfaces";
-import type { ApiComputedMeasurement } from "../../api/types";
+import type { ProfileData } from "@/lib/core/interfaces";
+import type { ApiComputedMeasurement } from "@/lib/api/types";
 
 describe("conversion", () => {
   // Default profile for testing

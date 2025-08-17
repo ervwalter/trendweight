@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { useProviderLinks } from "../../lib/api/queries";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { useProviderLinks } from "@/lib/api/queries";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export function DownloadSection() {
   const { data: providerLinks } = useProviderLinks();

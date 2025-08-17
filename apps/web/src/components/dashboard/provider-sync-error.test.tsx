@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import ProviderSyncError from "./provider-sync-error";
-import type { ProviderSyncStatus } from "../../lib/api/types";
+import type { ProviderSyncStatus } from "@/lib/api/types";
 
 // Mock the mutations
-vi.mock("../../lib/api/mutations", () => ({
+vi.mock("@/lib/api/mutations", () => ({
   useReconnectProvider: vi.fn(),
 }));
 
-const mockUseReconnectProvider = vi.mocked(await import("../../lib/api/mutations")).useReconnectProvider;
+const mockUseReconnectProvider = vi.mocked(await import("@/lib/api/mutations")).useReconnectProvider;
 
 // Mock window.location.assign
 const mockLocationAssign = vi.fn();

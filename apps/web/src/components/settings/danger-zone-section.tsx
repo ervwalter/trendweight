@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { ConfirmDialog } from "../ui/confirm-dialog";
-import { CardHeader, CardContent, CardTitle, CardDescription } from "../ui/card";
-import { Button } from "../ui/button";
-import { useDeleteAccount } from "../../lib/api/mutations";
-import { useAuth } from "../../lib/auth/use-auth";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useDeleteAccount } from "@/lib/api/mutations";
+import { useAuth } from "@/lib/auth/use-auth";
 
 export function DangerZoneSection() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

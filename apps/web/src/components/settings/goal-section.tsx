@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import type { Control, FieldErrors, UseFormRegister, UseFormWatch } from "react-hook-form";
 import { Controller } from "react-hook-form";
-import type { ProfileData } from "../../lib/core/interfaces";
-import { CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import type { ProfileData } from "@/lib/core/interfaces";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface GoalSectionProps {
   register: UseFormRegister<ProfileData>;

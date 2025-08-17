@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock Supabase client before any other imports
-vi.mock("../../lib/realtime/client", () => ({
+vi.mock("@/lib/realtime/client", () => ({
   supabase: {
     channel: vi.fn(() => ({
       on: vi.fn().mockReturnThis(),
@@ -16,7 +16,7 @@ vi.mock("../../lib/realtime/client", () => ({
 }));
 
 // Mock realtime progress hook to return null (no progress)
-vi.mock("../../lib/realtime/use-realtime-progress", () => ({
+vi.mock("@/lib/realtime/use-realtime-progress", () => ({
   useRealtimeProgress: () => ({
     status: null,
     message: null,
@@ -29,24 +29,24 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Download } from "./download";
 import { LocalDate } from "@js-joda/core";
-import type { ProviderLink } from "../../lib/api/types";
-import { SyncProgressProvider } from "../dashboard/sync-progress";
+import type { ProviderLink } from "@/lib/api/types";
+import { SyncProgressProvider } from "@/components/dashboard/sync-progress";
 
 // Mock dependencies
-vi.mock("../../lib/api/queries", () => ({
+vi.mock("@/lib/api/queries", () => ({
   useProviderLinks: vi.fn(),
 }));
 
-vi.mock("../../lib/download/use-scale-readings-data", () => ({
+vi.mock("@/lib/download/use-scale-readings-data", () => ({
   useScaleReadingsData: vi.fn(),
 }));
 
-vi.mock("../../lib/download/csv-export", () => ({
+vi.mock("@/lib/download/csv-export", () => ({
   downloadScaleReadingsCSV: vi.fn(),
 }));
 
 // Mock the provider display utility
-vi.mock("../../lib/utils/provider-display", () => ({
+vi.mock("@/lib/utils/provider-display", () => ({
   getProviderDisplayName: (provider: string) => {
     const names: Record<string, string> = {
       withings: "Withings",
@@ -58,11 +58,11 @@ vi.mock("../../lib/utils/provider-display", () => ({
 }));
 
 // Mock UI components
-vi.mock("../ui/heading", () => ({
+vi.mock("@/components/ui/heading", () => ({
   Heading: ({ children }: any) => <h1>{children}</h1>,
 }));
 
-vi.mock("../ui/button", () => ({
+vi.mock("@/components/ui/button", () => ({
   Button: ({ children, onClick, variant, size, className }: any) => (
     <button onClick={onClick} className={`${variant} ${size} ${className}`}>
       {children}
@@ -124,9 +124,9 @@ vi.mock("react-icons/hi", () => ({
 }));
 
 // Import mocked functions
-import { useProviderLinks } from "../../lib/api/queries";
-import { useScaleReadingsData } from "../../lib/download/use-scale-readings-data";
-import { downloadScaleReadingsCSV } from "../../lib/download/csv-export";
+import { useProviderLinks } from "@/lib/api/queries";
+import { useScaleReadingsData } from "@/lib/download/use-scale-readings-data";
+import { downloadScaleReadingsCSV } from "@/lib/download/csv-export";
 
 describe("Download", () => {
   const createProviderLink = (provider: string, isDisabled = false): ProviderLink => ({

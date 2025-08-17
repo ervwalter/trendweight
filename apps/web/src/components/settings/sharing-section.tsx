@@ -1,11 +1,11 @@
 import { useState, Suspense } from "react";
-import { ConfirmDialog } from "../ui/confirm-dialog";
-import { CardHeader, CardContent, CardTitle, CardDescription } from "../ui/card";
-import { Button } from "../ui/button";
-import { useSharingSettings } from "../../lib/api/queries";
-import { useToggleSharing, useGenerateShareToken } from "../../lib/api/mutations";
-import { Switch } from "../ui/switch";
-import { Input } from "../ui/input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useSharingSettings } from "@/lib/api/queries";
+import { useToggleSharing, useGenerateShareToken } from "@/lib/api/mutations";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 
 function SharingSectionContent() {
   const [showNewUrlConfirm, setShowNewUrlConfirm] = useState(false);

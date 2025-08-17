@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { useForm } from "react-hook-form";
 import { ProgressTrackingSection } from "./progress-tracking-section";
-import type { ProfileData } from "../../lib/core/interfaces";
+import type { ProfileData } from "@/lib/core/interfaces";
 
 // Mock StartDateSettings component
 vi.mock("./start-date-settings", () => ({

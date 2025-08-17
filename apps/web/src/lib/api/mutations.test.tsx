@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
-import { server } from "../../test/mocks/server";
+import { server } from "@/test/mocks/server";
 import {
   useUpdateProfile,
   useDisconnectProvider,
@@ -17,10 +17,10 @@ import {
 } from "./mutations";
 import { queryKeys } from "./queries";
 import type { ProfileResponse } from "./types";
-import type { SharingData } from "../core/interfaces";
+import type { SharingData } from "@/lib/core/interfaces";
 
 // Mock useAuth hook
-vi.mock("../auth/use-auth", () => ({
+vi.mock("@/lib/auth/use-auth", () => ({
   useAuth: vi.fn(() => ({
     user: { uid: "test-user", email: "test@example.com", displayName: "Test User" },
     isLoaded: true,

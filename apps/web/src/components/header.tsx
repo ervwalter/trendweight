@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "../lib/auth/use-auth";
+import { useAuth } from "@/lib/auth/use-auth";
 import { Container } from "./container";
 import { Logo } from "./logo";
 import { ModeToggle } from "./mode-toggle";

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { LocalDate } from "@js-joda/core";
 import { groupAndSelectFirstByDay, filterAndGroupFatMeasurements } from "./grouping";
-import type { SourceMeasurement } from "../../core/interfaces";
+import type { SourceMeasurement } from "@/lib/core/interfaces";
 
 describe("grouping", () => {
   // Helper to create source measurements

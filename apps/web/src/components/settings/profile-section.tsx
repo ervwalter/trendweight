@@ -1,6 +1,6 @@
 import type { Control, FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
-import type { ProfileData } from "../../lib/core/interfaces";
-import { CardContent, CardHeader, CardTitle } from "../ui/card";
+import type { ProfileData } from "@/lib/core/interfaces";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BasicProfileSettings } from "./basic-profile-settings";
 
 interface ProfileSectionProps {

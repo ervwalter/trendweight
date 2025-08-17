@@ -1,9 +1,9 @@
 import { ChronoUnit, LocalDate, Period } from "@js-joda/core";
-import { shortDate } from "../../lib/core/dates";
-import type { Measurement } from "../../lib/core/interfaces";
-import { formatNumber, formatPlannedWeight, formatWeight } from "../../lib/core/numbers";
-import { useDashboardData } from "../../lib/dashboard/hooks";
-import { Heading } from "../common/heading";
+import { shortDate } from "@/lib/core/dates";
+import type { Measurement } from "@/lib/core/interfaces";
+import { formatNumber, formatPlannedWeight, formatWeight } from "@/lib/core/numbers";
+import { useDashboardData } from "@/lib/dashboard/hooks";
+import { Heading } from "@/components/common/heading";
 
 const Stats = () => {
   const {

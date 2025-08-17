@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import type { ProviderSyncStatus } from "../../lib/api/types";
+import type { ProviderSyncStatus } from "@/lib/api/types";
 import ProviderSyncError from "./provider-sync-error";
 
 interface ProviderSyncErrorsProps {

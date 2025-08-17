@@ -1,6 +1,6 @@
 import { Suspense, useEffect, type ReactNode } from "react";
-import { pageTitle } from "../lib/utils/page-title";
-import { useEmbedParams } from "../lib/hooks/use-embed-params";
+import { pageTitle } from "@/lib/utils/page-title";
+import { useEmbedParams } from "@/lib/hooks/use-embed-params";
 
 interface EmbedLayoutProps {
   children: ReactNode;

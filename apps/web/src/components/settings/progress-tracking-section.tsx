@@ -1,6 +1,6 @@
 import type { Control, UseFormRegister, UseFormWatch } from "react-hook-form";
-import type { ProfileData } from "../../lib/core/interfaces";
-import { CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import type { ProfileData } from "@/lib/core/interfaces";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StartDateSettings } from "./start-date-settings";
 
 interface ProgressTrackingSectionProps {

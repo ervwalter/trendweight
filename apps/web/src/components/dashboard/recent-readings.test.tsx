@@ -2,20 +2,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { LocalDate } from "@js-joda/core";
 import RecentReadings from "./recent-readings";
-import { useDashboardData } from "../../lib/dashboard/hooks";
-import { recentDate } from "../../lib/core/dates";
-import { formatMeasurement } from "../../lib/core/numbers";
+import { useDashboardData } from "@/lib/dashboard/hooks";
+import { recentDate } from "@/lib/core/dates";
+import { formatMeasurement } from "@/lib/core/numbers";
 
 // Mock the dependencies
-vi.mock("../../lib/dashboard/hooks", () => ({
+vi.mock("@/lib/dashboard/hooks", () => ({
   useDashboardData: vi.fn(),
 }));
 
-vi.mock("../../lib/core/dates", () => ({
+vi.mock("@/lib/core/dates", () => ({
   recentDate: vi.fn(),
 }));
 
-vi.mock("../../lib/core/numbers", () => ({
+vi.mock("@/lib/core/numbers", () => ({
   formatMeasurement: vi.fn(),
 }));
 
