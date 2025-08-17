@@ -6,23 +6,23 @@ import { ToggleGroup, ToggleGroupItem } from "./toggle-group";
 describe("ToggleGroup", () => {
   it("renders children correctly", () => {
     render(
-      <ToggleGroup type="single">
+      <ToggleGroup>
         <ToggleGroupItem value="a">Option A</ToggleGroupItem>
         <ToggleGroupItem value="b">Option B</ToggleGroupItem>
       </ToggleGroup>,
     );
 
-    // In single mode, buttons have role="radio"
+    // Always operates in single mode, buttons have role="radio"
     expect(screen.getByRole("radio", { name: "Option A" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Option B" })).toBeInTheDocument();
   });
 
-  it("handles single selection mode", async () => {
+  it("handles selection", async () => {
     const handleValueChange = vi.fn();
     const user = userEvent.setup();
 
     render(
-      <ToggleGroup type="single" onValueChange={handleValueChange}>
+      <ToggleGroup onValueChange={handleValueChange}>
         <ToggleGroupItem value="a">Option A</ToggleGroupItem>
         <ToggleGroupItem value="b">Option B</ToggleGroupItem>
       </ToggleGroup>,
@@ -38,12 +38,12 @@ describe("ToggleGroup", () => {
     expect(handleValueChange).toHaveBeenCalledWith("b");
   });
 
-  it("allows deselection in single mode by default", async () => {
+  it("prevents deselection (radio button behavior)", async () => {
     const handleValueChange = vi.fn();
     const user = userEvent.setup();
 
     render(
-      <ToggleGroup type="single" onValueChange={handleValueChange} defaultValue="a">
+      <ToggleGroup onValueChange={handleValueChange} defaultValue="a">
         <ToggleGroupItem value="a">Option A</ToggleGroupItem>
         <ToggleGroupItem value="b">Option B</ToggleGroupItem>
       </ToggleGroup>,
@@ -51,37 +51,14 @@ describe("ToggleGroup", () => {
 
     const optionA = screen.getByRole("radio", { name: "Option A" });
 
-    // Click the already selected option to deselect it
+    // Click the already selected option - should not trigger onValueChange
     await user.click(optionA);
-    expect(handleValueChange).toHaveBeenCalledWith("");
-  });
-
-  it("handles multiple selection mode", async () => {
-    const handleValueChange = vi.fn();
-    const user = userEvent.setup();
-
-    render(
-      <ToggleGroup type="multiple" onValueChange={handleValueChange}>
-        <ToggleGroupItem value="a">Option A</ToggleGroupItem>
-        <ToggleGroupItem value="b">Option B</ToggleGroupItem>
-        <ToggleGroupItem value="c">Option C</ToggleGroupItem>
-      </ToggleGroup>,
-    );
-
-    // In multiple mode, buttons have role="button"
-    const optionA = screen.getByRole("button", { name: "Option A" });
-    const optionB = screen.getByRole("button", { name: "Option B" });
-
-    await user.click(optionA);
-    expect(handleValueChange).toHaveBeenCalledWith(["a"]);
-
-    await user.click(optionB);
-    expect(handleValueChange).toHaveBeenCalledWith(["a", "b"]);
+    expect(handleValueChange).not.toHaveBeenCalled();
   });
 
   it("applies correct styling to items", () => {
     render(
-      <ToggleGroup type="single" defaultValue="a">
+      <ToggleGroup defaultValue="a">
         <ToggleGroupItem value="a">Selected</ToggleGroupItem>
         <ToggleGroupItem value="b">Not Selected</ToggleGroupItem>
       </ToggleGroup>,
@@ -96,7 +73,7 @@ describe("ToggleGroup", () => {
 
   it("applies rounded corners correctly", () => {
     render(
-      <ToggleGroup type="single">
+      <ToggleGroup>
         <ToggleGroupItem value="a">First</ToggleGroupItem>
         <ToggleGroupItem value="b">Middle</ToggleGroupItem>
         <ToggleGroupItem value="c">Last</ToggleGroupItem>
@@ -114,7 +91,7 @@ describe("ToggleGroup", () => {
 
   it("removes duplicate borders between items", () => {
     render(
-      <ToggleGroup type="single">
+      <ToggleGroup>
         <ToggleGroupItem value="a">First</ToggleGroupItem>
         <ToggleGroupItem value="b">Second</ToggleGroupItem>
       </ToggleGroup>,
@@ -126,7 +103,7 @@ describe("ToggleGroup", () => {
 
   it("can be disabled", () => {
     render(
-      <ToggleGroup type="single" disabled>
+      <ToggleGroup disabled>
         <ToggleGroupItem value="a">Option A</ToggleGroupItem>
         <ToggleGroupItem value="b">Option B</ToggleGroupItem>
       </ToggleGroup>,
@@ -140,7 +117,7 @@ describe("ToggleGroup", () => {
 
   it("inherits variant and size from context", () => {
     render(
-      <ToggleGroup type="single" variant="outline" size="sm">
+      <ToggleGroup variant="outline" size="sm">
         <ToggleGroupItem value="a">Option A</ToggleGroupItem>
       </ToggleGroup>,
     );

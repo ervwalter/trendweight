@@ -50,17 +50,17 @@ export function Settings() {
     }
 
     // Update the metric setting first
-    setValue("useMetric", newIsMetric);
+    setValue("useMetric", newIsMetric, { shouldDirty: true });
 
     // Convert planned pounds per week
     const currentPlan = currentValues.plannedPoundsPerWeek;
     if (currentPlan && currentPlan !== 0) {
       if (newIsMetric) {
         // Converting from lbs to kg (roughly divide by 2)
-        setValue("plannedPoundsPerWeek", currentPlan / 2);
+        setValue("plannedPoundsPerWeek", currentPlan / 2, { shouldDirty: true });
       } else {
         // Converting from kg to lbs (roughly multiply by 2)
-        setValue("plannedPoundsPerWeek", currentPlan * 2);
+        setValue("plannedPoundsPerWeek", currentPlan * 2, { shouldDirty: true });
       }
     }
 
@@ -70,11 +70,11 @@ export function Settings() {
       if (newIsMetric) {
         // Converting from lbs to kg (divide by 2.20462 and round)
         const kgValue = Math.round(currentGoalWeight / 2.20462);
-        setValue("goalWeight", kgValue);
+        setValue("goalWeight", kgValue, { shouldDirty: true });
       } else {
         // Converting from kg to lbs (multiply by 2.20462 and round)
         const lbsValue = Math.round(currentGoalWeight * 2.20462);
-        setValue("goalWeight", lbsValue);
+        setValue("goalWeight", lbsValue, { shouldDirty: true });
       }
     }
   };

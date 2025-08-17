@@ -20,15 +20,7 @@ export function ViewToggleButtons({ viewType, onViewChange, providerLinks }: Vie
   });
 
   return (
-    <ToggleGroup
-      type="single"
-      value={viewType}
-      onValueChange={(value) => {
-        if (value && value !== "") onViewChange(value);
-      }}
-      defaultValue="computed"
-      aria-label="View Type"
-    >
+    <ToggleGroup type="single" value={viewType} onValueChange={(value) => onViewChange(value)} defaultValue="computed" aria-label="View Type">
       <ToggleGroupItem value="computed">Computed Values</ToggleGroupItem>
       {sortedProviders.map((provider) => (
         <ToggleGroupItem key={provider.provider} value={provider.provider}>

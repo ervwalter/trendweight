@@ -121,34 +121,55 @@ Follow conventional commit format with these TrendWeight-specific rules:
 - `test:` - Adding or updating tests
 - `chore:` - Maintenance tasks, dependency updates
 
-#### Multi-Topic Commits
-When a single commit spans multiple major unrelated areas, use footers to document each major topic:
+#### Single vs Multi-Topic Commits
+
+**Single Topic Commits (Preferred)**
+Most commits should focus on one specific change:
 
 ```
-feat: implement backend computation with UI improvements
+fix: settings form not marking dirty when weight unit changes
 
-Add server-side weight trend calculations and fix several frontend issues.
-
-feat(api): add MeasurementComputationService for server-side trend calculations
-  - Implement exponentially smoothed moving average (alpha=0.1)
-  - Add ComputedMeasurement and SourceMeasurement models
-  - Update MeasurementsResponse to use computedMeasurements array
-  - Support optional includeSource parameter for raw data access
-
-refactor(web): improve progress tracking system
-  - Centralize toast management in SyncProgressProvider to prevent duplicates
-  - Simplify useSyncProgress API by hiding internal functions
-  - Remove redundant useSyncProgressId hook
-  - Fix React hooks rule violations with proper useWithProgress wrapper
-
-fix(web): download page skeleton width now matches actual table dimensions
-
-docs: restructure documentation with steering documents and commit guidelines
+Add shouldDirty: true to setValue calls in handleUnitChange to ensure
+the Save Settings button is enabled when unit preference changes.
 ```
 
-Only use footers for major topics - group related changes together rather than creating a footer for every small change. Footers can be multi-line to provide details.
+**Multi-Topic Commits (Use Sparingly)**
+Only when you have multiple genuinely UNRELATED changes that must go together, use footers:
 
-**Important**: Don't create footers that simply restate the main commit message. Only use footers when you have genuinely different types of changes that deserve separate changelog entries.
+```
+feat: add user authentication system
+
+Implement core authentication with JWT tokens and user registration.
+
+fix(api): resolve memory leak in background sync process
+  - Dispose HttpClient instances properly
+  - Cancel long-running tasks on shutdown
+
+docs: update deployment guide with new environment variables
+```
+
+**Critical Rules:**
+- **Main message describes ONE specific change**, not a summary of multiple changes
+- **Only use footers for additional UNRELATED changes** that deserve separate changelog entries  
+- **Never create a footer that restates the main message** - this creates duplicate changelog entries
+- **If all changes are related, group them under the main message without footers**
+
+**Bad Example (creates duplicate changelog entries):**
+```
+fix: improve form behavior
+
+Fix multiple form-related issues.
+
+fix(forms): settings form not marking dirty when weight unit changes
+```
+
+**Good Example:**
+```
+fix: settings form not marking dirty when weight unit changes
+
+Add shouldDirty: true to setValue calls in handleUnitChange to ensure
+the Save Settings button is enabled when unit preference changes.
+```
 
 #### Rules
 - **Never use "BREAKING CHANGE"** - this is an application, not a library
