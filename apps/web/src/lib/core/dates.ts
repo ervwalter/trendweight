@@ -32,8 +32,8 @@ export const formatGoalDate = (date: LocalDate | LocalDateTime) => {
 
   const nativeDate = convert(date).toDate();
 
-  // Use month/year format if more than 120 days away
-  if (daysUntil > 120) {
+  // Use month/year format if more than 180 days away
+  if (daysUntil > 180) {
     return {
       preposition: "in/around",
       date: monthYearFormatter.format(nativeDate),
