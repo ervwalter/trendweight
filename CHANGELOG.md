@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.2](https://github.com/ervwalter/trendweight/compare/v2.6.1...v2.6.2) (2025-08-19)
+
+
+### Fixes
+
+* **dates:** update goal date formatting condition from 120 to 180 days ([425d2d9](https://github.com/ervwalter/trendweight/commit/425d2d98db195d3238794d345eff5979e3b25315))
+
 ## [2.6.1](https://github.com/ervwalter/trendweight/compare/v2.6.0...v2.6.1) (2025-08-19)
 
 
