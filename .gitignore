@@ -140,3 +140,4 @@ context_portal/
 .chunkhound
 .spec-workflow/session.json
 .spec-workflow/approvals
+apps/api/TrendWeight/appsettings.Development.json
