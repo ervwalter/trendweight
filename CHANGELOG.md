@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.6.1](https://github.com/ervwalter/trendweight/compare/v2.6.0...v2.6.1) (2025-08-19)
+
+
+### Performance Improvements
+
+* optimize SourceDataService with request-scoped caching ([e921aef](https://github.com/ervwalter/trendweight/commit/e921aefd2283695e569f2d5bd9b2dba551cbf3d4))
+
+
+### Dependencies
+
+* update dependency xunit.runner.visualstudio to 3.1.4 ([#329](https://github.com/ervwalter/trendweight/issues/329)) ([4294b27](https://github.com/ervwalter/trendweight/commit/4294b270d4c5546e900380a20934d74f07018081))
+* update npm dependencies ([#327](https://github.com/ervwalter/trendweight/issues/327)) ([a7615fc](https://github.com/ervwalter/trendweight/commit/a7615fcbc93b84dc22ca5dfdaef1be0690757f8a))
+
 ## [2.6.0](https://github.com/ervwalter/trendweight/compare/v2.5.4...v2.6.0) (2025-08-17)
 
 
