@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.6.3](https://github.com/ervwalter/trendweight/compare/v2.6.2...v2.6.3) (2025-08-23)
+
+
+### Fixes
+
+* replace inefficient GetAllAsync with database query for sharing tokens ([6a29894](https://github.com/ervwalter/trendweight/commit/6a298945b40601cc503710ad6048f1f4a81543ce))
+
+
+### Dependencies
+
+* update npm dependencies ([#332](https://github.com/ervwalter/trendweight/issues/332)) ([dcb9fb4](https://github.com/ervwalter/trendweight/commit/dcb9fb4ddd400164c810fee6902db60bc5eb5e3f))
+
 ## [2.6.2](https://github.com/ervwalter/trendweight/compare/v2.6.1...v2.6.2) (2025-08-19)
 
 
