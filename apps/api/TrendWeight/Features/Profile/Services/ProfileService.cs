@@ -134,8 +134,10 @@ public class ProfileService : IProfileService
 
     public async Task<DbProfile?> GetBySharingTokenAsync(string sharingToken)
     {
-        var profiles = await _supabaseService.GetAllAsync<DbProfile>();
-        return profiles.FirstOrDefault(p => p.Profile?.SharingToken == sharingToken);
+        var profiles = await _supabaseService.QueryAsync<DbProfile>(query =>
+            query.Filter("profile->>SharingToken", Supabase.Postgrest.Constants.Operator.Equals, sharingToken)
+        );
+        return profiles.FirstOrDefault();
     }
 
     /// <summary>

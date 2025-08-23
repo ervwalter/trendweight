@@ -103,26 +103,6 @@ public class SupabaseService : ISupabaseService
         }
     }
 
-    public async Task<List<T>> GetAllAsync<T>() where T : BaseModel, new()
-    {
-        try
-        {
-            var response = await SupabaseClient.From<T>()
-                .Get();
-
-            if (response.Models.Count == 0)
-            {
-                _logger.LogDebug("No {Type} records found", typeof(T).Name);
-            }
-
-            return response.Models;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting all {Type}", typeof(T).Name);
-            return new List<T>();
-        }
-    }
 
     public async Task<T> InsertAsync<T>(T model) where T : BaseModel, new()
     {

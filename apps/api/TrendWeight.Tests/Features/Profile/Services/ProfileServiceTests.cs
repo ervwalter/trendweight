@@ -154,7 +154,7 @@ public class ProfileServiceTests : TestBase
             .ReturnsAsync((DbProfile?)null);
         _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbProfile>()))
             .ReturnsAsync((DbProfile p) => p);
-        _supabaseServiceMock.Setup(x => x.GetAllAsync<DbProfile>())
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()))
             .ReturnsAsync(new List<DbProfile>());
 
         // Act
@@ -218,14 +218,10 @@ public class ProfileServiceTests : TestBase
     {
         // Arrange
         var token = "test-token-12345678901234567890";
-        var profiles = new List<DbProfile>
-        {
-            CreateTestProfile(Guid.NewGuid()),
-            CreateTestProfile(Guid.NewGuid(), token),
-            CreateTestProfile(Guid.NewGuid())
-        };
+        var matchingProfile = CreateTestProfile(Guid.NewGuid(), token);
+        var profiles = new List<DbProfile> { matchingProfile };
 
-        _supabaseServiceMock.Setup(x => x.GetAllAsync<DbProfile>())
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()))
             .ReturnsAsync(profiles);
 
         // Act
@@ -252,18 +248,17 @@ public class ProfileServiceTests : TestBase
     public async Task GenerateUniqueShareTokenAsync_GeneratesUniqueToken()
     {
         // Arrange
-        var existingTokens = new List<string>();
-        var existingProfiles = new List<DbProfile>();
+        var callCount = 0;
 
-        // Setup mock to track generated tokens and simulate collision on first try
-        _supabaseServiceMock.Setup(x => x.GetAllAsync<DbProfile>())
+        // Setup mock to simulate collision on first try, then success
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()))
             .ReturnsAsync(() =>
             {
-                // First call - return existing profiles to force collision
-                if (existingTokens.Count == 0)
+                callCount++;
+                if (callCount == 1)
                 {
-                    existingTokens.Add("will-be-different");
-                    return existingProfiles;
+                    // First call - return existing profile to force collision
+                    return new List<DbProfile> { CreateTestProfile(Guid.NewGuid(), "collision-token") };
                 }
                 // Subsequent calls - return empty to allow success
                 return new List<DbProfile>();
@@ -276,7 +271,7 @@ public class ProfileServiceTests : TestBase
         token.Should().NotBeNullOrEmpty();
         token.Should().HaveLength(25);
         token.Should().MatchRegex("^[0-9a-z]+$");
-        _supabaseServiceMock.Verify(x => x.GetAllAsync<DbProfile>(), Times.AtLeastOnce);
+        _supabaseServiceMock.Verify(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()), Times.AtLeastOnce);
     }
 
     [Fact]
@@ -288,7 +283,7 @@ public class ProfileServiceTests : TestBase
 
         _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
             .ReturnsAsync(profile);
-        _supabaseServiceMock.Setup(x => x.GetAllAsync<DbProfile>())
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()))
             .ReturnsAsync(new List<DbProfile>());
         _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
             .ReturnsAsync((DbProfile p) => p);

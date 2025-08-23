@@ -78,13 +78,6 @@ public class TestSupabaseService : ISupabaseService
         return Task.FromResult<T?>(null);
     }
 
-    public Task<List<T>> GetAllAsync<T>() where T : BaseModel, new()
-    {
-        if (!_data.ContainsKey(typeof(T)))
-            return Task.FromResult(new List<T>());
-
-        return Task.FromResult(_data[typeof(T)].Cast<T>().ToList());
-    }
 
     public Task<T> InsertAsync<T>(T entity) where T : BaseModel, new()
     {
@@ -111,8 +104,11 @@ public class TestSupabaseService : ISupabaseService
 
     public Task<List<T>> QueryAsync<T>(Action<ISupabaseTable<T, RealtimeChannel>> query) where T : BaseModel, new()
     {
-        // For test purposes, just return all items
-        return GetAllAsync<T>();
+        // For test purposes, just return all items of this type
+        if (!_data.ContainsKey(typeof(T)))
+            return Task.FromResult(new List<T>());
+
+        return Task.FromResult(_data[typeof(T)].Cast<T>().ToList());
     }
 
     public Task<bool> DeleteAuthUserAsync(Guid userId)
