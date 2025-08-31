@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.4](https://github.com/ervwalter/trendweight/compare/v2.6.3...v2.6.4) (2025-08-31)
+
+
+### Dependencies
+
+* update npm dependencies ([#335](https://github.com/ervwalter/trendweight/issues/335)) ([02686c0](https://github.com/ervwalter/trendweight/commit/02686c0493158c3f5b875f982795ca271ec80f25))
+
 ## [2.6.3](https://github.com/ervwalter/trendweight/compare/v2.6.2...v2.6.3) (2025-08-23)
 
 
