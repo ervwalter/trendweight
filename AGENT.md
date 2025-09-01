@@ -1,7 +1,0 @@
-- Always read the steering docs before doing any planning or coding:
-  - @docs/steering/product.md
-  - @docs/steering/structure.md
-  - @docs/steering/tech.md
-  - @docs/steering/conventions.md
-- Always re-read all steering docs after compacting a conversation.
-- Always keep steering documents up to date as details change over time
