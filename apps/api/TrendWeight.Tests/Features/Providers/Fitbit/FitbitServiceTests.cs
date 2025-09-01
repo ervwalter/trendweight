@@ -452,6 +452,65 @@ public class FitbitServiceTests : TestBase
     }
 
     [Fact]
+    public async Task GetMeasurementsAsync_RequestsEndDateTwoDaysAheadOfUtcToday()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var fitbitUserId = "ABCDEF";
+        var token = CreateValidToken(fitbitUserId);
+        var providerLink = new DbProviderLink
+        {
+            Provider = "fitbit",
+            Token = token
+        };
+
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(providerLink);
+
+        var todayUtc = DateTime.UtcNow.Date;
+        var expectedEnd = todayUtc.AddDays(2).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        string? capturedEnd = null;
+
+        _httpMessageHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("/body/log/weight/date")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync((HttpRequestMessage request, CancellationToken ct) =>
+            {
+                // Capture end date from the URL: /date/{start}/{end}.json
+                var url = request.RequestUri!.ToString();
+                var match = System.Text.RegularExpressions.Regex.Match(url, @"/date/(\d{4}-\d{2}-\d{2})/(\d{4}-\d{2}-\d{2})\.json");
+                if (match.Success && capturedEnd == null)
+                {
+                    capturedEnd = match.Groups[2].Value;
+                }
+
+                var weightData = new FitbitWeightLog { Weight = new List<FitbitWeightLogEntry>() };
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(weightData), Encoding.UTF8, "application/json")
+                };
+                response.Headers.Add("fitbit-rate-limit-limit", "150");
+                response.Headers.Add("fitbit-rate-limit-remaining", "149");
+                response.Headers.Add("fitbit-rate-limit-reset", "3600");
+                return response;
+            });
+
+        // Choose a recent start date so the service will cap the range by its computed endDate
+        var startDate = todayUtc.AddDays(-1);
+
+        // Act
+        await _sut.GetMeasurementsAsync(userId, true, startDate);
+
+        // Assert: The requested end date should be today (UTC) + 2 days
+        capturedEnd.Should().NotBeNull();
+        capturedEnd!.Should().Be(expectedEnd);
+    }
+
+    [Fact]
     public async Task GetMeasurementsAsync_With30DayRange_MakesTwoRequestsDueToTimezoneBuffer()
     {
         // Arrange

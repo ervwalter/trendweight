@@ -261,7 +261,9 @@ public class FitbitService : ProviderServiceBase, IFitbitService
 
         // Determine date range
         DateTime startDate;
-        DateTime endDate = DateTime.UtcNow.Date;
+        // Add 2 days to handle users in timezones ahead of UTC (up to UTC+14)
+        // This ensures we fetch "today's" data for users in Pacific timezones
+        DateTime endDate = DateTime.UtcNow.Date.AddDays(2);
 
         if (startTimestamp > 1)
         {

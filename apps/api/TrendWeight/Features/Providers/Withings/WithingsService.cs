@@ -11,6 +11,7 @@ using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Withings.Models;
 using TrendWeight.Features.SyncProgress;
 using TrendWeight.Infrastructure.Configuration;
+using TimeZoneConverter;
 
 namespace TrendWeight.Features.Providers.Withings;
 
@@ -452,17 +453,29 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         var body = withingsResponse!.Body!;
         var timezone = body.Timezone;
 
-        // Get timezone info for conversion
+        // Get timezone info for conversion with robust IANA/Windows ID support
         TimeZoneInfo? tzInfo = null;
+        bool usedUtcFallback = false;
         if (!string.IsNullOrEmpty(timezone))
         {
             try
             {
-                tzInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
+                // Prefer TZConvert to resolve both IANA and Windows time zone IDs across platforms
+                tzInfo = TZConvert.GetTimeZoneInfo(timezone);
             }
-            catch (Exception ex)
+            catch (Exception ex1)
             {
-                Logger.LogWarning("Failed to parse timezone {Timezone}, will use UTC: {Error}", timezone, ex.Message);
+                Logger.LogWarning("Withings timezone id not resolved via TZConvert: {Timezone}. Error: {Error}", timezone, ex1.Message);
+                try
+                {
+                    // Fallback to platform-specific lookup as a secondary attempt
+                    tzInfo = TimeZoneInfo.FindSystemTimeZoneById(timezone);
+                }
+                catch (Exception ex2)
+                {
+                    usedUtcFallback = true;
+                    Logger.LogWarning("Withings timezone fallback to UTC. id: {Timezone}. Error: {Error}", timezone, ex2.Message);
+                }
             }
         }
 
@@ -490,6 +503,13 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                 var localDateTime = tzInfo != null
                     ? TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, tzInfo)
                     : utcDateTime; // Fallback to UTC if timezone not available
+
+                if (usedUtcFallback)
+                {
+                    // Log once per group when we fell back to UTC to aid observability
+                    Logger.LogWarning("Withings measurement converted using UTC due to unresolved timezone id: {Timezone}", timezone);
+                    usedUtcFallback = false; // avoid repeated warnings within the same page
+                }
 
                 var measurement = new RawMeasurement
                 {
