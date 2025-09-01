@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.6.5](https://github.com/ervwalter/trendweight/compare/v2.6.4...v2.6.5) (2025-09-01)
+
+
+### Fixes
+
+* **api:** re-fix recent regression that removed Fitbit enddate +2 days to handle fitbit timezone issues ([f70c221](https://github.com/ervwalter/trendweight/commit/f70c2213238736e03cfc7a96ed1e67050806017c))
+
+
+### Dependencies
+
+* update dependency swashbuckle.aspnetcore to 9.0.4 ([#336](https://github.com/ervwalter/trendweight/issues/336)) ([43abb55](https://github.com/ervwalter/trendweight/commit/43abb55202d59a3b3ba70f970e7060c571cb8617))
+* update dependency timezoneconverter to v7 ([#340](https://github.com/ervwalter/trendweight/issues/340)) ([94d933b](https://github.com/ervwalter/trendweight/commit/94d933b481344f72bca0d1ee108e8881a078629e))
+* update npm dependencies ([#338](https://github.com/ervwalter/trendweight/issues/338)) ([3b4a902](https://github.com/ervwalter/trendweight/commit/3b4a9023052d6ddcf6a449d3cd29415691e31643))
+
 ## [2.6.4](https://github.com/ervwalter/trendweight/compare/v2.6.3...v2.6.4) (2025-08-31)
 
 
