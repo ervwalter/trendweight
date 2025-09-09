@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.6.6](https://github.com/ervwalter/trendweight/compare/v2.6.5...v2.6.6) (2025-09-09)
+
+
+### Dependencies
+
+* update actions/setup-dotnet action to v5 ([#342](https://github.com/ervwalter/trendweight/issues/342)) ([7c29ba9](https://github.com/ervwalter/trendweight/commit/7c29ba9e72797fecddb6003bf78606ccce851842))
+* update actions/setup-node action to v5 ([#343](https://github.com/ervwalter/trendweight/issues/343)) ([4aadc88](https://github.com/ervwalter/trendweight/commit/4aadc8813090ae287a53056e8fedad084e586c87))
+
 ## [2.6.5](https://github.com/ervwalter/trendweight/compare/v2.6.4...v2.6.5) (2025-09-01)
 
 
