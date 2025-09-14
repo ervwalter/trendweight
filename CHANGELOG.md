@@ -1,5 +1,31 @@
 # Changelog
 
+## [2.7.0](https://github.com/ervwalter/trendweight/compare/v2.6.5...v2.7.0) (2025-09-14)
+
+
+### Features
+
+* add since date filter to GetMeasurementsBySharingCode ([cc575a8](https://github.com/ervwalter/trendweight/commit/cc575a81336ee5d90585d93490825ba6785f3ed3))
+
+
+### Fixes
+
+* calculate trend fat/lean mass as independent moving averages ([7415fdf](https://github.com/ervwalter/trendweight/commit/7415fdfe0e044fcf3611e32f2b35ad1f14aeb451))
+* make chart tooltip follow mouse pointer ([46405da](https://github.com/ervwalter/trendweight/commit/46405daa8eceb4e10f6615a1ee2be1696e4c092e))
+* prevent fat percentage deltas from rounding to zero ([8cd2703](https://github.com/ervwalter/trendweight/commit/8cd27037d2a3285a0c657d13f0d9034063ceb0e7))
+* update large dataset test to have realistic expectations ([618d36d](https://github.com/ervwalter/trendweight/commit/618d36d63acf64e61598900d856225e4619c5524))
+
+
+### Dependencies
+
+* update actions/checkout action to v5 ([#352](https://github.com/ervwalter/trendweight/issues/352)) ([228a7bd](https://github.com/ervwalter/trendweight/commit/228a7bd3c332c26bf7ea8426d7ea2d30b44dc831))
+* update actions/setup-dotnet action to v5 ([#342](https://github.com/ervwalter/trendweight/issues/342)) ([7c29ba9](https://github.com/ervwalter/trendweight/commit/7c29ba9e72797fecddb6003bf78606ccce851842))
+* update actions/setup-node action to v5 ([#343](https://github.com/ervwalter/trendweight/issues/343)) ([4aadc88](https://github.com/ervwalter/trendweight/commit/4aadc8813090ae287a53056e8fedad084e586c87))
+* update dependency jsdom to v27 ([#350](https://github.com/ervwalter/trendweight/issues/350)) ([a18d618](https://github.com/ervwalter/trendweight/commit/a18d618dc23868072e0d6684793f2bddeca2bbc5))
+* update dependency vite to v7.1.5 [security] ([#348](https://github.com/ervwalter/trendweight/issues/348)) ([ddab4f9](https://github.com/ervwalter/trendweight/commit/ddab4f9cb61e3dd125ca96665c4ddafb160b1801))
+* update npm dependencies ([#341](https://github.com/ervwalter/trendweight/issues/341)) ([a32bd8f](https://github.com/ervwalter/trendweight/commit/a32bd8fb45334711e74772926193f70b7a89cd24))
+* update nuget dependencies to 9.0.9 ([#346](https://github.com/ervwalter/trendweight/issues/346)) ([6867bb4](https://github.com/ervwalter/trendweight/commit/6867bb4477e88562985d0e518f6c4815a6dcf809))
+
 ## [2.6.5](https://github.com/ervwalter/trendweight/compare/v2.6.4...v2.6.5) (2025-09-01)
 
 
