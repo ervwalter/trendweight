@@ -100,7 +100,10 @@ describe("EmbedLayout", () => {
     );
 
     const container = document.querySelector(".min-h-screen");
-    expect(container).not.toHaveStyle({ maxWidth: expect.anything() });
+    // In jsdom v27, undefined style attributes are handled differently
+    // Check that maxWidth is either empty string or not set
+    const style = container ? window.getComputedStyle(container) : null;
+    expect(style?.maxWidth).toMatch(/^(none|)$/);
   });
 
   it("renders title correctly", () => {
