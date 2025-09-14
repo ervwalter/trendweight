@@ -26,4 +26,10 @@ public class ComputedMeasurement
 
     /// <summary>Trend fat percentage (0-1 ratio)</summary>
     public decimal? TrendFatPercent { get; init; }
+
+    /// <summary>Trend fat mass in kg</summary>
+    public decimal? TrendFatMass { get; init; }
+
+    /// <summary>Trend lean mass in kg</summary>
+    public decimal? TrendLeanMass { get; init; }
 }

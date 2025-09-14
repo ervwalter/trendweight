@@ -108,6 +108,32 @@ describe("conversion", () => {
       expect(result[0].actualLeanMass).toBeCloseTo(convertedWeight * 0.8); // 80% of converted weight
     });
 
+    it("should use API-provided trend mass values when available", () => {
+      const apiMeasurements: ApiComputedMeasurement[] = [
+        {
+          date: "2024-01-01",
+          actualWeight: 100.0, // 100 kg
+          trendWeight: 100.0, // 100 kg
+          weightIsInterpolated: false,
+          fatIsInterpolated: false,
+          actualFatPercent: 0.2, // 20% fat
+          trendFatPercent: 0.2,
+          trendFatMass: 18.0, // Independent moving average result (kg)
+          trendLeanMass: 82.0, // Independent moving average result (kg)
+        },
+      ];
+
+      // Test metric user (no conversion)
+      const metricResult = convertMeasurements(apiMeasurements, defaultProfile);
+      expect(metricResult[0].trendFatMass).toBe(18.0);
+      expect(metricResult[0].trendLeanMass).toBe(82.0);
+
+      // Test non-metric user (should convert from kg to lbs)
+      const nonMetricResult = convertMeasurements(apiMeasurements, nonMetricProfile);
+      expect(nonMetricResult[0].trendFatMass).toBeCloseTo(18.0 * 2.20462262);
+      expect(nonMetricResult[0].trendLeanMass).toBeCloseTo(82.0 * 2.20462262);
+    });
+
     it("should handle measurements without fat data", () => {
       const apiMeasurements: ApiComputedMeasurement[] = [
         {

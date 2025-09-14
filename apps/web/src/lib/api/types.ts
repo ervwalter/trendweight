@@ -51,7 +51,8 @@ export interface ApiComputedMeasurement {
   fatIsInterpolated: boolean;
   actualFatPercent?: number; // 0-1 ratio
   trendFatPercent?: number; // 0-1 ratio
-  // Note: Fat/lean mass calculated on frontend, source info in includeSource
+  trendFatMass?: number; // kg, calculated as independent moving average
+  trendLeanMass?: number; // kg, calculated as independent moving average
 }
 
 // Enhanced measurements response from /api/data endpoint

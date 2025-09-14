@@ -276,19 +276,28 @@ public class MeasurementComputationService : IMeasurementComputationService
         var additionalMeasurements = new List<ComputedMeasurement>();
 
         decimal trendFatRatio = 0;
+        decimal trendFatMass = 0;
+        decimal trendLeanMass = 0;
 
         for (int i = 0; i < fatSourceMeasurements.Count; i++)
         {
             var sourceMeasurement = fatSourceMeasurements[i];
+            var weight = sourceMeasurement.Weight;
             var fatRatio = sourceMeasurement.FatRatio!.Value;
+            var fatMass = weight * fatRatio;
+            var leanMass = weight * (1 - fatRatio);
 
             if (i == 0)
             {
                 trendFatRatio = fatRatio;
+                trendFatMass = fatMass;
+                trendLeanMass = leanMass;
             }
             else
             {
                 trendFatRatio = trendFatRatio + TREND_SMOOTHING_FACTOR * (fatRatio - trendFatRatio);
+                trendFatMass = trendFatMass + TREND_SMOOTHING_FACTOR * (fatMass - trendFatMass);
+                trendLeanMass = trendLeanMass + TREND_SMOOTHING_FACTOR * (leanMass - trendLeanMass);
             }
 
             var dateKey = sourceMeasurement.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -305,7 +314,9 @@ public class MeasurementComputationService : IMeasurementComputationService
                     WeightIsInterpolated = existingMeasurement.WeightIsInterpolated,
                     FatIsInterpolated = sourceMeasurement.FatRatioIsInterpolated,
                     ActualFatPercent = Math.Round(fatRatio, 4),
-                    TrendFatPercent = Math.Round(trendFatRatio, 4)
+                    TrendFatPercent = Math.Round(trendFatRatio, 4),
+                    TrendFatMass = Math.Round(trendFatMass, 3),
+                    TrendLeanMass = Math.Round(trendLeanMass, 3)
                 };
 
                 measurementsByDate[dateKey] = updatedMeasurement;
@@ -321,7 +332,9 @@ public class MeasurementComputationService : IMeasurementComputationService
                     WeightIsInterpolated = true,
                     FatIsInterpolated = sourceMeasurement.FatRatioIsInterpolated,
                     ActualFatPercent = Math.Round(fatRatio, 4),
-                    TrendFatPercent = Math.Round(trendFatRatio, 4)
+                    TrendFatPercent = Math.Round(trendFatRatio, 4),
+                    TrendFatMass = Math.Round(trendFatMass, 3),
+                    TrendLeanMass = Math.Round(trendLeanMass, 3)
                 });
             }
         }

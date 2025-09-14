@@ -23,8 +23,10 @@ export function convertMeasurements(computedMeasurements: ApiComputedMeasurement
     // Calculate fat/lean mass if fat data is available (already in correct units after weight conversion)
     const actualFatMass = computed.actualFatPercent ? actualWeight * computed.actualFatPercent : undefined;
     const actualLeanMass = computed.actualFatPercent ? actualWeight * (1 - computed.actualFatPercent) : undefined;
-    const trendFatMass = computed.trendFatPercent ? trendWeight * computed.trendFatPercent : undefined;
-    const trendLeanMass = computed.trendFatPercent ? trendWeight * (1 - computed.trendFatPercent) : undefined;
+
+    // Use API-provided trend mass values (independent moving averages) with proper unit conversion
+    const trendFatMass = computed.trendFatMass ? computed.trendFatMass * conversionFactor : undefined;
+    const trendLeanMass = computed.trendLeanMass ? computed.trendLeanMass * conversionFactor : undefined;
 
     return {
       date,
