@@ -169,22 +169,177 @@ describe("stats", () => {
       expect(result).not.toContainEqual(expect.objectContaining({ period: 7 }));
     });
 
-    it("should work with all modes", () => {
-      const dataPoints = [createDataPoint("2024-01-14", 0.25), createDataPoint("2024-01-15", 0.24)];
+    it("should handle weight mode with proper rounding", () => {
+      // Test that weight values round to 1 decimal place to match UI
+      // 160.16 rounds to 160.2, 160.13 rounds to 160.1
+      const dataPoints = [createDataPoint("2024-01-14", 160.16), createDataPoint("2024-01-15", 160.13)];
 
-      // Test different modes
-      const weightResult = computeDeltas("weight", dataPoints);
-      const fatPercentResult = computeDeltas("fatpercent", dataPoints);
+      const result = computeDeltas("weight", dataPoints);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].period).toBe(1);
+      expect(result[0].description).toBe("yesterday");
+      expect(result[0].delta).toBeCloseTo(-0.1, 10); // -0.1, not -0.03
+    });
+
+    it("should handle fatpercent mode with proper precision", () => {
+      // Test with realistic body fat percentages that need higher precision
+      const dataPoints = [
+        createDataPoint("2024-01-14", 0.4066), // 40.66% → rounds to 0.407
+        createDataPoint("2024-01-15", 0.4058), // 40.58% → rounds to 0.406
+      ];
+
+      const result = computeDeltas("fatpercent", dataPoints);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].period).toBe(1);
+      expect(result[0].description).toBe("yesterday");
+      expect(result[0].delta).toBeCloseTo(-0.001, 3); // 0.406 - 0.407 = -0.001
+    });
+
+    it("should handle mass modes with weight-style rounding", () => {
+      // Fat mass and lean mass should use same rounding as weight
+      const dataPoints = [
+        createDataPoint("2024-01-14", 25.16), // kg or lbs
+        createDataPoint("2024-01-15", 25.13),
+      ];
+
       const fatMassResult = computeDeltas("fatmass", dataPoints);
       const leanMassResult = computeDeltas("leanmass", dataPoints);
 
-      // All should calculate the same delta structure
-      [weightResult, fatPercentResult, fatMassResult, leanMassResult].forEach((result) => {
+      [fatMassResult, leanMassResult].forEach((result) => {
         expect(result).toHaveLength(1);
         expect(result[0].period).toBe(1);
         expect(result[0].description).toBe("yesterday");
-        expect(result[0].delta).toBeCloseTo(-0.1, 5);
+        expect(result[0].delta).toBeCloseTo(-0.1, 10); // Same as weight rounding
       });
+    });
+
+    it("should not round small fat percentage changes to zero (regression test)", () => {
+      // This test would have caught the original bug where fat % deltas showed 0.0%
+      // Using realistic body fat data that would have been rounded away
+      const dataPoints = [
+        createDataPoint("2024-01-08", 0.41), // 41.00% (7 days ago)
+        createDataPoint("2024-01-10", 0.409), // 40.90%
+        createDataPoint("2024-01-12", 0.408), // 40.80%
+        createDataPoint("2024-01-13", 0.407), // 40.70%
+        createDataPoint("2024-01-14", 0.4065), // 40.65% (yesterday)
+        createDataPoint("2024-01-15", 0.4055), // 40.55% (today)
+      ];
+
+      const result = computeDeltas("fatpercent", dataPoints);
+
+      // Week delta: 0.4055→0.406, 0.4100→0.410, delta = -0.004
+      const weekDelta = result.find((d) => d.period === 7);
+      expect(weekDelta).toBeDefined();
+      expect(weekDelta!.delta).toBeCloseTo(-0.004, 3);
+      expect(weekDelta!.delta).not.toBe(0);
+
+      // Yesterday delta: 0.4055→0.406, 0.4065→0.407, delta = -0.001
+      const yesterdayDelta = result.find((d) => d.period === 1);
+      expect(yesterdayDelta).toBeDefined();
+      expect(yesterdayDelta!.delta).toBeCloseTo(-0.001, 3);
+      expect(yesterdayDelta!.delta).not.toBe(0);
+    });
+
+    it("should handle rounding edge cases for weight", () => {
+      // Test values that round to same number should produce zero delta
+      const dataPoints1 = [
+        createDataPoint("2024-01-14", 160.14), // rounds to 160.1
+        createDataPoint("2024-01-15", 160.06), // rounds to 160.1
+      ];
+      const result1 = computeDeltas("weight", dataPoints1);
+      expect(result1[0].delta).toBe(0); // Should be 0, not -0.08
+
+      // Test values that round differently
+      const dataPoints2 = [
+        createDataPoint("2024-01-14", 160.15), // rounds to 160.2
+        createDataPoint("2024-01-15", 160.14), // rounds to 160.1
+      ];
+      const result2 = computeDeltas("weight", dataPoints2);
+      expect(result2[0].delta).toBeCloseTo(-0.1, 10); // Should be -0.1, not -0.01
+    });
+
+    it("should handle rounding edge cases for fat percentage", () => {
+      // Test fat percentages that are close but round differently
+      const dataPoints1 = [
+        createDataPoint("2024-01-14", 0.4005), // rounds to 0.401
+        createDataPoint("2024-01-15", 0.4004), // rounds to 0.400
+      ];
+      const result1 = computeDeltas("fatpercent", dataPoints1);
+      expect(result1[0].delta).toBeCloseTo(-0.001, 3); // Preserves meaningful changes
+
+      // Test fat percentages that round to the same value
+      const dataPoints2 = [
+        createDataPoint("2024-01-14", 0.40024), // rounds to 0.400
+        createDataPoint("2024-01-15", 0.40025), // rounds to 0.400
+      ];
+      const result2 = computeDeltas("fatpercent", dataPoints2);
+      expect(result2[0].delta).toBe(0); // Rounds to zero as expected
+    });
+
+    it("should calculate all time period deltas correctly for fat percentage", () => {
+      // Create 29 days of fat percentage data with larger changes to show meaningful deltas
+      const dataPoints = Array.from({ length: 29 }, (_, i) => {
+        const date = MOCK_TODAY.minusDays(28 - i);
+        // Start at 42.0% and decrease to 40.0% over 28 days (2% total change)
+        const fatPercent = 0.42 - i * 0.0007; // Decrease by 0.07% per day
+        return createDataPoint(date.toString(), fatPercent);
+      });
+
+      const result = computeDeltas("fatpercent", dataPoints);
+
+      // Verify each delta shows meaningful changes after rounding
+      const yesterdayDelta = result.find((d) => d.period === 1);
+      expect(yesterdayDelta).toBeDefined();
+      expect(yesterdayDelta!.delta).toBeCloseTo(-0.001, 3); // Daily change preserved
+
+      const weekDelta = result.find((d) => d.period === 7);
+      expect(weekDelta).toBeDefined();
+      expect(weekDelta!.delta).toBeCloseTo(-0.005, 3); // Weekly change preserved
+
+      const twoWeekDelta = result.find((d) => d.period === 14);
+      expect(twoWeekDelta).toBeDefined();
+      expect(twoWeekDelta!.delta).toBeCloseTo(-0.01, 3); // Two-week change preserved
+
+      const monthDelta = result.find((d) => d.period === 28);
+      expect(monthDelta).toBeDefined();
+      expect(monthDelta!.delta).toBeCloseTo(-0.02, 3); // Monthly change preserved
+
+      // None of these should be zero - they represent meaningful fat % changes
+      expect(Math.abs(yesterdayDelta!.delta)).toBeGreaterThan(0);
+      expect(Math.abs(weekDelta!.delta)).toBeGreaterThan(0);
+      expect(Math.abs(twoWeekDelta!.delta)).toBeGreaterThan(0);
+      expect(Math.abs(monthDelta!.delta)).toBeGreaterThan(0);
+    });
+
+    it("should document the rounding behavior rationale", () => {
+      // This test documents why different modes need different rounding precision
+
+      // WEIGHT MODE: Round to 1 decimal place (0.1 unit precision)
+      // Rationale: Weight changes smaller than 0.1 lbs/kg are not meaningful to users
+      // due to natural fluctuations, scale precision, and display formatting
+      const weightData = [createDataPoint("2024-01-14", 160.16), createDataPoint("2024-01-15", 160.13)];
+      const weightResult = computeDeltas("weight", weightData);
+      expect(weightResult[0].delta).toBeCloseTo(-0.1, 10); // Rounded from -0.03 to match UI
+
+      // FATPERCENT MODE: Round to 3 decimal places (0.001 precision = 0.1 percentage points)
+      // Rationale: Body fat percentage changes of 0.1% ARE meaningful to users
+      // Small changes accumulate over time and users track gradual progress
+      const fatData = [createDataPoint("2024-01-14", 0.4066), createDataPoint("2024-01-15", 0.4058)];
+      const fatResult = computeDeltas("fatpercent", fatData);
+      expect(fatResult[0].delta).toBeCloseTo(-0.001, 3); // 0.407 - 0.406 = -0.001
+
+      // MASS MODES: Use weight-style rounding
+      // Rationale: Fat/lean mass are derived from weight, so same precision applies
+      const massData = [createDataPoint("2024-01-14", 25.16), createDataPoint("2024-01-15", 25.13)];
+      const fatMassResult = computeDeltas("fatmass", massData);
+      const leanMassResult = computeDeltas("leanmass", massData);
+      expect(fatMassResult[0].delta).toBeCloseTo(-0.1, 10); // Same as weight
+      expect(leanMassResult[0].delta).toBeCloseTo(-0.1, 10); // Same as weight
+
+      // This rounding ensures delta calculations match what users see in the UI
+      // while preserving meaningful changes that would otherwise be lost
     });
   });
 

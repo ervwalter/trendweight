@@ -1,7 +1,7 @@
 import { ChronoUnit, LocalDate } from "@js-joda/core";
 import type { DataPoint, Delta, Measurement, Mode } from "@/lib/core/interfaces";
 
-export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => {
+export const computeDeltas = (mode: Mode, dataPoints: DataPoint[]): Delta[] => {
   const deltas: Delta[] = [];
 
   if (dataPoints.length === 0) {
@@ -23,14 +23,23 @@ export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => 
   }
 
   // Round to 1 decimal place to match UI display formatting
-  const mostRecentTrendValue = Math.round(points[0].trend * 10) / 10;
+  // For fat percentages, convert to percentage form before rounding
+  const roundForDisplay = (value: number): number => {
+    if (mode === "fatpercent") {
+      // Round to 3 decimal places to preserve meaningful fat percentage changes
+      return Math.round(value * 1000) / 1000;
+    }
+    return Math.round(value * 10) / 10;
+  };
+
+  const mostRecentTrendValue = roundForDisplay(points[0].trend);
   let index: number;
 
   // Yesterday
   if (daysSinceMostRecent <= 1 && points.length > 1) {
     const comparisonDataPoint = points[1];
     if (comparisonDataPoint.date.until(points[0].date, ChronoUnit.DAYS) === 1) {
-      const comparisonTrendValue = Math.round(comparisonDataPoint.trend * 10) / 10;
+      const comparisonTrendValue = roundForDisplay(comparisonDataPoint.trend);
       deltas.push({
         period: 1,
         description: "yesterday",
@@ -44,7 +53,7 @@ export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => 
   index = points.findIndex((m) => m.date.equals(targetDate7));
   // Needs to be at least 4 readings between now and a week ago for a valid trend comparison
   if (index >= 4) {
-    const comparisonTrendValue = Math.round(points[index].trend * 10) / 10;
+    const comparisonTrendValue = roundForDisplay(points[index].trend);
     deltas.push({
       period: 7,
       description: "last week",
@@ -56,7 +65,7 @@ export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => 
   const targetDate14 = points[0].date.minusDays(14);
   index = points.findIndex((m) => m.date.equals(targetDate14));
   if (index >= 9) {
-    const comparisonTrendValue = Math.round(points[index].trend * 10) / 10;
+    const comparisonTrendValue = roundForDisplay(points[index].trend);
     deltas.push({
       period: 14,
       description: "two weeks ago",
@@ -68,7 +77,7 @@ export const computeDeltas = (_mode: Mode, dataPoints: DataPoint[]): Delta[] => 
   const targetDate28 = points[0].date.minusDays(28);
   index = points.findIndex((m) => m.date.equals(targetDate28));
   if (index >= 19) {
-    const comparisonTrendValue = Math.round(points[index].trend * 10) / 10;
+    const comparisonTrendValue = roundForDisplay(points[index].trend);
     deltas.push({
       period: 28,
       description: "a month ago",
