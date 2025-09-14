@@ -63,6 +63,9 @@ const chartOptionsTemplate = (): Highstock.Options => ({
     },
   },
   tooltip: {
+    shared: true,
+    split: false,
+    followPointer: true,
     formatter: function () {
       try {
         return this.points?.reduce(
