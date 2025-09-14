@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Globalization;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.Providers;
 using TrendWeight.Features.Measurements.Models;
@@ -114,13 +115,15 @@ public class MeasurementsController : ControllerBase
     /// <param name="sharingCode">The sharing code</param>
     /// <param name="progressId">Optional progress ID for tracking sync status</param>
     /// <param name="includeSource">Whether to include raw source data in response</param>
+    /// <param name="since">Optional date filter in yyyy-MM-dd format to only return measurements on or after this date</param>
     /// <returns>MeasurementsResponse with computed measurements and optionally source data</returns>
     [HttpGet("{sharingCode}")]
     [AllowAnonymous]
     public async Task<ActionResult<MeasurementsResponse>> GetMeasurementsBySharingCode(
         string sharingCode,
         [FromQuery] string? progressId = null,
-        [FromQuery] bool includeSource = false)
+        [FromQuery] bool includeSource = false,
+        [FromQuery] string? since = null)
     {
         try
         {
@@ -128,6 +131,15 @@ public class MeasurementsController : ControllerBase
             if (!string.IsNullOrEmpty(progressId) && Guid.TryParse(progressId, out var progressGuid))
             {
                 _requestContext.ProgressId = progressGuid;
+            }
+
+            // Validate since date if provided
+            if (!string.IsNullOrEmpty(since))
+            {
+                if (!DateTime.TryParseExact(since, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                {
+                    return BadRequest(new ErrorResponse { Error = "Invalid since date format. Expected yyyy-MM-dd format." });
+                }
             }
 
             // Get user by sharing code
@@ -159,6 +171,13 @@ public class MeasurementsController : ControllerBase
             // Compute measurements from source data
             var computedMeasurements = _measurementComputationService
                 .ComputeMeasurements(result.Data, user.Profile);
+
+            // Filter measurements by since date if provided
+            if (!string.IsNullOrEmpty(since))
+            {
+                computedMeasurements = [.. computedMeasurements
+                    .Where(m => string.Compare(m.Date, since, StringComparison.Ordinal) >= 0)];
+            }
 
             // Always return isMe = false when using sharing code
             // This allows users to preview how their dashboard appears to others
