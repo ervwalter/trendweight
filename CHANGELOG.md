@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.1](https://github.com/ervwalter/trendweight/compare/v2.7.0...v2.7.1) (2025-09-15)
+
+
+### Documentation
+
+* add project guidance for Claude Code ([f4cbdf4](https://github.com/ervwalter/trendweight/commit/f4cbdf47f1b8f9978df5e4192ec7ce1b889bd9ec))
+
 ## [2.7.0](https://github.com/ervwalter/trendweight/compare/v2.6.5...v2.7.0) (2025-09-14)
 
 
