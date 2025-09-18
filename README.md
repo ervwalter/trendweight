@@ -2,6 +2,8 @@
 
 A web application for tracking weight trends by integrating with smart scales from Withings and Fitbit.
 
+<!-- Verification comment added by Devin -->
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-9.0-blue.svg)](https://dotnet.microsoft.com/)
 [![React](https://img.shields.io/badge/React-19.1-blue.svg)](https://react.dev/)
