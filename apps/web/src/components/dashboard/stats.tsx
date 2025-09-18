@@ -9,7 +9,7 @@ const Stats = () => {
   const {
     weightSlope,
     measurements,
-    profile: { useMetric, goalWeight, showCalories, plannedPoundsPerWeek, firstName },
+    profile: { useMetric, goalWeight, showCalories, plannedPoundsPerWeek },
     isMe,
   } = useDashboardData();
 
@@ -34,10 +34,6 @@ const Stats = () => {
         Overall Weight Statistics
       </Heading>
       <ul className="space-y-1">
-        <li>
-          {isMe ? "You are" : `${firstName} is`} {weightSlope > 0 ? "gaining" : "losing"} <strong>{formatWeight(Math.abs(gainPerWeek), useMetric)}/week</strong>{" "}
-          of total weight.{" "}
-        </li>
         <li className="mt-4">
           {isMe ? "You have" : "They have"} been tracking {isMe ? "your" : "their"} weight for <strong>{duration}</strong>.
         </li>

@@ -9,6 +9,7 @@ const Deltas = () => {
     deltas,
     mode: [mode],
     dataPoints,
+    activeSlope,
     profile: { useMetric, plannedPoundsPerWeek, goalWeight },
   } = useDashboardData();
 
@@ -26,6 +27,19 @@ const Deltas = () => {
     intendedDirection = 1;
   }
 
+  const weeklyRate = activeSlope * 7;
+  const isGaining = weeklyRate > 0;
+  const absFormatted = formatMeasurement(Math.abs(weeklyRate), { type: mode, metric: useMetric, units: true, sign: false });
+  let nounPhrase = "";
+  if (mode === "fatpercent") {
+    nounPhrase = " of body fat";
+  } else if (mode === "fatmass") {
+    nounPhrase = " of fat mass";
+  } else if (mode === "leanmass") {
+    nounPhrase = " of lean mass";
+  }
+  const verb = isGaining ? "gaining" : "losing";
+
   return (
     <div>
       <Heading level={3} className="mb-3">
@@ -38,6 +52,9 @@ const Deltas = () => {
             {formatMeasurement(d.delta, { type: mode, metric: useMetric, sign: true })}
           </div>
         ))}
+      </div>
+      <div className="mt-2">
+        You&apos;re {verb} <strong>{absFormatted}</strong>/week{nounPhrase}
       </div>
     </div>
   );
