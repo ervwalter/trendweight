@@ -45,6 +45,9 @@ const Deltas = () => {
       <Heading level={3} className="mb-3">
         {Modes[mode]} Changes Over Time
       </Heading>
+      <div className="mt-2">
+        You&apos;re {verb} <strong>{absFormatted}</strong>/week{nounPhrase}
+      </div>
       <div className="space-y-1">
         {deltas.map((d) => (
           <div key={d.period}>
@@ -52,9 +55,6 @@ const Deltas = () => {
             {formatMeasurement(d.delta, { type: mode, metric: useMetric, sign: true })}
           </div>
         ))}
-      </div>
-      <div className="mt-2">
-        You&apos;re {verb} <strong>{absFormatted}</strong>/week{nounPhrase}
       </div>
     </div>
   );
