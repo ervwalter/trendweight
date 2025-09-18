@@ -10,7 +10,8 @@ const Deltas = () => {
     mode: [mode],
     dataPoints,
     activeSlope,
-    profile: { useMetric, plannedPoundsPerWeek, goalWeight },
+    profile: { useMetric, plannedPoundsPerWeek, goalWeight, firstName },
+    isMe,
   } = useDashboardData();
 
   if (deltas.length === 0) {
@@ -45,8 +46,8 @@ const Deltas = () => {
       <Heading level={3} className="mb-3">
         {Modes[mode]} Changes Over Time
       </Heading>
-      <div className="mt-2">
-        You&apos;re {verb} <strong>{absFormatted}</strong>/week{nounPhrase}
+      <div className="mt-2 mb-2">
+        {isMe ? "You are" : `${firstName} is`} {verb} <strong>{absFormatted}</strong>/week{nounPhrase}
       </div>
       <div className="space-y-1">
         {deltas.map((d) => (
