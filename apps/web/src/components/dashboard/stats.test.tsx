@@ -53,9 +53,8 @@ describe("Stats", () => {
 
       render(<Stats />);
 
-      expect(screen.getByText(/You are losing/)).toBeInTheDocument();
-      expect(screen.getByText("1.4 lb/week")).toBeInTheDocument(); // 0.2 * 7
-      expect(screen.getByText(/of total weight/)).toBeInTheDocument();
+      // Weekly rate sentence removed from Stats; ensure component renders basic stats
+      expect(screen.getByText(/Overall Weight Statistics/)).toBeInTheDocument();
     });
 
     it("displays gaining weight stats", () => {
@@ -66,8 +65,8 @@ describe("Stats", () => {
 
       render(<Stats />);
 
-      expect(screen.getByText(/You are gaining/)).toBeInTheDocument();
-      expect(screen.getByText("1.1 lb/week")).toBeInTheDocument(); // 0.15 * 7, rounded
+      // Weekly rate sentence removed from Stats; ensure component renders basic stats
+      expect(screen.getByText(/Overall Weight Statistics/)).toBeInTheDocument();
     });
 
     it("displays metric units when enabled", () => {
@@ -82,7 +81,8 @@ describe("Stats", () => {
 
       render(<Stats />);
 
-      expect(screen.getByText("0.6 kg/week")).toBeInTheDocument(); // 0.09 * 7
+      // Weekly rate sentence removed from Stats; ensure component renders basic stats
+      expect(screen.getByText(/Overall Weight Statistics/)).toBeInTheDocument();
     });
 
     it("uses third person when not viewing own profile", () => {
@@ -93,7 +93,6 @@ describe("Stats", () => {
 
       render(<Stats />);
 
-      expect(screen.getByText(/Test is losing/)).toBeInTheDocument();
       expect(screen.getByText(/They have been tracking their weight/)).toBeInTheDocument();
     });
   });
@@ -363,8 +362,8 @@ describe("Stats", () => {
 
       render(<Stats />);
 
-      expect(screen.getByText(/You are losing/)).toBeInTheDocument();
-      expect(screen.getByText("0.0 lb/week")).toBeInTheDocument();
+      // Weekly rate sentence removed from Stats; ensure component renders basic stats
+      expect(screen.getByText(/Overall Weight Statistics/)).toBeInTheDocument();
     });
 
     it("handles single measurement", () => {
@@ -398,7 +397,6 @@ describe("Stats", () => {
       expect(screen.queryByText(/will reach your goal (on|in)\/around/)).not.toBeInTheDocument();
 
       // Should still show basic stats
-      expect(screen.getByText(/You are losing/)).toBeInTheDocument();
       expect(screen.getByText(/to lose to reach your goal/)).toBeInTheDocument();
     });
   });
