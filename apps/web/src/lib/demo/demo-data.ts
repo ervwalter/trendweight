@@ -22,6 +22,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3382,
     trendFatPercent: 0.3382,
+    trendFatMass: 33.642,
+    trendLeanMass: 65.831,
   },
   {
     date: "2011-03-24",
@@ -31,6 +33,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3365,
     trendFatPercent: 0.338,
+    trendFatMass: 33.607,
+    trendLeanMass: 65.812,
   },
   {
     date: "2011-03-25",
@@ -40,6 +44,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3351,
     trendFatPercent: 0.3377,
+    trendFatMass: 33.555,
+    trendLeanMass: 65.797,
   },
   {
     date: "2011-03-26",
@@ -49,6 +55,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3312,
     trendFatPercent: 0.3371,
+    trendFatMass: 33.48,
+    trendLeanMass: 65.842,
   },
   {
     date: "2011-03-27",
@@ -58,6 +66,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3273,
     trendFatPercent: 0.3361,
+    trendFatMass: 33.364,
+    trendLeanMass: 65.901,
   },
   {
     date: "2011-03-28",
@@ -67,6 +77,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3325,
     trendFatPercent: 0.3357,
+    trendFatMass: 33.296,
+    trendLeanMass: 65.872,
   },
   {
     date: "2011-03-29",
@@ -76,6 +88,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3228,
     trendFatPercent: 0.3345,
+    trendFatMass: 33.145,
+    trendLeanMass: 65.953,
   },
   {
     date: "2011-03-30",
@@ -85,6 +99,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3155,
     trendFatPercent: 0.3326,
+    trendFatMass: 32.929,
+    trendLeanMass: 66.08,
   },
   {
     date: "2011-03-31",
@@ -94,6 +110,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3307,
     trendFatPercent: 0.3324,
+    trendFatMass: 32.885,
+    trendLeanMass: 66.048,
   },
   {
     date: "2011-04-01",
@@ -103,6 +121,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3154,
     trendFatPercent: 0.3307,
+    trendFatMass: 32.68,
+    trendLeanMass: 66.135,
   },
   {
     date: "2011-04-02",
@@ -112,6 +132,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3196,
     trendFatPercent: 0.3296,
+    trendFatMass: 32.545,
+    trendLeanMass: 66.191,
   },
   {
     date: "2011-04-03",
@@ -121,6 +143,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3188,
     trendFatPercent: 0.3285,
+    trendFatMass: 32.405,
+    trendLeanMass: 66.227,
   },
   {
     date: "2011-04-04",
@@ -130,6 +154,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3165,
     trendFatPercent: 0.3273,
+    trendFatMass: 32.264,
+    trendLeanMass: 66.298,
   },
   {
     date: "2011-04-05",
@@ -139,6 +165,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3147,
     trendFatPercent: 0.326,
+    trendFatMass: 32.098,
+    trendLeanMass: 66.333,
   },
   {
     date: "2011-04-06",
@@ -148,6 +176,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3137,
     trendFatPercent: 0.3248,
+    trendFatMass: 31.93,
+    trendLeanMass: 66.355,
   },
   {
     date: "2011-04-07",
@@ -157,6 +187,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3162,
     trendFatPercent: 0.3239,
+    trendFatMass: 31.802,
+    trendLeanMass: 66.348,
   },
   {
     date: "2011-04-08",
@@ -166,6 +198,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3145,
     trendFatPercent: 0.323,
+    trendFatMass: 31.662,
+    trendLeanMass: 66.339,
   },
   {
     date: "2011-04-09",
@@ -175,6 +209,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3116,
     trendFatPercent: 0.3219,
+    trendFatMass: 31.505,
+    trendLeanMass: 66.353,
   },
   {
     date: "2011-04-10",
@@ -184,6 +220,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3049,
     trendFatPercent: 0.3202,
+    trendFatMass: 31.293,
+    trendLeanMass: 66.418,
   },
   {
     date: "2011-04-11",
@@ -193,6 +231,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3132,
     trendFatPercent: 0.3195,
+    trendFatMass: 31.176,
+    trendLeanMass: 66.38,
   },
   {
     date: "2011-04-12",
@@ -202,6 +242,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3174,
     trendFatPercent: 0.3193,
+    trendFatMass: 31.119,
+    trendLeanMass: 66.325,
   },
   {
     date: "2011-04-13",
@@ -211,6 +253,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3143,
     trendFatPercent: 0.3188,
+    trendFatMass: 31.034,
+    trendLeanMass: 66.296,
   },
   {
     date: "2011-04-14",
@@ -220,6 +264,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3143,
     trendFatPercent: 0.3183,
+    trendFatMass: 30.964,
+    trendLeanMass: 66.285,
   },
   {
     date: "2011-04-15",
@@ -229,6 +275,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3099,
     trendFatPercent: 0.3175,
+    trendFatMass: 30.859,
+    trendLeanMass: 66.318,
   },
   {
     date: "2011-04-16",
@@ -238,6 +286,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3166,
     trendFatPercent: 0.3174,
+    trendFatMass: 30.836,
+    trendLeanMass: 66.298,
   },
   {
     date: "2011-04-17",
@@ -247,6 +297,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3075,
     trendFatPercent: 0.3164,
+    trendFatMass: 30.696,
+    trendLeanMass: 66.296,
   },
   {
     date: "2011-04-18",
@@ -256,6 +308,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3087,
     trendFatPercent: 0.3156,
+    trendFatMass: 30.579,
+    trendLeanMass: 66.279,
   },
   {
     date: "2011-04-19",
@@ -265,6 +319,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3096,
     trendFatPercent: 0.315,
+    trendFatMass: 30.49,
+    trendLeanMass: 66.272,
   },
   {
     date: "2011-04-20",
@@ -274,6 +330,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3077,
     trendFatPercent: 0.3143,
+    trendFatMass: 30.387,
+    trendLeanMass: 66.272,
   },
   {
     date: "2011-04-21",
@@ -283,6 +341,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3059,
     trendFatPercent: 0.3135,
+    trendFatMass: 30.272,
+    trendLeanMass: 66.278,
   },
   {
     date: "2011-04-22",
@@ -292,6 +352,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3087,
     trendFatPercent: 0.313,
+    trendFatMass: 30.192,
+    trendLeanMass: 66.251,
   },
   {
     date: "2011-04-23",
@@ -301,6 +363,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3115,
     trendFatPercent: 0.3128,
+    trendFatMass: 30.144,
+    trendLeanMass: 66.194,
   },
   {
     date: "2011-04-24",
@@ -310,6 +374,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3104,
     trendFatPercent: 0.3126,
+    trendFatMass: 30.091,
+    trendLeanMass: 66.153,
   },
   {
     date: "2011-04-25",
@@ -319,6 +385,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3093,
     trendFatPercent: 0.3123,
+    trendFatMass: 30.033,
+    trendLeanMass: 66.128,
   },
   {
     date: "2011-04-26",
@@ -328,6 +396,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3082,
     trendFatPercent: 0.3119,
+    trendFatMass: 29.971,
+    trendLeanMass: 66.117,
   },
   {
     date: "2011-04-27",
@@ -337,6 +407,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3071,
     trendFatPercent: 0.3114,
+    trendFatMass: 29.905,
+    trendLeanMass: 66.118,
   },
   {
     date: "2011-04-28",
@@ -346,6 +418,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3031,
     trendFatPercent: 0.3106,
+    trendFatMass: 29.793,
+    trendLeanMass: 66.125,
   },
   {
     date: "2011-04-29",
@@ -355,6 +429,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3053,
     trendFatPercent: 0.31,
+    trendFatMass: 29.729,
+    trendLeanMass: 66.146,
   },
   {
     date: "2011-04-30",
@@ -364,6 +440,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2999,
     trendFatPercent: 0.309,
+    trendFatMass: 29.614,
+    trendLeanMass: 66.203,
   },
   {
     date: "2011-05-01",
@@ -373,6 +451,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2969,
     trendFatPercent: 0.3078,
+    trendFatMass: 29.466,
+    trendLeanMass: 66.245,
   },
   {
     date: "2011-05-02",
@@ -382,6 +462,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3032,
     trendFatPercent: 0.3073,
+    trendFatMass: 29.398,
+    trendLeanMass: 66.236,
   },
   {
     date: "2011-05-03",
@@ -391,6 +473,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3101,
     trendFatPercent: 0.3076,
+    trendFatMass: 29.413,
+    trendLeanMass: 66.187,
   },
   {
     date: "2011-05-04",
@@ -400,6 +484,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3001,
     trendFatPercent: 0.3069,
+    trendFatMass: 29.324,
+    trendLeanMass: 66.219,
   },
   {
     date: "2011-05-05",
@@ -409,6 +495,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3128,
     trendFatPercent: 0.3075,
+    trendFatMass: 29.367,
+    trendLeanMass: 66.134,
   },
   {
     date: "2011-05-06",
@@ -418,6 +506,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3079,
     trendFatPercent: 0.3075,
+    trendFatMass: 29.353,
+    trendLeanMass: 66.091,
   },
   {
     date: "2011-05-07",
@@ -427,6 +517,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3049,
     trendFatPercent: 0.3072,
+    trendFatMass: 29.301,
+    trendLeanMass: 66.056,
   },
   {
     date: "2011-05-08",
@@ -436,6 +528,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3057,
     trendFatPercent: 0.3071,
+    trendFatMass: 29.265,
+    trendLeanMass: 66.023,
   },
   {
     date: "2011-05-09",
@@ -445,6 +539,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3065,
     trendFatPercent: 0.307,
+    trendFatMass: 29.243,
+    trendLeanMass: 65.992,
   },
   {
     date: "2011-05-10",
@@ -454,6 +550,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3072,
     trendFatPercent: 0.307,
+    trendFatMass: 29.232,
+    trendLeanMass: 65.964,
   },
   {
     date: "2011-05-11",
@@ -463,6 +561,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.308,
     trendFatPercent: 0.3071,
+    trendFatMass: 29.233,
+    trendLeanMass: 65.937,
   },
   {
     date: "2011-05-12",
@@ -472,6 +572,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3067,
     trendFatPercent: 0.3071,
+    trendFatMass: 29.23,
+    trendLeanMass: 65.944,
   },
   {
     date: "2011-05-13",
@@ -481,6 +583,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.306,
     trendFatPercent: 0.307,
+    trendFatMass: 29.218,
+    trendLeanMass: 65.953,
   },
   {
     date: "2011-05-14",
@@ -490,6 +594,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3052,
     trendFatPercent: 0.3068,
+    trendFatMass: 29.199,
+    trendLeanMass: 65.964,
   },
   {
     date: "2011-05-15",
@@ -499,6 +605,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3045,
     trendFatPercent: 0.3066,
+    trendFatMass: 29.172,
+    trendLeanMass: 65.977,
   },
   {
     date: "2011-05-16",
@@ -508,6 +616,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3048,
     trendFatPercent: 0.3064,
+    trendFatMass: 29.153,
+    trendLeanMass: 65.989,
   },
   {
     date: "2011-05-17",
@@ -517,6 +627,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3015,
     trendFatPercent: 0.3059,
+    trendFatMass: 29.092,
+    trendLeanMass: 66.002,
   },
   {
     date: "2011-05-18",
@@ -526,6 +638,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3051,
     trendFatPercent: 0.3058,
+    trendFatMass: 29.074,
+    trendLeanMass: 65.988,
   },
   {
     date: "2011-05-19",
@@ -535,6 +649,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3086,
     trendFatPercent: 0.3061,
+    trendFatMass: 29.095,
+    trendLeanMass: 65.95,
   },
   {
     date: "2011-05-20",
@@ -544,6 +660,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2999,
     trendFatPercent: 0.3055,
+    trendFatMass: 29.034,
+    trendLeanMass: 66.005,
   },
   {
     date: "2011-05-21",
@@ -553,6 +671,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2912,
     trendFatPercent: 0.3041,
+    trendFatMass: 28.899,
+    trendLeanMass: 66.143,
   },
   {
     date: "2011-05-22",
@@ -562,6 +682,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2944,
     trendFatPercent: 0.3031,
+    trendFatMass: 28.807,
+    trendLeanMass: 66.233,
   },
   {
     date: "2011-05-23",
@@ -571,6 +693,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2976,
     trendFatPercent: 0.3025,
+    trendFatMass: 28.752,
+    trendLeanMass: 66.279,
   },
   {
     date: "2011-05-24",
@@ -580,6 +704,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3008,
     trendFatPercent: 0.3024,
+    trendFatMass: 28.731,
+    trendLeanMass: 66.286,
   },
   {
     date: "2011-05-25",
@@ -589,6 +715,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3182,
     trendFatPercent: 0.3039,
+    trendFatMass: 28.89,
+    trendLeanMass: 66.155,
   },
   {
     date: "2011-05-26",
@@ -598,6 +726,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3068,
     trendFatPercent: 0.3042,
+    trendFatMass: 28.925,
+    trendLeanMass: 66.146,
   },
   {
     date: "2011-05-27",
@@ -607,6 +737,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3055,
     trendFatPercent: 0.3044,
+    trendFatMass: 28.934,
+    trendLeanMass: 66.128,
   },
   {
     date: "2011-05-28",
@@ -616,6 +748,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2983,
     trendFatPercent: 0.3038,
+    trendFatMass: 28.873,
+    trendLeanMass: 66.177,
   },
   {
     date: "2011-05-29",
@@ -625,6 +759,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.297,
     trendFatPercent: 0.3031,
+    trendFatMass: 28.803,
+    trendLeanMass: 66.229,
   },
   {
     date: "2011-05-30",
@@ -634,6 +770,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2958,
     trendFatPercent: 0.3024,
+    trendFatMass: 28.728,
+    trendLeanMass: 66.283,
   },
   {
     date: "2011-05-31",
@@ -643,6 +781,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2945,
     trendFatPercent: 0.3016,
+    trendFatMass: 28.645,
+    trendLeanMass: 66.34,
   },
   {
     date: "2011-06-01",
@@ -652,6 +792,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2944,
     trendFatPercent: 0.3008,
+    trendFatMass: 28.587,
+    trendLeanMass: 66.43,
   },
   {
     date: "2011-06-02",
@@ -661,6 +803,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3003,
     trendFatPercent: 0.3008,
+    trendFatMass: 28.582,
+    trendLeanMass: 66.436,
   },
   {
     date: "2011-06-03",
@@ -670,6 +814,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2977,
     trendFatPercent: 0.3005,
+    trendFatMass: 28.552,
+    trendLeanMass: 66.466,
   },
   {
     date: "2011-06-04",
@@ -679,6 +825,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2971,
     trendFatPercent: 0.3001,
+    trendFatMass: 28.516,
+    trendLeanMass: 66.49,
   },
   {
     date: "2011-06-05",
@@ -688,6 +836,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3031,
     trendFatPercent: 0.3004,
+    trendFatMass: 28.555,
+    trendLeanMass: 66.487,
   },
   {
     date: "2011-06-06",
@@ -697,6 +847,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3091,
     trendFatPercent: 0.3013,
+    trendFatMass: 28.662,
+    trendLeanMass: 66.46,
   },
   {
     date: "2011-06-07",
@@ -706,6 +858,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3081,
     trendFatPercent: 0.302,
+    trendFatMass: 28.746,
+    trendLeanMass: 66.439,
   },
   {
     date: "2011-06-08",
@@ -715,6 +869,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.307,
     trendFatPercent: 0.3025,
+    trendFatMass: 28.808,
+    trendLeanMass: 66.425,
   },
   {
     date: "2011-06-09",
@@ -724,6 +880,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3145,
     trendFatPercent: 0.3037,
+    trendFatMass: 28.932,
+    trendLeanMass: 66.331,
   },
   {
     date: "2011-06-10",
@@ -733,6 +891,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3137,
     trendFatPercent: 0.3047,
+    trendFatMass: 29.041,
+    trendLeanMass: 66.266,
   },
   {
     date: "2011-06-11",
@@ -742,6 +902,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3117,
     trendFatPercent: 0.3054,
+    trendFatMass: 29.126,
+    trendLeanMass: 66.239,
   },
   {
     date: "2011-06-12",
@@ -751,6 +913,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3053,
     trendFatPercent: 0.3054,
+    trendFatMass: 29.126,
+    trendLeanMass: 66.242,
   },
   {
     date: "2011-06-13",
@@ -760,6 +924,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2989,
     trendFatPercent: 0.3047,
+    trendFatMass: 29.049,
+    trendLeanMass: 66.271,
   },
   {
     date: "2011-06-14",
@@ -769,6 +935,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2986,
     trendFatPercent: 0.3041,
+    trendFatMass: 28.981,
+    trendLeanMass: 66.306,
   },
   {
     date: "2011-06-15",
@@ -778,6 +946,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3011,
     trendFatPercent: 0.3038,
+    trendFatMass: 28.932,
+    trendLeanMass: 66.288,
   },
   {
     date: "2011-06-16",
@@ -787,6 +957,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3031,
     trendFatPercent: 0.3037,
+    trendFatMass: 28.909,
+    trendLeanMass: 66.259,
   },
   {
     date: "2011-06-17",
@@ -796,6 +968,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.3052,
     trendFatPercent: 0.3039,
+    trendFatMass: 28.91,
+    trendLeanMass: 66.218,
   },
   {
     date: "2011-06-18",
@@ -805,6 +979,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3072,
     trendFatPercent: 0.3042,
+    trendFatMass: 28.933,
+    trendLeanMass: 66.167,
   },
   {
     date: "2011-06-19",
@@ -814,6 +990,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3009,
     trendFatPercent: 0.3039,
+    trendFatMass: 28.889,
+    trendLeanMass: 66.171,
   },
   {
     date: "2011-06-20",
@@ -823,6 +1001,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2961,
     trendFatPercent: 0.3031,
+    trendFatMass: 28.814,
+    trendLeanMass: 66.243,
   },
   {
     date: "2011-06-21",
@@ -832,6 +1012,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3019,
     trendFatPercent: 0.303,
+    trendFatMass: 28.792,
+    trendLeanMass: 66.231,
   },
   {
     date: "2011-06-22",
@@ -841,6 +1023,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.303,
     trendFatPercent: 0.303,
+    trendFatMass: 28.769,
+    trendLeanMass: 66.177,
   },
   {
     date: "2011-06-23",
@@ -850,6 +1034,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2999,
     trendFatPercent: 0.3027,
+    trendFatMass: 28.717,
+    trendLeanMass: 66.155,
   },
   {
     date: "2011-06-24",
@@ -859,6 +1045,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.3008,
     trendFatPercent: 0.3025,
+    trendFatMass: 28.69,
+    trendLeanMass: 66.152,
   },
   {
     date: "2011-06-25",
@@ -868,6 +1056,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2979,
     trendFatPercent: 0.302,
+    trendFatMass: 28.632,
+    trendLeanMass: 66.161,
   },
   {
     date: "2011-06-26",
@@ -877,6 +1067,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2944,
     trendFatPercent: 0.3013,
+    trendFatMass: 28.541,
+    trendLeanMass: 66.189,
   },
   {
     date: "2011-06-27",
@@ -886,6 +1078,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2909,
     trendFatPercent: 0.3002,
+    trendFatMass: 28.421,
+    trendLeanMass: 66.235,
   },
   {
     date: "2011-06-28",
@@ -895,6 +1089,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2874,
     trendFatPercent: 0.2989,
+    trendFatMass: 28.275,
+    trendLeanMass: 66.296,
   },
   {
     date: "2011-06-29",
@@ -904,6 +1100,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2947,
     trendFatPercent: 0.2985,
+    trendFatMass: 28.213,
+    trendLeanMass: 66.285,
   },
   {
     date: "2011-06-30",
@@ -913,6 +1111,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2943,
     trendFatPercent: 0.2981,
+    trendFatMass: 28.152,
+    trendLeanMass: 66.275,
   },
   {
     date: "2011-07-01",
@@ -922,6 +1122,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2939,
     trendFatPercent: 0.2977,
+    trendFatMass: 28.091,
+    trendLeanMass: 66.264,
   },
   {
     date: "2011-07-02",
@@ -931,6 +1133,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2953,
     trendFatPercent: 0.2974,
+    trendFatMass: 28.05,
+    trendLeanMass: 66.245,
   },
   {
     date: "2011-07-03",
@@ -940,6 +1144,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2921,
     trendFatPercent: 0.2969,
+    trendFatMass: 27.988,
+    trendLeanMass: 66.267,
   },
   {
     date: "2011-07-04",
@@ -949,6 +1155,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2938,
     trendFatPercent: 0.2966,
+    trendFatMass: 27.94,
+    trendLeanMass: 66.252,
   },
   {
     date: "2011-07-05",
@@ -958,6 +1166,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.297,
     trendFatPercent: 0.2966,
+    trendFatMass: 27.914,
+    trendLeanMass: 66.18,
   },
   {
     date: "2011-07-06",
@@ -967,6 +1177,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2941,
     trendFatPercent: 0.2964,
+    trendFatMass: 27.885,
+    trendLeanMass: 66.193,
   },
   {
     date: "2011-07-07",
@@ -976,6 +1188,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2969,
     trendFatPercent: 0.2964,
+    trendFatMass: 27.871,
+    trendLeanMass: 66.143,
   },
   {
     date: "2011-07-08",
@@ -985,6 +1199,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2858,
     trendFatPercent: 0.2954,
+    trendFatMass: 27.752,
+    trendLeanMass: 66.196,
   },
   {
     date: "2011-07-09",
@@ -994,6 +1210,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.294,
     trendFatPercent: 0.2952,
+    trendFatMass: 27.703,
+    trendLeanMass: 66.122,
   },
   {
     date: "2011-07-10",
@@ -1003,6 +1221,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2877,
     trendFatPercent: 0.2945,
+    trendFatMass: 27.621,
+    trendLeanMass: 66.166,
   },
   {
     date: "2011-07-11",
@@ -1012,6 +1232,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.288,
     trendFatPercent: 0.2938,
+    trendFatMass: 27.555,
+    trendLeanMass: 66.215,
   },
   {
     date: "2011-07-12",
@@ -1021,6 +1243,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2961,
     trendFatPercent: 0.2941,
+    trendFatMass: 27.57,
+    trendLeanMass: 66.18,
   },
   {
     date: "2011-07-13",
@@ -1030,6 +1254,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2887,
     trendFatPercent: 0.2935,
+    trendFatMass: 27.507,
+    trendLeanMass: 66.199,
   },
   {
     date: "2011-07-14",
@@ -1039,6 +1265,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2859,
     trendFatPercent: 0.2928,
+    trendFatMass: 27.433,
+    trendLeanMass: 66.265,
   },
   {
     date: "2011-07-15",
@@ -1048,6 +1276,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2818,
     trendFatPercent: 0.2917,
+    trendFatMass: 27.311,
+    trendLeanMass: 66.32,
   },
   {
     date: "2011-07-16",
@@ -1057,6 +1287,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2872,
     trendFatPercent: 0.2912,
+    trendFatMass: 27.264,
+    trendLeanMass: 66.348,
   },
   {
     date: "2011-07-17",
@@ -1066,6 +1298,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2956,
     trendFatPercent: 0.2917,
+    trendFatMass: 27.293,
+    trendLeanMass: 66.279,
   },
   {
     date: "2011-07-18",
@@ -1075,6 +1309,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2969,
     trendFatPercent: 0.2922,
+    trendFatMass: 27.323,
+    trendLeanMass: 66.186,
   },
   {
     date: "2011-07-19",
@@ -1084,6 +1320,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2989,
     trendFatPercent: 0.2929,
+    trendFatMass: 27.362,
+    trendLeanMass: 66.068,
   },
   {
     date: "2011-07-20",
@@ -1093,6 +1331,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2847,
     trendFatPercent: 0.292,
+    trendFatMass: 27.265,
+    trendLeanMass: 66.093,
   },
   {
     date: "2011-07-21",
@@ -1102,6 +1342,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2881,
     trendFatPercent: 0.2916,
+    trendFatMass: 27.206,
+    trendLeanMass: 66.074,
   },
   {
     date: "2011-07-22",
@@ -1111,6 +1353,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2917,
     trendFatPercent: 0.2916,
+    trendFatMass: 27.194,
+    trendLeanMass: 66.043,
   },
   {
     date: "2011-07-23",
@@ -1120,6 +1364,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2826,
     trendFatPercent: 0.2907,
+    trendFatMass: 27.082,
+    trendLeanMass: 66.058,
   },
   {
     date: "2011-07-24",
@@ -1129,6 +1375,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2834,
     trendFatPercent: 0.29,
+    trendFatMass: 27.002,
+    trendLeanMass: 66.099,
   },
   {
     date: "2011-07-25",
@@ -1138,6 +1386,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2856,
     trendFatPercent: 0.2896,
+    trendFatMass: 26.947,
+    trendLeanMass: 66.106,
   },
   {
     date: "2011-07-26",
@@ -1147,6 +1397,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2809,
     trendFatPercent: 0.2887,
+    trendFatMass: 26.86,
+    trendLeanMass: 66.169,
   },
   {
     date: "2011-07-27",
@@ -1156,6 +1408,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.293,
     trendFatPercent: 0.2891,
+    trendFatMass: 26.883,
+    trendLeanMass: 66.091,
   },
   {
     date: "2011-07-28",
@@ -1165,6 +1419,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.281,
     trendFatPercent: 0.2883,
+    trendFatMass: 26.79,
+    trendLeanMass: 66.122,
   },
   {
     date: "2011-07-29",
@@ -1174,6 +1430,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2835,
     trendFatPercent: 0.2878,
+    trendFatMass: 26.734,
+    trendLeanMass: 66.14,
   },
   {
     date: "2011-07-30",
@@ -1183,6 +1441,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2903,
     trendFatPercent: 0.2881,
+    trendFatMass: 26.746,
+    trendLeanMass: 66.09,
   },
   {
     date: "2011-07-31",
@@ -1192,6 +1452,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2918,
     trendFatPercent: 0.2885,
+    trendFatMass: 26.772,
+    trendLeanMass: 66.035,
   },
   {
     date: "2011-08-01",
@@ -1201,6 +1463,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2934,
     trendFatPercent: 0.2889,
+    trendFatMass: 26.812,
+    trendLeanMass: 65.975,
   },
   {
     date: "2011-08-02",
@@ -1210,6 +1474,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2949,
     trendFatPercent: 0.2895,
+    trendFatMass: 26.863,
+    trendLeanMass: 65.912,
   },
   {
     date: "2011-08-03",
@@ -1219,6 +1485,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2734,
     trendFatPercent: 0.2879,
+    trendFatMass: 26.704,
+    trendLeanMass: 66.037,
   },
   {
     date: "2011-08-04",
@@ -1228,6 +1496,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2868,
     trendFatPercent: 0.2878,
+    trendFatMass: 26.689,
+    trendLeanMass: 66.036,
   },
   {
     date: "2011-08-05",
@@ -1237,6 +1507,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2799,
     trendFatPercent: 0.287,
+    trendFatMass: 26.609,
+    trendLeanMass: 66.093,
   },
   {
     date: "2011-08-06",
@@ -1246,6 +1518,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2852,
     trendFatPercent: 0.2868,
+    trendFatMass: 26.597,
+    trendLeanMass: 66.124,
   },
   {
     date: "2011-08-07",
@@ -1255,6 +1529,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2917,
     trendFatPercent: 0.2873,
+    trendFatMass: 26.649,
+    trendLeanMass: 66.094,
   },
   {
     date: "2011-08-08",
@@ -1264,6 +1540,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2865,
     trendFatPercent: 0.2872,
+    trendFatMass: 26.63,
+    trendLeanMass: 66.074,
   },
   {
     date: "2011-08-09",
@@ -1273,6 +1551,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.289,
     trendFatPercent: 0.2874,
+    trendFatMass: 26.644,
+    trendLeanMass: 66.052,
   },
   {
     date: "2011-08-10",
@@ -1282,6 +1562,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2969,
     trendFatPercent: 0.2884,
+    trendFatMass: 26.737,
+    trendLeanMass: 65.979,
   },
   {
     date: "2011-08-11",
@@ -1291,6 +1573,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2901,
     trendFatPercent: 0.2885,
+    trendFatMass: 26.757,
+    trendLeanMass: 65.972,
   },
   {
     date: "2011-08-12",
@@ -1300,6 +1584,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2881,
     trendFatPercent: 0.2885,
+    trendFatMass: 26.736,
+    trendLeanMass: 65.933,
   },
   {
     date: "2011-08-13",
@@ -1309,6 +1595,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2962,
     trendFatPercent: 0.2893,
+    trendFatMass: 26.808,
+    trendLeanMass: 65.865,
   },
   {
     date: "2011-08-14",
@@ -1318,6 +1606,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2947,
     trendFatPercent: 0.2898,
+    trendFatMass: 26.871,
+    trendLeanMass: 65.845,
   },
   {
     date: "2011-08-15",
@@ -1327,6 +1617,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2932,
     trendFatPercent: 0.2902,
+    trendFatMass: 26.925,
+    trendLeanMass: 65.868,
   },
   {
     date: "2011-08-16",
@@ -1336,6 +1628,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2908,
     trendFatPercent: 0.2902,
+    trendFatMass: 26.946,
+    trendLeanMass: 65.899,
   },
   {
     date: "2011-08-17",
@@ -1345,6 +1639,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2884,
     trendFatPercent: 0.29,
+    trendFatMass: 26.938,
+    trendLeanMass: 65.938,
   },
   {
     date: "2011-08-18",
@@ -1354,6 +1650,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.286,
     trendFatPercent: 0.2896,
+    trendFatMass: 26.904,
+    trendLeanMass: 65.984,
   },
   {
     date: "2011-08-19",
@@ -1363,6 +1661,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2923,
     trendFatPercent: 0.2899,
+    trendFatMass: 26.945,
+    trendLeanMass: 65.998,
   },
   {
     date: "2011-08-20",
@@ -1372,6 +1672,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2913,
     trendFatPercent: 0.29,
+    trendFatMass: 26.973,
+    trendLeanMass: 66.024,
   },
   {
     date: "2011-08-21",
@@ -1381,6 +1683,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2906,
     trendFatPercent: 0.2901,
+    trendFatMass: 26.985,
+    trendLeanMass: 66.034,
   },
   {
     date: "2011-08-22",
@@ -1390,6 +1694,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.29,
     trendFatPercent: 0.2901,
+    trendFatMass: 26.982,
+    trendLeanMass: 66.029,
   },
   {
     date: "2011-08-23",
@@ -1399,6 +1705,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2893,
     trendFatPercent: 0.29,
+    trendFatMass: 26.964,
+    trendLeanMass: 66.012,
   },
   {
     date: "2011-08-24",
@@ -1408,6 +1716,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2886,
     trendFatPercent: 0.2899,
+    trendFatMass: 26.952,
+    trendLeanMass: 66.026,
   },
   {
     date: "2011-08-25",
@@ -1417,6 +1727,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.285,
     trendFatPercent: 0.2894,
+    trendFatMass: 26.909,
+    trendLeanMass: 66.079,
   },
   {
     date: "2011-08-26",
@@ -1426,6 +1738,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2831,
     trendFatPercent: 0.2888,
+    trendFatMass: 26.849,
+    trendLeanMass: 66.134,
   },
   {
     date: "2011-08-27",
@@ -1435,6 +1749,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2812,
     trendFatPercent: 0.288,
+    trendFatMass: 26.774,
+    trendLeanMass: 66.191,
   },
   {
     date: "2011-08-28",
@@ -1444,6 +1760,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2829,
     trendFatPercent: 0.2875,
+    trendFatMass: 26.723,
+    trendLeanMass: 66.23,
   },
   {
     date: "2011-08-29",
@@ -1453,6 +1771,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2845,
     trendFatPercent: 0.2872,
+    trendFatMass: 26.694,
+    trendLeanMass: 66.254,
   },
   {
     date: "2011-08-30",
@@ -1462,6 +1782,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2862,
     trendFatPercent: 0.2871,
+    trendFatMass: 26.685,
+    trendLeanMass: 66.263,
   },
   {
     date: "2011-08-31",
@@ -1471,6 +1793,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2836,
     trendFatPercent: 0.2867,
+    trendFatMass: 26.64,
+    trendLeanMass: 66.265,
   },
   {
     date: "2011-09-01",
@@ -1480,6 +1804,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2857,
     trendFatPercent: 0.2866,
+    trendFatMass: 26.623,
+    trendLeanMass: 66.255,
   },
   {
     date: "2011-09-02",
@@ -1489,6 +1815,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2911,
     trendFatPercent: 0.2871,
+    trendFatMass: 26.651,
+    trendLeanMass: 66.183,
   },
   {
     date: "2011-09-03",
@@ -1498,6 +1826,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2787,
     trendFatPercent: 0.2862,
+    trendFatMass: 26.564,
+    trendLeanMass: 66.236,
   },
   {
     date: "2011-09-04",
@@ -1507,6 +1837,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2772,
     trendFatPercent: 0.2853,
+    trendFatMass: 26.462,
+    trendLeanMass: 66.274,
   },
   {
     date: "2011-09-05",
@@ -1516,6 +1848,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.28,
     trendFatPercent: 0.2848,
+    trendFatMass: 26.401,
+    trendLeanMass: 66.293,
   },
   {
     date: "2011-09-06",
@@ -1525,6 +1859,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2827,
     trendFatPercent: 0.2846,
+    trendFatMass: 26.374,
+    trendLeanMass: 66.294,
   },
   {
     date: "2011-09-07",
@@ -1534,6 +1870,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2748,
     trendFatPercent: 0.2836,
+    trendFatMass: 26.267,
+    trendLeanMass: 66.342,
   },
   {
     date: "2011-09-08",
@@ -1543,6 +1881,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2767,
     trendFatPercent: 0.2829,
+    trendFatMass: 26.182,
+    trendLeanMass: 66.352,
   },
   {
     date: "2011-09-09",
@@ -1552,6 +1892,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2876,
     trendFatPercent: 0.2834,
+    trendFatMass: 26.214,
+    trendLeanMass: 66.283,
   },
   {
     date: "2011-09-10",
@@ -1561,6 +1903,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2859,
     trendFatPercent: 0.2836,
+    trendFatMass: 26.22,
+    trendLeanMass: 66.217,
   },
   {
     date: "2011-09-11",
@@ -1570,6 +1914,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2729,
     trendFatPercent: 0.2826,
+    trendFatMass: 26.107,
+    trendLeanMass: 66.281,
   },
   {
     date: "2011-09-12",
@@ -1579,6 +1925,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2731,
     trendFatPercent: 0.2816,
+    trendFatMass: 26.001,
+    trendLeanMass: 66.319,
   },
   {
     date: "2011-09-13",
@@ -1588,6 +1936,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.279,
     trendFatPercent: 0.2814,
+    trendFatMass: 25.963,
+    trendLeanMass: 66.307,
   },
   {
     date: "2011-09-14",
@@ -1597,6 +1947,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2773,
     trendFatPercent: 0.281,
+    trendFatMass: 25.912,
+    trendLeanMass: 66.31,
   },
   {
     date: "2011-09-15",
@@ -1606,6 +1958,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2757,
     trendFatPercent: 0.2804,
+    trendFatMass: 25.851,
+    trendLeanMass: 66.326,
   },
   {
     date: "2011-09-16",
@@ -1615,6 +1969,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.274,
     trendFatPercent: 0.2798,
+    trendFatMass: 25.78,
+    trendLeanMass: 66.356,
   },
   {
     date: "2011-09-17",
@@ -1624,6 +1980,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2806,
     trendFatPercent: 0.2799,
+    trendFatMass: 25.771,
+    trendLeanMass: 66.305,
   },
   {
     date: "2011-09-18",
@@ -1633,6 +1991,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2779,
     trendFatPercent: 0.2797,
+    trendFatMass: 25.731,
+    trendLeanMass: 66.267,
   },
   {
     date: "2011-09-19",
@@ -1642,6 +2002,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2751,
     trendFatPercent: 0.2792,
+    trendFatMass: 25.663,
+    trendLeanMass: 66.241,
   },
   {
     date: "2011-09-20",
@@ -1651,6 +2013,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2724,
     trendFatPercent: 0.2785,
+    trendFatMass: 25.57,
+    trendLeanMass: 66.225,
   },
   {
     date: "2011-09-21",
@@ -1660,6 +2024,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2696,
     trendFatPercent: 0.2776,
+    trendFatMass: 25.455,
+    trendLeanMass: 66.219,
   },
   {
     date: "2011-09-22",
@@ -1669,6 +2035,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2832,
     trendFatPercent: 0.2782,
+    trendFatMass: 25.498,
+    trendLeanMass: 66.148,
   },
   {
     date: "2011-09-23",
@@ -1678,6 +2046,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2647,
     trendFatPercent: 0.2768,
+    trendFatMass: 25.352,
+    trendLeanMass: 66.211,
   },
   {
     date: "2011-09-24",
@@ -1687,6 +2057,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2809,
     trendFatPercent: 0.2772,
+    trendFatMass: 25.379,
+    trendLeanMass: 66.149,
   },
   {
     date: "2011-09-25",
@@ -1696,6 +2068,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.281,
     trendFatPercent: 0.2776,
+    trendFatMass: 25.411,
+    trendLeanMass: 66.109,
   },
   {
     date: "2011-09-26",
@@ -1705,6 +2079,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2832,
     trendFatPercent: 0.2782,
+    trendFatMass: 25.438,
+    trendLeanMass: 65.998,
   },
   {
     date: "2011-09-27",
@@ -1714,6 +2090,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2647,
     trendFatPercent: 0.2768,
+    trendFatMass: 25.304,
+    trendLeanMass: 66.092,
   },
   {
     date: "2011-09-28",
@@ -1723,6 +2101,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2792,
     trendFatPercent: 0.2771,
+    trendFatMass: 25.311,
+    trendLeanMass: 66.035,
   },
   {
     date: "2011-09-29",
@@ -1732,6 +2112,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.276,
     trendFatPercent: 0.277,
+    trendFatMass: 25.278,
+    trendLeanMass: 65.983,
   },
   {
     date: "2011-09-30",
@@ -1741,6 +2123,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2609,
     trendFatPercent: 0.2754,
+    trendFatMass: 25.126,
+    trendLeanMass: 66.116,
   },
   {
     date: "2011-10-01",
@@ -1750,6 +2134,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2734,
     trendFatPercent: 0.2752,
+    trendFatMass: 25.093,
+    trendLeanMass: 66.093,
   },
   {
     date: "2011-10-02",
@@ -1759,6 +2145,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2539,
     trendFatPercent: 0.273,
+    trendFatMass: 24.871,
+    trendLeanMass: 66.205,
   },
   {
     date: "2011-10-03",
@@ -1768,6 +2156,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2614,
     trendFatPercent: 0.2719,
+    trendFatMass: 24.744,
+    trendLeanMass: 66.255,
   },
   {
     date: "2011-10-04",
@@ -1777,6 +2167,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2567,
     trendFatPercent: 0.2704,
+    trendFatMass: 24.569,
+    trendLeanMass: 66.288,
   },
   {
     date: "2011-10-05",
@@ -1786,6 +2178,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2714,
     trendFatPercent: 0.2705,
+    trendFatMass: 24.549,
+    trendLeanMass: 66.2,
   },
   {
     date: "2011-10-06",
@@ -1795,6 +2189,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2561,
     trendFatPercent: 0.269,
+    trendFatMass: 24.386,
+    trendLeanMass: 66.237,
   },
   {
     date: "2011-10-07",
@@ -1804,6 +2200,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2664,
     trendFatPercent: 0.2688,
+    trendFatMass: 24.34,
+    trendLeanMass: 66.202,
   },
   {
     date: "2011-10-08",
@@ -1813,6 +2211,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2555,
     trendFatPercent: 0.2674,
+    trendFatMass: 24.205,
+    trendLeanMass: 66.282,
   },
   {
     date: "2011-10-09",
@@ -1822,6 +2222,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2603,
     trendFatPercent: 0.2667,
+    trendFatMass: 24.127,
+    trendLeanMass: 66.309,
   },
   {
     date: "2011-10-10",
@@ -1831,6 +2233,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: true,
     actualFatPercent: 0.2652,
     trendFatPercent: 0.2666,
+    trendFatMass: 24.1,
+    trendLeanMass: 66.289,
   },
   {
     date: "2011-10-11",
@@ -1840,6 +2244,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.27,
     trendFatPercent: 0.2669,
+    trendFatMass: 24.118,
+    trendLeanMass: 66.226,
   },
   {
     date: "2011-10-12",
@@ -1849,6 +2255,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2571,
     trendFatPercent: 0.2659,
+    trendFatMass: 24.01,
+    trendLeanMass: 66.259,
   },
   {
     date: "2011-10-13",
@@ -1858,6 +2266,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2635,
     trendFatPercent: 0.2657,
+    trendFatMass: 23.966,
+    trendLeanMass: 66.221,
   },
   {
     date: "2011-10-14",
@@ -1867,6 +2277,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2645,
     trendFatPercent: 0.2656,
+    trendFatMass: 23.946,
+    trendLeanMass: 66.208,
   },
   {
     date: "2011-10-15",
@@ -1876,6 +2288,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2552,
     trendFatPercent: 0.2645,
+    trendFatMass: 23.827,
+    trendLeanMass: 66.229,
   },
   {
     date: "2011-10-16",
@@ -1885,6 +2299,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2621,
     trendFatPercent: 0.2643,
+    trendFatMass: 23.779,
+    trendLeanMass: 66.179,
   },
   {
     date: "2011-10-17",
@@ -1894,6 +2310,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2462,
     trendFatPercent: 0.2625,
+    trendFatMass: 23.595,
+    trendLeanMass: 66.277,
   },
   {
     date: "2011-10-18",
@@ -1903,6 +2321,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2619,
     trendFatPercent: 0.2624,
+    trendFatMass: 23.565,
+    trendLeanMass: 66.215,
   },
   {
     date: "2011-10-19",
@@ -1912,6 +2332,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2491,
     trendFatPercent: 0.2611,
+    trendFatMass: 23.416,
+    trendLeanMass: 66.248,
   },
   {
     date: "2011-10-20",
@@ -1921,6 +2343,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2475,
     trendFatPercent: 0.2597,
+    trendFatMass: 23.277,
+    trendLeanMass: 66.32,
   },
   {
     date: "2011-10-21",
@@ -1930,6 +2354,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2565,
     trendFatPercent: 0.2594,
+    trendFatMass: 23.226,
+    trendLeanMass: 66.288,
   },
   {
     date: "2011-10-22",
@@ -1939,6 +2365,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2583,
     trendFatPercent: 0.2593,
+    trendFatMass: 23.208,
+    trendLeanMass: 66.277,
   },
   {
     date: "2011-10-23",
@@ -1948,6 +2376,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2519,
     trendFatPercent: 0.2586,
+    trendFatMass: 23.124,
+    trendLeanMass: 66.29,
   },
   {
     date: "2011-10-24",
@@ -1957,6 +2387,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2528,
     trendFatPercent: 0.258,
+    trendFatMass: 23.054,
+    trendLeanMass: 66.29,
   },
   {
     date: "2011-10-25",
@@ -1966,6 +2398,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2587,
     trendFatPercent: 0.2581,
+    trendFatMass: 23.05,
+    trendLeanMass: 66.255,
   },
   {
     date: "2011-10-26",
@@ -1975,6 +2409,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2546,
     trendFatPercent: 0.2577,
+    trendFatMass: 23.016,
+    trendLeanMass: 66.28,
   },
   {
     date: "2011-10-27",
@@ -1984,6 +2420,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2476,
     trendFatPercent: 0.2567,
+    trendFatMass: 22.923,
+    trendLeanMass: 66.362,
   },
   {
     date: "2011-10-28",
@@ -1993,6 +2431,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2582,
     trendFatPercent: 0.2568,
+    trendFatMass: 22.941,
+    trendLeanMass: 66.364,
   },
   {
     date: "2011-10-29",
@@ -2002,6 +2442,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2488,
     trendFatPercent: 0.256,
+    trendFatMass: 22.849,
+    trendLeanMass: 66.376,
   },
   {
     date: "2011-10-30",
@@ -2011,6 +2453,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2566,
     trendFatPercent: 0.2561,
+    trendFatMass: 22.841,
+    trendLeanMass: 66.334,
   },
   {
     date: "2011-10-31",
@@ -2020,6 +2464,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2497,
     trendFatPercent: 0.2555,
+    trendFatMass: 22.765,
+    trendLeanMass: 66.337,
   },
   {
     date: "2011-11-01",
@@ -2029,6 +2475,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2508,
     trendFatPercent: 0.255,
+    trendFatMass: 22.72,
+    trendLeanMass: 66.367,
   },
   {
     date: "2011-11-02",
@@ -2038,6 +2486,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2567,
     trendFatPercent: 0.2552,
+    trendFatMass: 22.73,
+    trendLeanMass: 66.339,
   },
   {
     date: "2011-11-03",
@@ -2047,6 +2497,8 @@ const preComputedDemoMeasurements: ApiComputedMeasurement[] = [
     fatIsInterpolated: false,
     actualFatPercent: 0.2542,
     trendFatPercent: 0.2551,
+    trendFatMass: 22.709,
+    trendLeanMass: 66.312,
   },
 ];
 
