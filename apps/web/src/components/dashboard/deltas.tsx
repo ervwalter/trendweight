@@ -1,7 +1,8 @@
+import { Heading } from "@/components/common/heading";
 import { Modes } from "@/lib/core/interfaces";
 import { formatMeasurement } from "@/lib/core/numbers";
 import { useDashboardData } from "@/lib/dashboard/hooks";
-import { Heading } from "@/components/common/heading";
+import { cn } from "@/lib/utils";
 import ChangeArrow from "./change-arrow";
 
 const Deltas = () => {
@@ -9,12 +10,10 @@ const Deltas = () => {
     deltas,
     mode: [mode],
     dataPoints,
-    profile: { useMetric, plannedPoundsPerWeek, goalWeight },
+    activeSlope,
+    profile: { useMetric, plannedPoundsPerWeek, goalWeight, firstName },
+    isMe,
   } = useDashboardData();
-
-  if (deltas.length === 0) {
-    return null;
-  }
 
   const last = dataPoints[dataPoints.length - 1];
   let intendedDirection: number;
@@ -26,11 +25,27 @@ const Deltas = () => {
     intendedDirection = 1;
   }
 
+  const weeklyRate = activeSlope * 7;
+  const isGaining = weeklyRate > 0;
+  const absFormatted = formatMeasurement(Math.abs(weeklyRate), { type: mode, metric: useMetric, units: true, sign: false });
+  let nounPhrase = "";
+  if (mode === "fatpercent") {
+    nounPhrase = " of body fat";
+  } else if (mode === "fatmass") {
+    nounPhrase = " of fat mass";
+  } else if (mode === "leanmass") {
+    nounPhrase = " of lean mass";
+  }
+  const verb = isGaining ? "gaining" : "losing";
+
   return (
     <div>
       <Heading level={3} className="mb-3">
         {Modes[mode]} Changes Over Time
       </Heading>
+      <div className={cn("mt-2", deltas.length > 0 ? "mb-4" : "mb-0")}>
+        {isMe ? "You are" : `${firstName} is`} {verb} <strong>{absFormatted}</strong> {nounPhrase} per week
+      </div>
       <div className="space-y-1">
         {deltas.map((d) => (
           <div key={d.period}>
