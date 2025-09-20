@@ -1,7 +1,8 @@
+import { Heading } from "@/components/common/heading";
 import { Modes } from "@/lib/core/interfaces";
 import { formatMeasurement } from "@/lib/core/numbers";
 import { useDashboardData } from "@/lib/dashboard/hooks";
-import { Heading } from "@/components/common/heading";
+import { cn } from "@/lib/utils";
 import ChangeArrow from "./change-arrow";
 
 const Deltas = () => {
@@ -13,10 +14,6 @@ const Deltas = () => {
     profile: { useMetric, plannedPoundsPerWeek, goalWeight, firstName },
     isMe,
   } = useDashboardData();
-
-  if (deltas.length === 0) {
-    return null;
-  }
 
   const last = dataPoints[dataPoints.length - 1];
   let intendedDirection: number;
@@ -46,8 +43,8 @@ const Deltas = () => {
       <Heading level={3} className="mb-3">
         {Modes[mode]} Changes Over Time
       </Heading>
-      <div className="mt-2 mb-2">
-        {isMe ? "You are" : `${firstName} is`} {verb} <strong>{absFormatted}</strong>/week{nounPhrase}
+      <div className={cn("mt-2", deltas.length > 0 ? "mb-4" : "mb-0")}>
+        {isMe ? "You are" : `${firstName} is`} {verb} <strong>{absFormatted}</strong> {nounPhrase} per week
       </div>
       <div className="space-y-1">
         {deltas.map((d) => (
