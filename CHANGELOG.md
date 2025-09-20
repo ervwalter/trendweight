@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.8.0](https://github.com/ervwalter/trendweight/compare/v2.7.0...v2.8.0) (2025-09-20)
+
+
+### Features
+
+* **web:** add mode-aware weekly rate in Deltas; remove duplicate weekly rate from Stats ([#357](https://github.com/ervwalter/trendweight/issues/357)) ([270109d](https://github.com/ervwalter/trendweight/commit/270109d208d2b5d8308eb5c5d07d8fa3c8b96b82))
+
+
+### Fixes
+
+* add missing trendFatMass and trendLeanMass to demo data ([#358](https://github.com/ervwalter/trendweight/issues/358)) ([d7be013](https://github.com/ervwalter/trendweight/commit/d7be013c191dffd0fab74ea116843db0980cc29a))
+
+
+### Documentation
+
+* add project guidance for Claude Code ([f4cbdf4](https://github.com/ervwalter/trendweight/commit/f4cbdf47f1b8f9978df5e4192ec7ce1b889bd9ec))
+
+
+### Dependencies
+
+* update npm dependencies ([#355](https://github.com/ervwalter/trendweight/issues/355)) ([24f9503](https://github.com/ervwalter/trendweight/commit/24f9503b8be73337b408e3956147804acf9b3a7e))
+
 ## [2.7.0](https://github.com/ervwalter/trendweight/compare/v2.6.5...v2.7.0) (2025-09-14)
 
 
