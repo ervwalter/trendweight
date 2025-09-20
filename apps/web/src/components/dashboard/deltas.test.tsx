@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { LocalDate } from "@js-joda/core";
-import Deltas from "./deltas";
 import type { DashboardData } from "@/lib/dashboard/dashboard-context";
+import { LocalDate } from "@js-joda/core";
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import Deltas from "./deltas";
 
 vi.mock("@/lib/dashboard/hooks", () => ({
   useDashboardData: vi.fn(),
@@ -47,10 +47,17 @@ describe("Deltas", () => {
     vi.clearAllMocks();
   });
 
-  it("returns null when no deltas", () => {
-    mockUseDashboardData.mockReturnValue(defaultMockData as any);
-    const { container } = render(<Deltas />);
-    expect(container.firstChild).toBeNull();
+  it("shows weekly rate but no deltas when no deltas", () => {
+    mockUseDashboardData.mockReturnValue({
+      ...defaultMockData,
+      activeSlope: -0.1,
+      isMe: true,
+    } as any);
+    render(<Deltas />);
+    expect(screen.getByText("Weight Changes Over Time")).toBeInTheDocument();
+    expect(screen.getByText(/You are losing/)).toBeInTheDocument();
+    expect(screen.getByText(/per week/)).toBeInTheDocument();
+    expect(screen.queryByText(/Since .* ago:/)).not.toBeInTheDocument();
   });
 
   it("renders weight deltas with correct intended direction", () => {
@@ -182,7 +189,7 @@ describe("Deltas", () => {
     render(<Deltas />);
     expect(screen.getByText(/You are losing/)).toBeInTheDocument();
     expect(screen.getByText("0.7 lb")).toBeInTheDocument();
-    expect(screen.getAllByText((content) => content.includes("/week")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText((content) => content.includes("per week")).length).toBeGreaterThan(0);
   });
 
   it("shows weekly rate sentence for fat percent", () => {
@@ -197,7 +204,7 @@ describe("Deltas", () => {
     render(<Deltas />);
     expect(screen.getByText(/You are gaining/)).toBeInTheDocument();
     expect(screen.getByText((_, node) => !!node && node.tagName === "STRONG" && /%$/.test(node.textContent || ""))).toBeInTheDocument();
-    expect(screen.getAllByText((content) => content.includes("/week")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText((content) => content.includes("per week")).length).toBeGreaterThan(0);
     expect(screen.getByText(/of body fat/)).toBeInTheDocument();
   });
 
@@ -213,7 +220,7 @@ describe("Deltas", () => {
     render(<Deltas />);
     expect(screen.getByText(/You are losing/)).toBeInTheDocument();
     expect(screen.getByText((_, node) => !!node && node.tagName === "STRONG" && /kg$/.test(node.textContent || ""))).toBeInTheDocument();
-    expect(screen.getAllByText((content) => content.includes("/week")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText((content) => content.includes("per week")).length).toBeGreaterThan(0);
     expect(screen.getByText(/of fat mass/)).toBeInTheDocument();
   });
 
