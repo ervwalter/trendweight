@@ -40,7 +40,7 @@ export function AccountSecuritySection() {
           <div className="flex-1 pr-4">
             <h4 className="text-foreground font-medium">Security Settings</h4>
             <p className="text-muted-foreground text-sm">
-              On the security page you can add passkeys for secure login, change your password (or add one if you signed up with social login), and manage your
+              On the security page you can add passkeys for secure login, change your password (or add one if you signed up without one), and manage your
               logged-in devices.
             </p>
           </div>
