@@ -47,6 +47,10 @@ vi.mock("@/components/ui/button", () => ({
 }));
 
 // Mock section components
+vi.mock("./account-security-section", () => ({
+  AccountSecuritySection: () => <div data-testid="account-security">Account Security</div>,
+}));
+
 vi.mock("./advanced-section", () => ({
   AdvancedSection: ({ register }: any) => (
     <div data-testid="advanced-section">
@@ -128,6 +132,7 @@ describe("Settings", () => {
     expect(screen.getByTestId("sharing-section")).toBeInTheDocument();
     expect(screen.getByTestId("connected-accounts")).toBeInTheDocument();
     expect(screen.getByTestId("download-section")).toBeInTheDocument();
+    expect(screen.getByTestId("account-security")).toBeInTheDocument();
     expect(screen.getByTestId("danger-zone")).toBeInTheDocument();
   });
 

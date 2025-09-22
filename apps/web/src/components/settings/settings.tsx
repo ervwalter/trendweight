@@ -7,6 +7,7 @@ import { useNavigationGuard } from "@/lib/hooks/use-navigation-guard";
 import { NewVersionNotice } from "@/components/notices/new-version-notice";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { AccountSecuritySection } from "./account-security-section";
 import { AdvancedSection } from "./advanced-section";
 import { ConnectedAccountsSection } from "./connected-accounts-section";
 import { DangerZoneSection } from "./danger-zone-section";
@@ -139,6 +140,11 @@ export function Settings() {
 
       {/* Download Card */}
       <DownloadSection />
+
+      {/* Account Security Card */}
+      <Card className="mb-6">
+        <AccountSecuritySection />
+      </Card>
 
       {/* Danger Zone Card */}
       <Card className="border-destructive">
