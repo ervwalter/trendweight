@@ -17,8 +17,8 @@ export function DownloadSection() {
       <CardHeader>
         <CardTitle>Download</CardTitle>
       </CardHeader>
-      <CardContent className="flex items-center justify-between space-x-4">
-        <p className="text-muted-foreground flex-1 pr-4 text-sm">
+      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-muted-foreground flex-1 text-sm">
           You can view and download all your historical scale readings from your connected providers. Export your data as a CSV file for backup or analysis in
           other applications.
         </p>

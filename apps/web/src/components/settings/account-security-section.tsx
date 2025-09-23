@@ -21,8 +21,8 @@ export function AccountSecuritySection() {
           TrendWeight uses Clerk to handle authentication and account security. The links below will open pages in a new tab where you can manage your account
           details and security settings.
         </p>
-        <div className="border-border flex items-center justify-between space-x-4 rounded-lg border p-4">
-          <div className="flex-1 pr-4">
+        <div className="border-border flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1">
             <h4 className="text-foreground font-medium">Email & Social Logins</h4>
             <p className="text-muted-foreground text-sm">
               You can use the account profile page to update your email address and to add or remove social login methods (Google, Microsoft, Apple)
@@ -36,13 +36,13 @@ export function AccountSecuritySection() {
           </Button>
         </div>
 
-        <div className="border-border flex items-center justify-between space-x-4 rounded-lg border p-4">
-          <div className="flex-1 pr-4">
+        <div className="border-border flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1">
             <h4 className="text-foreground font-medium">Passkeys</h4>
             <p className="text-muted-foreground text-sm">
               On the security page you can add a <ExternalLink href="https://developers.google.com/identity/passkeys">passkey</ExternalLink> for easy and secure
-              login. Passkeys let you sign in with an without having to receive and enter a code from your email, and without relying on social logins like
-              Google, Apple, or Microsoft.
+              login. Passkeys let you sign in without having to receive and enter a code from your email, and without relying on social logins like Google,
+              Apple, or Microsoft.
             </p>
           </div>
           <Button asChild variant="default" size="sm">
