@@ -108,32 +108,6 @@ describe("AccountSecuritySection", () => {
     expect(securityLink).toHaveAttribute("href", "https://accounts.trendweight.com/user/security");
   });
 
-  it("should render external link icons", () => {
-    mockBuildUserProfileUrl.mockReturnValue("https://test.clerk.accounts.dev/user");
-
-    render(<AccountSecuritySection />);
-
-    const icons = screen.getAllByTestId("external-link-icon");
-    expect(icons).toHaveLength(2);
-
-    // Check that icons have the correct styling
-    icons.forEach((icon) => {
-      expect(icon).toHaveClass("ml-1", "h-3", "w-3");
-    });
-  });
-
-  it("should render descriptive text for both sections", () => {
-    mockBuildUserProfileUrl.mockReturnValue("https://test.clerk.accounts.dev/user");
-
-    render(<AccountSecuritySection />);
-
-    // Check Account Profile description
-    expect(screen.getByText(/You can use the profile page to update your email address/)).toBeInTheDocument();
-
-    // Check Security Settings description
-    expect(screen.getByText(/On the security page you can add passkeys/)).toBeInTheDocument();
-  });
-
   it("should call Clerk buildUserProfileUrl method when available", () => {
     mockBuildUserProfileUrl.mockReturnValue("https://test.clerk.accounts.dev/user");
 

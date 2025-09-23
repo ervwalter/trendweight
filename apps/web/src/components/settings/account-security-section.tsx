@@ -1,7 +1,8 @@
-import { ExternalLink as ExternalLinkIcon } from "lucide-react";
-import { useClerk } from "@clerk/clerk-react";
+import { ExternalLink } from "@/components/common/external-link";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useClerk } from "@clerk/clerk-react";
+import { ExternalLink as ExternalLinkIcon } from "lucide-react";
 
 export function AccountSecuritySection() {
   const clerk = useClerk();
@@ -22,10 +23,9 @@ export function AccountSecuritySection() {
         </p>
         <div className="border-border flex items-center justify-between space-x-4 rounded-lg border p-4">
           <div className="flex-1 pr-4">
-            <h4 className="text-foreground font-medium">Account Profile</h4>
+            <h4 className="text-foreground font-medium">Email & Social Logins</h4>
             <p className="text-muted-foreground text-sm">
-              You can use the profile page to update your email address, add or remove social login methods (Google, Microsoft, Apple), and manage your basic
-              account information.
+              You can use the account profile page to update your email address and to add or remove social login methods (Google, Microsoft, Apple)
             </p>
           </div>
           <Button asChild variant="default" size="sm">
@@ -38,10 +38,11 @@ export function AccountSecuritySection() {
 
         <div className="border-border flex items-center justify-between space-x-4 rounded-lg border p-4">
           <div className="flex-1 pr-4">
-            <h4 className="text-foreground font-medium">Security Settings</h4>
+            <h4 className="text-foreground font-medium">Passkeys</h4>
             <p className="text-muted-foreground text-sm">
-              On the security page you can add passkeys for secure login, change your password (or add one if you signed up without one), and manage your
-              logged-in devices.
+              On the security page you can add a <ExternalLink href="https://developers.google.com/identity/passkeys">passkey</ExternalLink> for easy and secure
+              login. Passkeys let you sign in with an without having to receive and enter a code from your email, and without relying on social logins like
+              Google, Apple, or Microsoft.
             </p>
           </div>
           <Button asChild variant="default" size="sm">
