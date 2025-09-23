@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.9.0](https://github.com/ervwalter/trendweight/compare/v2.8.0...v2.9.0) (2025-09-23)
+
+
+### Features
+
+* **web:** add Account Security section to settings page ([e6c11ff](https://github.com/ervwalter/trendweight/commit/e6c11ff0f5f9812390617291a83e963e14f4bded))
+
+
+### Fixes
+
+* Add passkey documentation link and improve test reliability ([b1212ee](https://github.com/ervwalter/trendweight/commit/b1212ee0568f26d42b92a3ad66db131d9122fe64))
+* **auth:** hide the new clerk last-used badge ([2492db8](https://github.com/ervwalter/trendweight/commit/2492db841eef43067c80ac20808df0f492c8b0ed))
+* Make Download and Account Security sections responsive and fix grammar ([0732052](https://github.com/ervwalter/trendweight/commit/0732052a7c64cd43ffdf207a48ab0f73ff05a0b0))
+* Update Amazon scale links to official brand store pages ([6e3c305](https://github.com/ervwalter/trendweight/commit/6e3c3050dd628516a6699b1a449e5253f2f364b0))
+
+
+### Documentation
+
+* Add FAQ about frequent login issues ([981bf68](https://github.com/ervwalter/trendweight/commit/981bf68b94db0a4c08a959003298ca7f73437d4f))
+
 ## [2.8.0](https://github.com/ervwalter/trendweight/compare/v2.7.0...v2.8.0) (2025-09-20)
 
 
