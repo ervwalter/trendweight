@@ -40,6 +40,34 @@ export function Faq() {
                   <ExternalLink href="https://www.fitbit.com/sg/app">Fitbit App</ExternalLink> and enter your weight manually each day.
                 </p>
               </Question>
+              <Question title="Why do I have to log in with a code every time?">
+                <p>
+                  Most users don't experience this issue, but some do—particularly on iPhone devices. TrendWeight uses Clerk for authentication, which normally
+                  keeps you logged in for up to one year. If you're being asked to re-login more frequently, your browser is likely clearing your session data
+                  due to privacy settings or other browser behavior, and unfortunately there's nothing I can do to prevent that.
+                </p>
+                <p>
+                  However, there are better ways to log in that can help you avoid having to enter email codes repeatedly. You can connect your account to
+                  Google, Apple, or Microsoft for faster social login. Even better, you can add a{" "}
+                  <ExternalLink href="https://developers.google.com/identity/passkeys">passkey</ExternalLink> to your account.
+                </p>
+                <p>
+                  Passkeys are a modern, secure way to log in that uses your device's built-in security (like Face ID, Touch ID, or your phone's lock screen)
+                  instead of passwords or email codes. They're faster, more secure, and work seamlessly across your devices.
+                </p>
+                <p>
+                  Once you've set up a passkey, you can use the "Use passkey" link on the login page to sign in instantly—no email address or code required
+                  since the passkey identifies you automatically.
+                </p>
+                <p>
+                  To set these up, go to your{" "}
+                  <Link to="/settings" className="text-link hover:text-link underline">
+                    settings page
+                  </Link>{" "}
+                  and look for the "Account Security" section. From there, you can click "Open Account Profile" to add social logins (Google, Apple, Microsoft)
+                  or "Open Security Settings" to add a passkey.
+                </p>
+              </Question>
               <Question title="Is there a mobile app for TrendWeight?">
                 <p>No. The TrendWeight website works great on mobile sizes, and there are no plans for a native mobile app.</p>
               </Question>
