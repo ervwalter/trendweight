@@ -31,8 +31,8 @@ export function Faq() {
                 <p>
                   That said, I do recommend getting a smart scale. They are easy to setup and make it super easy to record your weight everyday. You just step
                   on the scale and your weight gets automatically uploaded. If you don't have one and want to buy one, you can find them on Amazon:{" "}
-                  <ExternalLink href="https://amzn.to/2Rh8yH1">Withings Scales</ExternalLink> or{" "}
-                  <ExternalLink href="https://amzn.to/3uEWUnS">Fitbit Scales</ExternalLink>.
+                  <ExternalLink href="https://www.amazon.com/stores/page/1CF46AD8-345D-463B-839C-BD63CA561643">Withings Scales</ExternalLink> or{" "}
+                  <ExternalLink href="https://www.amazon.com/stores/Fitbit/page/483BFF66-176D-42CC-A2AB-EC917F84C9B6">Fitbit Scales</ExternalLink>.
                 </p>
                 <p>
                   If you don't have a connected scale, just use either the{" "}

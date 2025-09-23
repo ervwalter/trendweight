@@ -90,10 +90,10 @@ export function About() {
               </Heading>
               <ul className="text-muted-foreground mt-5 list-disc pl-4 text-base">
                 <li>
-                  <ExternalLink href="https://amzn.to/2Rh8yH1">Withings Scales</ExternalLink>
+                  <ExternalLink href="https://www.amazon.com/stores/page/1CF46AD8-345D-463B-839C-BD63CA561643">Withings Scales</ExternalLink>
                 </li>
                 <li>
-                  <ExternalLink href="https://amzn.to/3uEWUnS">Fitbit Scales</ExternalLink>
+                  <ExternalLink href="https://www.amazon.com/stores/Fitbit/page/483BFF66-176D-42CC-A2AB-EC917F84C9B6">Fitbit Scales</ExternalLink>
                 </li>
               </ul>
             </div>
