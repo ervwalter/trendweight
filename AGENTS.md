@@ -1,40 +1,31 @@
-# Repository Guidelines
+# AGENTS.md - Coding Agent Guidelines
 
-## Project Structure & Module Organization
-- Monorepo managed by Turbo. Key paths:
-  - `apps/web`: React + TypeScript + Vite (assets in `public/`, source in `src/`).
-  - `apps/api`: ASP.NET Core Web API (`TrendWeight/`), tests in `apps/api/TrendWeight.Tests/`.
-  - `scripts/`: Docker helpers. `.github/`: CI workflows. `.env.example` for config.
+## Essential Commands (run from root only)
+```bash
+# Development
+npm run dev                     # Start both frontend/backend via tmuxinator
+npm run -w apps/web dev         # Frontend only (port 5173)
+npm run -w apps/api dev         # Backend only (port 5199)
 
-## Steering Docs (Authoritative)
-- Always review and reference `docs/steering/{conventions,tech,product,structure}.md` before proposing changes.
+# Testing
+npm test                        # All tests
+npm run -w apps/web test        # Frontend tests only
+npm run -w apps/api test        # Backend tests only
+vitest run path/to/file.test.ts # Single frontend test
+dotnet test --filter "TestName" # Single backend test
 
-## Build, Test, and Development Commands
-- Root (runs across workspaces):
-  - `npm install`: Install all dependencies.
-  - `npm run dev`: Start frontend and backend via tmuxinator.
-  - `npm run build`: Build web and API.
-  - `npm run check`: Typecheck + lint. `npm test`: Run all tests.
-  - Preferred validation (run from repo root): `npm run check && npm run test`.
-  - `npm run docker:build` / `npm run docker:run`: Local Docker image + run.
-- Per workspace examples: Web `npm run -w apps/web dev`, `npm run -w apps/web test:coverage`; API `npm run -w apps/api dev`, `npm run -w apps/api test`.
+# Quality checks (MANDATORY before commits)
+npm run check && npm run test   # TypeScript + lint + all tests
+npm run check                   # TypeScript + lint only
+npm run format                  # Format all code
+```
 
-## Coding Style & Naming Conventions
-- EditorConfig: 2‑space indent TS/JS, 4‑space C#.
-- Web: Prettier + ESLint (see `apps/web/eslint.config.js`), Tailwind 4 with semantic tokens only; always use `@/` alias; components in `PascalCase`; tests `*.test.ts(x)` colocated.
-- API: `dotnet format` via lint‑staged; `PascalCase` for types/methods, `camelCase` for locals/params; feature‑oriented folders.
-
-## Testing Guidelines
-- Web: Vitest + Testing Library (`src/test/setup.ts`). Run `npm test` (root) or `npm run -w apps/web test`.
-- API: xUnit + FluentAssertions + Moq; integration via `WebApplicationFactory<Program>`. Run `npm test` or `dotnet test`.
-- Add tests for new endpoints, hooks, and components; keep fast and deterministic.
-
-## Commit & Review Guidelines
-- Do not open PRs. PRs are created and merged manually by the maintainer.
-- Use Conventional Commits: `feat:`, `fix:`, `perf:`, `refactor:`, `deps:`, `chore:` (scopes allowed). Examples: `feat(api): add /api/health`, `refactor(web): replace relative imports with @/`.
-- Propose changes via issues referencing relevant sections in `docs/steering/*`; include screenshots for UI changes.
-- Before pushing, validate from repo root: `npm run check && npm run test`.
-- Never commit secrets. Add new env keys to `.env.example` and document usage.
-
-## Security & Config Tips
-- Configure Clerk and Supabase via `.env` (see README). Keep `AllowedHosts` strict in production. Rate limiting is enabled per user on API.
+## Code Style & Conventions
+- **Frontend**: 2-space indent, kebab-case files, PascalCase components, `@/` imports (never `../`)
+- **Backend**: 4-space indent, PascalCase public members, camelCase locals/params
+- **Routes**: Minimal (<30 lines), NO logic/hooks, delegate to components
+- **Tailwind**: Use semantic variables (`bg-background`) never explicit colors (`bg-gray-500`)
+- **Types**: Strict TypeScript, avoid `any`, functional components with hooks
+- **Tests**: Vitest (frontend) + xUnit (backend), MSW for HTTP mocking, colocated `*.test.ts(x)`
+- **Commits**: Conventional format (`feat:`, `fix:`, `refactor:`), never "BREAKING CHANGE"
+- **Naming**: TrendWeight (capital T+W), snake_case database, kebab-case routes, PascalCase components
