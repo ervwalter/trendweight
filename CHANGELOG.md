@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.9.1](https://github.com/ervwalter/trendweight/compare/v2.9.0...v2.9.1) (2025-10-26)
+
+
+### Documentation
+
+* add AGENTS.md ([17f165a](https://github.com/ervwalter/trendweight/commit/17f165ae1caa6911e05509913df697a5ac8e1606))
+
+
+### Dependencies
+
+* update actions/setup-node action to v6 ([#367](https://github.com/ervwalter/trendweight/issues/367)) ([f176a17](https://github.com/ervwalter/trendweight/commit/f176a17f72b110b9772e04da43e37ef372d878fb))
+* update dependency eslint-plugin-react-hooks to v6 ([#362](https://github.com/ervwalter/trendweight/issues/362)) ([6b03598](https://github.com/ervwalter/trendweight/commit/6b03598b1792bb0d954efb89954ddbe604cf607f))
+* update dependency microsoft.net.test.sdk to v18 ([#364](https://github.com/ervwalter/trendweight/issues/364)) ([e5f890e](https://github.com/ervwalter/trendweight/commit/e5f890ef7f6e32fbb791e7605935c8c4aa91b746))
+* update dependency vite to v7.1.11 [security] ([#368](https://github.com/ervwalter/trendweight/issues/368)) ([b08eb0b](https://github.com/ervwalter/trendweight/commit/b08eb0b407eb8f20a0d0214e0366a66d6a961cd7))
+* update npm dependencies ([#360](https://github.com/ervwalter/trendweight/issues/360)) ([26db771](https://github.com/ervwalter/trendweight/commit/26db771fc43c22a41e75aeb5b1a0533c2b700647))
+* update nuget dependencies ([#361](https://github.com/ervwalter/trendweight/issues/361)) ([229825e](https://github.com/ervwalter/trendweight/commit/229825ed8d0a4a5d81052f379817c96ad18abddc))
+
 ## [2.9.0](https://github.com/ervwalter/trendweight/compare/v2.8.0...v2.9.0) (2025-09-23)
 
 
