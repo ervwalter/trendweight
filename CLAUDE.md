@@ -6,7 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TrendWeight is a monorepo web application for tracking weight trends by integrating with smart scales from Withings and Fitbit. It consists of a React frontend and C# ASP.NET Core backend, deployed as Docker containers.
 
-**Repository for deepwiki mcp server**: ervwalter/trendweight
+## Code Search
+
+**Use ChunkHound MCP server for semantic code search:**
+- `mcp__ChunkHound__search_semantic` - Natural language queries for finding relevant code
+- `mcp__ChunkHound__search_regex` - Pattern-based searches with optional path filtering
+- ChunkHound has indexed 412 files with 2,300 code chunks
 
 ## Architecture
 
