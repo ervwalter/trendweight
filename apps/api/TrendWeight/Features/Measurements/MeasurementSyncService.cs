@@ -57,6 +57,14 @@ public class MeasurementSyncService : IMeasurementSyncService
             // Check each provider's last sync time and resync flag
             foreach (var provider in activeProviders)
             {
+                // Check force_full_sync flag - if set, clear data to trigger full resync
+                var forceFullSync = await _sourceDataService.GetForceFullSyncAsync(userId, provider);
+                if (forceFullSync)
+                {
+                    _logger.LogInformation("Force full sync set for user {UserId} provider {Provider}, clearing data", userId, provider);
+                    await ClearProviderDataAsync(userId, provider);
+                }
+
                 // Check last sync time for this provider
                 var lastSync = await _sourceDataService.GetLastSyncTimeAsync(userId, provider);
                 var needsRefresh = lastSync == null || (now - lastSync.Value).TotalSeconds > _cacheDurationSeconds;
@@ -155,12 +163,12 @@ public class MeasurementSyncService : IMeasurementSyncService
 
             // Calculate start date for sync
             DateTime? startDate = null;
-            // For regular refresh, fetch from 90 days before last sync
+            // For regular refresh, fetch from 90 days before last sync (with 2-day buffer to avoid boundary issues)
             var lastSyncTime = await _sourceDataService.GetLastSyncTimeAsync(userId, provider);
             if (lastSyncTime.HasValue)
             {
                 startDate = lastSyncTime.Value.AddDays(-90);
-                _logger.LogDebug("Fetching {Provider} measurements from {StartDate} (90 days before last sync)",
+                _logger.LogDebug("Fetching {Provider} measurements from {StartDate} (90 days before last sync with 2-day buffer)",
                     provider, startDate.Value.ToString("o"));
             }
             else
@@ -194,15 +202,25 @@ public class MeasurementSyncService : IMeasurementSyncService
                 if (existingProviderData?.Measurements != null && startDate.HasValue)
                 {
                     // We have existing data and a sync window - merge them
-                    var cutoffDate = startDate.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                    // Cutoff is 2 days after fetch start (88 days before last sync) to create a buffer zone
+                    // that handles timezone interpretation differences and API boundary quirks
+                    var cutoffDate = startDate.Value.AddDays(2).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+                    _logger.LogDebug("Merging {Provider} data with cutoff date {CutoffDate} (fetch started at {FetchStart})",
+                        provider, cutoffDate, startDate.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
 
                     // Keep only measurements before the cutoff date from existing data
                     var existingMeasurementsToKeep = existingProviderData.Measurements
                         .Where(m => string.Compare(m.Date, cutoffDate, StringComparison.Ordinal) < 0)
                         .ToList();
 
-                    // Combine: new measurements (truth for sync window) + older kept measurements
-                    mergedMeasurements = result.Measurements.Concat(existingMeasurementsToKeep).ToList();
+                    // Keep only measurements on or after the cutoff date from new data (discard buffer zone)
+                    var newMeasurementsToUse = result.Measurements
+                        .Where(m => string.Compare(m.Date, cutoffDate, StringComparison.Ordinal) >= 0)
+                        .ToList();
+
+                    // Combine: truncated new measurements (truth from cutoff forward) + older kept measurements
+                    mergedMeasurements = newMeasurementsToUse.Concat(existingMeasurementsToKeep).ToList();
                 }
                 else
                 {

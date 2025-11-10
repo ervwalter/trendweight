@@ -50,9 +50,10 @@ CREATE TABLE IF NOT EXISTS public.source_data (
     provider VARCHAR NOT NULL,
     measurements JSONB NOT NULL DEFAULT '[]'::jsonb,
     last_sync TEXT,
+    force_full_sync BOOLEAN DEFAULT FALSE,
     updated_at TEXT DEFAULT now(),
     CONSTRAINT source_data_pkey PRIMARY KEY (uid, provider),
-    CONSTRAINT source_data_uid_fkey FOREIGN KEY (uid) 
+    CONSTRAINT source_data_uid_fkey FOREIGN KEY (uid)
         REFERENCES public.profiles(uid) ON DELETE CASCADE
 );
 

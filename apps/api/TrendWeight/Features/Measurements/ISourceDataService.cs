@@ -29,6 +29,14 @@ public interface ISourceDataService
     Task<DateTime?> GetLastSyncTimeAsync(Guid userId, string provider);
 
     /// <summary>
+    /// Get the force_full_sync flag for a specific provider
+    /// </summary>
+    /// <param name="userId">User's Supabase UID</param>
+    /// <param name="provider">Provider name (e.g., "withings", "fitbit")</param>
+    /// <returns>True if force_full_sync is set, false otherwise</returns>
+    Task<bool> GetForceFullSyncAsync(Guid userId, string provider);
+
+    /// <summary>
     /// Clears source data for a user
     /// </summary>
     /// <param name="userId">User's Supabase UID</param>

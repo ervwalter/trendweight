@@ -235,6 +235,21 @@ public class SourceDataService : ISourceDataService
     }
 
     /// <inheritdoc />
+    public async Task<bool> GetForceFullSyncAsync(Guid userId, string provider)
+    {
+        try
+        {
+            var dbSourceData = await GetOrFetchSourceDataAsync(userId, provider);
+            return dbSourceData?.ForceFullSync ?? false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting force_full_sync for user {UserId} provider {Provider}", userId, provider);
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task ClearSourceDataAsync(Guid userId, string? provider = null)
     {
         try

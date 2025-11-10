@@ -785,7 +785,8 @@ public class MeasurementSyncServiceTests : TestBase
         var userId = Guid.NewGuid();
         var provider = "withings";
         var lastSyncTime = DateTime.UtcNow.AddDays(-1);
-        var syncStartDate = lastSyncTime.AddDays(-90); // 90 days before last sync
+        var syncStartDate = lastSyncTime.AddDays(-90); // Fetch starts 90 days before last sync
+        var cutoffDate = syncStartDate.AddDays(2); // Splice at 88 days before last sync (2-day buffer)
 
         // Existing data from previous sync (has both old and recent measurements)
         var existingSourceData = new List<SourceData>
@@ -796,23 +797,23 @@ public class MeasurementSyncServiceTests : TestBase
                 LastUpdate = lastSyncTime,
                 Measurements = new List<RawMeasurement>
                 {
-                    // Old measurements (before sync window)
-                    CreateTestRawMeasurement(syncStartDate.AddDays(-10).ToString("yyyy-MM-dd"), 65.0m),
-                    CreateTestRawMeasurement(syncStartDate.AddDays(-5).ToString("yyyy-MM-dd"), 66.0m),
-                    // Recent measurements (within sync window)
-                    CreateTestRawMeasurement(syncStartDate.AddDays(5).ToString("yyyy-MM-dd"), 70.0m),
-                    CreateTestRawMeasurement(syncStartDate.AddDays(10).ToString("yyyy-MM-dd"), 71.0m),
-                    CreateTestRawMeasurement(syncStartDate.AddDays(15).ToString("yyyy-MM-dd"), 72.0m)
+                    // Old measurements (before cutoff at day -88, should be preserved)
+                    CreateTestRawMeasurement(syncStartDate.AddDays(-10).ToString("yyyy-MM-dd"), 65.0m), // day -100
+                    CreateTestRawMeasurement(syncStartDate.AddDays(-5).ToString("yyyy-MM-dd"), 66.0m),  // day -95
+                    // Recent measurements (after cutoff, should be replaced by provider data)
+                    CreateTestRawMeasurement(syncStartDate.AddDays(5).ToString("yyyy-MM-dd"), 70.0m),   // day -85
+                    CreateTestRawMeasurement(syncStartDate.AddDays(10).ToString("yyyy-MM-dd"), 71.0m),  // day -80
+                    CreateTestRawMeasurement(syncStartDate.AddDays(15).ToString("yyyy-MM-dd"), 72.0m)   // day -75
                 }
             }
         };
 
-        // New measurements from provider (only has data within sync window)
+        // New measurements from provider (fetched from day -90, truncated to day -88 onwards)
         var newMeasurements = new List<RawMeasurement>
         {
-            CreateTestRawMeasurement(syncStartDate.AddDays(5).ToString("yyyy-MM-dd"), 70.5m), // Updated weight
-            CreateTestRawMeasurement(syncStartDate.AddDays(12).ToString("yyyy-MM-dd"), 71.5m), // New measurement
-            // Note: measurements at day 10 and 15 are missing (user deleted them)
+            CreateTestRawMeasurement(syncStartDate.AddDays(5).ToString("yyyy-MM-dd"), 70.5m),  // day -85, updated weight
+            CreateTestRawMeasurement(syncStartDate.AddDays(12).ToString("yyyy-MM-dd"), 71.5m), // day -78, new measurement
+            // Note: measurements at days -80 and -75 are missing (user deleted them upstream)
         };
 
         var providerService = new Mock<IProviderService>();
@@ -939,6 +940,79 @@ public class MeasurementSyncServiceTests : TestBase
             It.Is<List<SourceData>>(sd => VerifyFullSyncReplacement(sd, provider, newMeasurements))), Times.Once);
     }
 
+    [Fact]
+    public async Task GetMeasurementsForUserAsync_WithForceFullSyncFlag_ClearsDataAndPerformsFullSync()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = "fitbit";
+
+        // Existing data exists
+        var existingSourceData = new List<SourceData>
+        {
+            new SourceData
+            {
+                Source = provider,
+                LastUpdate = DateTime.UtcNow.AddDays(-30),
+                Measurements = new List<RawMeasurement>
+                {
+                    CreateTestRawMeasurement("2024-01-01", 70.0m),
+                    CreateTestRawMeasurement("2024-01-02", 71.0m)
+                }
+            }
+        };
+
+        // New measurements from full sync
+        var newMeasurements = new List<RawMeasurement>
+        {
+            CreateTestRawMeasurement("2024-01-01", 70.5m), // Updated
+            CreateTestRawMeasurement("2024-01-02", 71.5m), // Updated
+            CreateTestRawMeasurement("2024-01-03", 72.0m)  // New
+        };
+
+        var providerService = new Mock<IProviderService>();
+        // Verify that startDate is null (full sync) after clearing data
+        providerService.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = provider,
+                Success = true,
+                Measurements = newMeasurements
+            });
+
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider))
+            .Returns(providerService.Object);
+
+        // Mock force_full_sync flag to return true
+        _sourceDataServiceMock.Setup(x => x.GetForceFullSyncAsync(userId, provider))
+            .ReturnsAsync(true);
+
+        // Mock GetLastSyncTimeAsync to return null (simulating cleared data after ClearProviderDataAsync is called)
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
+            .ReturnsAsync((DateTime?)null);
+
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
+            .ReturnsAsync(existingSourceData);
+
+        // Mock ClearSourceDataAsync to simulate data being cleared
+        _sourceDataServiceMock.Setup(x => x.ClearSourceDataAsync(userId, provider))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.GetMeasurementsForUserAsync(userId, new List<string> { provider }, true);
+
+        // Assert
+        // Verify ClearProviderDataAsync was called (this is called on MeasurementSyncService, not the mock)
+        // We verify this indirectly by checking that a full sync was performed (startDate = null)
+        providerService.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once,
+            "Should perform full sync (startDate = null) after force_full_sync flag is detected");
+
+        // Verify data was updated
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
+            userId,
+            It.Is<List<SourceData>>(sd => sd.Count == 1 && sd[0].Source == provider)), Times.Once);
+    }
+
     #endregion
 
     #region Private Helper Methods
@@ -981,14 +1055,17 @@ public class MeasurementSyncServiceTests : TestBase
             return false;
 
         var measurements = sd[0].Measurements!; // We already checked it's not null
-        return measurements.Count == 4 && // 2 old (preserved) + 2 new (from provider)
-                                          // Old measurements preserved
+        // Cutoff is at syncStartDate + 2 days (88 days before last sync)
+        // Old measurements (before cutoff): preserved
+        // New measurements (after cutoff): from provider
+        return measurements.Count == 4 && // 2 old (preserved before day -88) + 2 new (from provider after day -88)
+                                          // Old measurements preserved (days -100, -95 are before cutoff at day -88)
                measurements.Any(m => m.Date == syncStartDate.AddDays(-10).ToString("yyyy-MM-dd") && m.Weight == 65.0m) &&
                measurements.Any(m => m.Date == syncStartDate.AddDays(-5).ToString("yyyy-MM-dd") && m.Weight == 66.0m) &&
-               // New measurements from provider
+               // New measurements from provider (days -85, -78 are after cutoff at day -88)
                measurements.Any(m => m.Date == syncStartDate.AddDays(5).ToString("yyyy-MM-dd") && m.Weight == 70.5m) &&
                measurements.Any(m => m.Date == syncStartDate.AddDays(12).ToString("yyyy-MM-dd") && m.Weight == 71.5m) &&
-               // Deleted measurements are gone
+               // Deleted measurements are gone (days -80, -75 were in old data but not in provider data)
                !measurements.Any(m => m.Date == syncStartDate.AddDays(10).ToString("yyyy-MM-dd")) &&
                !measurements.Any(m => m.Date == syncStartDate.AddDays(15).ToString("yyyy-MM-dd"));
     }
