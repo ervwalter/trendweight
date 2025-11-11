@@ -66,13 +66,13 @@ WORKDIR /app
 # Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user and group
-# Check if group 1000 exists, if not create it; if yes, use existing group name
-RUN if ! getent group 1000 > /dev/null; then \
-      groupadd -g 1000 appgroup; \
-    fi && \
-    GROUP_NAME=$(getent group 1000 | cut -d: -f1) && \
-    if ! id -u appuser > /dev/null 2>&1; then \
+# Create non-root user and group (if they don't already exist)
+# The .NET 10 base image may already have UID/GID 1000
+RUN if ! id 1000 > /dev/null 2>&1; then \
+      if ! getent group 1000 > /dev/null; then \
+        groupadd -g 1000 appgroup; \
+      fi && \
+      GROUP_NAME=$(getent group 1000 | cut -d: -f1) && \
       useradd -u 1000 -g $GROUP_NAME -m appuser; \
     fi
 
