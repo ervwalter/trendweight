@@ -66,15 +66,21 @@ WORKDIR /app
 # Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user and group
-RUN groupadd -g 1000 appgroup && \
-    useradd -u 1000 -g appgroup -m appuser
+# Create non-root user and group (if they don't already exist)
+# The .NET 10 base image may already have UID/GID 1000
+RUN if ! id 1000 > /dev/null 2>&1; then \
+      if ! getent group 1000 > /dev/null; then \
+        groupadd -g 1000 appgroup; \
+      fi && \
+      GROUP_NAME=$(getent group 1000 | cut -d: -f1) && \
+      useradd -u 1000 -g $GROUP_NAME -m appuser; \
+    fi
 
 # Copy published backend (which now includes wwwroot with optimized static assets)
 COPY --from=backend-build /app/publish .
 
 # Change ownership of the app directory
-RUN chown -R appuser:appgroup /app
+RUN chown -R 1000:1000 /app
 
 # Switch to non-root user
 USER 1000:1000
