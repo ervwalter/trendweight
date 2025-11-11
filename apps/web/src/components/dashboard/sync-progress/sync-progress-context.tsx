@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, type ReactNode } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
 import { createElement } from "react";
 import type { SyncProgress } from "./types";
@@ -15,7 +15,7 @@ export function SyncProgressProvider({ children, disableUI = false }: SyncProgre
   const progressId = useMemo(() => crypto.randomUUID(), []);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
   const [isActive, setIsActive] = useState(false);
-  const [toastId, setToastId] = useState<string | null>(null);
+  const toastIdRef = useRef<string | null>(null);
 
   // Manage toast lifecycle at the provider level
   useEffect(() => {
@@ -24,32 +24,32 @@ export function SyncProgressProvider({ children, disableUI = false }: SyncProgre
       return;
     }
 
-    if (progress && !toastId) {
+    if (progress && !toastIdRef.current) {
       // Create toast
       const id = toast(createElement(SyncProgressToast, { progress }), {
         duration: Infinity,
         dismissible: false,
         closeButton: false,
       });
-      setToastId(id as string);
-    } else if (progress && toastId) {
+      toastIdRef.current = id as string;
+    } else if (progress && toastIdRef.current) {
       // Update existing toast
-      toast(createElement(SyncProgressToast, { progress }), { id: toastId });
-    } else if (!progress && toastId) {
+      toast(createElement(SyncProgressToast, { progress }), { id: toastIdRef.current });
+    } else if (!progress && toastIdRef.current) {
       // Dismiss and clear
-      toast.dismiss(toastId);
-      setToastId(null);
+      toast.dismiss(toastIdRef.current);
+      toastIdRef.current = null;
     }
-  }, [progress, toastId, disableUI]);
+  }, [progress, disableUI]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (toastId) {
-        toast.dismiss(toastId);
+      if (toastIdRef.current) {
+        toast.dismiss(toastIdRef.current);
       }
     };
-  }, [toastId]);
+  }, []);
 
   const startProgress = useCallback(
     (message: string) => {

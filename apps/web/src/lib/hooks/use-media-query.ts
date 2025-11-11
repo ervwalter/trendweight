@@ -11,16 +11,19 @@ import { useEffect, useState } from "react";
  * - 2xl: 1536px
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
+  const [matches, setMatches] = useState(() => {
+    // Initialize with current media query state
+    if (typeof window !== "undefined") {
+      return window.matchMedia(query).matches;
+    }
+    return false;
+  });
 
   useEffect(() => {
     // Check if window is defined (for SSR)
     if (typeof window === "undefined") return;
 
     const media = window.matchMedia(query);
-
-    // Set initial state
-    setMatches(media.matches);
 
     // Create event listener
     const listener = (event: MediaQueryListEvent) => {
