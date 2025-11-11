@@ -9,10 +9,11 @@ global.URL = {
   revokeObjectURL: vi.fn(),
 } as any;
 
-global.Blob = vi.fn().mockImplementation((content, options) => ({
-  content,
-  options,
-})) as any;
+global.Blob = vi.fn(function (this: any, content, options) {
+  this.content = content;
+  this.options = options;
+  return this;
+}) as any;
 
 describe("csvExport", () => {
   let mockLink: any;
@@ -20,6 +21,9 @@ describe("csvExport", () => {
   let removeChildSpy: any;
 
   beforeEach(() => {
+    // Clear Blob mock calls
+    vi.clearAllMocks();
+
     mockLink = {
       href: "",
       download: "",
