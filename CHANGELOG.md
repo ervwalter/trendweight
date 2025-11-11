@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.9.2](https://github.com/ervwalter/trendweight/compare/v2.9.1...v2.9.2) (2025-11-11)
+
+
+### Fixes
+
+* add 2-day buffer to sync boundary and force_full_sync flag ([9b25af3](https://github.com/ervwalter/trendweight/commit/9b25af33ec45a98483682e4dae7295fa51733cf6))
+
+
+### Dependencies
+
+* update dependency node to v24 ([#370](https://github.com/ervwalter/trendweight/issues/370)) ([480b089](https://github.com/ervwalter/trendweight/commit/480b0896218e65e4cf98f6e7224f99d9ebf38500))
+* update npm dependencies ([#371](https://github.com/ervwalter/trendweight/issues/371)) ([d005489](https://github.com/ervwalter/trendweight/commit/d0054899c97bd4d180fdcd3ef517cb724d7b1d70))
+
 ## [2.9.1](https://github.com/ervwalter/trendweight/compare/v2.9.0...v2.9.1) (2025-10-26)
 
 
