@@ -143,3 +143,4 @@ context_portal/
 apps/api/TrendWeight/appsettings.Development.json
 .chunkhound
 .chunkhound.json
+.dummy_trigger*
