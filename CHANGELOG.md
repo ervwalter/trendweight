@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.3](https://github.com/ervwalter/trendweight/compare/v2.9.2...v2.9.3) (2025-11-12)
+
+
+### Fixes
+
+* reset force_full_sync flag when clearing data and add boundary condition test ([2f43dc9](https://github.com/ervwalter/trendweight/commit/2f43dc909fe896ca30bbb7071f6a92e6f379737e))
+
 ## [2.9.2](https://github.com/ervwalter/trendweight/compare/v2.9.1...v2.9.2) (2025-11-11)
 
 
