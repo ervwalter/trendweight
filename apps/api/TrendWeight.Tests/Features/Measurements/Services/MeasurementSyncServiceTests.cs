@@ -1013,6 +1013,127 @@ public class MeasurementSyncServiceTests : TestBase
             It.Is<List<SourceData>>(sd => sd.Count == 1 && sd[0].Source == provider)), Times.Once);
     }
 
+    [Fact]
+    public async Task RefreshProviderAsync_WithBoundaryMeasurements_HandlesBufferZoneCorrectly()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var provider = "fitbit";
+        var lastSyncTime = DateTime.UtcNow.AddDays(-1);
+        var syncStartDate = lastSyncTime.AddDays(-90); // Fetch starts at day -90
+        var cutoffDate = syncStartDate.AddDays(2);     // Cutoff at day -88 (2-day buffer)
+
+        // Existing data includes measurements in the buffer zone (days -90, -89)
+        var existingSourceData = new List<SourceData>
+        {
+            new SourceData
+            {
+                Source = provider,
+                LastUpdate = lastSyncTime,
+                Measurements = new List<RawMeasurement>
+                {
+                    // Well before buffer zone (should be preserved)
+                    CreateTestRawMeasurement(syncStartDate.AddDays(-5).ToString("yyyy-MM-dd"), 64.0m),  // day -95
+                    CreateTestRawMeasurement(syncStartDate.AddDays(-3).ToString("yyyy-MM-dd"), 65.0m),  // day -93
+
+                    // In buffer zone (should be DISCARDED)
+                    CreateTestRawMeasurement(syncStartDate.AddDays(0).ToString("yyyy-MM-dd"), 66.0m),   // day -90 (boundary!)
+                    CreateTestRawMeasurement(syncStartDate.AddDays(1).ToString("yyyy-MM-dd"), 67.0m),   // day -89
+
+                    // At cutoff and after (should be REPLACED by provider data)
+                    CreateTestRawMeasurement(cutoffDate.ToString("yyyy-MM-dd"), 68.0m),                 // day -88 (cutoff)
+                    CreateTestRawMeasurement(syncStartDate.AddDays(5).ToString("yyyy-MM-dd"), 69.0m)    // day -85
+                }
+            }
+        };
+
+        // Provider returns measurements from day -90 onwards (but we truncate to day -88)
+        var newMeasurements = new List<RawMeasurement>
+        {
+            // These are in buffer zone (days -90, -89) - will be truncated out
+            CreateTestRawMeasurement(syncStartDate.AddDays(0).ToString("yyyy-MM-dd"), 66.5m),  // day -90
+            CreateTestRawMeasurement(syncStartDate.AddDays(1).ToString("yyyy-MM-dd"), 67.5m),  // day -89
+
+            // These are at/after cutoff (day -88+) - will be used
+            CreateTestRawMeasurement(cutoffDate.ToString("yyyy-MM-dd"), 68.5m),                // day -88 (updated)
+            CreateTestRawMeasurement(syncStartDate.AddDays(5).ToString("yyyy-MM-dd"), 70.0m),  // day -85 (updated)
+            CreateTestRawMeasurement(syncStartDate.AddDays(10).ToString("yyyy-MM-dd"), 71.0m)  // day -80 (new)
+        };
+
+        var providerService = new Mock<IProviderService>();
+        providerService.Setup(x => x.SyncMeasurementsAsync(userId, true, syncStartDate))
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = provider,
+                Success = true,
+                Measurements = newMeasurements
+            });
+
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider))
+            .Returns(providerService.Object);
+
+        _sourceDataServiceMock.Setup(x => x.GetForceFullSyncAsync(userId, provider))
+            .ReturnsAsync(false);
+
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
+            .ReturnsAsync(lastSyncTime);
+
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
+            .ReturnsAsync(existingSourceData);
+
+        // Act
+        var result = await _sut.GetMeasurementsForUserAsync(userId, new List<string> { provider }, true);
+
+        // Assert
+        // Verify UpdateSourceDataAsync was called
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()), Times.Once);
+
+        // Capture what was actually passed to verify the boundary handling
+        List<SourceData>? capturedData = null;
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()), Times.Once);
+        _sourceDataServiceMock.Invocations
+            .Where(i => i.Method.Name == "UpdateSourceDataAsync")
+            .Select(i => i.Arguments[1] as List<SourceData>)
+            .FirstOrDefault().Should().NotBeNull();
+
+        capturedData = _sourceDataServiceMock.Invocations
+            .Where(i => i.Method.Name == "UpdateSourceDataAsync")
+            .Select(i => i.Arguments[1] as List<SourceData>)
+            .First();
+
+        // Verify the boundary handling
+        capturedData.Should().NotBeNull();
+        capturedData!.Count.Should().Be(1);
+        capturedData[0].Source.Should().Be(provider);
+        capturedData[0].Measurements.Should().NotBeNull();
+
+        // Debug: print what we actually got
+        var measurements = capturedData[0].Measurements!;
+        Console.WriteLine($"Total measurements: {measurements.Count}");
+        Console.WriteLine($"Cutoff date: {cutoffDate:yyyy-MM-dd}");
+        foreach (var m in measurements.OrderBy(x => x.Date))
+        {
+            Console.WriteLine($"  {m.Date}: {m.Weight}kg");
+        }
+
+        measurements.Count.Should().Be(7, "Expected 4 preserved (days -95, -93, -90, -89) + 3 from provider (days -88, -85, -80). Old data before cutoff is preserved, provider data from cutoff forward.");
+
+        // Verify specific measurements - old data preserved
+        measurements.Should().Contain(m => m.Date == syncStartDate.AddDays(-5).ToString("yyyy-MM-dd") && m.Weight == 64.0m, "day -95 from existing");
+        measurements.Should().Contain(m => m.Date == syncStartDate.AddDays(-3).ToString("yyyy-MM-dd") && m.Weight == 65.0m, "day -93 from existing");
+        measurements.Should().Contain(m => m.Date == syncStartDate.AddDays(0).ToString("yyyy-MM-dd") && m.Weight == 66.0m, "day -90 from existing");
+        measurements.Should().Contain(m => m.Date == syncStartDate.AddDays(1).ToString("yyyy-MM-dd") && m.Weight == 67.0m, "day -89 from existing");
+
+        // Verify provider data from cutoff forward (replaces old data at cutoff and after)
+        measurements.Should().Contain(m => m.Date == cutoffDate.ToString("yyyy-MM-dd") && m.Weight == 68.5m, "day -88 from provider (updated from 68.0)");
+        measurements.Should().Contain(m => m.Date == syncStartDate.AddDays(5).ToString("yyyy-MM-dd") && m.Weight == 70.0m, "day -85 from provider (updated from 69.0)");
+        measurements.Should().Contain(m => m.Date == syncStartDate.AddDays(10).ToString("yyyy-MM-dd") && m.Weight == 71.0m, "day -80 from provider (new)");
+
+        // Verify buffer zone measurements from provider were discarded (only existing data kept)
+        measurements.Should().NotContain(m => m.Date == syncStartDate.AddDays(0).ToString("yyyy-MM-dd") && m.Weight == 66.5m, "day -90 from provider should be discarded");
+        measurements.Should().NotContain(m => m.Date == syncStartDate.AddDays(1).ToString("yyyy-MM-dd") && m.Weight == 67.5m, "day -89 from provider should be discarded");
+    }
+
     #endregion
 
     #region Private Helper Methods
@@ -1088,6 +1209,35 @@ public class MeasurementSyncServiceTests : TestBase
         var measurements = sd[0].Measurements!; // We already checked it's not null
         return measurements.Count == newMeasurements.Count &&
                measurements.All(m => newMeasurements.Any(nm => nm.Date == m.Date && nm.Weight == m.Weight));
+    }
+
+    private static bool VerifyBoundaryHandling(List<SourceData> sd, string provider, DateTime syncStartDate, DateTime cutoffDate)
+    {
+        if (sd.Count != 1 || sd[0].Source != provider || sd[0].Measurements == null)
+            return false;
+
+        var measurements = sd[0].Measurements!;
+
+        // Should have: 2 preserved (days -95, -93) + 3 from provider (days -88, -85, -80) = 5 total
+        if (measurements.Count != 5)
+            return false;
+
+        // Preserved measurements (before buffer zone, before day -90)
+        var hasDay95 = measurements.Any(m => m.Date == syncStartDate.AddDays(-5).ToString("yyyy-MM-dd") && m.Weight == 64.0m);
+        var hasDay93 = measurements.Any(m => m.Date == syncStartDate.AddDays(-3).ToString("yyyy-MM-dd") && m.Weight == 65.0m);
+
+        // Buffer zone measurements (days -90, -89) should be EXCLUDED
+        var hasDay90 = measurements.Any(m => m.Date == syncStartDate.AddDays(0).ToString("yyyy-MM-dd"));
+        var hasDay89 = measurements.Any(m => m.Date == syncStartDate.AddDays(1).ToString("yyyy-MM-dd"));
+
+        // New measurements from provider (at/after cutoff day -88)
+        var hasDay88 = measurements.Any(m => m.Date == cutoffDate.ToString("yyyy-MM-dd") && m.Weight == 68.5m);
+        var hasDay85 = measurements.Any(m => m.Date == syncStartDate.AddDays(5).ToString("yyyy-MM-dd") && m.Weight == 70.0m);
+        var hasDay80 = measurements.Any(m => m.Date == syncStartDate.AddDays(10).ToString("yyyy-MM-dd") && m.Weight == 71.0m);
+
+        return hasDay95 && hasDay93 &&      // Preserved old data
+               !hasDay90 && !hasDay89 &&    // Buffer zone excluded
+               hasDay88 && hasDay85 && hasDay80;  // New provider data
     }
 
     #endregion

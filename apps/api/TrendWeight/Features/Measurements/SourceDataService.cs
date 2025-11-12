@@ -263,9 +263,10 @@ public class SourceDataService : ISourceDataService
                 var data = sourceData.FirstOrDefault();
                 if (data != null)
                 {
-                    // Clear measurements array
+                    // Clear measurements array and reset force_full_sync flag
                     data.Measurements = new List<RawMeasurement>();
                     data.LastSync = null;
+                    data.ForceFullSync = false;
                     data.UpdatedAt = DateTime.UtcNow.ToString("o");
 
                     await _supabaseService.UpdateAsync(data);
@@ -285,6 +286,7 @@ public class SourceDataService : ISourceDataService
                 {
                     data.Measurements = new List<RawMeasurement>();
                     data.LastSync = null;
+                    data.ForceFullSync = false;
                     data.UpdatedAt = DateTime.UtcNow.ToString("o");
 
                     await _supabaseService.UpdateAsync(data);
