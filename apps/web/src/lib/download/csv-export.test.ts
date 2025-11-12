@@ -9,10 +9,10 @@ global.URL = {
   revokeObjectURL: vi.fn(),
 } as any;
 
-global.Blob = vi.fn().mockImplementation((content, options) => ({
-  content,
-  options,
-})) as any;
+global.Blob = vi.fn().mockImplementation(function (this: any, content, options) {
+  this.content = content;
+  this.options = options;
+}) as any;
 
 describe("csvExport", () => {
   let mockLink: any;
@@ -29,6 +29,7 @@ describe("csvExport", () => {
     vi.spyOn(document, "createElement").mockReturnValue(mockLink);
     appendChildSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => mockLink);
     removeChildSpy = vi.spyOn(document.body, "removeChild").mockImplementation(() => mockLink);
+    (global.Blob as any).mockClear();
   });
 
   afterEach(() => {
