@@ -6,20 +6,48 @@ import { getDemoData, getDemoProfile } from "@/lib/demo/demo-data";
 import { ApiError, apiRequest } from "./client";
 import type { MeasurementsResponse, ProfileResponse, ProviderLink } from "./types";
 
-// Query key helpers
+// Query key helpers - returns base key if no sharingCode, otherwise prefixes with sharingCode
 const createQueryKey = <T extends readonly unknown[]>(base: T, sharingCode?: string): T | readonly [string, ...T] => {
   return sharingCode ? ([sharingCode, ...base] as const) : base;
 };
 
-// Query keys
+// Query keys with precise overload signatures
+function profileKey(): readonly ["profile"];
+function profileKey(sharingCode: string): readonly [string, "profile"];
+function profileKey(sharingCode?: string): readonly ["profile"] | readonly [string, "profile"];
+function profileKey(sharingCode?: string) {
+  return createQueryKey(["profile"] as const, sharingCode);
+}
+
+function dashboardDataKey(): readonly ["data", "dashboard"];
+function dashboardDataKey(sharingCode: string): readonly [string, "data", "dashboard"];
+function dashboardDataKey(sharingCode?: string): readonly ["data", "dashboard"] | readonly [string, "data", "dashboard"];
+function dashboardDataKey(sharingCode?: string) {
+  return createQueryKey(["data", "dashboard"] as const, sharingCode);
+}
+
+function providerLinksKey(): readonly ["providerLinks"];
+function providerLinksKey(sharingCode: string): readonly [string, "providerLinks"];
+function providerLinksKey(sharingCode?: string): readonly ["providerLinks"] | readonly [string, "providerLinks"];
+function providerLinksKey(sharingCode?: string) {
+  return createQueryKey(["providerLinks"] as const, sharingCode);
+}
+
+function allDataKey(): readonly ["data"];
+function allDataKey(sharingCode: string): readonly [string, "data"];
+function allDataKey(sharingCode?: string): readonly ["data"] | readonly [string, "data"];
+function allDataKey(sharingCode?: string) {
+  return createQueryKey(["data"] as const, sharingCode);
+}
+
 export const queryKeys = {
-  profile: (sharingCode?: string) => createQueryKey(["profile"] as const, sharingCode),
-  dashboardData: (sharingCode?: string) => createQueryKey(["data", "dashboard"] as const, sharingCode),
+  profile: profileKey,
+  dashboardData: dashboardDataKey,
   downloadData: () => ["data", "download"] as const,
-  providerLinks: (sharingCode?: string) => createQueryKey(["providerLinks"] as const, sharingCode),
+  providerLinks: providerLinksKey,
   sharing: ["sharing"] as const,
   // Helper for invalidating all data queries
-  allData: (sharingCode?: string) => createQueryKey(["data"] as const, sharingCode),
+  allData: allDataKey,
 };
 
 // Helper function to transform ProfileResponse to ProfileData
