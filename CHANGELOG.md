@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.9.4](https://github.com/ervwalter/trendweight/compare/v2.9.3...v2.9.4) (2025-12-26)
+
+
+### Dependencies
+
+* remove Microsoft.AspNetCore.OpenApi package reference ([ef1d1fa](https://github.com/ervwalter/trendweight/commit/ef1d1faa7703dc564b6c3b3da7057d18f6e4f583))
+* update actions/cache action to v5 ([#385](https://github.com/ervwalter/trendweight/issues/385)) ([be424d6](https://github.com/ervwalter/trendweight/commit/be424d65142da04375606c22462a45ceb9996d7e))
+* update actions/checkout action to v6 ([#383](https://github.com/ervwalter/trendweight/issues/383)) ([317907d](https://github.com/ervwalter/trendweight/commit/317907d9289abd16a77658bdb2145584547c4046))
+* update dependency eslint-plugin-react-hooks to v7 ([#366](https://github.com/ervwalter/trendweight/issues/366)) ([2298ff7](https://github.com/ervwalter/trendweight/commit/2298ff701ebde65d5d9c50187009940139a70515))
+* update dependency microsoft.net.test.sdk to 18.0.1 ([#374](https://github.com/ervwalter/trendweight/issues/374)) ([6231e78](https://github.com/ervwalter/trendweight/commit/6231e788f79fbea644121d87a9c861bc2c9acef6))
+* update dependency swashbuckle.aspnetcore to v10 ([#376](https://github.com/ervwalter/trendweight/issues/376)) ([0997dbd](https://github.com/ervwalter/trendweight/commit/0997dbd723bd390c0c8d1c1f5bf8cf5390b3a3fd))
+* update dotnet monorepo to v10 (major) ([#347](https://github.com/ervwalter/trendweight/issues/347)) ([76ff217](https://github.com/ervwalter/trendweight/commit/76ff2175d97da326350bae9a7df5ed9a88cea0bf))
+* update npm dependencies ([#375](https://github.com/ervwalter/trendweight/issues/375)) ([ab88ae5](https://github.com/ervwalter/trendweight/commit/ab88ae51519f0ff6db278ca9473d9bbfd31736b2))
+* update npm dependencies ([#382](https://github.com/ervwalter/trendweight/issues/382)) ([751cdb3](https://github.com/ervwalter/trendweight/commit/751cdb32457d30ad3baf52e426c486c793e77c4f))
+* update npm dependencies ([#384](https://github.com/ervwalter/trendweight/issues/384)) ([28acfa9](https://github.com/ervwalter/trendweight/commit/28acfa9e07742379fab6ca0570f6f2c75fb9a793))
+* update nuget dependencies ([#381](https://github.com/ervwalter/trendweight/issues/381)) ([1ffbc71](https://github.com/ervwalter/trendweight/commit/1ffbc71e91f2dcb650d7173ee899560a5a31e7ec))
+* update vitest monorepo to v4 (major) ([#369](https://github.com/ervwalter/trendweight/issues/369)) ([d087eef](https://github.com/ervwalter/trendweight/commit/d087eef073b6eb67f58583f4f2fbe261a6785f20))
+
 ## [2.9.3](https://github.com/ervwalter/trendweight/compare/v2.9.2...v2.9.3) (2025-11-12)
 
 
