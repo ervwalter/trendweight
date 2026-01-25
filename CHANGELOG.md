@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.9.5](https://github.com/ervwalter/trendweight/compare/v2.9.4...v2.9.5) (2026-01-25)
+
+
+### Fixes
+
+* clarify exponential smoothing explanation in math-of-trendweight.md ([1117c03](https://github.com/ervwalter/trendweight/commit/1117c038fa7f1d11066f7d31000d3a7761d3904b))
+
+
+### Dependencies
+
+* update dependency globals to v17 ([#387](https://github.com/ervwalter/trendweight/issues/387)) ([b8628da](https://github.com/ervwalter/trendweight/commit/b8628daba1188f0ca38cd250cba5550903b665a2))
+* update npm dependencies ([#386](https://github.com/ervwalter/trendweight/issues/386)) ([64a87a0](https://github.com/ervwalter/trendweight/commit/64a87a0e32f43ccb239235ae4feba47947badf41))
+* update nuget dependencies to 10.0.2 ([#388](https://github.com/ervwalter/trendweight/issues/388)) ([2a3dc87](https://github.com/ervwalter/trendweight/commit/2a3dc87d8fef977dbbe61afe421514f7a88a4018))
+
 ## [2.9.4](https://github.com/ervwalter/trendweight/compare/v2.9.3...v2.9.4) (2025-12-26)
 
 
