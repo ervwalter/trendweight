@@ -83,7 +83,7 @@ jobs:
 
       - name: Extract metadata for GitHub Registry
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -96,7 +96,7 @@ jobs:
 
       - name: Extract metadata for DigitalOcean Registry
         id: meta-do
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.DO_REGISTRY }}/${{ env.DO_IMAGE_NAME }}
           tags: |
