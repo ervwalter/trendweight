@@ -1,4 +1,4 @@
-import HighchartsReact from "highcharts-react-official";
+import { HighchartsReact } from "highcharts-react-official";
 import Highstock from "highcharts/highstock";
 // In Highcharts v12+, modules auto-initialize
 import "highcharts/modules/exporting";
