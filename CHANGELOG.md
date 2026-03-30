@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.7](https://github.com/ervwalter/trendweight/compare/v2.9.6...v2.9.7) (2026-03-30)
+
+
+### Fixes
+
+* use named import for highcharts-react-official for Vite 8 compatibility ([7cccdcd](https://github.com/ervwalter/trendweight/commit/7cccdcdf31f02fdf694f17028eea915863e0f2c6))
+
 ## [2.9.6](https://github.com/ervwalter/trendweight/compare/v2.9.5...v2.9.6) (2026-03-30)
 
 
