@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.9.8](https://github.com/ervwalter/trendweight/compare/v2.9.7...v2.9.8) (2026-03-30)
+
+
+### Fixes
+
+* disable OCI provenance for Docker push to fix DO registry tagging ([22d2783](https://github.com/ervwalter/trendweight/commit/22d27837f2548aa224b82503a4e123ef58ca2e35))
+* resolve Docker push failures to DigitalOcean registry ([4e768eb](https://github.com/ervwalter/trendweight/commit/4e768eb1309bb661d3bf55dc5310059680184d55))
+
 ## [2.9.7](https://github.com/ervwalter/trendweight/compare/v2.9.6...v2.9.7) (2026-03-30)
 
 
