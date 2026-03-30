@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.9.6](https://github.com/ervwalter/trendweight/compare/v2.9.5...v2.9.6) (2026-03-30)
+
+
+### Fixes
+
+* suppress CA1873 analyzer warning introduced in .NET 10 SDK ([cbf19b9](https://github.com/ervwalter/trendweight/commit/cbf19b923ebdf861bf4f0ca203447673c24f96ec))
+
+
+### Dependencies
+
+* update dependency @js-joda/core to v6 ([#407](https://github.com/ervwalter/trendweight/issues/407)) ([ae96254](https://github.com/ervwalter/trendweight/commit/ae962545e30a424dd378c7de05edfb7e35a89218))
+* update dependency @supabase/supabase-js to v2.101.0 ([#409](https://github.com/ervwalter/trendweight/issues/409)) ([5fe9a29](https://github.com/ervwalter/trendweight/commit/5fe9a29b8b54f6b89cacae4589ce134e56a15e4e))
+* update dependency @vitejs/plugin-react to v6 ([#402](https://github.com/ervwalter/trendweight/issues/402)) ([7879566](https://github.com/ervwalter/trendweight/commit/78795660176faa6bdbaec509506ed8618ee55234))
+* update dependency coverlet.collector to v8 ([#397](https://github.com/ervwalter/trendweight/issues/397)) ([63644f5](https://github.com/ervwalter/trendweight/commit/63644f5832c124d62b0e62afd89885651d7e7942))
+* update dependency jsdom to v29 ([#404](https://github.com/ervwalter/trendweight/issues/404)) ([39db90b](https://github.com/ervwalter/trendweight/commit/39db90b8ccc8da7436abfdec4b28a519b583e8c8))
+* update dependency lucide-react to v1 ([#405](https://github.com/ervwalter/trendweight/issues/405)) ([17492eb](https://github.com/ervwalter/trendweight/commit/17492ebb7a821f9b1cac1349c8366350119d70f5))
+* update dependency typescript to v6 ([#406](https://github.com/ervwalter/trendweight/issues/406)) ([b205483](https://github.com/ervwalter/trendweight/commit/b20548365f7814b12b3189abc23212a63aeec54d))
+* update dependency vite to v8 ([#403](https://github.com/ervwalter/trendweight/issues/403)) ([af81b5f](https://github.com/ervwalter/trendweight/commit/af81b5f1ddb09d4834058603078a0da8cae9c920))
+* update docker/build-push-action action to v7 ([#400](https://github.com/ervwalter/trendweight/issues/400)) ([446fcef](https://github.com/ervwalter/trendweight/commit/446fcef402483c9bd9253b98dd66d1b6134b25bf))
+* update docker/login-action action to v4 ([#398](https://github.com/ervwalter/trendweight/issues/398)) ([8dacf6e](https://github.com/ervwalter/trendweight/commit/8dacf6ef296444e5c52c223c92040651c20d3088))
+* update docker/metadata-action action to v6 ([#401](https://github.com/ervwalter/trendweight/issues/401)) ([587b44a](https://github.com/ervwalter/trendweight/commit/587b44ae94bde1db0bc3d78b1515b0095f3b50a8))
+* update docker/setup-buildx-action action to v4 ([#399](https://github.com/ervwalter/trendweight/issues/399)) ([79ca070](https://github.com/ervwalter/trendweight/commit/79ca070dee8a3a7046ca0918c686dc692c076f32))
+* update eslint monorepo to v10 ([edfc8c7](https://github.com/ervwalter/trendweight/commit/edfc8c78569afe0679b0bd1e43f05d9e2212af00))
+* update eslint monorepo to v10 (major) ([#394](https://github.com/ervwalter/trendweight/issues/394)) ([edfc8c7](https://github.com/ervwalter/trendweight/commit/edfc8c78569afe0679b0bd1e43f05d9e2212af00))
+* update npm dependencies ([#390](https://github.com/ervwalter/trendweight/issues/390)) ([ca6ac8d](https://github.com/ervwalter/trendweight/commit/ca6ac8dba1dff6429e93405bfb3fcd901a453a2f))
+* update nuget dependencies ([#391](https://github.com/ervwalter/trendweight/issues/391)) ([f06c5d9](https://github.com/ervwalter/trendweight/commit/f06c5d9750edbb30bea3bc7d45bd3c187a6a2600))
+
 ## [2.9.5](https://github.com/ervwalter/trendweight/compare/v2.9.4...v2.9.5) (2026-01-25)
 
 
