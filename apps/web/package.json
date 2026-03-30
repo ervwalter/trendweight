@@ -44,7 +44,7 @@
     "highcharts": "12.5.0",
     "highcharts-react-official": "3.2.3",
     "katex": "0.16.44",
-    "lucide-react": "0.577.0",
+    "lucide-react": "1.7.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "7.72.0",
