@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.9.8](https://github.com/ervwalter/trendweight/compare/v2.9.7...v2.9.8) (2026-04-29)
+
+
+### Fixes
+
+* disable OCI provenance for Docker push to fix DO registry tagging ([22d2783](https://github.com/ervwalter/trendweight/commit/22d27837f2548aa224b82503a4e123ef58ca2e35))
+* resolve Docker push failures to DigitalOcean registry ([4e768eb](https://github.com/ervwalter/trendweight/commit/4e768eb1309bb661d3bf55dc5310059680184d55))
+
+
+### Dependencies
+
+* update dependency coverlet.collector to v10 ([#415](https://github.com/ervwalter/trendweight/issues/415)) ([5766e7f](https://github.com/ervwalter/trendweight/commit/5766e7f1d4798dd8b523474e44ce6190f198dce4))
+* update dependency vite to v8.0.5 [security] ([#413](https://github.com/ervwalter/trendweight/issues/413)) ([fec244e](https://github.com/ervwalter/trendweight/commit/fec244eb0f82685683c5c6fc9e0706f45c4010cf))
+* update ghcr.io/devcontainers/features/node docker tag to v2 ([#418](https://github.com/ervwalter/trendweight/issues/418)) ([083bcaa](https://github.com/ervwalter/trendweight/commit/083bcaa080ec36638a874c8ec5cf4adb236affa0))
+* update googleapis/release-please-action action to v5 ([#416](https://github.com/ervwalter/trendweight/issues/416)) ([164145a](https://github.com/ervwalter/trendweight/commit/164145aed1417e7a4a4c14ff378af3d6e61d0355))
+
 ## [2.9.7](https://github.com/ervwalter/trendweight/compare/v2.9.6...v2.9.7) (2026-03-30)
 
 
