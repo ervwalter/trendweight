@@ -7,7 +7,7 @@
 	"features": {
 		"ghcr.io/devcontainers/features/dotnet:2": {},
 		"ghcr.io/devcontainers/features/github-cli:1": {},
-		"ghcr.io/devcontainers/features/node:1": {},
+		"ghcr.io/devcontainers/features/node:2": {},
 		"ghcr.io/va-h/devcontainers-features/uv:1": {},
 		"ghcr.io/devcontainers-extra/features/direnv:1": {},
 		"ghcr.io/devcontainers-extra/features/tmux-apt-get:1": {}
