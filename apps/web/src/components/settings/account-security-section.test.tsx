@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { useClerk } from "@clerk/clerk-react";
+import { useClerk } from "@clerk/react";
 import { AccountSecuritySection } from "./account-security-section";
 
 // Mock Clerk
 const mockBuildUserProfileUrl = vi.fn();
-vi.mock("@clerk/clerk-react", () => ({
+vi.mock("@clerk/react", () => ({
   useClerk: vi.fn(),
 }));
 

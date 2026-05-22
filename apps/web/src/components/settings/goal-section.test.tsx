@@ -7,11 +7,17 @@ import type { ProfileData } from "@/lib/core/interfaces";
 
 // Mock Select component
 vi.mock("@/components/ui/select", () => ({
-  Select: ({ children, ...props }: any) => (
-    <div data-testid="select" {...props}>
-      {children}
-    </div>
-  ),
+  Select: ({ children, ...props }: any) => {
+    const domProps = { ...props };
+    delete domProps.onValueChange;
+    delete domProps.value;
+
+    return (
+      <div data-testid="select" {...domProps}>
+        {children}
+      </div>
+    );
+  },
   SelectContent: ({ children, ...props }: any) => (
     <div data-testid="select-content" {...props}>
       {children}

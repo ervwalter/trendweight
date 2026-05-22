@@ -7,12 +7,12 @@ describe("locale", () => {
 
     beforeEach(() => {
       // Store original navigator
-      originalNavigator = global.navigator;
+      originalNavigator = globalThis.navigator;
     });
 
     afterEach(() => {
       // Restore original navigator
-      global.navigator = originalNavigator;
+      globalThis.navigator = originalNavigator;
     });
 
     it("should return false for US locale", () => {
@@ -49,7 +49,7 @@ describe("locale", () => {
     });
 
     it("should use navigator.language when no locale provided", () => {
-      global.navigator = {
+      globalThis.navigator = {
         ...originalNavigator,
         language: "fr-FR",
         languages: ["fr-FR", "en-US"],
@@ -59,7 +59,7 @@ describe("locale", () => {
     });
 
     it("should use navigator.languages[0] when navigator.language is not available", () => {
-      global.navigator = {
+      globalThis.navigator = {
         ...originalNavigator,
         language: "",
         languages: ["de-DE", "en-US"],
@@ -69,7 +69,7 @@ describe("locale", () => {
     });
 
     it("should default to US (imperial) when no locale info available", () => {
-      global.navigator = {
+      globalThis.navigator = {
         ...originalNavigator,
         language: "",
         languages: [],
@@ -94,7 +94,7 @@ describe("locale", () => {
     });
 
     it("should handle null/undefined navigator properties", () => {
-      global.navigator = {
+      globalThis.navigator = {
         ...originalNavigator,
         language: undefined as any,
         languages: undefined as any,

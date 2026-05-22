@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider } from "./theme-provider";
 import { useTheme } from "@/lib/hooks/use-theme";
@@ -160,7 +160,7 @@ describe("ThemeProvider", () => {
     });
   });
 
-  it("syncs theme across tabs via storage event", () => {
+  it("syncs theme across tabs via storage event", async () => {
     const { rerender } = render(
       <ThemeProvider>
         <TestComponent />
@@ -172,10 +172,11 @@ describe("ThemeProvider", () => {
       key: "trendweight-theme",
       newValue: "dark",
       oldValue: "light",
-      storageArea: localStorage,
     });
 
-    window.dispatchEvent(storageEvent);
+    act(() => {
+      window.dispatchEvent(storageEvent);
+    });
 
     rerender(
       <ThemeProvider>
@@ -183,7 +184,7 @@ describe("ThemeProvider", () => {
       </ThemeProvider>,
     );
 
-    waitFor(() => {
+    await waitFor(() => {
       expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
     });
   });
@@ -213,7 +214,6 @@ describe("ThemeProvider", () => {
       key: "trendweight-theme",
       newValue: "invalid-theme",
       oldValue: "light",
-      storageArea: localStorage,
     });
 
     window.dispatchEvent(storageEvent);

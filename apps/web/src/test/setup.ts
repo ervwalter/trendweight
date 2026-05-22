@@ -31,21 +31,21 @@ Object.defineProperty(window, "matchMedia", {
 });
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation(function (this: any) {
+globalThis.IntersectionObserver = vi.fn().mockImplementation(function (this: any) {
   this.observe = vi.fn();
   this.unobserve = vi.fn();
   this.disconnect = vi.fn();
 }) as any;
 
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(function (this: any) {
+globalThis.ResizeObserver = vi.fn().mockImplementation(function (this: any) {
   this.observe = vi.fn();
   this.unobserve = vi.fn();
   this.disconnect = vi.fn();
 }) as any;
 
 // Mock CSS.supports for Highcharts
-if (!global.CSS) {
-  global.CSS = {} as any;
+if (!globalThis.CSS) {
+  globalThis.CSS = {} as any;
 }
-global.CSS.supports = vi.fn(() => false);
+globalThis.CSS.supports = vi.fn(() => false);

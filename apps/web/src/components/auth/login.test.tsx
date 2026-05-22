@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { Login } from "./login";
 
 // Mock Clerk components
-vi.mock("@clerk/clerk-react", () => ({
+vi.mock("@clerk/react", () => ({
   SignIn: ({ routing }: any) => <div data-testid="clerk-signin">SignIn Component (routing: {routing})</div>,
 }));
 

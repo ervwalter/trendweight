@@ -7,6 +7,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    execArgv: ["--no-experimental-webstorage"],
+    environmentOptions: {
+      jsdom: {
+        url: "http://localhost",
+      },
+    },
     setupFiles: "./src/test/setup.ts",
     include: ["**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     coverage: {

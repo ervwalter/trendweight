@@ -120,6 +120,8 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
     return cols;
   }, [isComputed, useMetric]);
 
+  // TanStack Table returns non-memoizable helpers; React Compiler should skip this call.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: readings,
     columns,
