@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.9.9](https://github.com/ervwalter/trendweight/compare/v2.9.8...v2.9.9) (2026-05-22)
+
+
+### Dependencies
+
+* update npm dependencies ([#410](https://github.com/ervwalter/trendweight/issues/410)) ([b942d73](https://github.com/ervwalter/trendweight/commit/b942d73ad899cdb1e3866d468dfaa16e4493bba2))
+* update nuget dependencies ([#414](https://github.com/ervwalter/trendweight/issues/414)) ([374fa56](https://github.com/ervwalter/trendweight/commit/374fa561e2a5e6ce205a88ccfecddc9a510adc6c))
+
 ## [2.9.8](https://github.com/ervwalter/trendweight/compare/v2.9.7...v2.9.8) (2026-04-29)
 
 
