@@ -416,7 +416,7 @@ describe("queries", () => {
       const options = queryOptions.profile(mockGetToken);
 
       // Mock the API request function
-      global.fetch = vi.fn().mockResolvedValueOnce({
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
         ok: false,
         status: 404,
         json: async () => ({}),

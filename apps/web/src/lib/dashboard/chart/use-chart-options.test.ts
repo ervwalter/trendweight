@@ -6,6 +6,8 @@ import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 import { LocalDate } from "@js-joda/core";
 
 // Mock dependencies
+const mockOptionsTemplateState = vi.hoisted(() => ({ xAxis: {} as unknown }));
+
 vi.mock("@/lib/hooks/use-media-query");
 vi.mock("./data-transformers");
 vi.mock("./option-builders");
@@ -13,7 +15,7 @@ vi.mock("./options-template", () => ({
   default: () => ({
     chart: { height: "56%" },
     series: [],
-    xAxis: {},
+    xAxis: mockOptionsTemplateState.xAxis,
     yAxis: {},
   }),
 }));
@@ -43,6 +45,7 @@ const mockDashboardData: DashboardData = {
 
 describe("useChartOptions", () => {
   beforeEach(() => {
+    mockOptionsTemplateState.xAxis = {};
     vi.mocked(useIsMobile).mockReturnValue(false);
   });
 
@@ -240,15 +243,7 @@ describe("useChartOptions", () => {
   });
 
   it("should handle xAxis as array", () => {
-    vi.unmock("./options-template");
-    vi.mock("./options-template", () => ({
-      default: () => ({
-        chart: { height: "56%" },
-        series: [],
-        xAxis: [], // Array instead of object
-        yAxis: {},
-      }),
-    }));
+    mockOptionsTemplateState.xAxis = [];
 
     const { result } = renderHook(() => useChartOptions(mockDashboardData));
 

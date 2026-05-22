@@ -3,6 +3,7 @@ import { renderHook, act } from "@testing-library/react";
 import { usePersistedState } from "./use-persisted-state";
 
 describe("usePersistedState", () => {
+  const originalLocalStorageDescriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
   const localStorageMock = {
     getItem: vi.fn(),
     setItem: vi.fn(),
@@ -13,14 +14,23 @@ describe("usePersistedState", () => {
   };
 
   beforeEach(() => {
+    localStorageMock.getItem.mockReset();
+    localStorageMock.setItem.mockReset();
+    localStorageMock.removeItem.mockReset();
+    localStorageMock.clear.mockReset();
+    localStorageMock.key.mockReset();
+
     Object.defineProperty(window, "localStorage", {
       value: localStorageMock,
       writable: true,
+      configurable: true,
     });
-    vi.clearAllMocks();
   });
 
   afterEach(() => {
+    if (originalLocalStorageDescriptor) {
+      Object.defineProperty(window, "localStorage", originalLocalStorageDescriptor);
+    }
     vi.restoreAllMocks();
   });
 

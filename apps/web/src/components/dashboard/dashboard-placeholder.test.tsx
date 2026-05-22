@@ -16,7 +16,7 @@ vi.mock("@/lib/realtime/client", () => ({
 }));
 
 // Mock Clerk hooks
-vi.mock("@clerk/clerk-react", () => ({
+vi.mock("@clerk/react", () => ({
   useUser: () => ({ user: null, isLoaded: true }),
   useAuth: () => ({ isSignedIn: false, getToken: null }),
   useClerk: () => ({ signOut: vi.fn() }),

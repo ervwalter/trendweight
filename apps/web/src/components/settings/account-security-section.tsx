@@ -1,7 +1,7 @@
 import { ExternalLink } from "@/components/common/external-link";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useClerk } from "@clerk/clerk-react";
+import { useClerk } from "@clerk/react";
 import { ExternalLink as ExternalLinkIcon } from "lucide-react";
 
 export function AccountSecuritySection() {

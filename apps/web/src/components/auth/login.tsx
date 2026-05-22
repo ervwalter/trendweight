@@ -1,5 +1,5 @@
 import { NewVersionNotice } from "@/components/notices/new-version-notice";
-import { SignIn } from "@clerk/clerk-react";
+import { SignIn } from "@clerk/react";
 
 const clerkAppearance = {
   elements: {

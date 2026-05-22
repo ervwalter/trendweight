@@ -9,13 +9,13 @@ type ThemeProviderProps = {
 
 export function ThemeProvider({ children, defaultTheme = "light", storageKey = "trendweight-theme", ...props }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem(storageKey) as Theme;
+    const stored = window.localStorage.getItem(storageKey) as Theme;
     // Validate stored value is either "light" or "dark"
     if (stored === "light" || stored === "dark") {
       return stored;
     }
     // If invalid or not present, use default and save it
-    localStorage.setItem(storageKey, defaultTheme);
+    window.localStorage.setItem(storageKey, defaultTheme);
     return defaultTheme;
   });
 
@@ -43,7 +43,7 @@ export function ThemeProvider({ children, defaultTheme = "light", storageKey = "
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
+      window.localStorage.setItem(storageKey, theme);
       setTheme(theme);
     },
   };
