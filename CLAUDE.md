@@ -31,6 +31,12 @@ TrendWeight is a monorepo web application for tracking weight trends by integrat
 - `provider_links` - OAuth tokens for integrations (JSONB)
 - `source_data` - Raw measurement data (JSONB)
 
+### Database Migrations (Supabase)
+- `supabase/` (config.toml + migrations) is the source of truth for schema and is committed to the repo
+- Schema changes MUST go through migration files: `supabase migration new <name>`, then `supabase db push`
+- NEVER apply SQL directly to the remote database (via Supabase MCP or otherwise) — the remote migration history table will drift from `supabase/migrations/` and break branching and `supabase db pull`
+- If history drifts anyway: `supabase migration list --linked` to compare, `supabase migration repair` to fix bookkeeping (it never touches schema or data)
+
 ## Development Commands
 
 ### Essential Commands (run from repository root)
