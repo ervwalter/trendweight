@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CheckCircle } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { apiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/use-auth";
 import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "@/lib/api/mutations";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExternalLink } from "@/components/common/external-link";
 import { Heading } from "@/components/common/heading";
+import { NotePencilIcon } from "@/components/common/note-pencil-icon";
 import { getProviderDisplayName, getOAuthProviders } from "@/lib/utils/provider-display";
 
 // Simple date formatter for connection dates
@@ -71,13 +72,9 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
           <Heading level={1} display>
             Connect Your Scale
           </Heading>
-          <p className="text-muted-foreground mb-2 text-base sm:text-lg">
-            Connect your Withings or Fitbit account to automatically track your weight with TrendWeight. When you're ready, click one of the options below and
-            authorize TrendWeight to access your weight data.
-          </p>
-          <p className="text-muted-foreground mb-8 text-sm sm:text-base">
-            <span className="font-semibold">Don't have a smart scale?</span> No problem! You can manually enter your weight in either app and TrendWeight will
-            still track your trends.
+          <p className="text-muted-foreground mb-8 text-base sm:text-lg">
+            Connect your Withings or Fitbit account to automatically track your weight with TrendWeight — or skip the scale entirely and enter your weight by
+            hand.
           </p>
         </>
       )}
@@ -221,6 +218,62 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
             </div>
           );
         })}
+
+        {/* Manual entry alongside the other connections on the settings page */}
+        {variant === "settings" && (
+          <div className="border-border flex flex-col space-y-3 rounded-lg border p-4 @sm:flex-row @sm:items-center @sm:justify-between @sm:space-y-0">
+            <div className="flex items-center space-x-3">
+              <div className="bg-manual-tile flex h-10 w-10 items-center justify-center rounded-md">
+                <NotePencilIcon className="h-7 w-7 text-black/80" accentClassName="fill-primary" />
+              </div>
+              <div>
+                <Heading level={3} className="text-foreground">
+                  Weight Log
+                </Heading>
+                <p className="text-muted-foreground text-sm">
+                  {connectedProviders.has("manual") ? "Weights you've entered yourself" : "No smart scale needed — log weights yourself"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 self-end @sm:self-auto">
+              <Button asChild variant="default" size="sm">
+                <Link to="/log">Edit</Link>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Manual entry is a first-class option on the link page, presented like the providers above */}
+        {variant === "link" && (
+          <div className="border-border bg-muted relative rounded-lg border p-4 @sm:p-6">
+            {connectedProviders.has("manual") && (
+              <div className="absolute top-4 right-4">
+                <CheckCircle className="text-success h-5 w-5 @sm:h-6 @sm:w-6" />
+              </div>
+            )}
+            <Heading level={2}>Log It Yourself</Heading>
+            <div className="flex flex-col gap-4 @md:flex-row @md:gap-6">
+              <div className="flex-shrink-0 self-center @md:self-start">
+                <div className="bg-manual-tile flex h-24 w-24 items-center justify-center rounded-2xl @sm:h-32 @sm:w-32 @md:h-48 @md:w-48">
+                  <NotePencilIcon className="h-16 w-16 text-black/80 @sm:h-22 @sm:w-22 @md:h-32 @md:w-32" accentClassName="fill-primary" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-muted-foreground mb-3 text-sm @sm:text-base">
+                  No smart scale? No problem. Type in your weight whenever you weigh in, and TrendWeight gives you the same trend analysis, charts, and stats as
+                  a connected scale.
+                </p>
+                <p className="text-muted-foreground mb-4 text-xs italic @sm:text-sm">
+                  Your weight log works alongside connected scales too — you can mix and match.
+                </p>
+                <Button asChild variant="success" size="sm" className="@sm:px-6">
+                  <Link to="/log">Log Your Weight</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Show legacy provider if it exists */}
         {providerLinks?.some((link) => link.provider === "legacy") && (

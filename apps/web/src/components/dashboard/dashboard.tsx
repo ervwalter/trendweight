@@ -9,6 +9,7 @@ import { useEmbedParams } from "@/lib/hooks/use-embed-params";
 import { EmbedDashboard } from "./embed-dashboard";
 import { Heading } from "@/components/common/heading";
 import { NewVersionNotice } from "@/components/notices/new-version-notice";
+import { QuickLogButton } from "@/components/log/quick-log-button";
 import Buttons from "./buttons";
 import Chart from "./chart/chart";
 import Currently from "./currently";
@@ -55,6 +56,9 @@ const Dashboard: FC = () => {
         <div className="mx-auto max-w-2xl space-y-4">
           <ProviderSyncErrors providerStatus={dashboardData.providerStatus} />
           <NoDataCard providerStatus={dashboardData.providerStatus} />
+          <div className="flex justify-center">
+            <QuickLogButton />
+          </div>
         </div>
       </div>
     );
@@ -66,7 +70,11 @@ const Dashboard: FC = () => {
       <div className="flex flex-col gap-4">
         <ProviderSyncErrors providerStatus={dashboardData.providerStatus} />
         {dashboardData.isMe && dashboardData.profile.isMigrated && <NewVersionNotice />}
-        <Buttons />
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between print:hidden">
+          <Buttons />
+          {/* Compact and last on mobile so it reads as one of the chart controls, not the page's primary action */}
+          {dashboardData.isMe && <QuickLogButton className="self-start" />}
+        </div>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-12">
           <div className="w-full md:w-[475px] lg:w-[650px] xl:w-[840px]">
             <Heading level={2} className="mb-4">

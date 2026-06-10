@@ -1,3 +1,4 @@
+import { getProviderDisplayName } from "@/lib/utils/provider-display";
 import type { SyncProgress } from "./types";
 
 interface SyncProgressToastProps {
@@ -19,7 +20,7 @@ const SyncProgressToast = ({ progress }: SyncProgressToastProps) => {
         <div className="space-y-1">
           {progress.providers.map((provider) => (
             <div key={provider.provider} className="text-muted-foreground text-xs">
-              {provider.provider === "fitbit" ? "Fitbit" : "Withings"}:{" "}
+              {getProviderDisplayName(provider.provider)}:{" "}
               {provider.message ||
                 (provider.stage === "init"
                   ? "Starting..."

@@ -35,7 +35,8 @@ export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolea
         const conversionFactor = profile?.useMetric ? 1 : 2.20462262;
         data = providerData.measurements.map((m) => ({
           date: LocalDate.parse(m.date),
-          time: m.time,
+          // Manual entries are date-only; their stored time is a placeholder
+          time: viewType === "manual" ? undefined : m.time,
           weight: m.weight ? m.weight * conversionFactor : undefined,
           fatRatio: m.fatRatio,
           provider: viewType,

@@ -40,6 +40,15 @@ const providerMetadata: Record<string, ProviderMetadata> = {
     supportsOAuth: true,
     supportsSync: true,
   },
+  manual: {
+    id: "manual",
+    name: "Weight Log",
+    displayName: "Weight Log",
+    description: "Weights you entered yourself, either in TrendWeight or through the TrendWeight API.",
+    note: "Logged weights appear in your charts and exports alongside data from connected scales.",
+    supportsOAuth: false,
+    supportsSync: false,
+  },
   legacy: {
     id: "legacy",
     name: "Legacy Data",

@@ -14,9 +14,16 @@ export interface Measurement {
   change?: number;
 }
 
+// A manually entered reading from /api/measurements/manual (one per date)
+export interface ManualReading {
+  date: string; // "2024-01-15" (user's local timezone)
+  weight: number; // always kg
+  fatRatio?: number; // 0-1 ratio, not a percentage
+}
+
 // Source data from /api/data endpoint
 export interface ApiSourceData {
-  source: string; // "withings" or "fitbit"
+  source: string; // "withings", "fitbit", "legacy", or "manual"
   lastUpdate: string; // ISO timestamp
   measurements?: Array<{
     date: string; // "2024-01-15"

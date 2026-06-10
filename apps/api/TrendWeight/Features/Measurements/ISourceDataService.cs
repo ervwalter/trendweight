@@ -29,6 +29,14 @@ public interface ISourceDataService
     Task<DateTime?> GetLastSyncTimeAsync(Guid userId, string provider);
 
     /// <summary>
+    /// Checks whether a provider has any stored measurements for a user
+    /// </summary>
+    /// <param name="userId">User's Supabase UID</param>
+    /// <param name="provider">Provider name (e.g., "manual")</param>
+    /// <returns>True if a source_data row exists with at least one measurement</returns>
+    Task<bool> HasMeasurementsAsync(Guid userId, string provider);
+
+    /// <summary>
     /// Get the force_full_sync flag for a specific provider
     /// </summary>
     /// <param name="userId">User's Supabase UID</param>

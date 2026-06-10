@@ -9,6 +9,7 @@ using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Measurements;
+using TrendWeight.Features.Measurements.Manual;
 using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.Services;
 using TrendWeight.Features.Common;
@@ -79,6 +80,11 @@ public static class ServiceCollectionExtensions
         // Register Legacy service
         services.AddScoped<LegacyService>();
         services.AddScoped<IProviderService>(sp => sp.GetRequiredService<LegacyService>());
+
+        // Register Manual service
+        services.AddScoped<ManualService>();
+        services.AddScoped<IProviderService>(sp => sp.GetRequiredService<ManualService>());
+        services.AddScoped<IManualDataService, ManualDataService>();
 
         // Register provider integration orchestrator
         services.AddScoped<IProviderIntegrationService, ProviderIntegrationService>();

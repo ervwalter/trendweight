@@ -4,7 +4,7 @@ import { useAuth, type GetToken } from "@/lib/auth/use-auth";
 import type { ProfileData, SharingData } from "@/lib/core/interfaces";
 import { getDemoData, getDemoProfile } from "@/lib/demo/demo-data";
 import { ApiError, apiRequest } from "./client";
-import type { MeasurementsResponse, ProfileResponse, ProviderLink } from "./types";
+import type { ManualReading, MeasurementsResponse, ProfileResponse, ProviderLink } from "./types";
 
 // Query key helpers - returns base key if no sharingCode, otherwise prefixes with sharingCode
 const createQueryKey = <T extends readonly unknown[]>(base: T, sharingCode?: string): T | readonly [string, ...T] => {
@@ -46,6 +46,7 @@ export const queryKeys = {
   downloadData: () => ["data", "download"] as const,
   providerLinks: providerLinksKey,
   sharing: ["sharing"] as const,
+  manualReadings: () => ["manual-readings"] as const,
   // Helper for invalidating all data queries
   allData: allDataKey,
 };
@@ -167,6 +168,13 @@ export const queryOptions = {
       return apiRequest<SharingData>("/sharing", { token });
     },
   }),
+  manualReadings: (getToken: GetToken) => ({
+    queryKey: queryKeys.manualReadings(),
+    queryFn: async () => {
+      const token = await getToken();
+      return apiRequest<ManualReading[]>("/measurements/manual", { token });
+    },
+  }),
 };
 
 // Profile query (with suspense) - returns ProfileData
@@ -244,6 +252,12 @@ export function useProviderLinks() {
 export function useSharingSettings() {
   const { getToken } = useAuth();
   return useSuspenseQuery(queryOptions.sharing(getToken));
+}
+
+// Manual readings query (with suspense)
+export function useManualReadings() {
+  const { getToken } = useAuth();
+  return useSuspenseQuery(queryOptions.manualReadings(getToken));
 }
 
 // Download data query (includes source data for provider-specific downloads)

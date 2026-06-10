@@ -27,10 +27,15 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
     ) : null,
 }));
 
-// Mock useNavigate
+// Mock useNavigate and Link
 const mockNavigate = vi.fn();
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => mockNavigate,
+  Link: ({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) => (
+    <a href={to} className={className}>
+      {children}
+    </a>
+  ),
 }));
 
 describe("ProviderList", () => {
@@ -89,7 +94,14 @@ describe("ProviderList", () => {
 
       expect(screen.getByText("Connect Your Scale")).toBeInTheDocument();
       expect(screen.getByText(/Connect your Withings or Fitbit account/)).toBeInTheDocument();
-      expect(screen.getByText("Don't have a smart scale?")).toBeInTheDocument();
+    });
+
+    it("should render manual entry as a first-class option", () => {
+      render(<ProviderList variant="link" />);
+
+      expect(screen.getByText("Log It Yourself")).toBeInTheDocument();
+      expect(screen.getByText(/Type in your weight/)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Log Your Weight" })).toHaveAttribute("href", "/log");
     });
 
     it("should not render header when showHeader is false", () => {
@@ -271,6 +283,13 @@ describe("ProviderList", () => {
 
       expect(screen.getByText(/Connected 1\/15\/2024/)).toBeInTheDocument();
       expect(screen.getByText("Not connected")).toBeInTheDocument();
+    });
+
+    it("should show the weight log with an edit link", () => {
+      render(<ProviderList variant="settings" />);
+
+      expect(screen.getByText("Weight Log")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Edit" })).toHaveAttribute("href", "/log");
     });
 
     it("should handle withings connection", async () => {

@@ -4,13 +4,24 @@ import { NoDataCard } from "./no-data-card";
 import type { ProviderSyncStatus } from "@/lib/api/types";
 
 describe("NoDataCard", () => {
-  it("renders waiting for data message when no providers", () => {
+  it("renders getting-started message when no providers", () => {
     render(<NoDataCard />);
 
     expect(screen.getByText("Waiting for Data")).toBeInTheDocument();
-    expect(screen.getByText(/Your account is connected to your provider/)).toBeInTheDocument();
-    expect(screen.getByText(/Your charts and stats will appear here/)).toBeInTheDocument();
-    expect(screen.getByText(/TrendWeight looks for new measurements/)).toBeInTheDocument();
+    expect(screen.getByText(/There are no weight measurements in your account yet/)).toBeInTheDocument();
+    expect(screen.getByText(/log a weight yourself/)).toBeInTheDocument();
+  });
+
+  it("ignores manual and legacy when listing providers", () => {
+    const providerStatus: Record<string, ProviderSyncStatus> = {
+      withings: { success: true },
+      manual: { success: true },
+      legacy: { success: true },
+    };
+
+    render(<NoDataCard providerStatus={providerStatus} />);
+
+    expect(screen.getByText(/Your account is connected to Withings, but/)).toBeInTheDocument();
   });
 
   it("shows Withings when connected to Withings", () => {

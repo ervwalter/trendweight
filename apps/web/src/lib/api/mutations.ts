@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/use-auth";
 import { apiRequest } from "./client";
 import { queryKeys } from "./queries";
-import type { ProfileResponse } from "./types";
+import type { ManualReading, ProfileResponse } from "./types";
 import type { SharingData } from "@/lib/core/interfaces";
 
 interface UpdateProfileData {
@@ -100,6 +100,61 @@ export function useReconnectProvider() {
       const endpoint = provider === "fitbit" ? "/fitbit/link" : "/withings/link";
       const token = await getToken();
       return apiRequest<{ url?: string; authorizationUrl?: string }>(endpoint, { token });
+    },
+  });
+}
+
+export function useSaveManualReading() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (reading: ManualReading) => {
+      const token = await getToken();
+      return apiRequest<ManualReading>(`/measurements/manual/${reading.date}`, {
+        method: "PUT",
+        body: JSON.stringify({ weight: reading.weight, fatRatio: reading.fatRatio }),
+        token,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.manualReadings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.allData() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
+    },
+  });
+}
+
+export function useDeleteManualReading() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (date: string) => {
+      const token = await getToken();
+      return apiRequest(`/measurements/manual/${date}`, { method: "DELETE", token });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.manualReadings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.allData() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
+    },
+  });
+}
+
+export function useDeleteAllManualReadings() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      return apiRequest("/measurements/manual", { method: "DELETE", token });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.manualReadings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.allData() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.providerLinks() });
     },
   });
 }

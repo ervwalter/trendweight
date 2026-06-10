@@ -2,6 +2,7 @@ import type { FC } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useReconnectProvider } from "@/lib/api/mutations";
 import type { ProviderSyncStatus } from "@/lib/api/types";
+import { getProviderDisplayName } from "@/lib/utils/provider-display";
 import { Button } from "@/components/ui/button";
 
 interface ProviderSyncErrorProps {
@@ -12,12 +13,12 @@ interface ProviderSyncErrorProps {
 const ProviderSyncError: FC<ProviderSyncErrorProps> = ({ provider, status }) => {
   const reconnectProvider = useReconnectProvider();
 
-  // Skip if no error
-  if (status.success || !status.error) {
+  // Skip if no error; manual and legacy never sync, so they never show errors
+  if (status.success || !status.error || provider === "manual" || provider === "legacy") {
     return null;
   }
 
-  const providerDisplayName = provider === "fitbit" ? "Fitbit" : "Withings";
+  const providerDisplayName = getProviderDisplayName(provider);
 
   const handleReconnect = async () => {
     try {

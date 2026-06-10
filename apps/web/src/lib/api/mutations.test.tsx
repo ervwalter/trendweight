@@ -14,6 +14,9 @@ import {
   useExchangeFitbitToken,
   useExchangeWithingsToken,
   useEnableProvider,
+  useSaveManualReading,
+  useDeleteManualReading,
+  useDeleteAllManualReadings,
 } from "./mutations";
 import { queryKeys } from "./queries";
 import type { ProfileResponse } from "./types";
@@ -216,6 +219,111 @@ describe("mutations", () => {
       expect(invalidateQueriesSpy).toHaveBeenCalledWith({
         queryKey: queryKeys.allData(),
       });
+    });
+  });
+
+  describe("useSaveManualReading", () => {
+    it("should PUT the reading keyed by date and invalidate readings, data, and provider links", async () => {
+      const reading = { date: "2024-05-01", weight: 81.5, fatRatio: 0.22 };
+      let capturedBody: unknown;
+
+      server.use(
+        http.put(`/api/measurements/manual/${reading.date}`, async ({ request }) => {
+          capturedBody = await request.json();
+          return HttpResponse.json(reading);
+        }),
+      );
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+      const invalidateQueriesSpy = vi.spyOn(queryClient, "invalidateQueries");
+      const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+
+      const { result } = renderHook(() => useSaveManualReading(), { wrapper });
+
+      act(() => {
+        result.current.mutate(reading);
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      // Date travels in the URL, not the body
+      expect(capturedBody).toEqual({ weight: 81.5, fatRatio: 0.22 });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.manualReadings() });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.allData() });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.providerLinks() });
+    });
+  });
+
+  describe("useDeleteManualReading", () => {
+    it("should DELETE by date and invalidate readings, data, and provider links", async () => {
+      server.use(
+        http.delete("/api/measurements/manual/2024-05-01", () => {
+          return HttpResponse.json({ message: "deleted" });
+        }),
+      );
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+      const invalidateQueriesSpy = vi.spyOn(queryClient, "invalidateQueries");
+      const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+
+      const { result } = renderHook(() => useDeleteManualReading(), { wrapper });
+
+      act(() => {
+        result.current.mutate("2024-05-01");
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.manualReadings() });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.allData() });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.providerLinks() });
+    });
+  });
+
+  describe("useDeleteAllManualReadings", () => {
+    it("should DELETE all readings and invalidate readings, data, and provider links", async () => {
+      server.use(
+        http.delete("/api/measurements/manual", () => {
+          return HttpResponse.json({ message: "deleted all" });
+        }),
+      );
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+      const invalidateQueriesSpy = vi.spyOn(queryClient, "invalidateQueries");
+      const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+
+      const { result } = renderHook(() => useDeleteAllManualReadings(), { wrapper });
+
+      act(() => {
+        result.current.mutate();
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.manualReadings() });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.allData() });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: queryKeys.providerLinks() });
     });
   });
 
