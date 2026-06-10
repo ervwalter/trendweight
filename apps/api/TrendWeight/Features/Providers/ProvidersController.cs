@@ -70,6 +70,21 @@ public class ProvidersController : ControllerBase
                     IsDisabled = link.Provider == "legacy" && link.Token?.GetValueOrDefault("disabled") as bool? == true
                 }).ToList();
 
+            // Manual data has no provider_links row; surface a synthetic link whenever
+            // the user has manual readings so the frontend treats it like a connected source
+            if (await _sourceDataService.HasMeasurementsAsync(userGuid, "manual"))
+            {
+                var lastUpdate = await _sourceDataService.GetLastSyncTimeAsync(userGuid, "manual");
+                response.Add(new ProviderLinkResponse
+                {
+                    Provider = "manual",
+                    ConnectedAt = (lastUpdate ?? DateTime.UtcNow).ToString("o"),
+                    UpdateReason = null,
+                    HasToken = true,
+                    IsDisabled = false
+                });
+            }
+
             return Ok(response);
         }
         catch (Exception ex)

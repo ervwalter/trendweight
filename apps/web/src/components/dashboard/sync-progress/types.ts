@@ -1,5 +1,5 @@
 export interface ProviderProgress {
-  provider: "fitbit" | "withings";
+  provider: string;
   stage: "init" | "fetching" | "merging" | "done" | "error";
   message: string | null;
   current: number | null;

@@ -335,6 +335,37 @@ public class ProviderIntegrationServiceTests : TestBase
         result.Should().NotContain("withings");
     }
 
+    [Fact]
+    public async Task GetActiveProvidersAsync_WithManualService_IncludesManualOnlyWhenDataExists()
+    {
+        // Arrange - use a real ManualService so the implicit-activation rule is exercised end-to-end
+        var userId = Guid.NewGuid();
+        var sourceDataServiceMock = new Mock<TrendWeight.Features.Measurements.ISourceDataService>();
+        var manualService = new ManualService(
+            sourceDataServiceMock.Object,
+            new Mock<ILogger<ManualService>>().Object);
+
+        var service = new ProviderIntegrationService(
+            new List<IProviderService> { _withingsServiceMock.Object, manualService },
+            _loggerMock.Object);
+
+        _withingsServiceMock.Setup(x => x.HasActiveProviderLinkAsync(userId)).ReturnsAsync(true);
+
+        // No manual data yet
+        sourceDataServiceMock.Setup(x => x.HasMeasurementsAsync(userId, "manual")).ReturnsAsync(false);
+
+        // Act & Assert - manual absent without data
+        var withoutData = await service.GetActiveProvidersAsync(userId);
+        withoutData.Should().BeEquivalentTo(new[] { "withings" });
+
+        // Manual data now exists
+        sourceDataServiceMock.Setup(x => x.HasMeasurementsAsync(userId, "manual")).ReturnsAsync(true);
+
+        // Act & Assert - manual included once data exists
+        var withData = await service.GetActiveProvidersAsync(userId);
+        withData.Should().BeEquivalentTo(new[] { "withings", "manual" });
+    }
+
     #endregion
 
     #region Integration Scenario Tests

@@ -298,6 +298,43 @@ public class MeasurementComputationServiceTests
         result[0].ActualWeight.Should().Be(70.0m); // Should select 8:00 AM measurement
     }
 
+    [Fact]
+    public void ComputeMeasurements_WithManualAndScaleSameDay_ManualWins()
+    {
+        // Arrange: manual readings are stored at end of day, so without explicit
+        // preference the earlier scale reading would win
+        var profile = CreateTestProfile();
+        var sourceData = new List<SourceData>
+        {
+            new()
+            {
+                Source = "withings",
+                Measurements = new List<RawMeasurement>
+                {
+                    new() { Date = "2024-01-01", Time = "07:00:00", Weight = 70.0m, FatRatio = 0.25m },
+                    new() { Date = "2024-01-02", Time = "07:00:00", Weight = 71.0m }
+                }
+            },
+            new()
+            {
+                Source = "manual",
+                Measurements = new List<RawMeasurement>
+                {
+                    new() { Date = "2024-01-01", Time = "23:59:59", Weight = 68.5m, FatRatio = 0.22m }
+                }
+            }
+        };
+
+        // Act
+        var result = _sut.ComputeMeasurements(sourceData, profile);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result[0].ActualWeight.Should().Be(68.5m); // Manual entry overrides same-day scale reading
+        result[0].ActualFatPercent.Should().Be(0.22m); // Fat selection prefers manual too
+        result[1].ActualWeight.Should().Be(71.0m); // Scale-only day unaffected
+    }
+
     #endregion
 
     #region Edge Cases and Performance Tests

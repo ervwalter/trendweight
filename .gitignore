@@ -88,6 +88,9 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+# The Visual Studio [Ll]og/ pattern above is for build logs; keep the web app's
+# manual weight entry components tracked
+!apps/web/src/components/log/
 
 # .NET Core
 project.lock.json

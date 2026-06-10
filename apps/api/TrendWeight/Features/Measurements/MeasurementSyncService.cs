@@ -18,6 +18,9 @@ public class MeasurementSyncService : IMeasurementSyncService
     private readonly ISyncProgressReporter? _progressReporter;
     private readonly int _cacheDurationSeconds;
 
+    // Providers that never talk to an external API; sync is a no-op and progress is not reported
+    private static readonly HashSet<string> NonSyncingProviders = new() { "legacy", "manual" };
+
     // Data is considered fresh for 5 minutes in production
     private const int CACHE_DURATION_SECONDS_PRODUCTION = 300;
     // Use shorter cache duration in development for easier debugging  
@@ -184,8 +187,8 @@ public class MeasurementSyncService : IMeasurementSyncService
             if (result.Success && result.Measurements != null)
             {
 
-                // Don't report progress for legacy provider
-                if (_progressReporter != null && provider != "legacy")
+                // Don't report progress for non-syncing providers
+                if (_progressReporter != null && !NonSyncingProviders.Contains(provider))
                 {
                     await _progressReporter.ReportProviderProgressAsync(
                         provider,
@@ -243,8 +246,8 @@ public class MeasurementSyncService : IMeasurementSyncService
                     mergedMeasurements.Count, provider);
             }
 
-            // Don't report progress for legacy provider
-            if (_progressReporter != null && provider != "legacy")
+            // Don't report progress for non-syncing providers
+            if (_progressReporter != null && !NonSyncingProviders.Contains(provider))
             {
                 await _progressReporter.ReportProviderProgressAsync(
                     provider,

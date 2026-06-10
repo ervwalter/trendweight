@@ -400,6 +400,62 @@ public class MeasurementSyncServiceTests : TestBase
     }
 
     [Fact]
+    public async Task GetMeasurementsForUserAsync_WithStaleManualProvider_NoOpRefreshWithoutStoreOrProgress()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var activeProviders = new List<string> { "manual" };
+        var lastSync = DateTime.UtcNow.AddMinutes(-60); // Old data, triggers refresh
+        var existingData = new List<SourceData>
+        {
+            CreateTestSourceData("manual")
+        };
+
+        // Mock manual service to return no-op success (no measurements)
+        var mockManualService = new Mock<IProviderService>();
+        mockManualService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = "manual",
+                Success = true,
+                Message = "Manual data does not require sync"
+            });
+
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "manual"))
+            .ReturnsAsync(lastSync);
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
+            .ReturnsAsync(existingData);
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("manual"))
+            .Returns(mockManualService.Object);
+
+        // Use a local service instance with a verifiable progress reporter
+        var progressReporterMock = new Mock<ISyncProgressReporter>();
+        var sut = new MeasurementSyncService(
+            _providerIntegrationServiceMock.Object,
+            _sourceDataServiceMock.Object,
+            _loggerMock.Object,
+            _environmentMock.Object,
+            progressReporterMock.Object);
+
+        // Act
+        var result = await sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Data.Should().HaveCount(1);
+        result.ProviderStatus.Should().ContainKey("manual");
+        result.ProviderStatus["manual"].Success.Should().BeTrue();
+
+        // No store should occur (no measurements returned by sync)
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()), Times.Never);
+
+        // No per-provider progress should be reported for manual
+        progressReporterMock.Verify(
+            x => x.ReportProviderProgressAsync("manual", It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task GetMeasurementsForUserAsync_WithUnknownProvider_RecordsFailureStatus()
     {
         // Arrange

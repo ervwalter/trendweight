@@ -235,6 +235,21 @@ public class SourceDataService : ISourceDataService
     }
 
     /// <inheritdoc />
+    public async Task<bool> HasMeasurementsAsync(Guid userId, string provider)
+    {
+        try
+        {
+            var dbSourceData = await GetOrFetchSourceDataAsync(userId, provider);
+            return dbSourceData?.Measurements is { Count: > 0 };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking measurements for user {UserId} provider {Provider}", userId, provider);
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<bool> GetForceFullSyncAsync(Guid userId, string provider)
     {
         try

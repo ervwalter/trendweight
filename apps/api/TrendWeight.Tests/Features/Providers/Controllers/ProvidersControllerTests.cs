@@ -139,6 +139,56 @@ public class ProvidersControllerTests : TestBase
     }
 
     [Fact]
+    public async Task GetProviderLinks_WithManualData_IncludesSyntheticManualLink()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var lastUpdate = DateTime.UtcNow.AddHours(-1);
+
+        SetupAuthenticatedUser(userId.ToString());
+        _providerLinkServiceMock.Setup(x => x.GetAllForUserAsync(userId))
+            .ReturnsAsync(new List<DbProviderLink> { CreateTestProviderLink(userId, "withings") });
+        _sourceDataServiceMock.Setup(x => x.HasMeasurementsAsync(userId, "manual"))
+            .ReturnsAsync(true);
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "manual"))
+            .ReturnsAsync(lastUpdate);
+
+        // Act
+        var result = await _sut.GetProviderLinks();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
+        response.Should().HaveCount(2);
+
+        var manualLink = response.Single(r => r.Provider == "manual");
+        manualLink.HasToken.Should().BeTrue();
+        manualLink.IsDisabled.Should().BeFalse();
+        manualLink.ConnectedAt.Should().Be(lastUpdate.ToString("o"));
+    }
+
+    [Fact]
+    public async Task GetProviderLinks_WithoutManualData_DoesNotIncludeManualLink()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        SetupAuthenticatedUser(userId.ToString());
+        _providerLinkServiceMock.Setup(x => x.GetAllForUserAsync(userId))
+            .ReturnsAsync(new List<DbProviderLink> { CreateTestProviderLink(userId, "withings") });
+        _sourceDataServiceMock.Setup(x => x.HasMeasurementsAsync(userId, "manual"))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _sut.GetProviderLinks();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
+        response.Should().ContainSingle().Which.Provider.Should().Be("withings");
+    }
+
+    [Fact]
     public async Task GetProviderLinks_WithNoUserIdClaim_ReturnsUnauthorized()
     {
         // Arrange

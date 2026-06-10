@@ -97,16 +97,18 @@ public class MeasurementComputationService : IMeasurementComputationService
     }
 
     /// <summary>
-    /// Groups measurements by day and selects the first measurement of each day
-    /// Port of groupAndSelectFirstByDay from TypeScript
+    /// Groups measurements by day and selects one measurement per day.
+    /// A manually entered reading overrides any same-day scale readings;
+    /// otherwise the earliest reading of the day wins.
     /// </summary>
     private static List<SourceMeasurement> GroupAndSelectFirstByDay(List<SourceMeasurement> measurements)
     {
         return measurements
             .GroupBy(m => m.Date.Date) // Group by date only (ignoring time)
             .Select(group => group
-                .OrderBy(m => m.Timestamp) // Sort by timestamp within each day
-                .First()) // Take the first (earliest) measurement of the day
+                .OrderBy(m => m.Source == "manual" ? 0 : 1) // Manual entries win the day
+                .ThenBy(m => m.Timestamp) // Then earliest measurement of the day
+                .First())
             .OrderBy(m => m.Date) // Sort final result by date
             .ToList();
     }

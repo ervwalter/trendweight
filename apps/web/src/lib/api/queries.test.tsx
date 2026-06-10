@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/mocks/server";
 import React from "react";
-import { useProfile, useDashboardQueries, useProviderLinks, useSharingSettings, queryKeys, queryOptions } from "./queries";
+import { useProfile, useDashboardQueries, useProviderLinks, useSharingSettings, useManualReadings, queryKeys, queryOptions } from "./queries";
 import type { ProfileResponse, MeasurementsResponse, ProviderLink } from "./types";
 import type { SharingData } from "@/lib/core/interfaces";
 
@@ -142,6 +142,7 @@ describe("queries", () => {
       expect(queryKeys.downloadData()).toEqual(["data", "download"]);
       expect(queryKeys.providerLinks()).toEqual(["providerLinks"]);
       expect(queryKeys.sharing).toEqual(["sharing"]);
+      expect(queryKeys.manualReadings()).toEqual(["manual-readings"]);
       expect(queryKeys.allData()).toEqual(["data"]);
     });
 
@@ -401,6 +402,31 @@ describe("queries", () => {
       });
 
       expect(result.current.data).toEqual(mockSharingData);
+    });
+  });
+
+  describe("useManualReadings", () => {
+    it("should fetch manual readings", async () => {
+      const mockReadings = [
+        { date: "2024-05-01", weight: 81.5, fatRatio: 0.22 },
+        { date: "2024-04-30", weight: 82.0 },
+      ];
+
+      server.use(
+        http.get("/api/measurements/manual", () => {
+          return HttpResponse.json(mockReadings);
+        }),
+      );
+
+      const { result } = renderHook(() => useManualReadings(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(result.current.data).toEqual(mockReadings);
     });
   });
 
