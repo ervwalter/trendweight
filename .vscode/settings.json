@@ -45,5 +45,6 @@
   "dotrush.roslyn.projectOrSolutionFiles": [
     "/Users/erv/development/trendweight/apps/api/TrendWeight.sln"
   ],
-  "chatgpt.openOnStartup": true
+  "chatgpt.openOnStartup": true,
+  "workbench.browser.openLocalhostLinks": false
 }
