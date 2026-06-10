@@ -11,6 +11,9 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   DO_REGISTRY: registry.digitalocean.com
   DO_IMAGE_NAME: ${{ secrets.DIGITALOCEAN_REGISTRY_NAME }}/trendweight
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
 
 jobs:
   checks:
@@ -30,6 +33,9 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
+
+      - name: Restore .NET dependencies
+        run: dotnet restore apps/api/TrendWeight.sln
 
       - name: Install dependencies
         run: npm ci
