@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.9.10](https://github.com/ervwalter/trendweight/compare/v2.9.9...v2.9.10) (2026-06-11)
+
+
+### Dependencies
+
+* bump js-cookie and @clerk/shared ([#424](https://github.com/ervwalter/trendweight/issues/424)) ([7688c8a](https://github.com/ervwalter/trendweight/commit/7688c8ae37ecfb09093d24395e7198e1ff3d610d))
+* bump node from 24-alpine to 26-alpine in the docker-major group ([#423](https://github.com/ervwalter/trendweight/issues/423)) ([264035b](https://github.com/ervwalter/trendweight/commit/264035b0ba772dbe3e30a3c4d6a0b592d152e8ef))
+* bump the npm-major group with 2 updates ([#427](https://github.com/ervwalter/trendweight/issues/427)) ([64a52e3](https://github.com/ervwalter/trendweight/commit/64a52e34c86ad5ebf3b0280e6d9b56ec7ccf1326))
+* bump the npm-minor-and-patch group across 1 directory with 30 updates ([#426](https://github.com/ervwalter/trendweight/issues/426)) ([247d354](https://github.com/ervwalter/trendweight/commit/247d35479aef9264488d34069b761684a05607eb))
+* Bump the nuget-minor-and-patch group with 6 updates ([#425](https://github.com/ervwalter/trendweight/issues/425)) ([5233b1d](https://github.com/ervwalter/trendweight/commit/5233b1df2788cff294cbdc22f826c49a0e5c2c0c))
+
 ## [2.9.9](https://github.com/ervwalter/trendweight/compare/v2.9.8...v2.9.9) (2026-05-22)
 
 
