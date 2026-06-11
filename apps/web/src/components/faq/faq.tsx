@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ExternalLink } from "@/components/common/external-link";
+import { FITBIT_SUNSET_ARTICLE_URL } from "@/lib/utils/provider-display";
 import { Heading } from "@/components/common/heading";
 import { Question } from "./question";
 
@@ -22,22 +23,40 @@ export function Faq() {
           </div>
           <div className="mt-6 lg:col-span-3 lg:mt-0">
             <dl className="space-y-8">
-              <Question title="Do I need to have a Withings or Fitbit scale to use this site? Can I manually enter my weight data instead?">
+              <Question title="Do I need a smart scale to use TrendWeight?">
                 <p>
-                  You do <i>not</i> need special scales. You <i>do</i> have to have either a Withings or Fitbit <i>account</i>. TrendWeight doesn't know or care
-                  if your weight readings come from a connected scale or were entered manually in the Withings or Fitbit apps. Any method is fine as long as the
-                  weight readings end up in your Withings or Fitbit account.
+                  No. TrendWeight has a built-in{" "}
+                  <Link to="/log" className="text-link hover:text-link underline">
+                    weight log
+                  </Link>
+                  : just type in your weight each day, right on the site, and you get the same trend charts and stats as someone with a connected scale. There's
+                  a Log Weight button on your dashboard to make this quick.
                 </p>
                 <p>
-                  That said, I do recommend getting a smart scale. They are easy to setup and make it super easy to record your weight everyday. You just step
-                  on the scale and your weight gets automatically uploaded. If you don't have one and want to buy one, you can find them on Amazon:{" "}
-                  <ExternalLink href="https://www.amazon.com/stores/page/1CF46AD8-345D-463B-839C-BD63CA561643">Withings Scales</ExternalLink> or{" "}
-                  <ExternalLink href="https://www.amazon.com/stores/Fitbit/page/483BFF66-176D-42CC-A2AB-EC917F84C9B6">Fitbit Scales</ExternalLink>.
+                  That said, a smart scale makes daily weigh-ins effortless — you just step on the scale and your weight shows up in TrendWeight automatically.
+                  TrendWeight works with Withings scales, which you can find on Amazon:{" "}
+                  <ExternalLink href="https://www.amazon.com/stores/page/1CF46AD8-345D-463B-839C-BD63CA561643">Withings Scales</ExternalLink>. You can also
+                  connect a Withings account without a scale and enter weights in the{" "}
+                  <ExternalLink href="https://www.withings.com/us/en/health-mate">Withings Health Mate</ExternalLink> app if you prefer.
+                </p>
+              </Question>
+              <Question title="What's happening with Fitbit support?">
+                <p>
+                  Google is retiring the open-to-everyone Fitbit API that TrendWeight uses to read weight data from Fitbit accounts. There is a newer
+                  replacement API, but getting access to it requires an approval process that isn't practical for a free hobby project like TrendWeight. You can
+                  still connect a Fitbit account for now, but heads-up that Fitbit syncing is winding down and is expected to stop in September 2026.{" "}
+                  <ExternalLink href={FITBIT_SUNSET_ARTICLE_URL}>Read the full story of what's happening</ExternalLink>
                 </p>
                 <p>
-                  If you don't have a connected scale, just use either the{" "}
-                  <ExternalLink href="https://www.withings.com/us/en/health-mate">Withings Health Mate</ExternalLink> app or the{" "}
-                  <ExternalLink href="https://www.fitbit.com/sg/app">Fitbit App</ExternalLink> and enter your weight manually each day.
+                  If you already have a Fitbit connection, it will keep syncing until Google shuts down the old API, which is expected in September 2026. After
+                  that, your Fitbit weight history stays in TrendWeight and keeps appearing in your charts — nothing you've already synced goes away.
+                </p>
+                <p>
+                  To keep new weigh-ins flowing after the shutdown, you can connect a Withings account or use the built-in{" "}
+                  <Link to="/log" className="text-link hover:text-link underline">
+                    weight log
+                  </Link>
+                  . New data is automatically combined with your existing Fitbit history into one continuous view.
                 </p>
               </Question>
               <Question title="Why do I have to log in with a code every time?">
@@ -71,14 +90,15 @@ export function Faq() {
               <Question title="Is there a mobile app for TrendWeight?">
                 <p>No. The TrendWeight website works great on mobile sizes, and there are no plans for a native mobile app.</p>
               </Question>
-              <Question title="How do I change from Withings to Fitbit (or vice versa)?">
+              <Question title="How do I switch from one way of weighing in to another?">
                 <p>
-                  If you have some data in one type of account and are going to start using the other type of account, you can simply add a connection via the{" "}
+                  If you have data from one source (say, Fitbit) and start using another (a Withings account, or the built-in weight log), there's nothing
+                  special to do — add the new connection via the{" "}
                   <Link to="/settings" className="text-link hover:text-link underline">
                     settings page
                   </Link>{" "}
-                  to your new account. TrendWeight will keep all the existing weight data from your old account and combine it with the data from the new one,
-                  giving you a unified view of your weight over time.
+                  or just start logging weights. TrendWeight keeps all your existing weight data and combines it with data from the new source, giving you a
+                  unified view of your weight over time.
                 </p>
               </Question>
               <Question title="What happens when I weigh myself multiple times in a single day?">
@@ -94,6 +114,11 @@ export function Faq() {
                 <p>
                   If your first weigh-in of the day is incorrect for some reason and you don't want TrendWeight to use that data, you can log into the Fitbit or
                   Withings apps and edit or delete that incorrect data point. TrendWeight will see the corrected reading the next time it syncs your data.
+                  Alternatively, you can log a weight yourself for that day — an entry in your{" "}
+                  <Link to="/log" className="text-link hover:text-link underline">
+                    weight log
+                  </Link>{" "}
+                  always takes priority over scale readings on the same date.
                 </p>
               </Question>
               <Question title="Can I share my charts and stats with others?">

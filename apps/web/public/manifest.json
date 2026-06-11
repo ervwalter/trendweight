@@ -1,7 +1,15 @@
 {
   "name": "TrendWeight",
   "short_name": "TrendWeight",
-  "description": "Track your weight trends by syncing with Fitbit or Withings",
+  "description": "Track your weight trends with a connected smart scale or by logging weights yourself",
+  "shortcuts": [
+    {
+      "name": "Log Weight",
+      "short_name": "Log",
+      "description": "Add an entry to your weight log",
+      "url": "/log"
+    }
+  ],
   "theme_color": "#3468b1",
   "background_color": "#ffffff",
   "display": "standalone",

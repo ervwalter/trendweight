@@ -1,3 +1,6 @@
+// Blog post explaining the Fitbit API retirement and what TrendWeight users can do about it
+export const FITBIT_SUNSET_ARTICLE_URL = "https://ewal.dev/fitbit-google-health-and-whats-next";
+
 // Provider metadata interface
 export interface ProviderMetadata {
   id: string;
@@ -8,6 +11,7 @@ export interface ProviderMetadata {
   linkText?: string;
   description: string;
   note: string;
+  learnMoreUrl?: string;
   supportsOAuth: boolean;
   supportsSync: boolean;
 }
@@ -32,11 +36,10 @@ const providerMetadata: Record<string, ProviderMetadata> = {
     name: "Fitbit",
     displayName: "Fitbit Account",
     logo: "/fitbit-app.png",
-    linkUrl: "https://www.fitbit.com/global/us/products/scales",
-    linkText: "Get a Fitbit Aria scale",
     description:
-      "Fitbit's ecosystem helps you stay motivated and reach your goals with smart scales that measure weight and body fat percentage. Your stats sync automatically to the Fitbit app where you can see trends, log food, and track activity.",
-    note: "TrendWeight will automatically import your daily weight measurements from Fitbit. You can also manually log weights in the Fitbit app or website if you don't have an Aria scale.",
+      "Connect your Fitbit account and TrendWeight will automatically import your weight measurements. Heads-up: Google is retiring the Fitbit API that TrendWeight uses, so Fitbit syncing is expected to stop in September 2026.",
+    note: "Any Fitbit weight history already in TrendWeight stays put and keeps appearing in your charts even after syncing ends.",
+    learnMoreUrl: FITBIT_SUNSET_ARTICLE_URL,
     supportsOAuth: true,
     supportsSync: true,
   },

@@ -86,15 +86,13 @@ export function About() {
                 </div>
               </div>
               <Heading level={3} className="text-foreground mt-6 mb-0 pb-0 tracking-tight">
-                Get a Scale
+                Get a Scale (or Don't)
               </Heading>
               <ul className="text-muted-foreground mt-5 list-disc pl-4 text-base">
                 <li>
                   <ExternalLink href="https://www.amazon.com/stores/page/1CF46AD8-345D-463B-839C-BD63CA561643">Withings Scales</ExternalLink>
                 </li>
-                <li>
-                  <ExternalLink href="https://www.amazon.com/stores/Fitbit/page/483BFF66-176D-42CC-A2AB-EC917F84C9B6">Fitbit Scales</ExternalLink>
-                </li>
+                <li>No scale? You can log weights yourself.</li>
               </ul>
             </div>
           </div>

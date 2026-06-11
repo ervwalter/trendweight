@@ -1,4 +1,4 @@
-import { LocalDate } from "@js-joda/core";
+import { ChronoUnit, convert, LocalDate } from "@js-joda/core";
 import { useForm } from "react-hook-form";
 import { useDeleteManualReading, useSaveManualReading } from "@/lib/api/mutations";
 import { useManualReadings, useProfile } from "@/lib/api/queries";
@@ -20,6 +20,20 @@ interface ManualReadingFormProps {
   initialReading?: ManualReading;
   /** Called after a successful save */
   onSaved?: () => void;
+}
+
+// Mobile keyboards offer a comma key for the decimal separator in many locales
+const parseDecimal = (value: string) => parseFloat(value.replace(",", "."));
+
+const lastEntryDateFormatter = new Intl.DateTimeFormat([], { month: "short", day: "numeric" });
+
+function describeDaysAgo(date: string): string {
+  const days = ChronoUnit.DAYS.between(LocalDate.parse(date), LocalDate.now());
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 14) return `${days} days ago`;
+  if (days < 60) return `${Math.round(days / 7)} weeks ago`;
+  return `${Math.round(days / 30)} months ago`;
 }
 
 function defaultValuesFor(reading: ManualReading | undefined, useMetric: boolean): ManualReadingFormValues {
@@ -63,11 +77,15 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
   const selectedDate = watch("date");
   const existingForDate = readings.find((r) => r.date === selectedDate && r.date !== initialReading?.date);
 
+  // A reference point for the common case: "what did I log last time?" (readings come back newest first)
+  const lastReading = !isEdit ? readings[0] : undefined;
+  const lastWeightDisplay = lastReading ? (Math.round(fromKg(lastReading.weight, useMetric) * 10) / 10).toString() : undefined;
+
   const onSubmit = async (values: ManualReadingFormValues) => {
     const reading: ManualReading = {
       date: values.date,
-      weight: Math.round(toKg(parseFloat(values.weight), useMetric) * 1000) / 1000,
-      fatRatio: values.fatPercent.trim() !== "" ? Math.round((parseFloat(values.fatPercent) / 100) * 10000) / 10000 : undefined,
+      weight: Math.round(toKg(parseDecimal(values.weight), useMetric) * 1000) / 1000,
+      fatRatio: values.fatPercent.trim() !== "" ? Math.round((parseDecimal(values.fatPercent) / 100) * 10000) / 10000 : undefined,
     };
 
     try {
@@ -89,7 +107,7 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
   };
 
   const validateWeight = (value: string) => {
-    const parsed = parseFloat(value);
+    const parsed = parseDecimal(value);
     if (isNaN(parsed)) return "Enter a valid weight";
     const [min, max] = useMetric ? [10, 300] : [20, 660];
     if (parsed < min || parsed > max) return `Weight must be between ${min} and ${max} ${weightUnit}`;
@@ -98,7 +116,7 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
 
   const validateFatPercent = (value: string) => {
     if (value.trim() === "") return true;
-    const parsed = parseFloat(value);
+    const parsed = parseDecimal(value);
     if (isNaN(parsed)) return "Enter a valid body fat percentage";
     if (parsed < 2 || parsed > 80) return "Body fat must be between 2% and 80%";
     return true;
@@ -115,8 +133,9 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
             id="reading-weight"
             type="text"
             inputMode="decimal"
+            enterKeyHint="done"
             autoComplete="off"
-            placeholder={useMetric ? "82.5" : "180.5"}
+            placeholder={lastWeightDisplay ?? (useMetric ? "82.5" : "180.5")}
             className="pr-12 text-lg font-semibold tabular-nums md:text-lg"
             {...register("weight", { required: "Weight is required", validate: validateWeight })}
             aria-invalid={!!errors.weight}
@@ -124,26 +143,12 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
           <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm">{weightUnit}</span>
         </div>
         {errors.weight && <p className="text-destructive mt-1 text-sm">{errors.weight.message}</p>}
-      </div>
-
-      <div>
-        <label htmlFor="reading-fat" className="text-foreground/80 mb-1 block text-sm font-medium">
-          Body Fat <span className="text-muted-foreground font-normal">(optional)</span>
-        </label>
-        <div className="relative">
-          <Input
-            id="reading-fat"
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="22.5"
-            className="pr-10 tabular-nums"
-            {...register("fatPercent", { validate: validateFatPercent })}
-            aria-invalid={!!errors.fatPercent}
-          />
-          <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm">%</span>
-        </div>
-        {errors.fatPercent && <p className="text-destructive mt-1 text-sm">{errors.fatPercent.message}</p>}
+        {lastReading && !existingForDate && (
+          <p className="text-muted-foreground mt-1 text-sm" suppressHydrationWarning>
+            Last entry: {formatWeight(fromKg(lastReading.weight, useMetric), useMetric)} &middot;{" "}
+            {lastEntryDateFormatter.format(convert(LocalDate.parse(lastReading.date)).toDate())} ({describeDaysAgo(lastReading.date)})
+          </p>
+        )}
       </div>
 
       <div>
@@ -161,6 +166,27 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
           aria-invalid={!!errors.date}
         />
         {errors.date && <p className="text-destructive mt-1 text-sm">{errors.date.message}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="reading-fat" className="text-foreground/80 mb-1 block text-sm font-medium">
+          Body Fat <span className="text-muted-foreground font-normal">(optional)</span>
+        </label>
+        <div className="relative">
+          <Input
+            id="reading-fat"
+            type="text"
+            inputMode="decimal"
+            enterKeyHint="done"
+            autoComplete="off"
+            placeholder="22.5"
+            className="pr-10 tabular-nums"
+            {...register("fatPercent", { validate: validateFatPercent })}
+            aria-invalid={!!errors.fatPercent}
+          />
+          <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm">%</span>
+        </div>
+        {errors.fatPercent && <p className="text-destructive mt-1 text-sm">{errors.fatPercent.message}</p>}
       </div>
 
       {existingForDate && (

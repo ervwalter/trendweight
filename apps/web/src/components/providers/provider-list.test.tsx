@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProviderList } from "./provider-list";
 import { useProviderLinks } from "@/lib/api/queries";
@@ -93,7 +93,7 @@ describe("ProviderList", () => {
       render(<ProviderList variant="link" showHeader={true} />);
 
       expect(screen.getByText("Connect Your Scale")).toBeInTheDocument();
-      expect(screen.getByText(/Connect your Withings or Fitbit account/)).toBeInTheDocument();
+      expect(screen.getByText(/Connect your Withings account/)).toBeInTheDocument();
     });
 
     it("should render manual entry as a first-class option", () => {
@@ -114,11 +114,27 @@ describe("ProviderList", () => {
       render(<ProviderList variant="link" />);
 
       expect(screen.getByText("Withings Account")).toBeInTheDocument();
-      expect(screen.getByText("Fitbit Account")).toBeInTheDocument();
-
-      // Check descriptions
       expect(screen.getByText(/Withings creates beautifully designed/)).toBeInTheDocument();
-      expect(screen.getByText(/Fitbit's ecosystem helps you stay motivated/)).toBeInTheDocument();
+    });
+
+    it("should offer Fitbit with a connect button and a sunset heads-up when not connected", () => {
+      render(<ProviderList variant="link" />);
+
+      expect(screen.getByText("Fitbit Account")).toBeInTheDocument();
+      expect(screen.getByText("Connect Fitbit Account")).toBeInTheDocument();
+      expect(screen.getByText(/expected to stop in September 2026/i)).toBeInTheDocument();
+    });
+
+    it("should show a connected Fitbit with the sunset explanation and no connect button", () => {
+      vi.mocked(useProviderLinks).mockReturnValue({
+        data: [...mockProviderLinks, { provider: "fitbit", connectedAt: "2024-02-01T10:00:00Z", userId: "123" }],
+      } as any);
+
+      render(<ProviderList variant="link" />);
+
+      expect(screen.getByText("Fitbit Account")).toBeInTheDocument();
+      expect(screen.getByText(/expected to stop in September 2026/i)).toBeInTheDocument();
+      expect(screen.queryByText("Connect Fitbit Account")).not.toBeInTheDocument();
     });
 
     it("should show connected state for connected providers", () => {
@@ -134,22 +150,23 @@ describe("ProviderList", () => {
     });
 
     it("should show connect button for unconnected providers", () => {
+      vi.mocked(useProviderLinks).mockReturnValue({ data: [] } as any);
       render(<ProviderList variant="link" />);
 
-      // Fitbit is not connected
-      expect(screen.getByText("Connect Fitbit Account")).toBeInTheDocument();
+      expect(screen.getByText("Connect Withings Account")).toBeInTheDocument();
     });
 
     it("should handle connect action", async () => {
       const user = userEvent.setup();
-      vi.mocked(apiRequest).mockResolvedValue({ authorizationUrl: "https://fitbit.com/auth" });
+      vi.mocked(apiRequest).mockResolvedValue({ authorizationUrl: "https://withings.com/auth" });
+      vi.mocked(useProviderLinks).mockReturnValue({ data: [] } as any);
 
       render(<ProviderList variant="link" />);
 
-      await user.click(screen.getByText("Connect Fitbit Account"));
+      await user.click(screen.getByText("Connect Withings Account"));
 
-      expect(apiRequest).toHaveBeenCalledWith("/fitbit/link", { token: "mock-token" });
-      expect(window.location.assign).toHaveBeenCalledWith("https://fitbit.com/auth");
+      expect(apiRequest).toHaveBeenCalledWith("/withings/link", { token: "mock-token" });
+      expect(window.location.assign).toHaveBeenCalledWith("https://withings.com/auth");
     });
 
     it("should handle connect error", async () => {
@@ -158,15 +175,16 @@ describe("ProviderList", () => {
 
       const user = userEvent.setup();
       vi.mocked(apiRequest).mockRejectedValue(new Error("Network error"));
+      vi.mocked(useProviderLinks).mockReturnValue({ data: [] } as any);
 
       render(<ProviderList variant="link" />);
 
-      await user.click(screen.getByText("Connect Fitbit Account"));
+      await user.click(screen.getByText("Connect Withings Account"));
 
       await waitFor(() => {
         expect(mockShowToast).toHaveBeenCalledWith({
           title: "Connection Failed",
-          description: "Failed to connect to fitbit. Please try again.",
+          description: "Failed to connect to withings. Please try again.",
           variant: "error",
         });
       });
@@ -253,6 +271,37 @@ describe("ProviderList", () => {
       });
     });
 
+    it("should warn about the Fitbit sunset when disconnecting Fitbit", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useProviderLinks).mockReturnValue({
+        data: [{ provider: "fitbit", connectedAt: "2024-02-01T10:00:00Z", userId: "123" }],
+      } as any);
+
+      render(<ProviderList variant="link" />);
+
+      await user.click(screen.getByText("Disconnect"));
+
+      const dialog = screen.getByTestId("confirm-dialog");
+      expect(within(dialog).getByText("Disconnect Fitbit?")).toBeInTheDocument();
+      expect(within(dialog).getByText(/you may not be able to reconnect/i)).toBeInTheDocument();
+      expect(within(dialog).getByRole("link", { name: /read more about what's happening/i })).toHaveAttribute(
+        "href",
+        "https://ewal.dev/fitbit-google-health-and-whats-next",
+      );
+    });
+
+    it("should not show the Fitbit sunset warning when disconnecting Withings", async () => {
+      const user = userEvent.setup();
+
+      render(<ProviderList variant="link" />);
+
+      await user.click(screen.getByText("Disconnect"));
+
+      const dialog = screen.getByTestId("confirm-dialog");
+      expect(within(dialog).getByText("Disconnect Withings?")).toBeInTheDocument();
+      expect(within(dialog).queryByText(/you may not be able to reconnect/i)).not.toBeInTheDocument();
+    });
+
     it("should render external links with proper attributes", () => {
       render(<ProviderList variant="link" />);
 
@@ -260,9 +309,6 @@ describe("ProviderList", () => {
       expect(withingsLink).toHaveAttribute("href", "https://www.withings.com/us/en/scales");
       expect(withingsLink).toHaveAttribute("target", "_blank");
       expect(withingsLink).toHaveAttribute("rel", "noopener noreferrer");
-
-      const fitbitLink = screen.getByText("Get a Fitbit Aria scale");
-      expect(fitbitLink).toHaveAttribute("href", "https://www.fitbit.com/global/us/products/scales");
     });
   });
 
@@ -273,7 +319,7 @@ describe("ProviderList", () => {
       // Should not show descriptions
       expect(screen.queryByText(/Withings creates beautifully designed/)).not.toBeInTheDocument();
 
-      // Should show provider names
+      // Should show both providers; Fitbit remains offerable even when not connected
       expect(screen.getByText("Withings")).toBeInTheDocument();
       expect(screen.getByText("Fitbit")).toBeInTheDocument();
     });
@@ -282,7 +328,21 @@ describe("ProviderList", () => {
       render(<ProviderList variant="settings" />);
 
       expect(screen.getByText(/Connected 1\/15\/2024/)).toBeInTheDocument();
-      expect(screen.getByText("Not connected")).toBeInTheDocument();
+    });
+
+    it("should show the sunset note for a connected Fitbit", () => {
+      vi.mocked(useProviderLinks).mockReturnValue({
+        data: [...mockProviderLinks, { provider: "fitbit", connectedAt: "2024-02-01T10:00:00Z", userId: "123" }],
+      } as any);
+
+      render(<ProviderList variant="settings" />);
+
+      expect(screen.getByText("Fitbit")).toBeInTheDocument();
+      expect(screen.getByText(/syncing is expected to end in September 2026/i)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /read more about what's happening/i })).toHaveAttribute(
+        "href",
+        "https://ewal.dev/fitbit-google-health-and-whats-next",
+      );
     });
 
     it("should show the weight log with an edit link", () => {

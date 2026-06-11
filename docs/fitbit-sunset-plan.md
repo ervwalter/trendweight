@@ -143,7 +143,10 @@ link appears/disappears as readings are added/removed.
   **"Weight Log"**; a single item is an **"entry"**; the verbs are **"log"** and
   **"edit"**. Never say "manual readings" or "manage" in UI copy — "manual" is reserved
   for code identifiers (the `manual` provider key, internal endpoint paths), which are
-  unchanged.
+  unchanged. Nuance (2026-06-10): "manual" is fine as a plain-English *descriptor* in
+  marketing copy, just never as feature jargon in the app UI. The homepage tile says
+  "Built-in Weight Log" (matching its checklist) because "Weight Log" alone read like a
+  product name there.
 - `manual` provider-string fallout: `provider-display.ts` metadata ("Manual" /
   "Manual Entries"); `no-data-card.tsx` + `provider-sync-error.tsx` hardcoded
   withings/fitbit ternaries → `getProviderDisplayName` (manual/legacy excluded);
@@ -197,6 +200,12 @@ stricter than interactive users (e.g. 60/min, tighter on writes).
 
 ## Phase 3 — `Fitbit:Enabled` kill-switch
 
+**Scope note (decided 2026-06-10):** the user-facing sunset is NOT this phase's job — it
+already shipped. The frontend no longer offers new Fitbit connections, and the site copy
+(FAQ, settings, link page) tells users syncing is expected to end in **September 2026**
+when Google retires the legacy Fitbit Web API. The kill-switch below exists only to stop
+sync errors cleanly on the day Google actually pulls the plug.
+
 - Add `Enabled` (default `true`) to `FitbitConfig`. `Fitbit:Enabled=false` via config/env
   flips it with no code change.
 - Make `ProviderServiceBase.SyncMeasurementsAsync` virtual; override in `FitbitService` to
@@ -242,10 +251,71 @@ Landed in two commits:
   - Manual entry promoted to a first-class card on `/link` and a "Manual Entries" row in
     settings connections.
 
+- `290efa06` — visual identity + vocabulary: Phosphor note-pencil duotone glyph (inlined,
+  no dependency) on the post-it `--color-manual-tile` token, used consistently everywhere;
+  plain-language "Weight Log" copy per the vocabulary rule above.
+
 Verified: 373 API tests + 904 web tests passing, `npm run check` and `npm run build`
 clean (one pre-existing benign react-hooks/incompatible-library warning on RHF `watch`).
 Interactive end-to-end (Clerk login required) is owner-verified via the dev servers, not
 automated.
+
+### Holistic UX/copy pass — 2026-06-10 (Fitbit telegraphing moved ahead of Phase 3)
+
+Workflow polish on the log form (`manual-reading-form.tsx`):
+
+- Add mode shows a reference line under the weight field — "Last entry: 184.2 lb · Jun 3
+  (6 days ago)" — and uses the last logged weight as the input placeholder. The field
+  itself stays empty (deliberate: no prefill, so a stale weight can't be saved by
+  accident). The line is hidden in edit mode and whenever the "Replaces …" hint shows.
+- Comma decimal separators are accepted ("82,5") — many mobile keyboards in metric
+  locales only offer a comma key.
+- Field order is now Weight → Date → Body Fat (optional last); decimal inputs carry
+  `enterKeyHint="done"` (weight already had `inputMode="decimal"` for numeric keypads).
+
+Fitbit became a **legacy option in the UI** (new connections disabled NOW; the Phase 3
+kill-switch remains purely a stop-the-sync-errors mechanism):
+
+- `provider-list.tsx` hides Fitbit entirely (link + settings variants) unless already
+  connected; connected users see Resync/Disconnect plus a sunset note. Link-page header
+  copy is Withings-only.
+- Escape hatch: **`/link/fitbit`** (`routes/link_.fitbit.tsx`) is a hidden, unlinked
+  route that starts the Fitbit OAuth flow — for emailing to an existing user who
+  accidentally disconnected. It requires login (the login page bounces back to it) and
+  then redirects straight to Fitbit authorization.
+- `provider-display.ts` fitbit description/note rewritten: no new connections, syncing
+  expected to end September 2026, history stays and keeps charting; the "Get a Fitbit
+  Aria scale" purchase link was removed. The backend link endpoints are untouched (the
+  flows are merely unreachable from the UI until Phase 3 adds the 503).
+
+**Reversal — 2026-06-20 (new Fitbit connections re-enabled):** Erv decided not to
+preemptively block new Fitbit connections after all. Hiding the UI is no longer the
+mechanism; the Phase 3 kill-switch is. So the `provider-list.tsx` "hide unconnected
+Fitbit" gate was removed — Fitbit is a normal, connectable option again on both `/link`
+and `/settings`. The Fitbit card/settings row keep a **plain sunset heads-up** ("syncing
+is expected to stop in September 2026") but no longer claim connections are unavailable
+and do **not** steer users to Withings specifically. The FAQ's "no longer offers new
+Fitbit connections" sentence was softened to "you can still connect for now." The "Get a
+Fitbit Aria scale" purchase link stays off (don't promote buying hardware for a dying
+integration). `/link/fitbit` still works but is now redundant with the visible Connect
+button (comment updated accordingly).
+
+Site copy now documents the weight log and the Fitbit sunset:
+
+- FAQ: Q1 rewritten ("Do I need a smart scale?" — no; built-in weight log, Withings
+  recommended); new "What's happening with Fitbit support?" question (September 2026,
+  existing connections sync until then, history preserved); switch-sources question
+  generalized; multiple-weigh-ins answer notes a weight log entry overrides the day.
+- Homepage `works-with.tsx`: Fitbit tile replaced with a Weight Log tile (manual-tile
+  treatment, links to `/log`); checklist is Withings scales / Health Mate app / built-in
+  weight log.
+- About page: "Get a Scale (or Don't)" card — Withings Amazon link kept, Fitbit link
+  removed, "log weights yourself" added.
+- Privacy policy collected-data bullet covers self-logged weights; account-deleted page
+  warns logged weights can't be re-downloaded; download page empty state mentions logging;
+  `manifest.json` description updated + a PWA "Log Weight" shortcut to `/log`.
+
+Verified: 911 web tests passing, `npm run check` clean (same pre-existing RHF warning).
 
 Notable for Phase 2: the v1 manual endpoints should mirror the date-only body
 `{ weight, fatRatio? }`; the atomic JSONB upsert RPC and rate-limiter ordering fix remain

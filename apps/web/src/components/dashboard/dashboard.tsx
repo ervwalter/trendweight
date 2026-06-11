@@ -8,6 +8,7 @@ import { useSharingCode } from "@/lib/hooks/use-sharing-code";
 import { useEmbedParams } from "@/lib/hooks/use-embed-params";
 import { EmbedDashboard } from "./embed-dashboard";
 import { Heading } from "@/components/common/heading";
+import { FitbitSunsetNotice } from "@/components/notices/fitbit-sunset-notice";
 import { NewVersionNotice } from "@/components/notices/new-version-notice";
 import { QuickLogButton } from "@/components/log/quick-log-button";
 import Buttons from "./buttons";
@@ -69,10 +70,11 @@ const Dashboard: FC = () => {
     <DashboardProvider data={dashboardData}>
       <div className="flex flex-col gap-4">
         <ProviderSyncErrors providerStatus={dashboardData.providerStatus} />
+        {dashboardData.isMe && dashboardData.providerStatus?.fitbit && <FitbitSunsetNotice />}
         {dashboardData.isMe && dashboardData.profile.isMigrated && <NewVersionNotice />}
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between print:hidden">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start print:hidden">
           <Buttons />
-          {/* Compact and last on mobile so it reads as one of the chart controls, not the page's primary action */}
+          {/* Compact and last so it reads as one of the chart controls, not the page's primary action */}
           {dashboardData.isMe && <QuickLogButton className="self-start" />}
         </div>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-12">
