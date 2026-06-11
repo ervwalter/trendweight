@@ -17,7 +17,7 @@ describe("getProviderDisplayName", () => {
 describe("getProviderDescription", () => {
   it("returns correct descriptions for known providers", () => {
     expect(getProviderDescription("withings")).toContain("Withings creates beautifully designed");
-    expect(getProviderDescription("fitbit")).toContain("Fitbit's ecosystem helps you stay motivated");
+    expect(getProviderDescription("fitbit")).toContain("Fitbit syncing is expected to stop in September 2026");
     expect(getProviderDescription("legacy")).toContain("Historical weight data imported from classic TrendWeight");
   });
 
@@ -29,7 +29,7 @@ describe("getProviderDescription", () => {
 describe("getProviderNote", () => {
   it("returns correct notes for known providers", () => {
     expect(getProviderNote("withings")).toContain("TrendWeight will automatically import");
-    expect(getProviderNote("fitbit")).toContain("TrendWeight will automatically import");
+    expect(getProviderNote("fitbit")).toContain("stays put and keeps appearing in your charts");
     expect(getProviderNote("legacy")).toContain("This data cannot be synced or updated");
   });
 
@@ -74,8 +74,6 @@ describe("getOAuthProviders", () => {
     oauthProviders.forEach((provider) => {
       expect(provider.supportsOAuth).toBe(true);
       expect(provider.logo).toBeTruthy();
-      expect(provider.linkUrl).toBeTruthy();
-      expect(provider.linkText).toBeTruthy();
     });
   });
 });

@@ -142,12 +142,51 @@ describe("ManualReadingForm", () => {
     expect((mockSaveMutateAsync.mock.calls[0][0] as ManualReading).fatRatio).toBeUndefined();
   });
 
+  it("accepts a comma as the decimal separator", async () => {
+    mockUseMetric = true;
+    const user = userEvent.setup();
+    render(<ManualReadingForm />);
+
+    await user.type(screen.getByLabelText(/Weight/), "82,5");
+    await user.click(screen.getByRole("button", { name: "Log Weight" }));
+
+    await waitFor(() => {
+      expect(mockSaveMutateAsync).toHaveBeenCalledTimes(1);
+    });
+    expect((mockSaveMutateAsync.mock.calls[0][0] as ManualReading).weight).toBe(82.5);
+  });
+
+  it("shows the most recent entry as a reference and uses it as the placeholder", () => {
+    mockReadings = [{ date: LocalDate.now().minusDays(1).toString(), weight: 84.0 }];
+    render(<ManualReadingForm />);
+
+    expect(screen.getByText(/Last entry:/)).toHaveTextContent(/yesterday/);
+    expect(screen.getByLabelText(/Weight/)).toHaveAttribute("placeholder", "185.2");
+  });
+
+  it("describes how long ago the last entry was", () => {
+    mockReadings = [{ date: LocalDate.now().minusDays(21).toString(), weight: 84.0 }];
+    render(<ManualReadingForm />);
+
+    expect(screen.getByText(/Last entry:/)).toHaveTextContent(/3 weeks ago/);
+  });
+
+  it("hides the last-entry reference in edit mode", () => {
+    const initialReading: ManualReading = { date: "2024-05-01", weight: 81.8 };
+    mockReadings = [initialReading];
+    render(<ManualReadingForm initialReading={initialReading} />);
+
+    expect(screen.queryByText(/Last entry:/)).not.toBeInTheDocument();
+  });
+
   it("shows a replace hint and Replace label when the date already has an entry", async () => {
     mockReadings = [{ date: LocalDate.now().toString(), weight: 84.0 }];
     render(<ManualReadingForm />);
 
     expect(await screen.findByText(/Replaces today's entry/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Replace Entry" })).toBeInTheDocument();
+    // The replace hint supersedes the last-entry reference
+    expect(screen.queryByText(/Last entry:/)).not.toBeInTheDocument();
   });
 
   it("prefills values in edit mode and deletes the original when the date changes", async () => {

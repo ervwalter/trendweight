@@ -36,7 +36,7 @@ export function Privacy() {
       <p>TrendWeight only collects information that's needed to make the service work:</p>
       <ul className="mt-2 list-disc px-4">
         <li>Your email address (for signing in)</li>
-        <li>Weight measurements from your connected devices</li>
+        <li>Weight measurements from your connected devices or weights you log yourself</li>
         <li>Body fat percentage (if your scale provides it)</li>
         <li>Timestamps for each measurement</li>
         <li>Your account preferences and settings</li>

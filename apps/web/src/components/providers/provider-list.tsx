@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExternalLink } from "@/components/common/external-link";
 import { Heading } from "@/components/common/heading";
 import { NotePencilIcon } from "@/components/common/note-pencil-icon";
-import { getProviderDisplayName, getOAuthProviders } from "@/lib/utils/provider-display";
+import { getProviderDisplayName, getOAuthProviders, FITBIT_SUNSET_ARTICLE_URL } from "@/lib/utils/provider-display";
 
 // Simple date formatter for connection dates
 const connectionDateFormatter = new Intl.DateTimeFormat([], {
@@ -73,8 +73,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
             Connect Your Scale
           </Heading>
           <p className="text-muted-foreground mb-8 text-base sm:text-lg">
-            Connect your Withings or Fitbit account to automatically track your weight with TrendWeight — or skip the scale entirely and enter your weight by
-            hand.
+            Connect your Withings account to automatically track your weight with TrendWeight — or skip the scale entirely and enter your weight by hand.
           </p>
         </>
       )}
@@ -101,6 +100,12 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                     <p className="text-muted-foreground text-sm">
                       {isConnected ? `Connected ${connectionDateFormatter.format(new Date(providerLink!.connectedAt))}` : "Not connected"}
                     </p>
+                    {provider.id === "fitbit" && (
+                      <p className="text-muted-foreground text-sm">
+                        Google is retiring the Fitbit API — syncing is expected to end in September 2026.{" "}
+                        <ExternalLink href={FITBIT_SUNSET_ARTICLE_URL}>Read more about what's happening</ExternalLink>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -172,7 +177,15 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
                       </ExternalLink>
                     </p>
                   )}
-                  <p className="text-muted-foreground mb-4 text-xs italic @sm:text-sm">{provider.note}</p>
+                  <p className="text-muted-foreground mb-4 text-xs italic @sm:text-sm">
+                    {provider.note}
+                    {provider.learnMoreUrl && (
+                      <>
+                        {" "}
+                        <ExternalLink href={provider.learnMoreUrl}>Read more about what's happening</ExternalLink>
+                      </>
+                    )}
+                  </p>
                   {isConnected ? (
                     <div className="flex flex-col gap-2 @sm:flex-row">
                       <Button
@@ -387,6 +400,18 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
           <div className="space-y-2">
             <p>Are you sure you want to disconnect {disconnectProvider?.name}?</p>
             <p>This will remove all weight data from this provider.</p>
+            {disconnectProvider?.id === "fitbit" && (
+              <>
+                <p className="text-destructive font-medium">
+                  Please be careful: Fitbit support is winding down as Google retires the Fitbit API. If you disconnect now, you may not be able to reconnect
+                  later — and your synced Fitbit history will be removed and can't be re-imported. Unless something is wrong, it's safest to leave this
+                  connection in place.
+                </p>
+                <p>
+                  <ExternalLink href={FITBIT_SUNSET_ARTICLE_URL}>Read more about what's happening</ExternalLink>
+                </p>
+              </>
+            )}
           </div>
         }
         confirmText="Disconnect"

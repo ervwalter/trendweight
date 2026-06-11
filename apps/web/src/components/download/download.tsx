@@ -28,7 +28,9 @@ export function Download() {
     return (
       <>
         <Heading level={1}>Download Your Data</Heading>
-        <p className="text-muted-foreground mt-4">No providers connected. Please connect a scale provider from the settings page.</p>
+        <p className="text-muted-foreground mt-4">
+          There's no weight data to download yet. Connect a scale from the settings page, or log a weight to get started.
+        </p>
       </>
     );
   }

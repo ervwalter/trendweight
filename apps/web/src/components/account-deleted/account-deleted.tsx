@@ -51,7 +51,10 @@ export function AccountDeleted() {
               Your connections to Withings and Fitbit
             </li>
           </ul>
-          <p className="text-sm">If you decide to recreate your account in the future, you'll need to reconnect your scale to re-download any weight data.</p>
+          <p className="text-sm">
+            If you decide to recreate your account in the future, you'll need to reconnect your scale to re-download any weight data. Weights you logged
+            directly in TrendWeight can't be recovered.
+          </p>
         </div>
 
         <div className="space-y-4">

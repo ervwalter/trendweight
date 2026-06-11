@@ -181,7 +181,9 @@ describe("Download", () => {
     renderWithProviders(<Download />);
 
     expect(screen.getByText("Download Your Data")).toBeInTheDocument();
-    expect(screen.getByText("No providers connected. Please connect a scale provider from the settings page.")).toBeInTheDocument();
+    expect(
+      screen.getByText("There's no weight data to download yet. Connect a scale from the settings page, or log a weight to get started."),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId("view-toggle-buttons")).not.toBeInTheDocument();
   });
 
@@ -192,7 +194,9 @@ describe("Download", () => {
 
     renderWithProviders(<Download />);
 
-    expect(screen.getByText("No providers connected. Please connect a scale provider from the settings page.")).toBeInTheDocument();
+    expect(
+      screen.getByText("There's no weight data to download yet. Connect a scale from the settings page, or log a weight to get started."),
+    ).toBeInTheDocument();
   });
 
   it("should handle view type changes", async () => {
@@ -353,7 +357,9 @@ describe("Download", () => {
 
     renderWithProviders(<Download />);
 
-    expect(screen.getByText("No providers connected. Please connect a scale provider from the settings page.")).toBeInTheDocument();
+    expect(
+      screen.getByText("There's no weight data to download yet. Connect a scale from the settings page, or log a weight to get started."),
+    ).toBeInTheDocument();
   });
 
   it("should show data when readings are available", () => {
