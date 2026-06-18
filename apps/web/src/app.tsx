@@ -56,7 +56,7 @@ function App() {
           signUpFallbackRedirectUrl="/dashboard"
           signInUrl="/login"
           appearance={{
-            baseTheme: shadcn,
+            theme: shadcn,
             cssLayerName: "clerk",
             variables: {
               colorPrimary: "var(--color-brand-500)",
