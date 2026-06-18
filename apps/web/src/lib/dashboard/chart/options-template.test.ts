@@ -265,13 +265,13 @@ describe("chartOptionsTemplate", () => {
       const formats = (options.xAxis as any).dateTimeLabelFormats;
 
       expect(formats).toEqual({
-        second: "%H:%M:%S",
-        minute: "%H:%M",
-        hour: "%H:%M",
-        day: "%b %e",
-        week: "%b %e",
-        month: "%b '%y",
-        year: "%Y",
+        second: { main: "%H:%M:%S" },
+        minute: { main: "%H:%M" },
+        hour: { main: "%H:%M" },
+        day: { main: "%b %e" },
+        week: { main: "%b %e" },
+        month: { main: "%b '%y" },
+        year: { main: "%Y" },
       });
     });
   });
