@@ -77,7 +77,7 @@ describe("ViewToggleButtons", () => {
 
     // The active button should have different styling (handled by ToggleButtonGroup)
     // We can verify the value prop is set correctly
-    const toggleGroup = screen.getByRole("group", { name: "View Type" });
+    const toggleGroup = screen.getByRole("radiogroup", { name: "View Type" });
     expect(toggleGroup).toBeInTheDocument();
   });
 
