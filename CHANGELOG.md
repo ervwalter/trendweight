@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.9.11](https://github.com/ervwalter/trendweight/compare/v2.9.10...v2.9.11) (2026-06-24)
+
+
+### Dependencies
+
+* bump @types/node from 25.9.3 to 26.0.0 in the npm-major group ([#435](https://github.com/ervwalter/trendweight/issues/435)) ([969f86c](https://github.com/ervwalter/trendweight/commit/969f86c90351608db3306b64b630db4620712afc))
+* bump actions/checkout from 6 to 7 in the github-actions-major group ([#436](https://github.com/ervwalter/trendweight/issues/436)) ([af681ff](https://github.com/ervwalter/trendweight/commit/af681ff01b2dc60340e5036c2fec0638b190c4ec))
+* bump highcharts from 12.6.0 to 13.0.0 in the npm-major group across 1 directory ([#430](https://github.com/ervwalter/trendweight/issues/430)) ([cbc2c30](https://github.com/ervwalter/trendweight/commit/cbc2c300ef7be0995e4d3aaba0c5d5c7555d9623))
+* bump the npm-minor-and-patch group with 12 updates ([#429](https://github.com/ervwalter/trendweight/issues/429)) ([9aee818](https://github.com/ervwalter/trendweight/commit/9aee8187c76ca958cfe120b6f2a121c1131223cb))
+* bump the npm-minor-and-patch group with 14 updates ([#434](https://github.com/ervwalter/trendweight/issues/434)) ([4c551e0](https://github.com/ervwalter/trendweight/commit/4c551e0feeafc08b4ed2a1873be92901426dbb19))
+* bump undici from 7.25.0 to 7.28.0 ([#433](https://github.com/ervwalter/trendweight/issues/433)) ([f49a4b8](https://github.com/ervwalter/trendweight/commit/f49a4b860b788f44609d8767f8e6553bcb9eee03))
+* restore deps: prefix on Renovate commits for release-please ([df3db83](https://github.com/ervwalter/trendweight/commit/df3db832185e6ca4256caa1e08c0503541ab15b4))
+
 ## [2.9.10](https://github.com/ervwalter/trendweight/compare/v2.9.9...v2.9.10) (2026-06-11)
 
 
