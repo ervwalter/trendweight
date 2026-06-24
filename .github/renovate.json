@@ -1,4 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>ervwalter/renovate-config:default"]
+  "extends": ["github>ervwalter/renovate-config:default"],
+  "semanticCommitType": "deps",
+  "semanticCommitScope": null
 }
