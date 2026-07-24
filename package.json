@@ -1,7 +1,7 @@
 {
   "name": "trendweight-monorepo",
   "private": true,
-  "packageManager": "npm@11.17.0",
+  "packageManager": "npm@11.18.0",
   "workspaces": [
     "apps/api",
     "apps/web"
@@ -27,11 +27,11 @@
   },
   "devDependencies": {
     "husky": "9.1.7",
-    "lint-staged": "17.0.8",
-    "turbo": "2.9.18"
+    "lint-staged": "17.1.0",
+    "turbo": "2.10.5"
   },
   "version": "2.0.0-alpha.1",
   "dependencies": {
-    "@supabase/supabase-js": "2.108.2"
+    "@supabase/supabase-js": "2.110.7"
   }
 }
