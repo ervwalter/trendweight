@@ -154,6 +154,13 @@ Contributions are welcome. However, it's essentially a one-man show (me), and I'
                     <sub><b>Mitja Bezenšek</b></sub>
                 </a>
             </td>
+            <td align="center">
+                <a href="https://github.com/Jah-yee">
+                    <img src="https://avatars.githubusercontent.com/u/166608075?v=4" width="100;" alt="Jah-yee"/>
+                    <br />
+                    <sub><b>RoomWithOutRoof</b></sub>
+                </a>
+            </td>
 		</tr>
 	<tbody>
 </table>
