@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Scalar.AspNetCore;
 using TrendWeight.Infrastructure.Extensions;
 using TrendWeight.Infrastructure.Middleware;
 
@@ -25,7 +26,27 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = false;
     });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// OpenAPI documents served by Scalar: the public v1 API reference (API-key endpoints
+// only, grouped via [ApiExplorerSettings(GroupName = "v1")]), plus the full internal
+// surface in development.
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.ShouldInclude = description => description.GroupName == "v1";
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info.Title = "TrendWeight API";
+        document.Info.Version = "v1";
+        return Task.CompletedTask;
+    });
+});
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddOpenApi("internal", options =>
+    {
+        options.ShouldInclude = description => description.GroupName != "v1";
+    });
+}
 
 // Add Clerk authentication (includes Supabase as fallback)
 builder.Services.AddClerkAuthentication(builder.Configuration);
@@ -128,11 +149,10 @@ if (!string.IsNullOrEmpty(allowedHosts) && allowedHosts != "*")
     });
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// API reference docs: /openapi/{document}.json + Scalar UI at /scalar/{document}.
+// Only the "v1" document exists outside development.
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.UseHttpsRedirection();
 
