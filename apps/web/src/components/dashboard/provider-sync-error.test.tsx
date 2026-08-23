@@ -9,6 +9,15 @@ vi.mock("@/lib/api/mutations", () => ({
   useReconnectProvider: vi.fn(),
 }));
 
+// Mock router Link (used by the shutdown notice)
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) => (
+    <a href={to} className={className}>
+      {children}
+    </a>
+  ),
+}));
+
 const mockUseReconnectProvider = vi.mocked(await import("@/lib/api/mutations")).useReconnectProvider;
 
 // Mock window.location.assign
@@ -27,6 +36,7 @@ describe("ProviderSyncError", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     mockUseReconnectProvider.mockReturnValue(mockReconnectProvider as any);
   });
 
@@ -80,6 +90,47 @@ describe("ProviderSyncError", () => {
 
     expect(screen.getByText(/Fitbit sync failed/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Try reconnecting →" })).toBeInTheDocument();
+  });
+
+  it("should render a dismissible shutdown notice without a reconnect button for disabled providers", async () => {
+    const user = userEvent.setup();
+    const status: ProviderSyncStatus = { success: false, error: "disabled" };
+    render(<ProviderSyncError provider="fitbit" status={status} />);
+
+    expect(screen.getByText(/Fitbit syncing has ended/)).toBeInTheDocument();
+    expect(screen.getByText(/history is preserved/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /reconnect/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /read more about what's happening/i })).toHaveAttribute(
+      "href",
+      "https://ewal.dev/fitbit-google-health-and-whats-next",
+    );
+    expect(screen.getByRole("link", { name: "weight log" })).toHaveAttribute("href", "/log");
+    expect(screen.getByText(/use the × to dismiss this message for good/i)).toBeInTheDocument();
+
+    // Dismiss persists
+    await user.click(screen.getByRole("button", { name: "Dismiss notice" }));
+    expect(screen.queryByText(/Fitbit syncing has ended/)).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("providerShutdownNoticeDismissed-fitbit")).toBe("true");
+  });
+
+  it("should not render the shutdown notice after the auto-hide cutoff date", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2027-03-01"));
+
+    const status: ProviderSyncStatus = { success: false, error: "disabled" };
+    const { container } = render(<ProviderSyncError provider="fitbit" status={status} />);
+
+    expect(container.firstChild).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it("should not render the shutdown notice when previously dismissed", () => {
+    window.localStorage.setItem("providerShutdownNoticeDismissed-fitbit", "true");
+
+    const status: ProviderSyncStatus = { success: false, error: "disabled" };
+    const { container } = render(<ProviderSyncError provider="fitbit" status={status} />);
+
+    expect(container.firstChild).toBeNull();
   });
 
   it("should disable button when mutation is pending", () => {

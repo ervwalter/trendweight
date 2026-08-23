@@ -104,7 +104,7 @@ public abstract class ProviderServiceBase : IProviderService
     }
 
     /// <inheritdoc />
-    public async Task<ProviderSyncResult> SyncMeasurementsAsync(Guid userId, bool metric, DateTime? startDate = null)
+    public virtual async Task<ProviderSyncResult> SyncMeasurementsAsync(Guid userId, bool metric, DateTime? startDate = null)
     {
         try
         {

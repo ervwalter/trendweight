@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProviderList } from "./provider-list";
-import { useProviderLinks } from "@/lib/api/queries";
+import { useProviderLinks, useProvidersConfig } from "@/lib/api/queries";
 import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "@/lib/api/mutations";
 import { apiRequest } from "@/lib/api/client";
 import { useToast } from "@/lib/hooks/use-toast";
@@ -64,6 +64,7 @@ describe("ProviderList", () => {
 
     vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any);
     vi.mocked(useProviderLinks).mockReturnValue({ data: mockProviderLinks } as any);
+    vi.mocked(useProvidersConfig).mockReturnValue({ data: { disabledProviders: [] } } as any);
     vi.mocked(useDisconnectProvider).mockReturnValue({
       mutate: mockDisconnectMutate,
       isPending: false,
@@ -135,6 +136,19 @@ describe("ProviderList", () => {
       expect(screen.getByText("Fitbit Account")).toBeInTheDocument();
       expect(screen.getByText(/expected to stop in September 2026/i)).toBeInTheDocument();
       expect(screen.queryByText("Connect Fitbit Account")).not.toBeInTheDocument();
+    });
+
+    it("should hide Fitbit on the link page when shut off, even when connected", () => {
+      vi.mocked(useProvidersConfig).mockReturnValue({ data: { disabledProviders: ["fitbit"] } } as any);
+      vi.mocked(useProviderLinks).mockReturnValue({
+        data: [...mockProviderLinks, { provider: "fitbit", connectedAt: "2024-02-01T10:00:00Z", userId: "123" }],
+      } as any);
+
+      render(<ProviderList variant="link" />);
+
+      expect(screen.getByText("Withings Account")).toBeInTheDocument();
+      expect(screen.queryByText("Fitbit Account")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Fitbit syncing has ended/i)).not.toBeInTheDocument();
     });
 
     it("should show connected state for connected providers", () => {
@@ -343,6 +357,68 @@ describe("ProviderList", () => {
         "href",
         "https://ewal.dev/fitbit-google-health-and-whats-next",
       );
+    });
+
+    it("should hide an unconnected Fitbit entirely when Fitbit is shut off", () => {
+      vi.mocked(useProvidersConfig).mockReturnValue({ data: { disabledProviders: ["fitbit"] } } as any);
+
+      render(<ProviderList variant="settings" />);
+
+      expect(screen.getByText("Withings")).toBeInTheDocument();
+      expect(screen.queryByText("Fitbit")).not.toBeInTheDocument();
+    });
+
+    it("should keep a connected Fitbit visible without Resync when Fitbit is shut off", () => {
+      vi.mocked(useProvidersConfig).mockReturnValue({ data: { disabledProviders: ["fitbit"] } } as any);
+      vi.mocked(useProviderLinks).mockReturnValue({
+        data: [...mockProviderLinks, { provider: "fitbit", connectedAt: "2024-02-01T10:00:00Z", userId: "123" }],
+      } as any);
+
+      render(<ProviderList variant="settings" />);
+
+      expect(screen.getByText("Fitbit")).toBeInTheDocument();
+      expect(screen.getByText(/Fitbit syncing has ended/i)).toBeInTheDocument();
+      // Withings still offers Resync + Disconnect; shut-off Fitbit only offers a permanent Delete Data
+      expect(screen.getAllByText("Resync")).toHaveLength(1);
+      expect(screen.getAllByText("Disconnect")).toHaveLength(1);
+      expect(screen.getAllByText("Delete Data")).toHaveLength(1);
+    });
+
+    it("should confirm a permanent delete (not a disconnect) for a shut-off Fitbit", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useProvidersConfig).mockReturnValue({ data: { disabledProviders: ["fitbit"] } } as any);
+      vi.mocked(useProviderLinks).mockReturnValue({
+        data: [...mockProviderLinks, { provider: "fitbit", connectedAt: "2024-02-01T10:00:00Z", userId: "123" }],
+      } as any);
+
+      render(<ProviderList variant="settings" />);
+
+      await user.click(screen.getByText("Delete Data"));
+
+      const dialog = screen.getByTestId("confirm-dialog");
+      expect(within(dialog).getByText("Delete Fitbit Data?")).toBeInTheDocument();
+      expect(within(dialog).getByText(/permanently deleted/i)).toBeInTheDocument();
+      expect(within(dialog).getByText(/syncing has ended for good/i)).toBeInTheDocument();
+      expect(within(dialog).queryByText(/winding down/i)).not.toBeInTheDocument();
+      expect(within(dialog).getByRole("button", { name: "Delete Data" })).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole("button", { name: "Delete Data" }));
+      expect(mockDisconnectMutate).toHaveBeenCalledWith("fitbit", expect.any(Object));
+    });
+
+    it("should order tiles as Withings, Weight Log, Fitbit, Legacy", () => {
+      vi.mocked(useProviderLinks).mockReturnValue({
+        data: [
+          ...mockProviderLinks,
+          { provider: "fitbit", connectedAt: "2024-02-01T10:00:00Z", userId: "123" },
+          { provider: "legacy", connectedAt: "2024-03-01T10:00:00Z", userId: "123" },
+        ],
+      } as any);
+
+      render(<ProviderList variant="settings" />);
+
+      const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+      expect(headings).toEqual(["Withings", "Weight Log", "Fitbit", "Legacy Data"]);
     });
 
     it("should show the weight log with an edit link", () => {

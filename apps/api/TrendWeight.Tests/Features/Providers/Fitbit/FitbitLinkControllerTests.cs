@@ -49,6 +49,60 @@ public class FitbitLinkControllerTests : TestBase
             _loggerMock.Object);
     }
 
+    private FitbitLinkController CreateDisabledFitbitController()
+    {
+        var optionsMock = new Mock<IOptions<AppOptions>>();
+        optionsMock.Setup(x => x.Value).Returns(new AppOptions
+        {
+            Fitbit = new FitbitConfig
+            {
+                ClientId = "test-fitbit-client-id",
+                ClientSecret = "test-fitbit-client-secret",
+                Enabled = false
+            }
+        });
+
+        return new FitbitLinkController(
+            _fitbitServiceMock.Object,
+            optionsMock.Object,
+            _configurationMock.Object,
+            _loggerMock.Object);
+    }
+
+    [Fact]
+    public void LinkFitbit_WhenFitbitDisabled_Returns503()
+    {
+        // Arrange
+        var controller = CreateDisabledFitbitController();
+
+        // Act
+        var result = controller.LinkFitbit();
+
+        // Assert
+        var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(503);
+        var error = statusResult.Value.Should().BeOfType<ApiErrorResponse>().Subject;
+        error.ErrorCode.Should().Be(ErrorCodes.ProviderDisabled);
+        _fitbitServiceMock.Verify(x => x.GetAuthorizationUrl(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExchangeToken_WhenFitbitDisabled_Returns503()
+    {
+        // Arrange
+        var controller = CreateDisabledFitbitController();
+
+        // Act
+        var result = await controller.ExchangeToken(new FitbitLinkController.ExchangeTokenRequest { Code = "some-code" });
+
+        // Assert
+        var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(503);
+        _fitbitServiceMock.Verify(
+            x => x.ExchangeAuthorizationCodeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>()),
+            Times.Never);
+    }
+
     #region LinkFitbit Tests
 
     [Fact]

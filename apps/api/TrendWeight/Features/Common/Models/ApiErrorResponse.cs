@@ -32,4 +32,5 @@ public static class ErrorCodes
     public const string Forbidden = "FORBIDDEN";
     public const string ServiceUnavailable = "SERVICE_UNAVAILABLE";
     public const string UnexpectedError = "UNEXPECTED_ERROR";
+    public const string ProviderDisabled = "PROVIDER_DISABLED";
 }

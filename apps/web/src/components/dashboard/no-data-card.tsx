@@ -12,8 +12,9 @@ export function NoDataCard({ providerStatus }: NoDataCardProps) {
   const providers = providerStatus ? Object.keys(providerStatus).filter((provider) => provider !== "manual" && provider !== "legacy") : [];
   const providerNames = providers.map(getProviderDisplayName).join(" and ");
 
-  // Check if there are any provider errors
-  const hasProviderErrors = providerStatus && Object.values(providerStatus).some((status) => !status.success && status.error);
+  // Check if there are any provider errors ("disabled" is a permanent shutdown, not a
+  // connection issue - the reconnect advice below would be wrong for it)
+  const hasProviderErrors = providerStatus && Object.values(providerStatus).some((status) => !status.success && status.error && status.error !== "disabled");
 
   return (
     <Card className="mx-auto max-w-2xl">

@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using System.Security.Claims;
 using TrendWeight.Features.Measurements;
@@ -11,6 +12,7 @@ using TrendWeight.Features.Providers;
 using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
+using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Tests.Fixtures;
 using Xunit;
@@ -25,6 +27,7 @@ public class ProvidersControllerTests : TestBase
     private readonly Mock<IMeasurementSyncService> _measurementSyncServiceMock;
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILogger<ProvidersController>> _loggerMock;
+    private readonly FitbitConfig _fitbitConfig;
     private readonly ProvidersController _sut;
 
     public ProvidersControllerTests()
@@ -35,6 +38,7 @@ public class ProvidersControllerTests : TestBase
         _measurementSyncServiceMock = new Mock<IMeasurementSyncService>();
         _profileServiceMock = new Mock<IProfileService>();
         _loggerMock = new Mock<ILogger<ProvidersController>>();
+        _fitbitConfig = new FitbitConfig();
 
         _sut = new ProvidersController(
             _providerLinkServiceMock.Object,
@@ -42,6 +46,7 @@ public class ProvidersControllerTests : TestBase
             _providerIntegrationServiceMock.Object,
             _measurementSyncServiceMock.Object,
             _profileServiceMock.Object,
+            Options.Create(new AppOptions { Fitbit = _fitbitConfig }),
             _loggerMock.Object);
     }
 
@@ -547,7 +552,55 @@ public class ProvidersControllerTests : TestBase
 
     #endregion
 
+    #region GetProvidersConfig Tests
+
+    [Fact]
+    public void GetProvidersConfig_WhenFitbitEnabled_ReturnsNoDisabledProviders()
+    {
+        // Act
+        var result = _sut.GetProvidersConfig();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ProvidersConfigResponse>().Subject;
+        response.DisabledProviders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void GetProvidersConfig_WhenFitbitDisabled_ListsFitbit()
+    {
+        // Arrange
+        _fitbitConfig.Enabled = false;
+
+        // Act
+        var result = _sut.GetProvidersConfig();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ProvidersConfigResponse>().Subject;
+        response.DisabledProviders.Should().Equal("fitbit");
+    }
+
+    #endregion
+
     #region ClearProviderData Tests
+
+    [Fact]
+    public async Task ClearProviderData_ForFitbitWhenDisabled_Returns503WithoutClearing()
+    {
+        // Arrange - cleared Fitbit data could never be re-synced once the kill-switch is off
+        var userId = Guid.NewGuid();
+        _fitbitConfig.Enabled = false;
+        SetupAuthenticatedUser(userId.ToString());
+
+        // Act
+        var result = await _sut.ClearProviderData("fitbit");
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(503);
+        _measurementSyncServiceMock.Verify(x => x.ClearProviderDataAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+    }
 
     [Fact]
     public async Task ClearProviderData_WithValidProviderAndLink_ReturnsSuccess()

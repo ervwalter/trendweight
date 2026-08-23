@@ -1,7 +1,9 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
+using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Profile.Services;
@@ -21,6 +23,7 @@ public class ProvidersController : ControllerBase
     private readonly IProviderIntegrationService _providerIntegrationService;
     private readonly IMeasurementSyncService _measurementSyncService;
     private readonly IProfileService _profileService;
+    private readonly FitbitConfig _fitbitConfig;
     private readonly ILogger<ProvidersController> _logger;
 
     public ProvidersController(
@@ -29,6 +32,7 @@ public class ProvidersController : ControllerBase
         IProviderIntegrationService providerIntegrationService,
         IMeasurementSyncService measurementSyncService,
         IProfileService profileService,
+        IOptions<AppOptions> appOptions,
         ILogger<ProvidersController> logger)
     {
         _providerLinkService = providerLinkService;
@@ -36,7 +40,23 @@ public class ProvidersController : ControllerBase
         _providerIntegrationService = providerIntegrationService;
         _measurementSyncService = measurementSyncService;
         _profileService = profileService;
+        _fitbitConfig = appOptions.Value.Fitbit;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Gets provider availability configuration (e.g. whether Fitbit is disabled)
+    /// </summary>
+    [HttpGet("config")]
+    public ActionResult<ProvidersConfigResponse> GetProvidersConfig()
+    {
+        var disabled = new List<string>();
+        if (!_fitbitConfig.Enabled)
+        {
+            disabled.Add("fitbit");
+        }
+
+        return Ok(new ProvidersConfigResponse { DisabledProviders = disabled });
     }
 
     /// <summary>
@@ -180,6 +200,13 @@ public class ProvidersController : ControllerBase
             if (provider != "withings" && provider != "fitbit")
             {
                 return BadRequest(new ErrorResponse { Error = "Invalid provider. Must be 'withings' or 'fitbit'" });
+            }
+
+            // When Fitbit is disabled, cleared data could never be re-synced - refuse
+            // rather than permanently destroy the user's history
+            if (provider == "fitbit" && !_fitbitConfig.Enabled)
+            {
+                return StatusCode(503, new ErrorResponse { Error = "Fitbit syncing has ended, so cleared Fitbit data could not be re-synced. Resync is unavailable." });
             }
 
             // Get user ID from authenticated user claim

@@ -51,6 +51,12 @@ public enum ProviderSyncError
     /// <summary>
     /// Unknown or unexpected error
     /// </summary>
-    Unknown
+    Unknown,
+
+    /// <summary>
+    /// The provider integration has been turned off (e.g. Fitbit after Google
+    /// retires the API). Existing data is preserved; syncing has ended.
+    /// </summary>
+    Disabled
 }
 

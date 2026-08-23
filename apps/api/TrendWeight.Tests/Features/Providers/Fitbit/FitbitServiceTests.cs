@@ -69,6 +69,28 @@ public class FitbitServiceTests : TestBase
             _loggerMock.Object);
     }
 
+    [Fact]
+    public async Task SyncMeasurementsAsync_WhenDisabled_ReturnsDisabledWithoutNetworkOrStorage()
+    {
+        // Arrange - flip the kill-switch
+        _fitbitConfig.Enabled = false;
+
+        // Act
+        var result = await _sut.SyncMeasurementsAsync(Guid.NewGuid(), metric: true);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(ProviderSyncError.Disabled);
+        result.Measurements.Should().BeNull();
+        // No token lookup or network call happens
+        _providerLinkServiceMock.Verify(x => x.GetProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+        _httpMessageHandlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Never(),
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
     #region Date Range Handling Tests - Critical for Fitbit
 
     [Fact]

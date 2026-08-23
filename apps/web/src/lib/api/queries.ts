@@ -4,7 +4,7 @@ import { useAuth, type GetToken } from "@/lib/auth/use-auth";
 import type { ProfileData, SharingData } from "@/lib/core/interfaces";
 import { getDemoData, getDemoProfile } from "@/lib/demo/demo-data";
 import { ApiError, apiRequest } from "./client";
-import type { ApiKeyMetadata, ManualReading, MeasurementsResponse, ProfileResponse, ProviderLink } from "./types";
+import type { ApiKeyMetadata, ManualReading, MeasurementsResponse, ProfileResponse, ProviderLink, ProvidersConfig } from "./types";
 
 // Query key helpers - returns base key if no sharingCode, otherwise prefixes with sharingCode
 const createQueryKey = <T extends readonly unknown[]>(base: T, sharingCode?: string): T | readonly [string, ...T] => {
@@ -47,6 +47,7 @@ export const queryKeys = {
   providerLinks: providerLinksKey,
   sharing: ["sharing"] as const,
   apiKey: () => ["api-key"] as const,
+  providersConfig: () => ["providers-config"] as const,
   manualReadings: () => ["manual-readings"] as const,
   // Helper for invalidating all data queries
   allData: allDataKey,
@@ -169,6 +170,15 @@ export const queryOptions = {
       return apiRequest<SharingData>("/sharing", { token });
     },
   }),
+  providersConfig: (getToken: GetToken) => ({
+    queryKey: queryKeys.providersConfig(),
+    // Server config only changes on deploys - no need to refetch per navigation
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const token = await getToken();
+      return apiRequest<ProvidersConfig>("/providers/config", { token });
+    },
+  }),
   apiKey: (getToken: GetToken) => ({
     queryKey: queryKeys.apiKey(),
     queryFn: async () => {
@@ -260,6 +270,12 @@ export function useProviderLinks() {
 export function useSharingSettings() {
   const { getToken } = useAuth();
   return useSuspenseQuery(queryOptions.sharing(getToken));
+}
+
+// Provider availability query (with suspense)
+export function useProvidersConfig() {
+  const { getToken } = useAuth();
+  return useSuspenseQuery(queryOptions.providersConfig(getToken));
 }
 
 // API key metadata query (with suspense)

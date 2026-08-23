@@ -70,7 +70,8 @@ const Dashboard: FC = () => {
     <DashboardProvider data={dashboardData}>
       <div className="flex flex-col gap-4">
         <ProviderSyncErrors providerStatus={dashboardData.providerStatus} />
-        {dashboardData.isMe && dashboardData.providerStatus?.fitbit && <FitbitSunsetNotice />}
+        {/* "It's coming" heads-up yields to the "it happened" shutdown banner once syncing is disabled */}
+        {dashboardData.isMe && dashboardData.providerStatus?.fitbit && dashboardData.providerStatus.fitbit.error !== "disabled" && <FitbitSunsetNotice />}
         {dashboardData.isMe && dashboardData.profile.isMigrated && <NewVersionNotice />}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start print:hidden">
           <Buttons />
