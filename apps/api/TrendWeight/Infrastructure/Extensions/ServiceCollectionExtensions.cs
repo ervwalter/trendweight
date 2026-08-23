@@ -68,6 +68,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISourceDataService, SourceDataService>();
         services.AddScoped<IMeasurementSyncService, MeasurementSyncService>();
         services.AddScoped<IMeasurementComputationService, MeasurementComputationService>();
+        services.AddScoped<IMeasurementOrchestrationService, MeasurementOrchestrationService>();
         services.AddScoped<ILegacyDbService, LegacyDbService>();
         services.AddScoped<ILegacyMigrationService, LegacyMigrationService>();
 
