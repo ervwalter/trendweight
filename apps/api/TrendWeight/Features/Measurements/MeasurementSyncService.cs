@@ -102,7 +102,7 @@ public class MeasurementSyncService : IMeasurementSyncService
                 // Start progress reporting if we have a reporter
                 if (_progressReporter != null)
                 {
-                    await _progressReporter.ReportSyncProgressAsync("running", "Dowloading data from providers...");
+                    await _progressReporter.ReportSyncProgressAsync("running", "Downloading data from providers...");
                 }
 
                 var refreshResults = await Task.WhenAll(refreshTasks);
