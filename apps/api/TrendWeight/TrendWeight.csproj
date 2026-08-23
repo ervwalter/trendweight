@@ -6,7 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <NoWarn>$(NoWarn);CA1848;CA1873</NoWarn>
+    <!-- XML doc comments feed the OpenAPI (Scalar) schema; CS1591 (missing comment) stays off -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1848;CA1873;CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

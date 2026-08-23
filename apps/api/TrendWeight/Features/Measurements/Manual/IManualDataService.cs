@@ -20,6 +20,13 @@ public interface IManualDataService
     Task<RawMeasurement> UpsertReadingAsync(Guid userId, RawMeasurement reading);
 
     /// <summary>
+    /// Creates or replaces the readings for multiple dates in a single store
+    /// (one document write, used by the v1 batch endpoint)
+    /// </summary>
+    /// <returns>The stored readings, sorted descending by date</returns>
+    Task<List<RawMeasurement>> UpsertReadingsAsync(Guid userId, List<RawMeasurement> readings);
+
+    /// <summary>
     /// Deletes the reading for the given date
     /// </summary>
     /// <returns>True if a reading existed and was deleted, false if none existed</returns>

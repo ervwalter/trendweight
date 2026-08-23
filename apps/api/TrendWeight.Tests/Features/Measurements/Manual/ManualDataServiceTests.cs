@@ -185,6 +185,52 @@ public class ManualDataServiceTests
     }
 
     [Fact]
+    public async Task UpsertReadingsAsync_MergesBatchOverExistingInOneWrite()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        SetupExistingMeasurements(userId, new List<RawMeasurement>
+        {
+            Reading("2024-05-01", weight: 81m),
+            Reading("2024-04-30", weight: 82m)
+        });
+
+        // Act
+        var result = await _sut.UpsertReadingsAsync(userId, new List<RawMeasurement>
+        {
+            Reading("2024-05-01", weight: 80m), // replaces existing entry for the date
+            Reading("2024-05-02", weight: 79.5m)
+        });
+
+        // Assert - returned readings are the upserted ones, newest first
+        result.Select(m => m.Date).Should().Equal("2024-05-02", "2024-05-01");
+
+        // Stored array holds the merged set, one write, newest first
+        var stored = _storedData!.Single();
+        stored.Source.Should().Be("manual");
+        stored.Measurements!.Select(m => m.Date).Should().Equal("2024-05-02", "2024-05-01", "2024-04-30");
+        stored.Measurements!.First(m => m.Date == "2024-05-01").Weight.Should().Be(80m);
+        _sourceDataServiceMock.Verify(
+            x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task UpsertReadingsAsync_WhenNoRowExists_StoresBatch()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        SetupExistingMeasurements(userId, null);
+
+        // Act
+        var result = await _sut.UpsertReadingsAsync(userId, new List<RawMeasurement> { Reading("2024-05-01") });
+
+        // Assert
+        result.Should().HaveCount(1);
+        _storedData!.Single().Measurements.Should().HaveCount(1);
+    }
+
+    [Fact]
     public async Task DeleteAllReadingsAsync_StoresEmptyMeasurementsList()
     {
         // Arrange
