@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Globalization;
 using TrendWeight.Features.Profile.Services;
-using TrendWeight.Features.Providers;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Common.Models;
 using TrendWeight.Features.Common;
@@ -20,24 +19,18 @@ namespace TrendWeight.Features.Measurements;
 public class MeasurementsController : ControllerBase
 {
     private readonly IProfileService _profileService;
-    private readonly IProviderIntegrationService _providerIntegrationService;
-    private readonly IMeasurementSyncService _measurementSyncService;
-    private readonly IMeasurementComputationService _measurementComputationService;
+    private readonly IMeasurementOrchestrationService _orchestrationService;
     private readonly ILogger<MeasurementsController> _logger;
     private readonly ICurrentRequestContext _requestContext;
 
     public MeasurementsController(
         IProfileService profileService,
-        IProviderIntegrationService providerIntegrationService,
-        IMeasurementSyncService measurementSyncService,
-        IMeasurementComputationService measurementComputationService,
+        IMeasurementOrchestrationService orchestrationService,
         ILogger<MeasurementsController> logger,
         ICurrentRequestContext requestContext)
     {
         _profileService = profileService;
-        _providerIntegrationService = providerIntegrationService;
-        _measurementSyncService = measurementSyncService;
-        _measurementComputationService = measurementComputationService;
+        _orchestrationService = orchestrationService;
         _logger = logger;
         _requestContext = requestContext;
     }
@@ -56,48 +49,25 @@ public class MeasurementsController : ControllerBase
     {
         try
         {
-            // Populate request context from claims and query
             var uidClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(uidClaim) || !Guid.TryParse(uidClaim, out var userGuid))
             {
                 return Unauthorized(new ErrorResponse { Error = "User ID not found in token" });
             }
-            _requestContext.UserId = userGuid;
+
             var externalId = User.FindFirst("clerk_user_id")?.Value;
-            // External ID is required for RLS updates but may be absent in some test paths; populate when present
-            _requestContext.ExternalId = externalId ?? string.Empty;
-            if (!string.IsNullOrEmpty(progressId) && Guid.TryParse(progressId, out var pid))
-            {
-                _requestContext.ProgressId = pid;
-                _logger.LogInformation("Progress ID set to: {ProgressId} for user: {UserId}", pid, userGuid);
-            }
+            Guid? progressGuid = !string.IsNullOrEmpty(progressId) && Guid.TryParse(progressId, out var pid) ? pid : null;
 
-            _logger.LogInformation("Getting measurements for user ID: {UserId}", userGuid);
-
-            // Get user by Supabase UID
-            var user = await _profileService.GetByIdAsync(userGuid);
-            if (user == null)
+            var result = await _orchestrationService.GetForUserAsync(userGuid, externalId, progressGuid);
+            if (result == null)
             {
                 return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
-            // Get active providers
-            var activeProviders = await _providerIntegrationService.GetActiveProvidersAsync(user.Uid);
-
-            // Get measurements with automatic refresh
-            var result = await _measurementSyncService.GetMeasurementsForUserAsync(
-                user.Uid,
-                activeProviders,
-                user.Profile.UseMetric);
-
-            // Compute measurements from source data
-            var computedMeasurements = _measurementComputationService
-                .ComputeMeasurements(result.Data, user.Profile);
-
             return Ok(new MeasurementsResponse
             {
-                ComputedMeasurements = computedMeasurements,
-                SourceData = includeSource ? result.Data : null,
+                ComputedMeasurements = result.ComputedMeasurements,
+                SourceData = includeSource ? result.SourceData : null,
                 IsMe = true,
                 ProviderStatus = result.ProviderStatus
             });
@@ -159,20 +129,10 @@ public class MeasurementsController : ControllerBase
 
             _logger.LogInformation("Getting measurements for user ID: {UserId} via sharing code", user.Uid);
 
-            // Get active providers
-            var activeProviders = await _providerIntegrationService.GetActiveProvidersAsync(user.Uid);
-
-            // Get measurements with automatic refresh
-            var result = await _measurementSyncService.GetMeasurementsForUserAsync(
-                user.Uid,
-                activeProviders,
-                user.Profile.UseMetric);
-
-            // Compute measurements from source data
-            var computedMeasurements = _measurementComputationService
-                .ComputeMeasurements(result.Data, user.Profile);
+            var result = await _orchestrationService.GetForProfileAsync(user);
 
             // Filter measurements by since date if provided
+            var computedMeasurements = result.ComputedMeasurements;
             if (!string.IsNullOrEmpty(since))
             {
                 computedMeasurements = [.. computedMeasurements
@@ -185,7 +145,7 @@ public class MeasurementsController : ControllerBase
             return Ok(new MeasurementsResponse
             {
                 ComputedMeasurements = computedMeasurements,
-                SourceData = includeSource ? result.Data : null,
+                SourceData = includeSource ? result.SourceData : null,
                 IsMe = false,
                 ProviderStatus = null
             });

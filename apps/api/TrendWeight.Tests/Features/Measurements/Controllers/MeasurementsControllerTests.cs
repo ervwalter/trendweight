@@ -7,8 +7,6 @@ using System.Security.Claims;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Services;
-using TrendWeight.Features.Providers;
-using TrendWeight.Features.Providers.Models;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
@@ -21,29 +19,21 @@ namespace TrendWeight.Tests.Features.Measurements.Controllers;
 public class MeasurementsControllerTests : TestBase
 {
     private readonly Mock<IProfileService> _profileServiceMock;
-    private readonly Mock<IProviderIntegrationService> _providerIntegrationServiceMock;
-    private readonly Mock<IMeasurementSyncService> _measurementSyncServiceMock;
-    private readonly Mock<IMeasurementComputationService> _measurementComputationServiceMock;
-    private readonly Mock<ILogger<MeasurementsController>> _loggerMock;
+    private readonly Mock<IMeasurementOrchestrationService> _orchestrationServiceMock;
     private readonly Mock<ICurrentRequestContext> _requestContextMock;
     private readonly MeasurementsController _sut;
 
     public MeasurementsControllerTests()
     {
         _profileServiceMock = new Mock<IProfileService>();
-        _providerIntegrationServiceMock = new Mock<IProviderIntegrationService>();
-        _measurementSyncServiceMock = new Mock<IMeasurementSyncService>();
-        _measurementComputationServiceMock = new Mock<IMeasurementComputationService>();
-        _loggerMock = new Mock<ILogger<MeasurementsController>>();
+        _orchestrationServiceMock = new Mock<IMeasurementOrchestrationService>();
         _requestContextMock = new Mock<ICurrentRequestContext>();
         _requestContextMock.SetupAllProperties();
 
         _sut = new MeasurementsController(
             _profileServiceMock.Object,
-            _providerIntegrationServiceMock.Object,
-            _measurementSyncServiceMock.Object,
-            _measurementComputationServiceMock.Object,
-            _loggerMock.Object,
+            _orchestrationServiceMock.Object,
+            Mock.Of<ILogger<MeasurementsController>>(),
             _requestContextMock.Object);
     }
 
@@ -54,42 +44,59 @@ public class MeasurementsControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = CreateTestProfile(userId);
-        var sourceData = CreateTestSourceData();
+        var dataResult = CreateDataResult(userId);
 
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
-            .ReturnsAsync(new List<string> { "withings", "fitbit" });
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
-                It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult
-            {
-                Data = sourceData,
-                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
-                {
-                    { "withings", new ProviderSyncStatus { Success = true } },
-                    { "fitbit", new ProviderSyncStatus { Success = true } }
-                }
-            });
-        _measurementComputationServiceMock.Setup(x => x.ComputeMeasurements(sourceData, user.Profile))
-            .Returns(new List<ComputedMeasurement>());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null, null)).ReturnsAsync(dataResult);
 
         // Act
         var result = await _sut.GetMeasurements();
 
         // Assert
-        result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
         response.IsMe.Should().Be(true);
-        response.ComputedMeasurements.Should().NotBeNull();
+        response.ComputedMeasurements.Should().BeSameAs(dataResult.ComputedMeasurements);
         response.SourceData.Should().BeNull(); // Default includeSource=false
-        response.ProviderStatus.Should().NotBeNull();
+        response.ProviderStatus.Should().ContainKey("withings");
+    }
 
-        response.ProviderStatus.Should().HaveCount(2);
-        response.ProviderStatus!["withings"].Success.Should().BeTrue();
-        response.ProviderStatus["fitbit"].Success.Should().BeTrue();
+    [Fact]
+    public async Task GetMeasurements_WithIncludeSource_ReturnsSourceData()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var dataResult = CreateDataResult(userId);
+
+        SetupAuthenticatedUser(userId.ToString());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null, null)).ReturnsAsync(dataResult);
+
+        // Act
+        var result = await _sut.GetMeasurements(includeSource: true);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
+        response.SourceData.Should().BeSameAs(dataResult.SourceData);
+    }
+
+    [Fact]
+    public async Task GetMeasurements_PassesClerkIdAndProgressIdToOrchestration()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var progressId = Guid.NewGuid();
+        var dataResult = CreateDataResult(userId);
+
+        SetupAuthenticatedUser(userId.ToString(), clerkUserId: "clerk_123");
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, "clerk_123", progressId)).ReturnsAsync(dataResult);
+
+        // Act
+        var result = await _sut.GetMeasurements(progressId: progressId.ToString());
+
+        // Assert
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _orchestrationServiceMock.Verify(x => x.GetForUserAsync(userId, "clerk_123", progressId), Times.Once);
     }
 
     [Fact]
@@ -113,7 +120,8 @@ public class MeasurementsControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync((DbProfile?)null);
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null, null))
+            .ReturnsAsync((MeasurementDataResult?)null);
 
         // Act
         var result = await _sut.GetMeasurements();
@@ -125,94 +133,13 @@ public class MeasurementsControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetMeasurements_WhenDataNeedsRefresh_RefreshesAndReturnsData()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = CreateTestProfile(userId);
-        var sourceData = CreateTestSourceData();
-        var providerService = new Mock<IProviderService>();
-
-        SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
-            .ReturnsAsync(new List<string> { "withings" });
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
-                It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult
-            {
-                Data = sourceData,
-                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
-                {
-                    { "withings", new ProviderSyncStatus { Success = true } }
-                }
-            });
-        _measurementComputationServiceMock.Setup(x => x.ComputeMeasurements(sourceData, user.Profile))
-            .Returns(new List<ComputedMeasurement>());
-
-        // Act
-        var result = await _sut.GetMeasurements();
-
-        // Assert
-        result.Should().NotBeNull();
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
-        response.ComputedMeasurements.Should().NotBeNull();
-        response.SourceData.Should().BeNull(); // Default includeSource=false
-    }
-
-    [Fact]
-    public async Task GetMeasurements_WhenProviderRefreshFails_ReturnsDataWithErrorStatus()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = CreateTestProfile(userId);
-        var sourceData = CreateTestSourceData();
-        var providerService = new Mock<IProviderService>();
-
-        SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
-            .ReturnsAsync(new List<string> { "withings" });
-
-        // Setup to return error status for provider
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
-                It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult
-            {
-                Data = sourceData,
-                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
-                {
-                    { "withings", new ProviderSyncStatus
-                        {
-                            Success = false,
-                            Error = "authfailed",
-                            Message = "Authentication expired"
-                        }
-                    }
-                }
-            });
-
-        // Act
-        var result = await _sut.GetMeasurements();
-
-        // Assert
-        result.Should().NotBeNull();
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
-        response.ProviderStatus!["withings"].Success.Should().BeFalse();
-        response.ProviderStatus["withings"].Error.Should().Be("authfailed");
-        response.ProviderStatus["withings"].Message.Should().Be("Authentication expired");
-    }
-
-    [Fact]
     public async Task GetMeasurements_WhenExceptionThrown_ReturnsInternalServerError()
     {
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
-                .ThrowsAsync(new Exception("Database error"));
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<Guid?>()))
+            .ThrowsAsync(new Exception("Database error"));
 
         // Act
         var result = await _sut.GetMeasurements();
@@ -232,38 +159,62 @@ public class MeasurementsControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         var sharingCode = "test-sharing-code";
-        var user = CreateTestProfile(userId);
+        var dataResult = CreateDataResult(userId);
+        var user = dataResult.Profile;
         user.Profile.SharingEnabled = true;
         user.Profile.SharingToken = sharingCode;
-        var sourceData = CreateTestSourceData();
 
         _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
-            .ReturnsAsync(new List<string> { "withings" });
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
-                It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult
-            {
-                Data = sourceData,
-                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
-                {
-                    { "withings", new ProviderSyncStatus { Success = true } }
-                }
-            });
-        _measurementComputationServiceMock.Setup(x => x.ComputeMeasurements(sourceData, user.Profile))
-            .Returns(new List<ComputedMeasurement>());
+        _orchestrationServiceMock.Setup(x => x.GetForProfileAsync(user)).ReturnsAsync(dataResult);
 
         // Act
         var result = await _sut.GetMeasurementsBySharingCode(sharingCode);
 
         // Assert
-        result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
         response.IsMe.Should().Be(false);
         response.ComputedMeasurements.Should().NotBeNull();
         response.SourceData.Should().BeNull(); // Default includeSource=false
         response.ProviderStatus.Should().BeNull(); // No provider status for shared view
+    }
+
+    [Fact]
+    public async Task GetMeasurementsBySharingCode_WithSinceFilter_FiltersMeasurements()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var sharingCode = "test-sharing-code";
+        var dataResult = CreateDataResult(userId, computedMeasurements: new List<ComputedMeasurement>
+        {
+            CreateComputedMeasurement("2024-01-01"),
+            CreateComputedMeasurement("2024-06-15"),
+            CreateComputedMeasurement("2024-12-31")
+        });
+        var user = dataResult.Profile;
+        user.Profile.SharingEnabled = true;
+
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
+        _orchestrationServiceMock.Setup(x => x.GetForProfileAsync(user)).ReturnsAsync(dataResult);
+
+        // Act
+        var result = await _sut.GetMeasurementsBySharingCode(sharingCode, since: "2024-06-15");
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
+        response.ComputedMeasurements.Should().HaveCount(2);
+        response.ComputedMeasurements.Select(m => m.Date).Should().Equal("2024-06-15", "2024-12-31");
+    }
+
+    [Fact]
+    public async Task GetMeasurementsBySharingCode_WithInvalidSince_ReturnsBadRequest()
+    {
+        // Act
+        var result = await _sut.GetMeasurementsBySharingCode("code", since: "not-a-date");
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]
@@ -282,7 +233,24 @@ public class MeasurementsControllerTests : TestBase
             .Which.Error.Should().Be("User not found");
     }
 
-    // Test removed - refresh logic is now internal to MeasurementSyncService
+    [Fact]
+    public async Task GetMeasurementsBySharingCode_WhenSharingDisabled_ReturnsNotFound()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var sharingCode = "disabled-code";
+        var user = CreateTestProfile(userId);
+        user.Profile.SharingEnabled = false;
+
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
+
+        // Act
+        var result = await _sut.GetMeasurementsBySharingCode(sharingCode);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+        _orchestrationServiceMock.Verify(x => x.GetForProfileAsync(It.IsAny<DbProfile>()), Times.Never);
+    }
 
     [Fact]
     public async Task GetMeasurementsBySharingCode_WhenExceptionThrown_ReturnsInternalServerError()
@@ -302,66 +270,20 @@ public class MeasurementsControllerTests : TestBase
 
     #endregion
 
-    #region Multiple Providers Tests
-
-    // Test removed - refresh logic is now internal to MeasurementSyncService
-
-    [Fact]
-    public async Task GetMeasurements_WhenProviderServiceNotFound_ReturnsErrorForThatProvider()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = CreateTestProfile(userId);
-
-        SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
-        _providerIntegrationServiceMock.Setup(x => x.GetActiveProvidersAsync(userId))
-            .ReturnsAsync(new List<string> { "unknown-provider" });
-        _measurementSyncServiceMock.Setup(x => x.GetMeasurementsForUserAsync(userId,
-                It.IsAny<List<string>>(), user.Profile.UseMetric))
-            .ReturnsAsync(new MeasurementsResult
-            {
-                Data = new List<SourceData>(),
-                ProviderStatus = new Dictionary<string, ProviderSyncStatus>
-                {
-                    { "unknown-provider", new ProviderSyncStatus
-                        {
-                            Success = false,
-                            Error = "unknown",
-                            Message = "Provider service not found"
-                        }
-                    }
-                }
-            });
-
-        // Act
-        var result = await _sut.GetMeasurements();
-
-        // Assert
-        result.Should().NotBeNull();
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<MeasurementsResponse>().Subject;
-        response.ProviderStatus!["unknown-provider"].Success.Should().BeFalse();
-        response.ProviderStatus["unknown-provider"].Error.Should().Be("unknown");
-        response.ProviderStatus["unknown-provider"].Message.Should().Contain("Provider service not found");
-    }
-
-    #endregion
-
     #region Helper Methods
 
-
-    private void SetupAuthenticatedUser(string? userId, MeasurementsController? controller = null)
+    private void SetupAuthenticatedUser(string? userId, string? clerkUserId = null)
     {
         var claims = new List<Claim>();
         if (userId != null)
             claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
+        if (clerkUserId != null)
+            claims.Add(new Claim("clerk_user_id", clerkUserId));
 
         var identity = new ClaimsIdentity(claims, "Test");
         var principal = new ClaimsPrincipal(identity);
 
-        var targetController = controller ?? _sut;
-        targetController.ControllerContext = new ControllerContext
+        _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext { User = principal }
         };
@@ -383,9 +305,21 @@ public class MeasurementsControllerTests : TestBase
         };
     }
 
-    private static List<SourceData> CreateTestSourceData()
+    private static ComputedMeasurement CreateComputedMeasurement(string date)
     {
-        return new List<SourceData>
+        return new ComputedMeasurement
+        {
+            Date = date,
+            ActualWeight = 75.5m,
+            TrendWeight = 75.5m,
+            WeightIsInterpolated = false,
+            FatIsInterpolated = false
+        };
+    }
+
+    private static MeasurementDataResult CreateDataResult(Guid userId, List<ComputedMeasurement>? computedMeasurements = null)
+    {
+        var sourceData = new List<SourceData>
         {
             new SourceData
             {
@@ -401,23 +335,17 @@ public class MeasurementsControllerTests : TestBase
                         FatRatio = 0.225m
                     }
                 }
-            },
-            new SourceData
-            {
-                Source = "fitbit",
-                LastUpdate = DateTime.UtcNow,
-                Measurements = new List<RawMeasurement>
-                {
-                    new RawMeasurement
-                    {
-                        Date = DateTime.UtcNow.Date.AddDays(-1).ToString("yyyy-MM-dd"),
-                        Time = "08:00:00",
-                        Weight = 75.8m,
-                        FatRatio = 0.228m
-                    }
-                }
             }
         };
+
+        return new MeasurementDataResult(
+            CreateTestProfile(userId),
+            computedMeasurements ?? new List<ComputedMeasurement>(),
+            sourceData,
+            new Dictionary<string, ProviderSyncStatus>
+            {
+                { "withings", new ProviderSyncStatus { Success = true } }
+            });
     }
 
     #endregion
