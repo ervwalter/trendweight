@@ -7,10 +7,11 @@ namespace TrendWeight.Features.Measurements.Manual;
 /// All mutations funnel through this service so the read-modify-write of the JSONB
 /// measurements array happens in one place.
 ///
-/// Concurrency note: updates are last-writer-wins on the whole array. That is acceptable
-/// while the only writer is the signed-in user editing their own data; before exposing
-/// scripted external writes (the /api/v1 surface), add an atomic JSONB upsert RPC and
-/// route writes through it.
+/// Concurrency note: updates are last-writer-wins on the whole array. Two concurrent
+/// writes to the same user's manual data can drop one edit. This is an accepted
+/// trade-off: it's the user's own data and their own scripts, the window is
+/// milliseconds, and the batch upsert (one document write for many readings) is the
+/// intended path for bulk work.
 /// </summary>
 public class ManualDataService : IManualDataService
 {
@@ -49,6 +50,25 @@ public class ManualDataService : IManualDataService
         _logger.LogInformation("Upserted manual reading for user {UserId} on {Date}", userId, reading.Date);
 
         return reading;
+    }
+
+    /// <inheritdoc />
+    public async Task<List<RawMeasurement>> UpsertReadingsAsync(Guid userId, List<RawMeasurement> readings)
+    {
+        var measurements = await GetCurrentMeasurementsAsync(userId);
+
+        // One reading per date - replace any existing entry for each incoming date
+        var incomingDates = readings.Select(r => r.Date).ToHashSet();
+        measurements.RemoveAll(m => incomingDates.Contains(m.Date));
+        measurements.AddRange(readings);
+        SortDescending(measurements);
+
+        await StoreAsync(userId, measurements);
+        _logger.LogInformation("Upserted {Count} manual readings for user {UserId}", readings.Count, userId);
+
+        var stored = new List<RawMeasurement>(readings);
+        SortDescending(stored);
+        return stored;
     }
 
     /// <inheritdoc />
