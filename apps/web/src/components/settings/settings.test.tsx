@@ -112,6 +112,10 @@ vi.mock("./sharing-section", () => ({
   SharingSection: () => <div data-testid="sharing-section">Sharing Section</div>,
 }));
 
+vi.mock("./api-key-section", () => ({
+  ApiKeySection: () => <div data-testid="api-key-section">API Key Section</div>,
+}));
+
 describe("Settings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -132,6 +136,7 @@ describe("Settings", () => {
     expect(screen.getByTestId("sharing-section")).toBeInTheDocument();
     expect(screen.getByTestId("connected-accounts")).toBeInTheDocument();
     expect(screen.getByTestId("download-section")).toBeInTheDocument();
+    expect(screen.getByTestId("api-key-section")).toBeInTheDocument();
     expect(screen.getByTestId("account-security")).toBeInTheDocument();
     expect(screen.getByTestId("danger-zone")).toBeInTheDocument();
   });

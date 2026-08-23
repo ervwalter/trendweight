@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/use-auth";
 import { apiRequest } from "./client";
 import { queryKeys } from "./queries";
-import type { ManualReading, ProfileResponse } from "./types";
+import type { ApiKeyMetadata, GeneratedApiKey, ManualReading, ProfileResponse } from "./types";
 import type { SharingData } from "@/lib/core/interfaces";
 
 interface UpdateProfileData {
@@ -218,6 +218,48 @@ export function useGenerateShareToken() {
       queryClient.setQueryData(queryKeys.sharing, data);
       // Invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: queryKeys.sharing });
+    },
+  });
+}
+
+export function useGenerateApiKey() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      return apiRequest<GeneratedApiKey>("/profile/api-key", {
+        method: "POST",
+        token,
+      });
+    },
+    onSuccess: (data) => {
+      // Cache only the metadata - never the plaintext key
+      queryClient.setQueryData<ApiKeyMetadata>(queryKeys.apiKey(), {
+        exists: true,
+        suffix: data.suffix,
+        createdAt: data.createdAt,
+      });
+    },
+  });
+}
+
+export function useRevokeApiKey() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      return apiRequest("/profile/api-key", {
+        method: "DELETE",
+        token,
+      });
+    },
+    onSuccess: () => {
+      queryClient.setQueryData<ApiKeyMetadata>(queryKeys.apiKey(), { exists: false });
+      queryClient.invalidateQueries({ queryKey: queryKeys.apiKey() });
     },
   });
 }
