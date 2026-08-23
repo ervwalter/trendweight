@@ -32,9 +32,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IClerkTokenService, ClerkTokenService>();
         services.AddScoped<IUserAccountMappingService, UserAccountMappingService>();
 
-        // Configure authentication - Clerk only
+        // Configure authentication. Clerk stays the default scheme, so internal
+        // endpoints never accept API keys; only /api/v1 opts into the ApiKey scheme.
         services.AddAuthentication("Clerk")
-            .AddScheme<AuthenticationSchemeOptions, ClerkAuthenticationHandler>("Clerk", null);
+            .AddScheme<AuthenticationSchemeOptions, ClerkAuthenticationHandler>("Clerk", null)
+            .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationHandler.SchemeName, null);
 
         // Configure authorization
         services.AddAuthorization(options =>
