@@ -1,7 +1,4 @@
-using System.Globalization;
-using System.Numerics;
-using System.Security.Cryptography;
-using System.Text;
+using TrendWeight.Common;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Features.Profile.Models;
@@ -140,49 +137,20 @@ public class ProfileService : IProfileService
         return profiles.FirstOrDefault();
     }
 
+    public async Task<DbProfile?> GetByApiKeyHashAsync(string apiKeyHash)
+    {
+        var profiles = await _supabaseService.QueryAsync<DbProfile>(query =>
+            query.Filter("profile->>ApiKeyHash", Supabase.Postgrest.Constants.Operator.Equals, apiKeyHash)
+        );
+        return profiles.FirstOrDefault();
+    }
+
     /// <summary>
     /// Generates a new share token with 128 bits of entropy
     /// </summary>
     public string GenerateShareToken()
     {
-        // Generate 128 bits (16 bytes) of cryptographically secure random data
-        var bytes = new byte[16];
-        using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(bytes);
-        }
-
-        // Convert to base36 (0-9, a-z) for URL-friendly, lowercase representation
-        // This gives us ~25 characters for 128 bits of entropy
-        return ToBase36(bytes);
-    }
-
-    /// <summary>
-    /// Converts byte array to base36 string (0-9, a-z)
-    /// </summary>
-    private static string ToBase36(byte[] bytes)
-    {
-        const string base36Chars = "0123456789abcdefghijklmnopqrstuvwxyz";
-        var result = new System.Text.StringBuilder();
-
-        // Convert bytes to BigInteger for easier base conversion
-        var bigInt = new System.Numerics.BigInteger(bytes.Concat(new byte[] { 0 }).ToArray());
-
-        // Convert to base36
-        while (bigInt > 0)
-        {
-            var remainder = (int)(bigInt % 36);
-            result.Insert(0, base36Chars[remainder]);
-            bigInt /= 36;
-        }
-
-        // Pad to ensure consistent length (25 chars for 128 bits in base36)
-        while (result.Length < 25)
-        {
-            result.Insert(0, '0');
-        }
-
-        return result.ToString();
+        return TokenGenerator.GenerateToken();
     }
 
     /// <summary>

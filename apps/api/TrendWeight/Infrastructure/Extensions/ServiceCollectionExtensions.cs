@@ -12,6 +12,7 @@ using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Manual;
 using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.Services;
+using TrendWeight.Features.ApiKeys;
 using TrendWeight.Features.Common;
 using TrendWeight.Features.SyncProgress;
 
@@ -60,6 +61,7 @@ public static class ServiceCollectionExtensions
 
         // Register feature services
         services.AddScoped<IProfileService, ProfileService>();
+        services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IProviderLinkService, ProviderLinkService>();
         services.AddScoped<ISourceDataService, SourceDataService>();
         services.AddScoped<IMeasurementSyncService, MeasurementSyncService>();
