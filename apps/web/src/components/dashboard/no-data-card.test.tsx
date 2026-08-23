@@ -66,6 +66,17 @@ describe("NoDataCard", () => {
     expect(screen.getByText(/Please reconnect your scale account above/)).toBeInTheDocument();
   });
 
+  it("does not show reconnect advice when a provider is permanently disabled", () => {
+    const providerStatus: Record<string, ProviderSyncStatus> = {
+      fitbit: { success: false, error: "disabled", message: "Fitbit syncing has ended" },
+    };
+
+    render(<NoDataCard providerStatus={providerStatus} />);
+
+    expect(screen.queryByText(/Please reconnect your scale account above/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Your account is connected to Fitbit/)).toBeInTheDocument();
+  });
+
   it("shows normal message when provider sync is successful", () => {
     const providerStatus: Record<string, ProviderSyncStatus> = {
       fitbit: { success: true },

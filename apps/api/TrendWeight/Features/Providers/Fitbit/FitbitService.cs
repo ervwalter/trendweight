@@ -11,6 +11,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Fitbit.Models;
+using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.SyncProgress;
 using TrendWeight.Infrastructure.Configuration;
 
@@ -54,6 +55,27 @@ public class FitbitService : ProviderServiceBase, IFitbitService
 
     /// <inheritdoc />
     public override string ProviderName => "fitbit";
+
+    /// <summary>
+    /// Short-circuits syncing when the Fitbit kill-switch is off (Fitbit:Enabled=false).
+    /// No network call is made and nothing is stored, so existing Fitbit history in
+    /// source_data is preserved and keeps charting.
+    /// </summary>
+    public override Task<ProviderSyncResult> SyncMeasurementsAsync(Guid userId, bool metric, DateTime? startDate = null)
+    {
+        if (!_config.Enabled)
+        {
+            return Task.FromResult(new ProviderSyncResult
+            {
+                Provider = ProviderName,
+                Success = false,
+                Error = ProviderSyncError.Disabled,
+                Message = "Fitbit syncing has ended because Google retired the Fitbit API. Your existing Fitbit data is preserved."
+            });
+        }
+
+        return base.SyncMeasurementsAsync(userId, metric, startDate);
+    }
 
     /// <inheritdoc />
     public override string GetAuthorizationUrl(string state, string callbackUrl)

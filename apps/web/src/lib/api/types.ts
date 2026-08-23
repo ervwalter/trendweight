@@ -14,6 +14,13 @@ export interface Measurement {
   change?: number;
 }
 
+// Provider availability from GET /api/providers/config
+export interface ProvidersConfig {
+  // Providers that no longer accept new connections or syncs (e.g. "fitbit"
+  // once Google retires its API). Existing data remains visible.
+  disabledProviders: string[];
+}
+
 // API key metadata from GET /api/profile/api-key (never contains the key itself)
 export interface ApiKeyMetadata {
   exists: boolean;
@@ -59,7 +66,7 @@ export interface ProviderLink {
 // Provider sync status
 export interface ProviderSyncStatus {
   success: boolean;
-  error?: "authfailed" | "networkerror" | "unknown";
+  error?: "authfailed" | "networkerror" | "unknown" | "disabled";
   message?: string;
 }
 

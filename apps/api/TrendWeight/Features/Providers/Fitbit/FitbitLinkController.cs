@@ -44,6 +44,11 @@ public class FitbitLinkController : BaseAuthController
     [HttpGet("link")]
     public IActionResult LinkFitbit()
     {
+        if (!_config.Enabled)
+        {
+            return FitbitDisabledResponse();
+        }
+
         // Get JWT signing key
         var jwtSigningKey = _configuration["Jwt:SigningKey"];
         if (string.IsNullOrEmpty(jwtSigningKey))
@@ -89,6 +94,11 @@ public class FitbitLinkController : BaseAuthController
     [HttpPost("exchange-token")]
     public async Task<IActionResult> ExchangeToken([FromBody] ExchangeTokenRequest request)
     {
+        if (!_config.Enabled)
+        {
+            return FitbitDisabledResponse();
+        }
+
         try
         {
             if (string.IsNullOrEmpty(request.Code))
@@ -135,6 +145,16 @@ public class FitbitLinkController : BaseAuthController
                 IsRetryable = false
             });
         }
+    }
+
+    private ObjectResult FitbitDisabledResponse()
+    {
+        return StatusCode(StatusCodes.Status503ServiceUnavailable, new ApiErrorResponse
+        {
+            Error = "Fitbit connections are no longer available. Google has retired the Fitbit API that TrendWeight used.",
+            ErrorCode = ErrorCodes.ProviderDisabled,
+            IsRetryable = false
+        });
     }
 
     /// <summary>
