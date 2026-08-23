@@ -14,6 +14,20 @@ export interface Measurement {
   change?: number;
 }
 
+// API key metadata from GET /api/profile/api-key (never contains the key itself)
+export interface ApiKeyMetadata {
+  exists: boolean;
+  suffix?: string; // last 4 chars of the key, for display as "sk-…wxyz"
+  createdAt?: string; // ISO timestamp
+}
+
+// Result of POST /api/profile/api-key - the plaintext key is returned exactly once
+export interface GeneratedApiKey {
+  apiKey: string;
+  suffix: string;
+  createdAt: string;
+}
+
 // A manually entered reading from /api/measurements/manual (one per date)
 export interface ManualReading {
   date: string; // "2024-01-15" (user's local timezone)

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AccountSecuritySection } from "./account-security-section";
 import { AdvancedSection } from "./advanced-section";
+import { ApiKeySection } from "./api-key-section";
 import { ConnectedAccountsSection } from "./connected-accounts-section";
 import { DangerZoneSection } from "./danger-zone-section";
 import { DownloadSection } from "./download-section";
@@ -140,6 +141,11 @@ export function Settings() {
 
       {/* Download Card */}
       <DownloadSection />
+
+      {/* API Key Card */}
+      <Card className="mb-6">
+        <ApiKeySection />
+      </Card>
 
       {/* Account Security Card */}
       <Card className="mb-6">
