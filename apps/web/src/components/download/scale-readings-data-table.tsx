@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { LocalDate, convert } from "@js-joda/core";
-import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import { flexRender } from "@tanstack/react-table";
+import { getCoreRowModel, getPaginationRowModel, useLegacyTable, type LegacyColumnDef } from "@tanstack/react-table/legacy";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useMemo } from "react";
 import { formatMeasurement } from "@/lib/core/numbers";
@@ -43,8 +44,8 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
   const isComputed = viewType === "computed";
 
   // Define columns based on view type
-  const columns = useMemo<ColumnDef<ScaleReading>[]>(() => {
-    const cols: ColumnDef<ScaleReading>[] = [
+  const columns = useMemo<LegacyColumnDef<ScaleReading>[]>(() => {
+    const cols: LegacyColumnDef<ScaleReading>[] = [
       {
         accessorKey: "date",
         header: "Date",
@@ -120,15 +121,15 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
     return cols;
   }, [isComputed, useMetric]);
 
-  // TanStack Table returns non-memoizable helpers; React Compiler should skip this call.
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
+  // TanStack Table returns non-memoizable helpers, so this call is not memoized by React Compiler.
+  const table = useLegacyTable({
     data: readings,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize: 50,
       },
     },
