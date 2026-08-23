@@ -40,27 +40,7 @@ builder.Services.AddReverseProxy()
 // Add rate limiting
 builder.Services.AddRateLimiter(options =>
 {
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-    {
-        // Only apply rate limiting to authenticated users
-        var userId = httpContext.User?.FindFirst("sub")?.Value;
-
-        if (string.IsNullOrEmpty(userId))
-        {
-            // No rate limiting for anonymous requests
-            return RateLimitPartition.GetNoLimiter("anonymous");
-        }
-
-        // Apply rate limiting for authenticated users
-        return RateLimitPartition.GetFixedWindowLimiter(
-            userId,
-            partition => new FixedWindowRateLimiterOptions
-            {
-                AutoReplenishment = true,
-                PermitLimit = 100,
-                Window = TimeSpan.FromMinutes(1)
-            });
-    });
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(RateLimitPartitionResolver.Resolve);
 
     // Return 429 Too Many Requests when rate limit is exceeded
     options.OnRejected = async (context, token) =>
@@ -200,11 +180,14 @@ app.UseStaticFiles(new StaticFileOptions
 // Map reverse proxy endpoints (before rate limiting so they're not rate limited)
 app.MapReverseProxy();
 
-// Apply rate limiting only to API routes (after static files)
-app.UseRateLimiter();
-
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Rate limiting partitions on the authenticated principal, so it must run AFTER
+// UseAuthorization: endpoints authenticated via a non-default scheme (e.g. API keys)
+// only get their principal assigned to HttpContext.User by the authorization
+// middleware's policy evaluation, not by UseAuthentication itself.
+app.UseRateLimiter();
 
 app.MapControllers();
 
