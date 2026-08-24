@@ -37,6 +37,10 @@ TrendWeight is a monorepo web application for tracking weight trends by integrat
 - NEVER apply SQL directly to the remote database (via Supabase MCP or otherwise) — the remote migration history table will drift from `supabase/migrations/` and break branching and `supabase db pull`
 - If history drifts anyway: `supabase migration list --linked` to compare, `supabase migration repair` to fix bookkeeping (it never touches schema or data)
 
+## Claude Code Notes
+
+- `dotnet` commands (restore/build/test) hang or stall inside the Claude Code sandbox — always run them with `dangerouslyDisableSandbox: true`
+
 ## Development Commands
 
 ### Essential Commands (run from repository root)
