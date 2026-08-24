@@ -3,7 +3,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using TrendWeight.Infrastructure.Extensions;
 using TrendWeight.Infrastructure.Middleware;
@@ -33,10 +35,53 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi("v1", options =>
 {
     options.ShouldInclude = description => description.GroupName == "v1";
+    // Schema names read better without the C# "V1" DTO prefix (Measurement, not V1Measurement)
+    options.CreateSchemaReferenceId = jsonTypeInfo =>
+    {
+        var id = OpenApiOptions.CreateDefaultSchemaReferenceId(jsonTypeInfo);
+        return id != null && id.StartsWith("V1", StringComparison.Ordinal) ? id[2..] : id;
+    };
     options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
         document.Info.Title = "TrendWeight API";
         document.Info.Version = "v1";
+        document.Info.Description =
+            "Programmatic access to your own TrendWeight data: read your measurements, and add or edit weight log entries.\n\n" +
+            "Authenticate every request with the API key from your [settings page](/settings), sent as `Authorization: Bearer sk-...` " +
+            "(or in an `X-Api-Key` header).\n\n" +
+            "All weights are in kilograms, and body fat values are 0–1 ratios (0.225 means 22.5%).";
+        // The root tags array controls the sidebar/TOC order in Scalar
+        document.Tags = new HashSet<OpenApiTag>
+        {
+            new OpenApiTag
+            {
+                Name = "Weight Data",
+                Description = "Your combined weight data from every source: daily values with trend math applied, "
+                    + "plus optionally the raw readings from each connected scale and your manual entries."
+            },
+            new OpenApiTag
+            {
+                Name = "Manual Weight Log",
+                Description = "Weight entries added manually - in the app or through this API. These endpoints do not "
+                    + "cover readings synced from Withings or Fitbit; those are read-only and appear under Weight Data."
+            },
+        };
+        // Declaring the auth scheme gives Scalar an "enter your API key" box and
+        // attaches the key to try-it requests
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes["API Key"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "sk-...",
+            Description = "Your TrendWeight API key from the settings page"
+        };
+        document.Security ??= new List<OpenApiSecurityRequirement>();
+        document.Security.Add(new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("API Key", document)] = new List<string>()
+        });
         return Task.CompletedTask;
     });
 });
@@ -152,7 +197,24 @@ if (!string.IsNullOrEmpty(allowedHosts) && allowedHosts != "*")
 // API reference docs: /openapi/{document}.json + Scalar UI at /scalar/{document}.
 // Only the "v1" document exists outside development.
 app.MapOpenApi();
-app.MapScalarApiReference();
+app.MapScalarApiReference(options =>
+{
+    // Keep the reference fully self-contained: no Scalar-hosted AI chat, MCP
+    // generation, telemetry, or CDN-served fonts. The only network calls the
+    // page should make are to this API itself.
+    options.DisableAgent();
+    options.DisableMcp();
+    options.DisableTelemetry();
+    options.DisableDefaultFonts();
+
+    // Presentation defaults: open everything up front and show operation ids
+    options.ExpandAllTags();
+    options.ExpandAllModelSections();
+    options.ExpandAllResponses();
+    options.HideClientButton();
+    options.ShowOperationId();
+    options.WithFavicon("/favicon.ico");
+});
 
 app.UseHttpsRedirection();
 

@@ -10,6 +10,7 @@ namespace TrendWeight.Features.ApiV1;
 /// Read access to the authenticated user's measurement data
 /// </summary>
 [Route("api/v1/measurements")]
+[Tags("Weight Data")]
 public class V1MeasurementsController : BaseApiV1Controller
 {
     private readonly IMeasurementOrchestrationService _orchestrationService;
@@ -24,11 +25,18 @@ public class V1MeasurementsController : BaseApiV1Controller
     }
 
     /// <summary>
-    /// Gets computed trend measurements, refreshing from connected providers if needed
+    /// Get weight data
     /// </summary>
+    /// <remarks>
+    /// Returns your daily weight data with trend values applied, refreshing from
+    /// connected scales first if their data is stale. Set includeSource=true to also
+    /// get the raw readings from each source (Withings, Fitbit, your weight log).
+    /// All weights are kilograms; body fat is a 0-1 ratio.
+    /// </remarks>
     /// <param name="since">Only return measurements on or after this date (yyyy-MM-dd)</param>
     /// <param name="includeSource">Also include the raw per-provider source data</param>
     [HttpGet]
+    [EndpointName("getWeightData")]
     [ProducesResponseType(typeof(V1MeasurementsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(V1ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<V1MeasurementsResponse>> GetMeasurements(

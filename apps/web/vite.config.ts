@@ -48,16 +48,38 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      // Proxy the API reference docs (Scalar UI + OpenAPI documents)
+      // Proxy the API reference docs (Scalar UI + OpenAPI documents). The OpenAPI
+      // document echoes the request host as its server URL, so forward the original
+      // host - otherwise the docs advertise :5199 and try-it requests bypass the proxy
       "/scalar": {
         target: "http://localhost:5199",
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            const host = req.headers.host;
+            if (host) {
+              proxyReq.setHeader("X-Forwarded-Host", host);
+            }
+            const socket = req.socket as { encrypted?: boolean };
+            proxyReq.setHeader("X-Forwarded-Proto", socket.encrypted ? "https" : "http");
+          });
+        },
       },
       "/openapi": {
         target: "http://localhost:5199",
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            const host = req.headers.host;
+            if (host) {
+              proxyReq.setHeader("X-Forwarded-Host", host);
+            }
+            const socket = req.socket as { encrypted?: boolean };
+            proxyReq.setHeader("X-Forwarded-Proto", socket.encrypted ? "https" : "http");
+          });
+        },
       },
     },
   },
