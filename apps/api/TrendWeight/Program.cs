@@ -246,6 +246,42 @@ if (!string.IsNullOrEmpty(allowedHosts) && allowedHosts != "*")
 // API reference docs: /openapi/{document}.json + Scalar UI at /api-docs/{document}.
 // Only the "v1" document exists outside development.
 app.MapOpenApi();
+
+// The docs header wordmark uses the same Zilla Slab file the SPA ships rather
+// than a second copy. In the container the built font sits in wwwroot/assets
+// under a hashed name; in dev there is no wwwroot, but the Vite dev server
+// serves the file straight out of node_modules via its /@fs/ route. If neither
+// resolves, the @font-face is omitted and the wordmark falls back to Georgia.
+string? zillaSlabUrl = null;
+var spaAssetsDir = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "assets");
+if (Directory.Exists(spaAssetsDir))
+{
+    var fontFile = Directory.EnumerateFiles(spaAssetsDir, "zilla-slab-latin-700-normal-*.woff2").FirstOrDefault();
+    if (fontFile != null)
+    {
+        zillaSlabUrl = "/assets/" + Path.GetFileName(fontFile);
+    }
+}
+if (zillaSlabUrl == null && app.Environment.IsDevelopment())
+{
+    var devFontPath = Path.GetFullPath(Path.Combine(
+        app.Environment.ContentRootPath, "../../../node_modules/@fontsource/zilla-slab/files/zilla-slab-latin-700-normal.woff2"));
+    if (File.Exists(devFontPath))
+    {
+        zillaSlabUrl = "/@fs/" + devFontPath.Replace('\\', '/').TrimStart('/');
+    }
+}
+var zillaSlabFontFace = zillaSlabUrl == null ? "" :
+    $$"""
+      @font-face {
+        font-family: "Zilla Slab";
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url("{{zillaSlabUrl}}") format("woff2");
+      }
+    """;
+
 app.MapScalarApiReference("/api-docs", options =>
 {
     // Keep the reference fully self-contained: no Scalar-hosted AI chat, MCP
@@ -267,14 +303,17 @@ app.MapScalarApiReference("/api-docs", options =>
     // Site header above the reference so readers can find their way back to the
     // app. Mirrors the main site's header: solid brand-blue bar in light mode,
     // blue-tinted bar with link-blue accents in dark mode (Scalar toggles the
-    // dark-mode/light-mode classes on <body>). Zilla Slab isn't bundled here,
-    // so the wordmark falls back to Georgia per the site's font-logo stack.
+    // dark-mode/light-mode classes on <body>). The wordmark's Zilla Slab and
+    // the logo SVG are served from the frontend's static assets (Vite in dev,
+    // wwwroot in the container); if either is unreachable the wordmark falls
+    // back to Georgia per the site's font-logo stack.
     // --scalar-custom-header-height tells Scalar's layout to reserve room for a
     // sticky header (its sidebar height becomes 100dvh minus this), so the bar
     // can stay pinned without hiding the bottom of the sidebar.
     options.AddHeadContent(
-        """
+        $$"""
         <style>
+          {{zillaSlabFontFace}}
           :root {
             --scalar-custom-header-height: 48px;
           }
