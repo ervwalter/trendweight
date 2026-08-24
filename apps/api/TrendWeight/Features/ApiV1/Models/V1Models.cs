@@ -1,20 +1,6 @@
 namespace TrendWeight.Features.ApiV1.Models;
 
 /// <summary>
-/// Measurement data for the authenticated user: computed trend measurements,
-/// and optionally the raw per-provider source data they were computed from.
-/// All weights are in kilograms; body fat is a 0-1 ratio.
-/// </summary>
-public class V1MeasurementsResponse
-{
-    /// <summary>Computed daily measurements (one per day, trend math applied), oldest first</summary>
-    public required List<V1Measurement> Measurements { get; set; }
-
-    /// <summary>Raw per-provider source data; only present when includeSource=true</summary>
-    public List<V1SourceData>? Sources { get; set; }
-}
-
-/// <summary>
 /// One computed daily measurement
 /// </summary>
 public class V1Measurement
@@ -48,11 +34,11 @@ public class V1Measurement
 }
 
 /// <summary>
-/// Raw measurements from one source (withings, fitbit, manual, legacy)
+/// Raw readings from one scale source
 /// </summary>
 public class V1SourceData
 {
-    /// <summary>The provider this data came from: "withings", "fitbit", "manual", or "legacy"</summary>
+    /// <summary>The source these readings came from: "withings", "fitbit", or "legacy"</summary>
     public required string Provider { get; set; }
 
     /// <summary>When this source last synced (UTC)</summary>
@@ -63,14 +49,14 @@ public class V1SourceData
 }
 
 /// <summary>
-/// One raw measurement as reported by a source
+/// One raw reading as reported by a source
 /// </summary>
 public class V1RawMeasurement
 {
     /// <summary>Date of the reading (yyyy-MM-dd, user's local timezone)</summary>
     public required string Date { get; set; }
 
-    /// <summary>Time of the reading (HH:mm:ss). Manual entries are date-only and carry a fixed placeholder time.</summary>
+    /// <summary>Time of the reading (HH:mm:ss)</summary>
     public required string Time { get; set; }
 
     /// <summary>Weight in kilograms</summary>

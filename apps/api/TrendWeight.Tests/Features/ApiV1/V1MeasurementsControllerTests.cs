@@ -62,6 +62,24 @@ public class V1MeasurementsControllerTests
                     new RawMeasurement { Date = "2024-01-01", Time = "08:00:00", Weight = 80m, FatRatio = 0.22m },
                     new RawMeasurement { Date = "2024-12-31", Time = "08:00:00", Weight = 78m }
                 }
+            },
+            new SourceData
+            {
+                Source = "fitbit",
+                LastUpdate = DateTime.UtcNow,
+                Measurements = new List<RawMeasurement>
+                {
+                    new RawMeasurement { Date = "2024-03-01", Time = "07:00:00", Weight = 79m }
+                }
+            },
+            new SourceData
+            {
+                Source = "manual",
+                LastUpdate = DateTime.UtcNow,
+                Measurements = new List<RawMeasurement>
+                {
+                    new RawMeasurement { Date = "2024-02-01", Time = "23:59:59", Weight = 81m }
+                }
             }
         };
         return new MeasurementDataResult(profile, computed, sourceData, new Dictionary<string, ProviderSyncStatus>());
@@ -79,18 +97,19 @@ public class V1MeasurementsControllerTests
         };
     }
 
+    #region GetMeasurements
+
     [Fact]
-    public async Task GetMeasurements_ReturnsMappedMeasurementsWithoutSourcesByDefault()
+    public async Task GetMeasurements_ReturnsMappedTrendMeasurements()
     {
         _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
 
         var result = await _sut.GetMeasurements();
 
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = ok.Value.Should().BeOfType<V1MeasurementsResponse>().Subject;
-        response.Measurements.Should().HaveCount(3);
-        response.Measurements[0].TrendWeight.Should().Be(80.1m);
-        response.Sources.Should().BeNull();
+        var measurements = ok.Value.Should().BeAssignableTo<List<V1Measurement>>().Subject;
+        measurements.Should().HaveCount(3);
+        measurements[0].TrendWeight.Should().Be(80.1m);
     }
 
     [Fact]
@@ -105,31 +124,15 @@ public class V1MeasurementsControllerTests
     }
 
     [Fact]
-    public async Task GetMeasurements_WithIncludeSource_MapsSources()
+    public async Task GetMeasurements_WithSince_FiltersMeasurements()
     {
         _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
 
-        var result = await _sut.GetMeasurements(includeSource: true);
+        var result = await _sut.GetMeasurements(since: "2024-06-15");
 
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = ok.Value.Should().BeOfType<V1MeasurementsResponse>().Subject;
-        response.Sources.Should().HaveCount(1);
-        response.Sources![0].Provider.Should().Be("withings");
-        response.Sources[0].Measurements.Should().HaveCount(2);
-        response.Sources[0].Measurements[0].FatRatio.Should().Be(0.22m);
-    }
-
-    [Fact]
-    public async Task GetMeasurements_WithSince_FiltersComputedAndSourceData()
-    {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
-
-        var result = await _sut.GetMeasurements(since: "2024-06-15", includeSource: true);
-
-        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = ok.Value.Should().BeOfType<V1MeasurementsResponse>().Subject;
-        response.Measurements.Select(m => m.Date).Should().Equal("2024-06-15", "2024-12-31");
-        response.Sources![0].Measurements.Select(m => m.Date).Should().Equal("2024-12-31");
+        var measurements = ok.Value.Should().BeAssignableTo<List<V1Measurement>>().Subject;
+        measurements.Select(m => m.Date).Should().Equal("2024-06-15", "2024-12-31");
     }
 
     [Fact]
@@ -153,4 +156,81 @@ public class V1MeasurementsControllerTests
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
+
+    #endregion
+
+    #region GetSourceReadings
+
+    [Fact]
+    public async Task GetSourceReadings_ReturnsScaleSourcesExcludingManual()
+    {
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+
+        var result = await _sut.GetSourceReadings();
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var sources = ok.Value.Should().BeAssignableTo<List<V1SourceData>>().Subject;
+        sources.Select(s => s.Provider).Should().Equal("withings", "fitbit");
+        sources[0].Measurements.Should().HaveCount(2);
+        sources[0].Measurements[0].FatRatio.Should().Be(0.22m);
+    }
+
+    [Fact]
+    public async Task GetSourceReadings_WithProviderFilter_ReturnsOnlyThatSource()
+    {
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+
+        var result = await _sut.GetSourceReadings(provider: "fitbit");
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var sources = ok.Value.Should().BeAssignableTo<List<V1SourceData>>().Subject;
+        sources.Select(s => s.Provider).Should().Equal("fitbit");
+    }
+
+    [Fact]
+    public async Task GetSourceReadings_WithSince_FiltersReadings()
+    {
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+
+        var result = await _sut.GetSourceReadings(since: "2024-06-15");
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var sources = ok.Value.Should().BeAssignableTo<List<V1SourceData>>().Subject;
+        sources.First(s => s.Provider == "withings").Measurements.Select(m => m.Date).Should().Equal("2024-12-31");
+        sources.First(s => s.Provider == "fitbit").Measurements.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("manual")]
+    [InlineData("garmin")]
+    public async Task GetSourceReadings_WithInvalidProvider_ReturnsBadRequest(string provider)
+    {
+        var result = await _sut.GetSourceReadings(provider: provider);
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _orchestrationServiceMock.Verify(
+            x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<Guid?>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task GetSourceReadings_WithInvalidSince_ReturnsBadRequest()
+    {
+        var result = await _sut.GetSourceReadings(since: "not-a-date");
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetSourceReadings_WhenUserNotFound_ReturnsNotFound()
+    {
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null))
+            .ReturnsAsync((MeasurementDataResult?)null);
+
+        var result = await _sut.GetSourceReadings();
+
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    #endregion
 }
