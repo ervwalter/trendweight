@@ -3,6 +3,8 @@
   "extends": ["github>ervwalter/renovate-config:default"],
   "semanticCommitType": "deps",
   "semanticCommitScope": null,
+  "npmrc": "allow-remote=all",
+  "npmrcMerge": true,
   "packageRules": [
     {
       "description": "config:recommended's :semanticPrefixFixDepsChoreOthers sets fix:/chore: via packageRules, which override the top-level semanticCommitType; this later rule wins and restores deps: for release-please",
