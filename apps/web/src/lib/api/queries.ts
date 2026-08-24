@@ -1,4 +1,4 @@
-import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import { useSyncProgress } from "@/components/dashboard/sync-progress/hooks";
 import { useAuth, type GetToken } from "@/lib/auth/use-auth";
 import type { ProfileData, SharingData } from "@/lib/core/interfaces";
@@ -288,6 +288,30 @@ export function useApiKey() {
 export function useManualReadings() {
   const { getToken } = useAuth();
   return useSuspenseQuery(queryOptions.manualReadings(getToken));
+}
+
+// Most recent actual (non-interpolated) weight and body fat readings from any source,
+// scale or manual — they can come from different dates since not every reading has fat.
+// Shares the dashboard data cache and never suspends; fetching cold is fine because
+// the backend serves cached provider data when the last sync is under 5 minutes old.
+export function useLatestReading(): {
+  weight?: { date: string; weightKg: number };
+  fat?: { date: string; fatRatio: number };
+} {
+  const { getToken } = useAuth();
+  const { data } = useQuery(queryOptions.dashboardData(getToken));
+
+  let weight: { date: string; weightKg: number } | undefined;
+  let fat: { date: string; fatRatio: number } | undefined;
+  const measurements = data?.computedMeasurements ?? [];
+  for (let i = measurements.length - 1; i >= 0 && (!weight || !fat); i--) {
+    const m = measurements[i];
+    if (!weight && !m.weightIsInterpolated) weight = { date: m.date, weightKg: m.actualWeight };
+    if (!fat && !m.fatIsInterpolated && m.actualFatPercent !== undefined && m.actualFatPercent !== null) {
+      fat = { date: m.date, fatRatio: m.actualFatPercent };
+    }
+  }
+  return { weight, fat };
 }
 
 // Download data query (includes source data for provider-specific downloads)

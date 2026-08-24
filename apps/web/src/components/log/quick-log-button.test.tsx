@@ -6,6 +6,7 @@ import { QuickLogButton } from "./quick-log-button";
 vi.mock("@/lib/api/queries", () => ({
   useProfile: () => ({ data: { useMetric: false } }),
   useManualReadings: () => ({ data: [] }),
+  useLatestReading: () => ({}),
 }));
 
 vi.mock("@/lib/api/mutations", () => ({

@@ -15,6 +15,7 @@ let mockReadings: ManualReading[] = [];
 vi.mock("@/lib/api/queries", () => ({
   useProfile: () => ({ data: { useMetric: mockUseMetric } }),
   useManualReadings: () => ({ data: mockReadings }),
+  useLatestReading: () => ({}),
 }));
 
 vi.mock("@/lib/api/mutations", () => ({

@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Suspense } from "react";
 import type { ManualReading } from "@/lib/api/types";
+import { useLatestReading } from "@/lib/api/queries";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ManualReadingForm } from "./manual-reading-form";
 
@@ -12,6 +13,10 @@ interface ManualReadingDialogProps {
 }
 
 export function ManualReadingDialog({ open, onOpenChange, initialReading }: ManualReadingDialogProps) {
+  // The dialog is mounted (closed) as soon as its host page renders, so subscribing here
+  // starts the /data fetch early — the last-weight reference is ready before the dialog opens
+  useLatestReading();
+
   const isEdit = !!initialReading;
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const showManageLink = !isEdit && pathname !== "/log";
