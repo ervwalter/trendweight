@@ -463,7 +463,7 @@ if (!app.Environment.IsDevelopment())
         context.Response.Headers.Pragma = "no-cache";
         context.Response.Headers.Expires = "0";
 
-        var indexPath = Path.Combine(app.Environment.WebRootPath, "index.html");
+        var indexPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html");
         await context.Response.SendFileAsync(indexPath);
     });
 }
