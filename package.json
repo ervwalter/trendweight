@@ -27,11 +27,11 @@
   },
   "devDependencies": {
     "husky": "9.1.7",
-    "lint-staged": "17.1.0",
-    "turbo": "2.10.5"
+    "lint-staged": "17.3.0",
+    "turbo": "2.10.11"
   },
   "version": "2.0.0-alpha.1",
   "dependencies": {
-    "@supabase/supabase-js": "2.110.7"
+    "@supabase/supabase-js": "2.112.3"
   }
 }
