@@ -5,6 +5,11 @@
   "semanticCommitScope": null,
   "packageRules": [
     {
+      "description": "config:recommended's :semanticPrefixFixDepsChoreOthers sets fix:/chore: via packageRules, which override the top-level semanticCommitType; this later rule wins and restores deps: for release-please",
+      "matchPackageNames": ["*"],
+      "semanticCommitType": "deps"
+    },
+    {
       "matchDepNames": ["typescript"],
       "allowedVersions": "<7.0.0"
     }
