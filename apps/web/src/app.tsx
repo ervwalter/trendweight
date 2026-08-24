@@ -59,7 +59,6 @@ function App() {
             theme: shadcn,
             cssLayerName: "clerk",
             variables: {
-              colorPrimary: "var(--color-brand-500)",
               fontSize: "var(--font-size-base)",
               fontFamily: "inherit",
             },

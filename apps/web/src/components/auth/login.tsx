@@ -13,7 +13,7 @@ const clerkAppearance = {
     socialButtonsBlockButton: "py-3 px-6",
     lastAuthenticationStrategyBadge: "hidden",
   },
-  layout: {
+  options: {
     socialButtonsVariant: "blockButton" as const,
     privacyPageUrl: "/privacy",
     unsafe_disableDevelopmentModeWarnings: true,
