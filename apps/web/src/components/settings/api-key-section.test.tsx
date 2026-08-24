@@ -45,6 +45,14 @@ describe("ApiKeySection", () => {
     expect(screen.queryByText("Regenerate")).not.toBeInTheDocument();
   });
 
+  it("should link to the API reference docs", () => {
+    vi.mocked(useApiKey).mockReturnValue({ data: { exists: false } } as any);
+
+    render(<ApiKeySection />);
+
+    expect(screen.getByRole("link", { name: /API reference/i })).toHaveAttribute("href", "/scalar/v1");
+  });
+
   it("should show the plaintext key once after generating", async () => {
     const user = userEvent.setup();
     vi.mocked(useApiKey).mockReturnValue({ data: { exists: false } } as any);

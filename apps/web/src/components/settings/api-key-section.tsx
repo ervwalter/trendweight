@@ -2,6 +2,7 @@ import { useState, Suspense } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ExternalLink } from "@/components/common/external-link";
 import { Input } from "@/components/ui/input";
 import { useApiKey } from "@/lib/api/queries";
 import { useGenerateApiKey, useRevokeApiKey } from "@/lib/api/mutations";
@@ -60,7 +61,7 @@ function ApiKeySectionContent() {
         <CardTitle>API Key</CardTitle>
         <CardDescription>
           An API key lets your own scripts and tools read your data and add weight log entries through the TrendWeight API. Anyone with this key can read and
-          change your data, so treat it like a password.
+          change your data, so treat it like a password. See the <ExternalLink href="/scalar/v1">API reference</ExternalLink> for the available endpoints.
         </CardDescription>
       </CardHeader>
       <CardContent>
