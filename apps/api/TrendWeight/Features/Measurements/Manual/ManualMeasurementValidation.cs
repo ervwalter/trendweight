@@ -10,6 +10,9 @@ public static class ManualMeasurementValidation
 {
     public const string DateFormat = "yyyy-MM-dd";
 
+    /// <summary>Regex equivalent of <see cref="DateFormat"/>, used as the OpenAPI schema pattern</summary>
+    public const string DateJsonPattern = @"^\d{4}-\d{2}-\d{2}$";
+
     // RawMeasurement requires a time. End-of-day keeps the reading on the user's chosen
     // calendar date for any dayStartOffset (0-23h); manual entries win the per-day merge
     // by source preference, not by time.
