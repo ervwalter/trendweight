@@ -10,6 +10,7 @@ namespace TrendWeight.Features.ApiV1;
 /// One entry per date; the date is the key for all operations.
 /// </summary>
 [Route("api/v1/measurements/manual")]
+[Tags("Manual Weight Log")]
 public class V1ManualMeasurementsController : BaseApiV1Controller
 {
     /// <summary>Maximum entries accepted in one batch upsert</summary>
@@ -27,9 +28,15 @@ public class V1ManualMeasurementsController : BaseApiV1Controller
     }
 
     /// <summary>
-    /// Gets all weight log entries, newest first
+    /// List manual entries
     /// </summary>
+    /// <remarks>
+    /// Returns the weight entries that were added manually (in the app or through this
+    /// API), newest first. Readings synced from a scale (Withings, Fitbit) are not
+    /// included - get those from the Weight Data endpoint with includeSource=true.
+    /// </remarks>
     [HttpGet]
+    [EndpointName("listManualEntries")]
     [ProducesResponseType(typeof(List<V1ManualReading>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<V1ManualReading>>> GetReadings()
     {
@@ -38,11 +45,17 @@ public class V1ManualMeasurementsController : BaseApiV1Controller
     }
 
     /// <summary>
-    /// Creates or replaces the entry for the given date (idempotent upsert - safe to retry)
+    /// Add or replace a manual entry
     /// </summary>
+    /// <remarks>
+    /// Creates or replaces the manual entry for the given date. Idempotent - safe to
+    /// retry. Only manual entries can be written through the API; readings synced from
+    /// a scale (Withings, Fitbit) cannot be edited.
+    /// </remarks>
     /// <param name="date">Date of the entry (yyyy-MM-dd, user's local timezone)</param>
     /// <param name="request">Entry values (weight in kg, fat as a 0-1 ratio)</param>
     [HttpPut("{date}")]
+    [EndpointName("upsertManualEntry")]
     [ProducesResponseType(typeof(V1ManualReading), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(V1ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<V1ManualReading>> UpsertReading(string date, [FromBody] V1ManualUpsertRequest request)
@@ -62,11 +75,15 @@ public class V1ManualMeasurementsController : BaseApiV1Controller
     }
 
     /// <summary>
-    /// Creates or replaces entries for multiple dates in one call. The whole batch is
-    /// validated first; nothing is stored unless every entry is valid.
+    /// Add or replace manual entries in bulk
     /// </summary>
+    /// <remarks>
+    /// Creates or replaces manual entries for multiple dates in one call. The whole
+    /// batch is validated first; nothing is stored unless every entry is valid.
+    /// </remarks>
     /// <param name="entries">Entries to upsert (max 1000, one per date)</param>
     [HttpPost]
+    [EndpointName("upsertManualEntries")]
     [ProducesResponseType(typeof(List<V1ManualReading>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(V1ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<List<V1ManualReading>>> UpsertReadings([FromBody] List<V1ManualBatchEntry> entries)
@@ -109,10 +126,15 @@ public class V1ManualMeasurementsController : BaseApiV1Controller
     }
 
     /// <summary>
-    /// Deletes the entry for the given date
+    /// Delete a manual entry
     /// </summary>
+    /// <remarks>
+    /// Deletes the manual entry for the given date. Returns 404 if no manual entry
+    /// exists for that date (readings synced from a scale cannot be deleted here).
+    /// </remarks>
     /// <param name="date">Date of the entry (yyyy-MM-dd)</param>
     [HttpDelete("{date}")]
+    [EndpointName("deleteManualEntry")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(V1ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteReading(string date)
