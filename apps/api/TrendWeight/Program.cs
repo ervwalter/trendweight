@@ -243,10 +243,10 @@ if (!string.IsNullOrEmpty(allowedHosts) && allowedHosts != "*")
     });
 }
 
-// API reference docs: /openapi/{document}.json + Scalar UI at /scalar/{document}.
+// API reference docs: /openapi/{document}.json + Scalar UI at /api-docs/{document}.
 // Only the "v1" document exists outside development.
 app.MapOpenApi();
-app.MapScalarApiReference(options =>
+app.MapScalarApiReference("/api-docs", options =>
 {
     // Keep the reference fully self-contained: no Scalar-hosted AI chat, MCP
     // generation, telemetry, or CDN-served fonts. The only network calls the

@@ -50,7 +50,7 @@ describe("ApiKeySection", () => {
 
     render(<ApiKeySection />);
 
-    expect(screen.getByRole("link", { name: /API reference/i })).toHaveAttribute("href", "/scalar/v1");
+    expect(screen.getByRole("link", { name: /API reference/i })).toHaveAttribute("href", "/api-docs/v1");
   });
 
   it("should show the plaintext key once after generating", async () => {

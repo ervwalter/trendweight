@@ -51,7 +51,7 @@ export default defineConfig({
       // Proxy the API reference docs (Scalar UI + OpenAPI documents). The OpenAPI
       // document echoes the request host as its server URL, so forward the original
       // host - otherwise the docs advertise :5199 and try-it requests bypass the proxy
-      "/scalar": {
+      "/api-docs": {
         target: "http://localhost:5199",
         changeOrigin: true,
         secure: false,

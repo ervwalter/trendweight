@@ -61,7 +61,7 @@ function ApiKeySectionContent() {
         <CardTitle>API Key</CardTitle>
         <CardDescription>
           An API key lets your own scripts and tools read your data and add weight log entries through the TrendWeight API. Anyone with this key can read and
-          change your data, so treat it like a password. See the <ExternalLink href="/scalar/v1">API reference</ExternalLink> for the available endpoints.
+          change your data, so treat it like a password. See the <ExternalLink href="/api-docs/v1">API reference</ExternalLink> for the available endpoints.
         </CardDescription>
       </CardHeader>
       <CardContent>

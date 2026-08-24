@@ -152,7 +152,7 @@ export function Faq() {
                   <code>X-Api-Key</code> header.
                 </p>
                 <p>
-                  Full documentation for every endpoint lives in the interactive <ExternalLink href="/scalar/v1">API reference</ExternalLink>. You can even
+                  Full documentation for every endpoint lives in the interactive <ExternalLink href="/api-docs/v1">API reference</ExternalLink>. You can even
                   paste in your API key there and try requests right from the docs page.
                 </p>
               </Question>
