@@ -263,6 +263,77 @@ app.MapScalarApiReference("/api-docs", options =>
     options.HideClientButton();
     options.ShowOperationId();
     options.WithFavicon("/favicon.ico");
+
+    // Site header above the reference so readers can find their way back to the
+    // app. Mirrors the main site's header: solid brand-blue bar in light mode,
+    // blue-tinted bar with link-blue accents in dark mode (Scalar toggles the
+    // dark-mode/light-mode classes on <body>). Zilla Slab isn't bundled here,
+    // so the wordmark falls back to Georgia per the site's font-logo stack.
+    // --scalar-custom-header-height tells Scalar's layout to reserve room for a
+    // sticky header (its sidebar height becomes 100dvh minus this), so the bar
+    // can stay pinned without hiding the bottom of the sidebar.
+    options.AddHeadContent(
+        """
+        <style>
+          :root {
+            --scalar-custom-header-height: 48px;
+          }
+          .tw-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-sizing: border-box;
+            height: var(--scalar-custom-header-height);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 20px;
+            background: oklch(0.59 0.12 257.6);
+            color: #fff;
+            font-family: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+          }
+          .tw-header a { color: inherit; text-decoration: none; }
+          .tw-brand { display: flex; align-items: center; gap: 8px; }
+          .tw-wordmark {
+            font-family: "Zilla Slab", Georgia, serif;
+            font-weight: 700;
+            font-size: 22px;
+            line-height: 1.2;
+          }
+          .tw-brand-mark {
+            width: 48px;
+            height: 20px;
+            background-color: currentColor;
+            -webkit-mask: url("/logo-line.svg") no-repeat center / contain;
+            mask: url("/logo-line.svg") no-repeat center / contain;
+          }
+          .tw-label {
+            border-left: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+            padding-left: 12px;
+            font-size: 13px;
+            opacity: 0.85;
+          }
+          .tw-back { margin-left: auto; font-size: 13px; opacity: 0.9; }
+          .tw-back:hover { opacity: 1; text-decoration: underline; }
+          .dark-mode .tw-header {
+            background: color-mix(in oklab, oklch(0.56 0.13 257.6) 10%, var(--scalar-background-1, oklch(0.145 0 0)));
+            color: var(--scalar-color-2, oklch(0.708 0 0));
+          }
+          .dark-mode .tw-brand { color: oklch(0.65 0.16 257.6); }
+          @media (max-width: 640px) { .tw-label { display: none; } }
+        </style>
+        """);
+    options.AddHeaderContent(
+        """
+        <header class="tw-header">
+          <a class="tw-brand" href="/">
+            <span class="tw-wordmark">TrendWeight</span>
+            <span class="tw-brand-mark" aria-hidden="true"></span>
+          </a>
+          <span class="tw-label">API Reference</span>
+          <a class="tw-back" href="/">&larr; Back to the site</a>
+        </header>
+        """);
 });
 
 app.UseHttpsRedirection();
