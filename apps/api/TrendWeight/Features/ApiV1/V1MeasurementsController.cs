@@ -13,6 +13,10 @@ namespace TrendWeight.Features.ApiV1;
 [Tags("Weight Data")]
 public class V1MeasurementsController : BaseApiV1Controller
 {
+    // Manual entries are excluded from the raw-readings endpoint; they have their own
+    // read/write operations under the Manual Weight Log tag
+    private static readonly string[] SourceProviders = ["withings", "fitbit", "legacy"];
+
     private readonly IMeasurementOrchestrationService _orchestrationService;
     private readonly ILogger<V1MeasurementsController> _logger;
 
@@ -29,19 +33,16 @@ public class V1MeasurementsController : BaseApiV1Controller
     /// </summary>
     /// <remarks>
     /// Returns your daily weight data with trend values applied, refreshing from
-    /// connected scales first if their data is stale. Set includeSource=true to also
-    /// get the raw readings from each source (Withings, Fitbit, your weight log).
-    /// All weights are kilograms; body fat is a 0-1 ratio.
+    /// connected scales first if their data is stale. This is the combined view of all
+    /// sources. For the raw readings behind it, see "Get raw scale readings" and the
+    /// Manual Weight Log operations. All weights are kilograms; body fat is a 0-1 ratio.
     /// </remarks>
     /// <param name="since">Only return measurements on or after this date (yyyy-MM-dd)</param>
-    /// <param name="includeSource">Also include the raw per-provider source data</param>
     [HttpGet]
     [EndpointName("getWeightData")]
-    [ProducesResponseType(typeof(V1MeasurementsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<V1Measurement>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(V1ErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<V1MeasurementsResponse>> GetMeasurements(
-        [FromQuery] string? since = null,
-        [FromQuery] bool includeSource = false)
+    public async Task<ActionResult<List<V1Measurement>>> GetMeasurements([FromQuery] string? since = null)
     {
         if (!string.IsNullOrEmpty(since) && !ManualMeasurementValidation.TryValidateDate(since, out _))
         {
@@ -60,33 +61,66 @@ public class V1MeasurementsController : BaseApiV1Controller
             .Select(ToV1Measurement)
             .ToList();
 
-        List<V1SourceData>? sources = null;
-        if (includeSource)
+        return Ok(measurements);
+    }
+
+    /// <summary>
+    /// Get raw scale readings
+    /// </summary>
+    /// <remarks>
+    /// Returns the raw readings exactly as reported by each scale source (Withings,
+    /// Fitbit, and legacy TrendWeight data), refreshing from connected scales first if
+    /// their data is stale - the API equivalent of the per-source views on the download
+    /// page. Manual entries are not included here; use the Manual Weight Log operations
+    /// for those.
+    /// </remarks>
+    /// <param name="since">Only return readings on or after this date (yyyy-MM-dd)</param>
+    /// <param name="provider">Only return readings from this source (withings, fitbit, or legacy)</param>
+    [HttpGet("sources")]
+    [EndpointName("listSourceReadings")]
+    [ProducesResponseType(typeof(List<V1SourceData>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(V1ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<List<V1SourceData>>> GetSourceReadings(
+        [FromQuery] string? since = null,
+        [FromQuery] string? provider = null)
+    {
+        if (!string.IsNullOrEmpty(since) && !ManualMeasurementValidation.TryValidateDate(since, out _))
         {
-            sources = result.SourceData
-                .Select(sd => new V1SourceData
-                {
-                    Provider = sd.Source,
-                    LastUpdate = sd.LastUpdate,
-                    Measurements = (sd.Measurements ?? new List<RawMeasurement>())
-                        .Where(m => SinceFilter(m.Date, since))
-                        .Select(m => new V1RawMeasurement
-                        {
-                            Date = m.Date,
-                            Time = m.Time,
-                            Weight = m.Weight,
-                            FatRatio = m.FatRatio
-                        })
-                        .ToList()
-                })
-                .ToList();
+            return BadRequest(new V1ErrorResponse { Error = "Invalid since date. Expected yyyy-MM-dd format." });
         }
 
-        return Ok(new V1MeasurementsResponse
+        if (!string.IsNullOrEmpty(provider) && !SourceProviders.Contains(provider.ToLowerInvariant()))
         {
-            Measurements = measurements,
-            Sources = sources
-        });
+            return BadRequest(new V1ErrorResponse { Error = "Invalid provider. Must be 'withings', 'fitbit', or 'legacy'." });
+        }
+
+        var result = await _orchestrationService.GetForUserAsync(UserId, null, null);
+        if (result == null)
+        {
+            return NotFound(new V1ErrorResponse { Error = "User not found" });
+        }
+
+        var sources = result.SourceData
+            .Where(sd => SourceProviders.Contains(sd.Source))
+            .Where(sd => string.IsNullOrEmpty(provider) || string.Equals(sd.Source, provider, StringComparison.OrdinalIgnoreCase))
+            .Select(sd => new V1SourceData
+            {
+                Provider = sd.Source,
+                LastUpdate = sd.LastUpdate,
+                Measurements = (sd.Measurements ?? new List<RawMeasurement>())
+                    .Where(m => SinceFilter(m.Date, since))
+                    .Select(m => new V1RawMeasurement
+                    {
+                        Date = m.Date,
+                        Time = m.Time,
+                        Weight = m.Weight,
+                        FatRatio = m.FatRatio
+                    })
+                    .ToList()
+            })
+            .ToList();
+
+        return Ok(sources);
     }
 
     private static bool SinceFilter(string date, string? since)

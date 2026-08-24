@@ -56,8 +56,8 @@ builder.Services.AddOpenApi("v1", options =>
             new OpenApiTag
             {
                 Name = "Weight Data",
-                Description = "Your combined weight data from every source: daily values with trend math applied, "
-                    + "plus optionally the raw readings from each connected scale and your manual entries."
+                Description = "Your daily weight data with trend math applied (combined from every source), "
+                    + "plus the raw readings from each connected scale."
             },
             new OpenApiTag
             {
