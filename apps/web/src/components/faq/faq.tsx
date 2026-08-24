@@ -136,6 +136,26 @@ export function Faq() {
                   don't want them to see your stats anymore. You can also disable sharing entirely if you prefer.
                 </p>
               </Question>
+              <Question title="Does TrendWeight have an API?">
+                <p>
+                  Yes. TrendWeight has a simple HTTP API that lets your own scripts and tools work with your data: you can read your daily weight data with
+                  trend values, download the raw readings from your connected scales, and add, edit, or delete weight log entries. It's handy for things like
+                  backing up your data or automatically logging weights from another app or device.
+                </p>
+                <p>
+                  To use it, you first need an API key. Go to the API Key section of your{" "}
+                  <Link to="/settings" className="text-link hover:text-link underline">
+                    Settings
+                  </Link>{" "}
+                  page and click "Generate API Key". The key is shown only once, so copy it somewhere safe — and treat it like a password, since anyone who has
+                  it can read and change your data. You send the key with each request, either as an <code>Authorization: Bearer</code> header or an{" "}
+                  <code>X-Api-Key</code> header.
+                </p>
+                <p>
+                  Full documentation for every endpoint lives in the interactive <ExternalLink href="/scalar/v1">API reference</ExternalLink>. You can even
+                  paste in your API key there and try requests right from the docs page.
+                </p>
+              </Question>
               <Question title="What is the math behind TrendWeight?">
                 <p>
                   The techniques used on TrendWeight come from John Walker's The Hacker's Diet. I found it to be an interesting read (and it's free!). In
