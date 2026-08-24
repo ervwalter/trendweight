@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
+using TrendWeight.Features.Measurements.Manual;
 using TrendWeight.Infrastructure.Extensions;
 using TrendWeight.Infrastructure.Middleware;
 
@@ -32,9 +33,57 @@ builder.Services.AddEndpointsApiExplorer();
 // OpenAPI documents served by Scalar: the public v1 API reference (API-key endpoints
 // only, grouped via [ApiExplorerSettings(GroupName = "v1")]), plus the full internal
 // surface in development.
+const string TimeJsonPattern = @"^\d{2}:\d{2}:\d{2}$";
+const string ProviderJsonPattern = "^(withings|fitbit|legacy)$";
+
 builder.Services.AddOpenApi("v1", options =>
 {
     options.ShouldInclude = description => description.GroupName == "v1";
+    // Document the string formats and value ranges the API enforces. These schema
+    // constraints are documentation only - actual validation happens in the
+    // controllers (ManualMeasurementValidation) so error responses keep their shape.
+    options.AddSchemaTransformer((schema, context, cancellationToken) =>
+    {
+        switch (context.JsonPropertyInfo?.Name)
+        {
+            case "date":
+                schema.Pattern = ManualMeasurementValidation.DateJsonPattern;
+                break;
+            case "time":
+                schema.Pattern = TimeJsonPattern;
+                break;
+            case "provider":
+                schema.Pattern = ProviderJsonPattern;
+                break;
+            case "weight":
+                schema.ExclusiveMinimum = "0";
+                schema.ExclusiveMaximum = "700";
+                break;
+            case "fatRatio":
+                schema.ExclusiveMinimum = "0";
+                schema.ExclusiveMaximum = "1";
+                break;
+        }
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer((operation, context, cancellationToken) =>
+    {
+        foreach (var parameter in operation.Parameters ?? [])
+        {
+            if (parameter is OpenApiParameter { Schema: OpenApiSchema schema } concrete)
+            {
+                if (concrete.Name is "date" or "since")
+                {
+                    schema.Pattern = ManualMeasurementValidation.DateJsonPattern;
+                }
+                else if (concrete.Name == "provider")
+                {
+                    schema.Pattern = ProviderJsonPattern;
+                }
+            }
+        }
+        return Task.CompletedTask;
+    });
     // Schema names read better without the C# "V1" DTO prefix (Measurement, not V1Measurement)
     options.CreateSchemaReferenceId = jsonTypeInfo =>
     {
