@@ -48,6 +48,17 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Proxy the API reference docs (Scalar UI + OpenAPI documents)
+      "/scalar": {
+        target: "http://localhost:5199",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/openapi": {
+        target: "http://localhost:5199",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });
