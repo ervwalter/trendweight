@@ -107,8 +107,8 @@ html body[data-scroll-locked] {
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-link: var(--link);
-  /* Manual entry's identity tile: deep post-it yellow (black glyph + brand-blue shading on top) */
-  --color-manual-tile: oklch(0.88 0.16 96);
+  /* Manual entry's identity tile: soft post-it yellow (black glyph + brand-blue shading on top) */
+  --color-manual-tile: oklch(0.92 0.11 97);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
