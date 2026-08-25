@@ -52,7 +52,7 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
           <Input
             id="goalWeight"
             type="number"
-            step="1"
+            step="any"
             {...register("goalWeight", {
               valueAsNumber: true,
               min: { value: 0, message: "Goal weight must be positive" },
