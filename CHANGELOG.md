@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.1](https://github.com/ervwalter/trendweight/compare/v2.10.0...v2.10.1) (2026-08-25)
+
+
+### Fixes
+
+* correct stale endpoint pointer in manual entries API docs ([3baa724](https://github.com/ervwalter/trendweight/commit/3baa72441dae53d7264175b1b658338e1742c20a))
+
 ## [2.10.0](https://github.com/ervwalter/trendweight/compare/v2.9.10...v2.10.0) (2026-08-25)
 
 
