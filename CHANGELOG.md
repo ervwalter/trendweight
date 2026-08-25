@@ -1,5 +1,63 @@
 # Changelog
 
+## [2.10.0](https://github.com/ervwalter/trendweight/compare/v2.9.10...v2.10.0) (2026-08-25)
+
+
+### Features
+
+* add an FAQ entry about the API ([54c820e](https://github.com/ervwalter/trendweight/commit/54c820e0191e3ab82c99901dd1a2c88438044bde))
+* add TrendWeight site header to the API reference docs ([c57bf40](https://github.com/ervwalter/trendweight/commit/c57bf402c1f2e2eda1e975b005ed2f58315e5ac0))
+* API key management section in settings ([35d2ab3](https://github.com/ervwalter/trendweight/commit/35d2ab3e85f9e07cc9054df82d5984ec9891101e))
+* ApiKey authentication scheme for the external API ([73126b4](https://github.com/ervwalter/trendweight/commit/73126b41efe1f5e093612841e02b5aaa0dff9bd2))
+* dedicated raw scale readings endpoint in the v1 API ([6c0c611](https://github.com/ervwalter/trendweight/commit/6c0c6111cce52fe64e78410dc906ff27fbe9a27e))
+* document string patterns and value ranges in the v1 OpenAPI schema ([a7224d8](https://github.com/ervwalter/trendweight/commit/a7224d8de5a17940fda678fece736a3c9b662092))
+* external /api/v1 surface (measurements + weight log) with Scalar docs ([c1d457b](https://github.com/ervwalter/trendweight/commit/c1d457ba255a856e80214b346926f381a41e0d95))
+* Fitbit sunset notices and messaging ([558aa81](https://github.com/ervwalter/trendweight/commit/558aa818cf4893bcc4a9d4722b2057e0440cc6f8))
+* Fitbit:Enabled kill-switch — one flag ends syncing and new connections ([4e0795f](https://github.com/ervwalter/trendweight/commit/4e0795fca6da81d4937d12ad4023570d8109ee16))
+* link the Scalar API reference from the settings API key card ([2facbd4](https://github.com/ervwalter/trendweight/commit/2facbd48abcbb78ba21fceec5055369c448c7b7b))
+* manual weight entry and the weight log (Fitbit sunset phase 1) ([15b6761](https://github.com/ervwalter/trendweight/commit/15b6761b50e497365788cd2e124261cdec8b7130))
+* per-user API key storage and management endpoints ([a6e9e47](https://github.com/ervwalter/trendweight/commit/a6e9e473a9ea652a9158dde180072ffbc80e2474))
+* polish the Scalar API reference and lock it down to local-only ([f2561f9](https://github.com/ervwalter/trendweight/commit/f2561f9b4051df88d9a7b5bf2a03dd0b4abacb6f))
+* render the docs header wordmark in Zilla Slab ([ef5e0dd](https://github.com/ervwalter/trendweight/commit/ef5e0dd11eacd29d412f30ac207a01f37a17d7d6))
+* replace Swashbuckle with Scalar + built-in OpenAPI documents ([5240f25](https://github.com/ervwalter/trendweight/commit/5240f25fe1886bc98cea66ddae3d65afcbfdb9a0))
+
+
+### Fixes
+
+* **auth:** repair clerk appearance config broken by core-3 migration ([511fa5e](https://github.com/ervwalter/trendweight/commit/511fa5eab282182d9820cd37245d121387d51b6d))
+* base weight log placeholders on the latest reading from any source ([d89f85c](https://github.com/ervwalter/trendweight/commit/d89f85ce6922561148291613f8ae7563ae9f0f1e))
+* correct Dowloading to Downloading typo in MeasurementSyncService.cs ([#448](https://github.com/ervwalter/trendweight/issues/448)) ([0d26492](https://github.com/ervwalter/trendweight/commit/0d26492289491286c0f74d33223a2f6c94503b3a))
+* guard nullable WebRootPath in SPA fallback ([40175a1](https://github.com/ervwalter/trendweight/commit/40175a16bc78b720fe91bda6f6d3f1ba7f27df5f))
+* make the rate limiter actually enforce, partitioned by user with API tiers ([ad48e14](https://github.com/ervwalter/trendweight/commit/ad48e1418016ac5b9b62e94b931aacbbfa4a75fc))
+* migrate react-table to v9, hold typescript on v6 ([#444](https://github.com/ervwalter/trendweight/issues/444)) ([327ed81](https://github.com/ervwalter/trendweight/commit/327ed81cb3aa8abc7f7f57b7b5e1af7f80e6582e))
+* replace hidden U+202F narrow no-break space in contributors workflow comment ([a6cef5c](https://github.com/ervwalter/trendweight/commit/a6cef5c821e768dc5fac89e5e96202c920d36362))
+* update all non-major dependencies ([7eacb72](https://github.com/ervwalter/trendweight/commit/7eacb720abbd8925b2bd6893937a29c755ae30d7))
+* update all non-major dependencies ([#440](https://github.com/ervwalter/trendweight/issues/440)) ([8fe23de](https://github.com/ervwalter/trendweight/commit/8fe23de4516e6dc8c42a77b005456b42595e369e))
+
+
+### Documentation
+
+* note that dotnet commands must run outside the Claude Code sandbox ([b019642](https://github.com/ervwalter/trendweight/commit/b019642fb82f17c28acb5f229cde45129dcc9697))
+
+
+### Refactoring
+
+* extract measurement orchestration into a shared service ([3ff1b33](https://github.com/ervwalter/trendweight/commit/3ff1b3348f84c1d3ef397d2020b0a68ed4c882f4))
+* serve API reference docs at /api-docs instead of /scalar ([42e3392](https://github.com/ervwalter/trendweight/commit/42e339238450abc8aab981ad0424e840a26dc896))
+
+
+### Dependencies
+
+* bump @types/node from 25.9.3 to 26.0.0 in the npm-major group ([#435](https://github.com/ervwalter/trendweight/issues/435)) ([969f86c](https://github.com/ervwalter/trendweight/commit/969f86c90351608db3306b64b630db4620712afc))
+* bump actions/checkout from 6 to 7 in the github-actions-major group ([#436](https://github.com/ervwalter/trendweight/issues/436)) ([af681ff](https://github.com/ervwalter/trendweight/commit/af681ff01b2dc60340e5036c2fec0638b190c4ec))
+* bump highcharts from 12.6.0 to 13.0.0 in the npm-major group across 1 directory ([#430](https://github.com/ervwalter/trendweight/issues/430)) ([cbc2c30](https://github.com/ervwalter/trendweight/commit/cbc2c300ef7be0995e4d3aaba0c5d5c7555d9623))
+* bump the npm-minor-and-patch group with 12 updates ([#429](https://github.com/ervwalter/trendweight/issues/429)) ([9aee818](https://github.com/ervwalter/trendweight/commit/9aee8187c76ca958cfe120b6f2a121c1131223cb))
+* bump the npm-minor-and-patch group with 14 updates ([#434](https://github.com/ervwalter/trendweight/issues/434)) ([4c551e0](https://github.com/ervwalter/trendweight/commit/4c551e0feeafc08b4ed2a1873be92901426dbb19))
+* bump undici from 7.25.0 to 7.28.0 ([#433](https://github.com/ervwalter/trendweight/issues/433)) ([f49a4b8](https://github.com/ervwalter/trendweight/commit/f49a4b860b788f44609d8767f8e6553bcb9eee03))
+* lock file maintenance ([f8ee521](https://github.com/ervwalter/trendweight/commit/f8ee521e3aeaea1a9f5efbc7c2609cf15082abe9))
+* restore deps: prefix on Renovate commits for release-please ([df3db83](https://github.com/ervwalter/trendweight/commit/df3db832185e6ca4256caa1e08c0503541ab15b4))
+* update all non-major dependencies ([#451](https://github.com/ervwalter/trendweight/issues/451)) ([1c976f1](https://github.com/ervwalter/trendweight/commit/1c976f1406aaf83bd1ade185e7e39e01716dbf7a))
+
 ## [2.9.10](https://github.com/ervwalter/trendweight/compare/v2.9.9...v2.9.10) (2026-06-11)
 
 
