@@ -33,7 +33,7 @@ public class V1ManualMeasurementsController : BaseApiV1Controller
     /// <remarks>
     /// Returns the weight entries that were added manually (in the app or through this
     /// API), newest first. Readings synced from a scale (Withings, Fitbit) are not
-    /// included - get those from the Weight Data endpoint with includeSource=true.
+    /// included - get those from "Get raw scale readings".
     /// </remarks>
     [HttpGet]
     [EndpointName("listManualEntries")]
