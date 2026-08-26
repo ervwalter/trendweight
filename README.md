@@ -148,6 +148,13 @@ Contributions are welcome. However, it's essentially a one-man show (me), and I'
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/jamesstanleystewart">
+                    <img src="https://avatars.githubusercontent.com/u/16391225?v=4" width="100;" alt="jamesstanleystewart"/>
+                    <br />
+                    <sub><b>James</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/MitjaBezensek">
                     <img src="https://avatars.githubusercontent.com/u/2523721?v=4" width="100;" alt="MitjaBezensek"/>
                     <br />
