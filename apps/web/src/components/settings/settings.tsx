@@ -19,6 +19,16 @@ import { ProgressTrackingSection } from "./progress-tracking-section";
 import { SettingsLayout } from "./settings-layout";
 import { SharingSection } from "./sharing-section";
 
+// Normalizes API profile data into the values the registered inputs actually hold, so
+// react-hook-form's isDirty deep-compare doesn't see phantom differences: an empty date
+// input reads "" (never undefined), and an empty valueAsNumber input reads NaN. The
+// submit handler maps these back ("" / NaN -> undefined) before calling the API.
+const toFormValues = (data: ProfileData): ProfileData => ({
+  ...data,
+  goalStart: data.goalStart ?? "",
+  goalWeight: data.goalWeight ?? NaN,
+});
+
 export function Settings() {
   const { data: profileData } = useProfile();
   const updateProfile = useUpdateProfile();
@@ -37,7 +47,7 @@ export function Settings() {
   // Update form when profile data loads
   useEffect(() => {
     if (profileData) {
-      reset(profileData);
+      reset(toFormValues(profileData));
     }
   }, [profileData, reset]);
 
@@ -96,7 +106,7 @@ export function Settings() {
 
       const response = await updateProfile.mutateAsync(cleanedData);
       // Reset form state with the actual response data to mark as clean
-      reset(response.user);
+      reset(toFormValues(response.user));
     } catch (error) {
       console.error("Failed to update settings:", error);
     }

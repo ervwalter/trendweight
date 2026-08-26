@@ -34,8 +34,10 @@ public class MeasurementComputationService : IMeasurementComputationService
         // Step 3: Interpolate missing weight measurements
         sourceMeasurements = InterpolateWeightMeasurements(sourceMeasurements);
 
+        var preset = TrendAlgorithmPresets.Resolve(profile.TrendAlgorithm);
+
         // Step 4: Compute weight trends
-        var measurements = ComputeWeightTrends(sourceMeasurements);
+        var measurements = ComputeWeightTrends(sourceMeasurements, preset);
 
         // Step 5: Process fat measurements if available
         var fatSourceMeasurements = FilterAndGroupFatMeasurements(rawData);
@@ -46,7 +48,7 @@ public class MeasurementComputationService : IMeasurementComputationService
             fatSourceMeasurements = InterpolateFatMeasurements(fatSourceMeasurements);
 
             // Step 7: Compute fat trends and update measurements
-            measurements = ComputeFatTrends(fatSourceMeasurements, measurements);
+            measurements = ComputeFatTrends(fatSourceMeasurements, measurements, preset);
         }
 
         return measurements;
@@ -228,32 +230,62 @@ public class MeasurementComputationService : IMeasurementComputationService
     }
 
     /// <summary>
-    /// Trend smoothing factor matching TypeScript implementation
+    /// Exponential smoother shared by all trend series. Implements Holt's linear trend method
+    /// in error-correction form; with Beta = 0 the slope stays exactly 0m and each update is
+    /// the default Hacker's Diet formula, trend + alpha * (value - trend), bit for bit.
     /// </summary>
-    private const decimal TREND_SMOOTHING_FACTOR = 0.1m;
+    private sealed class TrendSmoother
+    {
+        private readonly decimal _alpha;
+        private readonly decimal _beta;
+        private decimal _level;
+        private decimal _slope;
+        private bool _initialized;
+
+        public TrendSmoother(TrendAlgorithmPreset preset)
+        {
+            _alpha = preset.Alpha;
+            _beta = preset.Beta;
+        }
+
+        public decimal Next(decimal value)
+        {
+            if (!_initialized)
+            {
+                _initialized = true;
+                _level = value;
+                _slope = 0m;
+                return _level;
+            }
+
+            var forecast = _level + _slope;
+            var newLevel = forecast + _alpha * (value - forecast);
+
+            // Guarded so the default preset (Beta = 0) never multiplies by 0m, keeping the
+            // decimal representation identical to the original single-EMA implementation.
+            if (_beta != 0m)
+            {
+                _slope += _beta * (newLevel - _level - _slope);
+            }
+
+            _level = newLevel;
+            return _level;
+        }
+    }
 
     /// <summary>
     /// Computes weight trends from source measurements
     /// Port of computeWeightTrends from TypeScript
     /// </summary>
-    private static List<ComputedMeasurement> ComputeWeightTrends(List<SourceMeasurement> sourceMeasurements)
+    private static List<ComputedMeasurement> ComputeWeightTrends(List<SourceMeasurement> sourceMeasurements, TrendAlgorithmPreset preset)
     {
-        decimal trendWeight = 0;
+        var smoother = new TrendSmoother(preset);
         var measurements = new List<ComputedMeasurement>();
 
         for (int i = 0; i < sourceMeasurements.Count; i++)
         {
             var sourceMeasurement = sourceMeasurements[i];
-            var weight = sourceMeasurement.Weight;
-
-            if (i == 0)
-            {
-                trendWeight = weight;
-            }
-            else
-            {
-                trendWeight = trendWeight + TREND_SMOOTHING_FACTOR * (weight - trendWeight);
-            }
+            var trendWeight = smoother.Next(sourceMeasurement.Weight);
 
             measurements.Add(new ComputedMeasurement
             {
@@ -272,14 +304,14 @@ public class MeasurementComputationService : IMeasurementComputationService
     /// Computes fat trends and updates measurements with fat data
     /// Port of computeFatTrends from TypeScript
     /// </summary>
-    private static List<ComputedMeasurement> ComputeFatTrends(List<SourceMeasurement> fatSourceMeasurements, List<ComputedMeasurement> measurements)
+    private static List<ComputedMeasurement> ComputeFatTrends(List<SourceMeasurement> fatSourceMeasurements, List<ComputedMeasurement> measurements, TrendAlgorithmPreset preset)
     {
         var measurementsByDate = measurements.ToDictionary(m => m.Date, m => m);
         var additionalMeasurements = new List<ComputedMeasurement>();
 
-        decimal trendFatRatio = 0;
-        decimal trendFatMass = 0;
-        decimal trendLeanMass = 0;
+        var fatRatioSmoother = new TrendSmoother(preset);
+        var fatMassSmoother = new TrendSmoother(preset);
+        var leanMassSmoother = new TrendSmoother(preset);
 
         for (int i = 0; i < fatSourceMeasurements.Count; i++)
         {
@@ -289,18 +321,9 @@ public class MeasurementComputationService : IMeasurementComputationService
             var fatMass = weight * fatRatio;
             var leanMass = weight * (1 - fatRatio);
 
-            if (i == 0)
-            {
-                trendFatRatio = fatRatio;
-                trendFatMass = fatMass;
-                trendLeanMass = leanMass;
-            }
-            else
-            {
-                trendFatRatio = trendFatRatio + TREND_SMOOTHING_FACTOR * (fatRatio - trendFatRatio);
-                trendFatMass = trendFatMass + TREND_SMOOTHING_FACTOR * (fatMass - trendFatMass);
-                trendLeanMass = trendLeanMass + TREND_SMOOTHING_FACTOR * (leanMass - trendLeanMass);
-            }
+            var trendFatRatio = fatRatioSmoother.Next(fatRatio);
+            var trendFatMass = fatMassSmoother.Next(fatMass);
+            var trendLeanMass = leanMassSmoother.Next(leanMass);
 
             var dateKey = sourceMeasurement.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 

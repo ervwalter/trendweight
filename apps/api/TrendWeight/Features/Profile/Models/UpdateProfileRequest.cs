@@ -10,4 +10,5 @@ public class UpdateProfileRequest
     public bool? UseMetric { get; set; }
     public bool? ShowCalories { get; set; }
     public bool? HideDataBeforeStart { get; set; }
+    public string? TrendAlgorithm { get; set; }
 }

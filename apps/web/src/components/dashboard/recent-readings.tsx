@@ -1,6 +1,7 @@
 import { recentDate } from "@/lib/core/dates";
 import { Modes } from "@/lib/core/interfaces";
 import { formatMeasurement } from "@/lib/core/numbers";
+import { getTrendLabel } from "@/lib/core/trend-algorithms";
 import { useDashboardData } from "@/lib/dashboard/hooks";
 import { Heading } from "@/components/common/heading";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,7 +10,7 @@ const RecentReadings = () => {
   const {
     dataPoints,
     mode: [mode],
-    profile: { useMetric },
+    profile: { useMetric, trendAlgorithm },
   } = useDashboardData();
 
   const readings = dataPoints.slice(-14).reverse();
@@ -23,7 +24,7 @@ const RecentReadings = () => {
             <TableRow>
               <TableHead className="pl-0 text-left">Date</TableHead>
               <TableHead className="text-right">Actual</TableHead>
-              <TableHead className="pr-0 text-right">Trend</TableHead>
+              <TableHead className="pr-0 text-right">{getTrendLabel(trendAlgorithm)}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

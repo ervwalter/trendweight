@@ -17,6 +17,7 @@ interface ChartDataArrays {
 interface BuilderOptions {
   mode: keyof typeof Modes;
   modeText: string;
+  trendLabel: string;
   isNarrow: boolean;
   lastMeasurement: { date: LocalDate; trend: number };
   dataArrays: ChartDataArrays;
@@ -46,11 +47,11 @@ export function buildWeekendPlotBands(lastMeasurementDate: LocalDate): XAxisOpti
 }
 
 export function build4WeekOptions(options: Options, builderOptions: BuilderOptions): void {
-  const { mode, modeText, isNarrow, lastMeasurement, dataArrays } = builderOptions;
+  const { mode, modeText, trendLabel, isNarrow, lastMeasurement, dataArrays } = builderOptions;
   const { actualData, interpolatedData, trendData, projectionsData, actualSinkersData, interpolatedSinkersData } = dataArrays;
 
   if (options.series && options.xAxis && !Array.isArray(options.xAxis)) {
-    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow));
+    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow, trendLabel));
     options.series.push(createDiamondsSeries(actualData, false, isNarrow));
     options.series.push(createDiamondsSeries(interpolatedData, true, isNarrow));
     options.series.push(createSinkersSeries(actualSinkersData, false));
@@ -64,11 +65,11 @@ export function build4WeekOptions(options: Options, builderOptions: BuilderOptio
 }
 
 export function build3MonthOptions(options: Options, builderOptions: BuilderOptions): void {
-  const { mode, modeText, isNarrow, dataArrays } = builderOptions;
+  const { mode, modeText, trendLabel, isNarrow, dataArrays } = builderOptions;
   const { actualData, interpolatedData, trendData, projectionsData, actualSinkersData, interpolatedSinkersData } = dataArrays;
 
   if (options.series && options.xAxis && !Array.isArray(options.xAxis)) {
-    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow));
+    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow, trendLabel));
 
     if (isNarrow) {
       options.series.push(createLineSeries(actualData, false));
@@ -87,12 +88,12 @@ export function build3MonthOptions(options: Options, builderOptions: BuilderOpti
 }
 
 export function buildLongTermOptions(options: Options, builderOptions: BuilderOptions, timeRange: "6m" | "1y" | "all"): void {
-  const { mode, modeText, isNarrow, dataArrays } = builderOptions;
+  const { mode, modeText, trendLabel, isNarrow, dataArrays } = builderOptions;
   const { actualData, trendData, projectionsData } = dataArrays;
 
   if (options.series && options.xAxis && !Array.isArray(options.xAxis)) {
     options.series = [];
-    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow));
+    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow, trendLabel));
     options.series.push(createLineSeries(actualData, false));
     options.series.push(createProjectionSeries(projectionsData, mode, modeText, isNarrow));
 
@@ -103,13 +104,13 @@ export function buildLongTermOptions(options: Options, builderOptions: BuilderOp
 }
 
 export function buildExploreOptions(options: Options, builderOptions: BuilderOptions): void {
-  const { mode, modeText, isNarrow, lastMeasurement, dataArrays } = builderOptions;
+  const { mode, modeText, trendLabel, isNarrow, lastMeasurement, dataArrays } = builderOptions;
   const { actualData, interpolatedData, trendData, projectionsData, actualSinkersData, interpolatedSinkersData } = dataArrays;
 
   if (options.series && options.xAxis && !Array.isArray(options.xAxis)) {
     // Initial series setup
     options.series = [];
-    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow));
+    options.series.push(createTrendSeries(trendData, mode, modeText, isNarrow, trendLabel));
 
     if (isNarrow) {
       options.series.push(createLineSeries(actualData, false));

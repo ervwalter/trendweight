@@ -14,6 +14,7 @@ interface UpdateProfileData {
   useMetric?: boolean;
   showCalories?: boolean;
   hideDataBeforeStart?: boolean;
+  trendAlgorithm?: string;
 }
 
 export function useUpdateProfile() {
@@ -40,6 +41,9 @@ export function useUpdateProfile() {
       queryClient.setQueryData(queryKeys.profile(), data);
       // Invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: queryKeys.profile() });
+      // Settings like dayStartOffset and trendAlgorithm change the server-computed
+      // measurements, so refresh those too
+      queryClient.invalidateQueries({ queryKey: queryKeys.allData() });
     },
   });
 }

@@ -279,6 +279,53 @@ This linear interpolation ensures:
 - No artificial jumps in the data
 - Reasonable estimates for missing measurements
 
+## Alternate Trend Algorithms
+
+TrendWeight's default formula comes straight from [The Hacker's Diet](https://www.fourmilab.ch/hackdiet/) by John Walker — specifically its ["Signal and Noise" chapter](https://www.fourmilab.ch/hackdiet/e4/signalnoise.html), which introduced exponential smoothing as a way to find the real trend hiding in noisy daily weights.
+
+### Why the Default Formula Lags on Purpose
+
+The default formula has a quirk: when your weight follows a steady slope (as it does during consistent dieting), the trend line lags behind your actual weight. With $\alpha = 0.1$, the steady-state lag works out to about 9 days' worth of weight change — lose 2 pounds a week and the trend line reads roughly 2.6 pounds heavier than your smoothed "true" weight.
+
+That lag is a feature, not a bug. The Hacker's Diet describes daily weights as "floats" and "sinkers" relative to the trend line — the same imagery used on your dashboard chart. Because the trend lags during weight loss, most daily readings land _below_ the line, acting as sinkers that pull it down. Even a discouraging overnight jump usually still sits under the trend line, so it reads as continued progress rather than failure. Walker argued this framing keeps the day-to-day noise of the scale motivating instead of demoralizing.
+
+### Holt's Linear Trend Method
+
+If you'd rather have a trend line that tracks steady weight loss more closely, the Advanced Settings offer presets based on Holt's linear trend method (also called double exponential smoothing). Where the default formula tracks one quantity (the smoothed weight, or _level_), Holt's method also tracks a second one (the smoothed _slope_):
+
+$$L_t = \alpha X_t + (1-\alpha)(L_{t-1} + b_{t-1})$$
+
+$$b_t = \beta (L_t - L_{t-1}) + (1-\beta) b_{t-1}$$
+
+Where:
+
+- $L_t$ = Level (the displayed trend value) at time $t$
+- $b_t$ = Slope (the smoothed rate of change) at time $t$
+- $\alpha$ = Level smoothing factor
+- $\beta$ = Slope smoothing factor
+
+Each day, the method first predicts where your weight should be ($L_{t-1} + b_{t-1}$), then nudges that prediction toward the actual reading. Because it carries a slope estimate forward, it follows a steady decline with almost no lag.
+
+The default formula is actually a special case: set $\beta = 0$ (and start the slope at zero) and Holt's method reduces exactly to the exponential smoothing described above. That's how the setting works internally — every preset runs the same algorithm with different constants:
+
+| Preset                  | $\alpha$ | $\beta$ | Character                                                 |
+| ----------------------- | -------- | ------- | --------------------------------------------------------- |
+| Default (Hacker's Diet) | 0.1      | 0       | Deliberate lag; steady and predictable                    |
+| Holt (gentle)           | 0.1      | 0.05    | Familiar smoothness with slow slope tracking              |
+| Holt (standard)         | 0.1      | 0.1     | Balanced; follows steady loss with much less lag          |
+| Holt (responsive)       | 0.15     | 0.15    | Adapts fastest to direction changes, with a wigglier line |
+
+### The Tradeoff
+
+Holt's method isn't simply "better" — it trades one behavior for another:
+
+- **Less lag during steady loss**: the trend line hugs your actual weight instead of trailing days behind it.
+- **Weaker "sinker" effect**: because the line sits closer to your daily weights, roughly half your readings will land above it even while you're losing. You give up some of the psychological cushion the default formula provides.
+- **Overshoot at turning points**: the slope estimate has momentum. When a steady loss ends in a plateau, the trend line briefly dips below your actual weight before catching up.
+- **Every derived number follows the line**: the weekly rate, calorie estimates, goal projections, and time comparisons are all calculated from the trend values, so they change along with the algorithm. Your actual scale readings are never affected.
+
+If any of that sounds like a downside rather than a curiosity, just leave the setting off.
+
 ## Conclusion
 
 TrendWeight transforms the emotional rollercoaster of daily weighing into a mathematically sound feedback system. By applying exponential smoothing, linear regression, and careful statistical analysis, it reveals the true signal hiding in the noise of daily weight fluctuations.

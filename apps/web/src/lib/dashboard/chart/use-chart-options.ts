@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Modes } from "@/lib/core/interfaces";
+import { getTrendLabel } from "@/lib/core/trend-algorithms";
 import { useIsMobile } from "@/lib/hooks/use-media-query";
 import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 import { transformChartData } from "./data-transformers";
@@ -14,7 +15,7 @@ export const useChartOptions = (data: DashboardData, heightOverride?: string) =>
     mode: [mode],
     timeRange: [timeRange],
     activeSlope,
-    profile: { useMetric, goalWeight },
+    profile: { useMetric, goalWeight, trendAlgorithm },
   } = data;
 
   return useMemo(() => {
@@ -37,6 +38,7 @@ export const useChartOptions = (data: DashboardData, heightOverride?: string) =>
     const builderOptions = {
       mode,
       modeText,
+      trendLabel: getTrendLabel(trendAlgorithm),
       isNarrow,
       lastMeasurement,
       dataArrays,
@@ -68,5 +70,5 @@ export const useChartOptions = (data: DashboardData, heightOverride?: string) =>
     buildYAxisOptions(options, mode, useMetric, goalWeight);
 
     return options;
-  }, [dataPoints, activeSlope, goalWeight, isNarrow, mode, timeRange, useMetric, heightOverride]);
+  }, [dataPoints, activeSlope, goalWeight, isNarrow, mode, timeRange, useMetric, trendAlgorithm, heightOverride]);
 };

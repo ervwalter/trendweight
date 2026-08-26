@@ -214,6 +214,78 @@ public class ProfileServiceTests : TestBase
     }
 
     [Fact]
+    public async Task UpdateOrCreateProfileAsync_WithTrendAlgorithm_StoresValue()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var existingProfile = CreateTestProfile(userId);
+        var request = new UpdateProfileRequest { TrendAlgorithm = "holt" };
+
+        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
+            .ReturnsAsync(existingProfile);
+        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
+            .ReturnsAsync((DbProfile p) => p);
+
+        // Act
+        var result = await _sut.UpdateOrCreateProfileAsync(userId.ToString(), email, request);
+
+        // Assert
+        result.Profile.TrendAlgorithm.Should().Be("holt");
+    }
+
+    [Fact]
+    public async Task UpdateOrCreateProfileAsync_WithNullTrendAlgorithm_PreservesExistingValue()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var existingProfile = CreateTestProfile(userId);
+        existingProfile.Profile.TrendAlgorithm = "holt-gentle";
+        var request = new UpdateProfileRequest { FirstName = "Updated" };
+
+        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
+            .ReturnsAsync(existingProfile);
+        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
+            .ReturnsAsync((DbProfile p) => p);
+
+        // Act
+        var result = await _sut.UpdateOrCreateProfileAsync(userId.ToString(), email, request);
+
+        // Assert
+        result.Profile.TrendAlgorithm.Should().Be("holt-gentle");
+    }
+
+    [Fact]
+    public async Task ProfileData_WhenTrendAlgorithmMissing_DefaultsToNull()
+    {
+        // Arrange: simulating profile JSONB written before this field existed
+        var userId = Guid.NewGuid();
+        var dbProfile = new DbProfile
+        {
+            Uid = userId,
+            Email = "test@example.com",
+            Profile = new ProfileData
+            {
+                FirstName = "Test",
+                UseMetric = false,
+            },
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            UpdatedAt = DateTime.UtcNow.ToString("o")
+        };
+
+        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
+            .ReturnsAsync(dbProfile);
+
+        // Act
+        var result = await _sut.GetByIdAsync(userId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Profile.TrendAlgorithm.Should().BeNull();
+    }
+
+    [Fact]
     public async Task GetBySharingTokenAsync_ReturnsMatchingProfile()
     {
         // Arrange

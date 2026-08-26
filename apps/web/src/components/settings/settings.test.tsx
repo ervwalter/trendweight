@@ -18,6 +18,7 @@ const mockProfileData = {
   goalStart: "2024-01-01",
   dayStartOffset: 0,
   showCalories: false,
+  hideDataBeforeStart: false,
   sharingEnabled: true,
   sharingToken: "abc123",
 };
@@ -150,6 +151,31 @@ describe("Settings", () => {
       expect(screen.getByTestId("goal-start")).toHaveValue("2024-01-01");
       expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
     });
+  });
+
+  it("should return to a clean state when a change is reverted and optional fields are unset", async () => {
+    // Regression: with goalStart/goalWeight unset, the empty date input holds "" and the
+    // empty valueAsNumber input holds NaN. Unless hydration normalizes the defaults to
+    // match, react-hook-form's isDirty deep-compare sticks dirty forever after any edit.
+    const original = { ...mockProfileData };
+    delete (mockProfileData as Partial<typeof mockProfileData>).goalStart;
+    delete (mockProfileData as Partial<typeof mockProfileData>).goalWeight;
+    try {
+      const user = userEvent.setup();
+      render(<Settings />);
+
+      const checkbox = screen.getByTestId("show-calories");
+      await user.click(checkbox); // change
+      expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
+
+      await user.click(checkbox); // revert
+      await waitFor(() => {
+        expect(screen.queryByText("You have unsaved changes")).not.toBeInTheDocument();
+        expect(screen.getByText("Save Settings")).toBeDisabled();
+      });
+    } finally {
+      Object.assign(mockProfileData, original);
+    }
   });
 
   it("should show unsaved changes message when form is dirty", async () => {
