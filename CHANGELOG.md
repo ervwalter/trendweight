@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.11.0](https://github.com/ervwalter/trendweight/compare/v2.10.1...v2.11.0) (2026-08-26)
+
+
+### Features
+
+* optional alternate trend algorithms (Holt's linear trend method) ([#455](https://github.com/ervwalter/trendweight/issues/455)) ([d89cdf5](https://github.com/ervwalter/trendweight/commit/d89cdf57e95a4974fae6bd64d4bba3bee2e692c1)), closes [#396](https://github.com/ervwalter/trendweight/issues/396)
+
+
+### Fixes
+
+* **goals:** Allow setting goals to 1dp ([#442](https://github.com/ervwalter/trendweight/issues/442)) ([df5a59d](https://github.com/ervwalter/trendweight/commit/df5a59d8fb98fa01a72afbc22e97d26ac063d8db))
+
+
+### Dependencies
+
+* lock file maintenance ([#457](https://github.com/ervwalter/trendweight/issues/457)) ([628f872](https://github.com/ervwalter/trendweight/commit/628f872e6d3a611a3b14e0e9f4010a699c2c3445))
+* update all non-major dependencies ([#453](https://github.com/ervwalter/trendweight/issues/453)) ([f07283e](https://github.com/ervwalter/trendweight/commit/f07283e484a9c77746f6ed60bd0023ee39ebf81e))
+* update dependency eslint to v10.9.0 ([#456](https://github.com/ervwalter/trendweight/issues/456)) ([075fc34](https://github.com/ervwalter/trendweight/commit/075fc34d6ec53b347891445fac0ff21ded7e7f63))
+
 ## [2.10.1](https://github.com/ervwalter/trendweight/compare/v2.10.0...v2.10.1) (2026-08-25)
 
 
