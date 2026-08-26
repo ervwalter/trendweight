@@ -12,14 +12,15 @@ public class MeasurementComputationServiceTests
 
     #region Test Data Helpers
 
-    private static ProfileData CreateTestProfile(int dayStartOffset = 0, bool hideDataBeforeStart = false, DateTime? goalStart = null)
+    private static ProfileData CreateTestProfile(int dayStartOffset = 0, bool hideDataBeforeStart = false, DateTime? goalStart = null, string? trendAlgorithm = null)
     {
         return new ProfileData
         {
             UseMetric = true,
             DayStartOffset = dayStartOffset,
             HideDataBeforeStart = hideDataBeforeStart,
-            GoalStart = goalStart
+            GoalStart = goalStart,
+            TrendAlgorithm = trendAlgorithm
         };
     }
 
@@ -531,6 +532,194 @@ public class MeasurementComputationServiceTests
         result.Should().HaveCount(2);
         // Note: The service doesn't preserve source in ComputedMeasurement model
         // This test documents the current behavior
+    }
+
+    #endregion
+
+    #region Trend Algorithm Preset Tests
+
+    [Fact]
+    public void ComputeMeasurements_WithHoltPreset_CalculatesCorrectTrend()
+    {
+        // Arrange
+        var profile = CreateTestProfile(trendAlgorithm: "holt"); // alpha = 0.1, beta = 0.1
+        var sourceData = CreateTestSourceData(
+            ("2024-01-01", "08:00:00", 70.0m, null),
+            ("2024-01-02", "08:00:00", 71.0m, null),
+            ("2024-01-03", "08:00:00", 69.0m, null),
+            ("2024-01-04", "08:00:00", 70.0m, null)
+        );
+
+        // Act
+        var result = _sut.ComputeMeasurements(sourceData, profile);
+
+        // Assert
+        result.Should().HaveCount(4);
+
+        // First measurement: level = actual, slope = 0
+        result[0].TrendWeight.Should().Be(70.0m);
+
+        // Second: forecast = 70.0 + 0 = 70.0
+        //         level = 70.0 + 0.1 * (71.0 - 70.0) = 70.1
+        //         slope = 0 + 0.1 * (70.1 - 70.0 - 0) = 0.01
+        result[1].TrendWeight.Should().Be(70.1m);
+
+        // Third:  forecast = 70.1 + 0.01 = 70.11
+        //         level = 70.11 + 0.1 * (69.0 - 70.11) = 69.999
+        //         slope = 0.01 + 0.1 * (69.999 - 70.1 - 0.01) = -0.0011
+        result[2].TrendWeight.Should().Be(69.999m);
+
+        // Fourth: forecast = 69.999 - 0.0011 = 69.9979
+        //         level = 69.9979 + 0.1 * (70.0 - 69.9979) = 69.99811 -> rounds to 69.998
+        result[3].TrendWeight.Should().Be(69.998m);
+    }
+
+    [Fact]
+    public void ComputeMeasurements_WithHoltPreset_CalculatesCorrectFatTrends()
+    {
+        // Arrange
+        var profile = CreateTestProfile(trendAlgorithm: "holt"); // alpha = 0.1, beta = 0.1
+        var sourceData = CreateTestSourceData(
+            ("2024-01-01", "08:00:00", 70.0m, 0.25m),
+            ("2024-01-02", "08:00:00", 71.0m, 0.26m),
+            ("2024-01-03", "08:00:00", 69.0m, 0.24m)
+        );
+
+        // Act
+        var result = _sut.ComputeMeasurements(sourceData, profile);
+
+        // Assert
+        result.Should().HaveCount(3);
+
+        // Fat ratio Holt series: 0.25; then 0.25 + 0.1 * (0.26 - 0.25) = 0.251, slope = 0.0001;
+        // then forecast = 0.2511, level = 0.2511 + 0.1 * (0.24 - 0.2511) = 0.24999 -> rounds to 0.25
+        result[0].TrendFatPercent.Should().Be(0.25m);
+        result[1].TrendFatPercent.Should().Be(0.251m);
+        result[2].TrendFatPercent.Should().Be(0.25m);
+
+        // Fat mass series (weight * fatRatio): 17.5, 18.46, 16.56
+        // Holt: 17.5; then 17.5 + 0.1 * (18.46 - 17.5) = 17.596, slope = 0.0096;
+        // then forecast = 17.6056, level = 17.6056 + 0.1 * (16.56 - 17.6056) = 17.50104 -> 17.501
+        result[0].TrendFatMass.Should().Be(17.5m);
+        result[1].TrendFatMass.Should().Be(17.596m);
+        result[2].TrendFatMass.Should().Be(17.501m);
+
+        // Lean mass series (weight * (1 - fatRatio)): 52.5, 52.54, 52.44
+        // Holt: 52.5; then 52.5 + 0.1 * (52.54 - 52.5) = 52.504, slope = 0.0004;
+        // then forecast = 52.5044, level = 52.5044 + 0.1 * (52.44 - 52.5044) = 52.49796 -> 52.498
+        result[0].TrendLeanMass.Should().Be(52.5m);
+        result[1].TrendLeanMass.Should().Be(52.504m);
+        result[2].TrendLeanMass.Should().Be(52.498m);
+    }
+
+    [Theory]
+    [InlineData("default")]
+    [InlineData("bogus-future-algorithm")]
+    public void ComputeMeasurements_WithDefaultOrUnknownPreset_MatchesDefaultExactly(string trendAlgorithm)
+    {
+        // Arrange: a deterministic pseudo-random series
+        var random = new Random(396);
+        var measurements = new List<(string date, string time, decimal weight, decimal? fatRatio)>();
+        for (int i = 0; i < 100; i++)
+        {
+            var date = new DateTime(2024, 1, 1).AddDays(i).ToString("yyyy-MM-dd");
+            var weight = 80.0m - 0.05m * i + (decimal)random.NextDouble();
+            measurements.Add((date, "08:00:00", Math.Round(weight, 2), 0.2m + 0.001m * (i % 10)));
+        }
+        var sourceData = CreateTestSourceData(measurements.ToArray());
+
+        // Act
+        var defaultResult = _sut.ComputeMeasurements(sourceData, CreateTestProfile());
+        var presetResult = _sut.ComputeMeasurements(sourceData, CreateTestProfile(trendAlgorithm: trendAlgorithm));
+
+        // Assert: explicit "default" and unknown ids are exactly the default algorithm
+        presetResult.Should().HaveCount(defaultResult.Count);
+        for (int i = 0; i < defaultResult.Count; i++)
+        {
+            presetResult[i].TrendWeight.Should().Be(defaultResult[i].TrendWeight);
+            presetResult[i].TrendFatPercent.Should().Be(defaultResult[i].TrendFatPercent);
+            presetResult[i].TrendFatMass.Should().Be(defaultResult[i].TrendFatMass);
+            presetResult[i].TrendLeanMass.Should().Be(defaultResult[i].TrendLeanMass);
+        }
+    }
+
+    [Fact]
+    public void ComputeMeasurements_DefaultProfile_MatchesReferenceEmaLoop()
+    {
+        // Arrange: deterministic pseudo-random weights
+        var random = new Random(42);
+        var weights = new List<decimal>();
+        for (int i = 0; i < 50; i++)
+        {
+            weights.Add(Math.Round(75.0m + (decimal)(random.NextDouble() * 2 - 1), 2));
+        }
+        var measurements = weights
+            .Select((w, i) => (new DateTime(2024, 1, 1).AddDays(i).ToString("yyyy-MM-dd"), "08:00:00", w, (decimal?)null))
+            .ToArray();
+        var sourceData = CreateTestSourceData(measurements);
+
+        // Act
+        var result = _sut.ComputeMeasurements(sourceData, CreateTestProfile());
+
+        // Assert: matches the default Hacker's Diet EMA computed independently
+        decimal trend = 0m;
+        for (int i = 0; i < weights.Count; i++)
+        {
+            trend = i == 0 ? weights[i] : trend + 0.1m * (weights[i] - trend);
+            result[i].TrendWeight.Should().Be(Math.Round(trend, 3));
+        }
+    }
+
+    [Fact]
+    public void ComputeMeasurements_WithHoltPresetAndSteadyLoss_TracksCloserThanDefault()
+    {
+        // Arrange: a perfectly steady loss of 0.2 kg/day for 60 days
+        var measurements = Enumerable.Range(0, 60)
+            .Select(i => (new DateTime(2024, 1, 1).AddDays(i).ToString("yyyy-MM-dd"), "08:00:00", 90.0m - 0.2m * i, (decimal?)null))
+            .ToArray();
+        var sourceData = CreateTestSourceData(measurements);
+
+        // Act
+        var defaultResult = _sut.ComputeMeasurements(sourceData, CreateTestProfile());
+        var holtResult = _sut.ComputeMeasurements(sourceData, CreateTestProfile(trendAlgorithm: "holt"));
+
+        // Assert: the default EMA settles into a steady-state lag of slope * (1 - alpha) / alpha
+        // (~1.8 kg here); Holt's slope state largely eliminates it (it can slightly overshoot,
+        // so compare lag magnitudes)
+        var actual = defaultResult[^1].ActualWeight;
+        var defaultLag = defaultResult[^1].TrendWeight - actual;
+        var holtLag = Math.Abs(holtResult[^1].TrendWeight - actual);
+
+        defaultLag.Should().BeGreaterThan(1.5m);
+        holtLag.Should().BeLessThan(0.5m);
+    }
+
+    [Fact]
+    public void ComputeMeasurements_WithHoltPresetAndGaps_SmoothsInterpolatedSeries()
+    {
+        // Arrange: a 3-day gap between readings; interpolation fills days 2 and 3
+        var profile = CreateTestProfile(trendAlgorithm: "holt");
+        var sourceData = CreateTestSourceData(
+            ("2024-01-01", "08:00:00", 70.0m, null),
+            ("2024-01-04", "08:00:00", 73.0m, null)
+        );
+
+        // Act
+        var result = _sut.ComputeMeasurements(sourceData, profile);
+
+        // Assert: interpolated weights are 71.0 and 72.0; Holt runs over the contiguous series
+        result.Should().HaveCount(4);
+        result[1].WeightIsInterpolated.Should().BeTrue();
+        result[2].WeightIsInterpolated.Should().BeTrue();
+
+        // level0 = 70.0, slope = 0
+        // day 2: level = 70.0 + 0.1 * (71.0 - 70.0) = 70.1, slope = 0.01
+        // day 3: forecast = 70.11, level = 70.11 + 0.1 * (72.0 - 70.11) = 70.299, slope = 0.01 + 0.1 * (70.299 - 70.1 - 0.01) = 0.0289
+        // day 4: forecast = 70.3279, level = 70.3279 + 0.1 * (73.0 - 70.3279) = 70.59511 -> 70.595
+        result[0].TrendWeight.Should().Be(70.0m);
+        result[1].TrendWeight.Should().Be(70.1m);
+        result[2].TrendWeight.Should().Be(70.299m);
+        result[3].TrendWeight.Should().Be(70.595m);
     }
 
     #endregion

@@ -88,6 +88,7 @@ public class ProfileService : IProfileService
                     DayStartOffset = request.DayStartOffset,
                     ShowCalories = request.ShowCalories,
                     HideDataBeforeStart = request.HideDataBeforeStart ?? false,
+                    TrendAlgorithm = request.TrendAlgorithm,
                     SharingToken = await GenerateUniqueShareTokenAsync()
                 },
                 CreatedAt = DateTime.UtcNow.ToString("o"),
@@ -112,6 +113,7 @@ public class ProfileService : IProfileService
             profile.Profile.UseMetric = request.UseMetric ?? profile.Profile.UseMetric;
             profile.Profile.ShowCalories = request.ShowCalories;
             profile.Profile.HideDataBeforeStart = request.HideDataBeforeStart ?? profile.Profile.HideDataBeforeStart;
+            profile.Profile.TrendAlgorithm = request.TrendAlgorithm ?? profile.Profile.TrendAlgorithm;
 
             // Update email if it's changed
             if (profile.Email != email)

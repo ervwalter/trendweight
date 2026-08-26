@@ -38,6 +38,7 @@ export interface ProfileData {
   isMigrated?: boolean;
   isNewlyMigrated?: boolean;
   hideDataBeforeStart?: boolean;
+  trendAlgorithm?: string;
 }
 
 export interface SharingData {

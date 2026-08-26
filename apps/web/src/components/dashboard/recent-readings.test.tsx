@@ -67,6 +67,19 @@ describe("RecentReadings", () => {
     expect(screen.getByRole("columnheader", { name: "Trend" })).toBeInTheDocument();
   });
 
+  it("should label the trend column for an alternate trend algorithm", () => {
+    mockUseDashboardData.mockReturnValue({
+      dataPoints: mockDataPoints,
+      mode: ["weight", vi.fn()],
+      profile: { useMetric: false, trendAlgorithm: "holt" },
+    } as any);
+
+    render(<RecentReadings />);
+
+    expect(screen.getByRole("columnheader", { name: "Trend (Holt)" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Trend" })).not.toBeInTheDocument();
+  });
+
   it("should render all data points", () => {
     render(<RecentReadings />);
 

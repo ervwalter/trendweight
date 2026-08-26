@@ -22,7 +22,7 @@ describe("create-chart-series", () => {
 
   describe("createTrendSeries", () => {
     it("should create trend series with correct properties", () => {
-      const series = createTrendSeries(sampleData, "weight", "Weight", false);
+      const series = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
 
       expect(series.type).toBe("line");
       expect(series.id).toBe("trend");
@@ -36,10 +36,10 @@ describe("create-chart-series", () => {
     });
 
     it("should use different colors for different modes", () => {
-      const weightSeries = createTrendSeries(sampleData, "weight", "Weight", false);
-      const fatPercentSeries = createTrendSeries(sampleData, "fatpercent", "Fat %", false);
-      const fatMassSeries = createTrendSeries(sampleData, "fatmass", "Fat Mass", false);
-      const leanMassSeries = createTrendSeries(sampleData, "leanmass", "Lean Mass", false);
+      const weightSeries = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
+      const fatPercentSeries = createTrendSeries(sampleData, "fatpercent", "Fat %", false, "Trend");
+      const fatMassSeries = createTrendSeries(sampleData, "fatmass", "Fat Mass", false, "Trend");
+      const leanMassSeries = createTrendSeries(sampleData, "leanmass", "Lean Mass", false, "Trend");
 
       expect(weightSeries.color).toBe("var(--chart-weight)");
       expect(fatPercentSeries.color).toBe("var(--chart-fatpercent)");
@@ -48,18 +48,24 @@ describe("create-chart-series", () => {
     });
 
     it("should adjust line width for narrow displays", () => {
-      const normalSeries = createTrendSeries(sampleData, "weight", "Weight", false);
-      const narrowSeries = createTrendSeries(sampleData, "weight", "Weight", true);
+      const normalSeries = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
+      const narrowSeries = createTrendSeries(sampleData, "weight", "Weight", true, "Trend");
 
       expect(normalSeries.lineWidth).toBe(2);
       expect(narrowSeries.lineWidth).toBe(1.5);
     });
 
     it("should prevent legend item clicks", () => {
-      const series = createTrendSeries(sampleData, "weight", "Weight", false);
+      const series = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
 
       expect(series.events?.legendItemClick).toBeDefined();
       expect(typeof series.events?.legendItemClick).toBe("function");
+    });
+
+    it("should use the provided trend label in the series name", () => {
+      const series = createTrendSeries(sampleData, "weight", "Weight", false, "Trend (Holt)");
+
+      expect(series.name).toBe("Weight Trend (Holt)");
     });
   });
 
@@ -206,7 +212,7 @@ describe("create-chart-series", () => {
 
   describe("color consistency", () => {
     it("should use same colors across trend and projection series", () => {
-      const trendSeries = createTrendSeries(sampleData, "leanmass", "Lean Mass", false);
+      const trendSeries = createTrendSeries(sampleData, "leanmass", "Lean Mass", false, "Trend");
       const projectionSeries = createProjectionSeries(sampleData, "leanmass", "Lean Mass", false);
 
       expect(trendSeries.color).toBe(projectionSeries.color);
@@ -217,7 +223,7 @@ describe("create-chart-series", () => {
   describe("z-index layering", () => {
     it("should have correct z-index hierarchy", () => {
       const diamondsSeries = createDiamondsSeries(sampleDataWithNulls, false, false);
-      const trendSeries = createTrendSeries(sampleData, "weight", "Weight", false);
+      const trendSeries = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
       const dotSeries = createDotSeries(sampleDataWithNulls, false);
       const lineSeries = createLineSeries(sampleDataWithNulls, false);
       const sinkersSeries = createSinkersSeries(sampleSinkersData, false);

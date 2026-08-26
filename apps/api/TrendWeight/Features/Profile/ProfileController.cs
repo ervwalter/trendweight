@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Globalization;
 using System.Security.Claims;
 using TrendWeight.Common.Models;
+using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Infrastructure.DataAccess;
@@ -151,6 +152,7 @@ public class ProfileController : ControllerBase
                 UseMetric = user.Profile.UseMetric,
                 ShowCalories = user.Profile.ShowCalories ?? false,
                 HideDataBeforeStart = user.Profile.HideDataBeforeStart,
+                TrendAlgorithm = TrendAlgorithmPresets.Resolve(user.Profile.TrendAlgorithm).Id,
                 SharingEnabled = user.Profile.SharingEnabled,
                 SharingToken = user.Profile.SharingToken,
                 IsMigrated = user.Profile.IsMigrated,
@@ -192,6 +194,11 @@ public class ProfileController : ControllerBase
             {
                 _logger.LogWarning("Invalid user ID format: {UserId}", userId);
                 return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
+            }
+
+            if (!TrendAlgorithmPresets.IsValid(request.TrendAlgorithm))
+            {
+                return BadRequest(new ErrorResponse { Error = "Invalid trend algorithm" });
             }
 
             // Use the service to update or create the profile

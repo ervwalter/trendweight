@@ -8,12 +8,12 @@ const getColors = () => ({
   leanmass: "var(--chart-leanmass)",
 });
 
-export const createTrendSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean): SeriesLineOptions => {
+export const createTrendSeries = (data: [number, number][], mode: Mode, modeText: string, isNarrow: boolean, trendLabel: string): SeriesLineOptions => {
   const colors = getColors();
   return {
     type: "line",
     id: "trend",
-    name: `${modeText} Trend`,
+    name: `${modeText} ${trendLabel}`,
     data,
     color: colors[mode],
     lineWidth: isNarrow ? 1.5 : 2,

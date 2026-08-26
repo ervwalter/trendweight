@@ -23,6 +23,7 @@ describe("option-builders", () => {
   const createBuilderOptions = () => ({
     mode: "weight" as const,
     modeText: "Weight",
+    trendLabel: "Trend",
     isNarrow: false,
     lastMeasurement: {
       date: LocalDate.of(2024, 1, 15),

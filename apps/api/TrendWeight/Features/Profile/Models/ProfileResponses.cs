@@ -23,6 +23,7 @@ public class UserProfileData
     public bool UseMetric { get; set; }
     public bool ShowCalories { get; set; }
     public bool HideDataBeforeStart { get; set; }
+    public string TrendAlgorithm { get; set; } = string.Empty;
     public bool SharingEnabled { get; set; }
     public string? SharingToken { get; set; }
     public bool IsMigrated { get; set; }

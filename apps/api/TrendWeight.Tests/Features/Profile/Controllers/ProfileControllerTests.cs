@@ -382,6 +382,46 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
+    public async Task UpdateProfile_WithInvalidTrendAlgorithm_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        var request = new UpdateProfileRequest { TrendAlgorithm = "not-a-real-preset" };
+
+        // Act
+        var result = await _sut.UpdateProfile(request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>()
+            .Which.Value.Should().BeOfType<ErrorResponse>()
+            .Which.Error.Should().Be("Invalid trend algorithm");
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateProfile_WithValidTrendAlgorithm_ReturnsResolvedId()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var request = new UpdateProfileRequest { TrendAlgorithm = "holt" };
+        var updatedProfile = CreateTestProfile(userId);
+        updatedProfile.Profile.TrendAlgorithm = "holt";
+
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request))
+            .ReturnsAsync(updatedProfile);
+
+        // Act
+        var result = await _sut.UpdateProfile(request);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ProfileResponse>().Subject;
+        response.User.TrendAlgorithm.Should().Be("holt");
+    }
+
+    [Fact]
     public async Task UpdateProfile_WithNoUserIdClaim_ReturnsUnauthorized()
     {
         // Arrange
