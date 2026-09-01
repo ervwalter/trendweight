@@ -21,7 +21,10 @@ Tables: `user_accounts` (Clerk ID → internal UUID), `profiles` (settings, JSON
 
 ## Claude Code Notes
 
-- `dotnet` commands (restore/build/test) hang or stall inside the Claude Code sandbox — always run them with `dangerouslyDisableSandbox: true`
+- Most `dotnet` commands fail inside the Claude Code sandbox because macOS Seatbelt denies `bind()` on Unix domain sockets for descendant processes, and dotnet tooling uses named pipes (Unix sockets) for IPC ([claude-code#39257](https://github.com/anthropics/claude-code/issues/39257), closed not-planned; no sandbox config fixes it):
+  - `dotnet test`, `dotnet format`, `dotnet restore`: impossible in the sandbox (mandatory pipe IPC / blocked NuGet network) — run with `dangerouslyDisableSandbox: true`
+  - `dotnet build` works sandboxed ONLY in single-process mode (no worker children to bind pipes, and it hangs ~5 min without this): `DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1 dotnet build -m:1 -nodeReuse:false -p:UseSharedCompilation=false`
+  - When in doubt, `dangerouslyDisableSandbox: true` is always the reliable option for dotnet
 - CI lints the backend with `dotnet build --warnaserror`, which fails on warnings (e.g. nullable ones like CS8604) that a plain local build won't surface — verify C# changes with `npm run -w apps/api lint` (or `dotnet build --warnaserror`) before committing
 
 ## Commit Messages
