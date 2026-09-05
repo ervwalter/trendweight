@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.11.1](https://github.com/ervwalter/trendweight/compare/v2.11.0...v2.11.1) (2026-09-05)
+
+
+### Documentation
+
+* update Claude Code notes for dotnet commands in sandbox environment ([cd4c490](https://github.com/ervwalter/trendweight/commit/cd4c49095f9ea86b40af211f80f0028c65be7996))
+
+
+### Dependencies
+
+* update all non-major dependencies ([#458](https://github.com/ervwalter/trendweight/issues/458)) ([a30208b](https://github.com/ervwalter/trendweight/commit/a30208bcc6c3ebc8397c81b41c21839b72d16ea0))
+* update all non-major dependencies ([#461](https://github.com/ervwalter/trendweight/issues/461)) ([19f8d44](https://github.com/ervwalter/trendweight/commit/19f8d4497eab55a159010bca1ae9f2937d443ad6))
+
 ## [2.11.0](https://github.com/ervwalter/trendweight/compare/v2.10.1...v2.11.0) (2026-08-26)
 
 
