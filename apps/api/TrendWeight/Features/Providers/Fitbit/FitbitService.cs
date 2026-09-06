@@ -28,6 +28,10 @@ public class FitbitService : ProviderServiceBase, IFitbitService
     private int _remainingApiCalls = int.MaxValue;
     private DateTimeOffset _rateLimitResetTime = DateTimeOffset.UtcNow;
 
+    // Fitbit's quota resets hourly. Never hold a request open for that long: short waits
+    // are absorbed, anything longer fails the sync as retryable so the next load retries.
+    private static readonly TimeSpan MaxRateLimitWait = TimeSpan.FromSeconds(30);
+
     // Token refresh buffer - refresh tokens 5 minutes before they expire
     private const int TOKEN_EXPIRY_BUFFER_SECONDS = 300;
 
@@ -367,6 +371,16 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         if (_remainingApiCalls < 5 && DateTimeOffset.UtcNow < _rateLimitResetTime)
         {
             var waitTime = _rateLimitResetTime - DateTimeOffset.UtcNow;
+            if (waitTime > MaxRateLimitWait)
+            {
+                Logger.LogWarning("Fitbit rate limit exhausted; quota resets in {WaitTime} seconds. Failing sync as retryable", waitTime.TotalSeconds);
+                throw new ProviderException(
+                    "Fitbit's request limit has been reached. Please try again in a few minutes.",
+                    HttpStatusCode.TooManyRequests,
+                    "RATE_LIMITED",
+                    isRetryable: true);
+            }
+
             Logger.LogWarning("Rate limit nearly exhausted. Waiting {WaitTime} seconds before next request", waitTime.TotalSeconds);
 
             // Only report to user if wait is significant (10+ seconds)

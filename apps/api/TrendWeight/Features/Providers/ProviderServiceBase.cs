@@ -101,6 +101,11 @@ public abstract class ProviderServiceBase : IProviderService
             // Preserve network failures for SyncMeasurementsAsync to classify.
             throw;
         }
+        catch (ProviderException ex) when (ex.IsRetryable)
+        {
+            // Rate limits and provider outages are transient; SyncMeasurementsAsync reports them as retryable.
+            throw;
+        }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to get {Provider} measurements for user {UserId}", ProviderName, userId);
@@ -158,6 +163,17 @@ public abstract class ProviderServiceBase : IProviderService
                 Success = false,
                 Error = ProviderSyncError.NetworkError,
                 Message = $"Network error connecting to {ProviderName}. Please try again later."
+            };
+        }
+        catch (ProviderException ex) when (ex.IsRetryable)
+        {
+            Logger.LogWarning(ex, "Transient {Provider} error syncing measurements for user {UserId}", ProviderName, userId);
+            return new ProviderSyncResult
+            {
+                Provider = ProviderName,
+                Success = false,
+                Error = ProviderSyncError.NetworkError,
+                Message = ex.Message
             };
         }
         catch (Exception ex)

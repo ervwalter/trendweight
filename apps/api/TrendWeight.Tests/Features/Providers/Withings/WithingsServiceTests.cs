@@ -10,6 +10,7 @@ using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.Providers.Exceptions;
+using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.Providers.Withings;
 using TrendWeight.Features.Providers.Withings.Models;
 using TrendWeight.Features.ProviderLinks.Services;
@@ -662,6 +663,25 @@ public class WithingsServiceTests : TestBase
 
         // Verify we made exactly 2 calls
         callCount.Should().Be(2);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.TooManyRequests)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    public async Task SyncMeasurementsAsync_WhenProviderIsRateLimitedOrDown_ReportsRetryableNetworkError(HttpStatusCode status)
+    {
+        var userId = Guid.NewGuid();
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
+            .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "withings", Token = CreateValidToken() });
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(status) { Content = new StringContent("busy") });
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(ProviderSyncError.NetworkError);
+        result.Message.Should().Contain("try again");
     }
 
     [Fact]

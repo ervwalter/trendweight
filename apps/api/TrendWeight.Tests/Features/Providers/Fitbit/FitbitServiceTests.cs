@@ -95,6 +95,38 @@ public class FitbitServiceTests : TestBase
     }
 
     [Fact]
+    public async Task SyncMeasurementsAsync_WhenQuotaResetIsFarAway_FailsAsRetryableInsteadOfWaiting()
+    {
+        var userId = Guid.NewGuid();
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "fitbit", Token = CreateValidToken("fitbit-user") });
+
+        // First chunk succeeds but reports the hourly quota as exhausted for the next 50 minutes
+        var firstChunk = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"weight\":[]}", Encoding.UTF8, "application/json")
+        };
+        firstChunk.Headers.Add("fitbit-rate-limit-limit", "150");
+        firstChunk.Headers.Add("fitbit-rate-limit-remaining", "2");
+        firstChunk.Headers.Add("fitbit-rate-limit-reset", "3000");
+
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(firstChunk);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await _sut.SyncMeasurementsAsync(userId, true, DateTime.UtcNow.AddDays(-40));
+        stopwatch.Stop();
+
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(ProviderSyncError.NetworkError);
+        result.Measurements.Should().BeNull();
+        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10), "the sync must not block until the quota resets");
+        _httpMessageHandlerMock.Protected().Verify("SendAsync", Times.Once(),
+            ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ExchangeAuthorizationCodeAsync_WithIncompleteToken_DoesNotStoreCredentials()
     {
         _httpMessageHandlerMock.Protected()
