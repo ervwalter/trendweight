@@ -20,8 +20,6 @@ public class ProfileServiceTests : TestBase
 {
     private readonly Mock<ISupabaseService> _supabaseServiceMock;
     private readonly Mock<ILogger<ProfileService>> _loggerMock;
-    private readonly Mock<ISourceDataService> _sourceDataServiceMock;
-    private readonly Mock<IProviderLinkService> _providerLinkServiceMock;
     private readonly Mock<IUserAccountMappingService> _userAccountMappingServiceMock;
     private readonly Mock<IClerkService> _clerkServiceMock;
     private readonly ProfileService _sut;
@@ -33,16 +31,12 @@ public class ProfileServiceTests : TestBase
             It.IsAny<Action<ISupabaseTable<DbLegacyProfile, RealtimeChannel>>>()))
             .ReturnsAsync(new List<DbLegacyProfile>());
         _loggerMock = new Mock<ILogger<ProfileService>>();
-        _sourceDataServiceMock = new Mock<ISourceDataService>();
-        _providerLinkServiceMock = new Mock<IProviderLinkService>();
         _userAccountMappingServiceMock = new Mock<IUserAccountMappingService>();
         _clerkServiceMock = new Mock<IClerkService>();
 
         _sut = new ProfileService(
             _supabaseServiceMock.Object,
             _loggerMock.Object,
-            _sourceDataServiceMock.Object,
-            _providerLinkServiceMock.Object,
             _userAccountMappingServiceMock.Object,
             _clerkServiceMock.Object);
     }

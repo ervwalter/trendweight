@@ -2,8 +2,6 @@ using TrendWeight.Common;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Features.Profile.Models;
-using TrendWeight.Features.Measurements;
-using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Infrastructure.Auth;
 using TrendWeight.Infrastructure.Services;
 
@@ -13,23 +11,17 @@ public class ProfileService : IProfileService
 {
     private readonly ISupabaseService _supabaseService;
     private readonly ILogger<ProfileService> _logger;
-    private readonly ISourceDataService _sourceDataService;
-    private readonly IProviderLinkService _providerLinkService;
     private readonly IUserAccountMappingService _userAccountMappingService;
     private readonly IClerkService _clerkService;
 
     public ProfileService(
         ISupabaseService supabaseService,
         ILogger<ProfileService> logger,
-        ISourceDataService sourceDataService,
-        IProviderLinkService providerLinkService,
         IUserAccountMappingService userAccountMappingService,
         IClerkService clerkService)
     {
         _supabaseService = supabaseService;
         _logger = logger;
-        _sourceDataService = sourceDataService;
-        _providerLinkService = providerLinkService;
         _userAccountMappingService = userAccountMappingService;
         _clerkService = clerkService;
     }
