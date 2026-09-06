@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
@@ -193,11 +194,18 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
 
-    // Clear default networks/proxies to trust headers from load balancers
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    // Keep the framework's loopback defaults for local development. Production
+    // proxies must be explicitly trusted; a hop limit alone does not establish trust.
+    foreach (var proxy in builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
+    {
+        options.KnownProxies.Add(IPAddress.Parse(proxy));
+    }
+    foreach (var network in builder.Configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [])
+    {
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
+    }
 
-    // Limit proxy chain depth to prevent spoofing
+    // Limit the number of trusted proxy hops processed.
     options.ForwardLimit = 2; // Allows for Cloudflare -> DigitalOcean chain
     options.RequireHeaderSymmetry = false;
 
@@ -404,8 +412,15 @@ app.UseStaticFiles(new StaticFileOptions
         var path = ctx.File.Name;
         var headers = ctx.Context.Response.Headers;
 
+        // The shell must be reloaded on deploy, including direct /index.html requests.
+        if (path.Equals("index.html", StringComparison.OrdinalIgnoreCase))
+        {
+            headers.CacheControl = "no-cache, no-store, must-revalidate";
+            headers.Pragma = "no-cache";
+            headers.Expires = "0";
+        }
         // Check if this is a hashed asset (contains hash pattern like -aBc123De)
-        if (System.Text.RegularExpressions.Regex.IsMatch(path, @"-[a-zA-Z0-9_]{8,}\.(js|css)$"))
+        else if (System.Text.RegularExpressions.Regex.IsMatch(path, @"-[a-zA-Z0-9_]{8,}\.(js|css)$"))
         {
             // Long-term immutable caching for hashed assets
             headers.CacheControl = "public,max-age=31536000,immutable";
@@ -418,7 +433,7 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
-// Map reverse proxy endpoints (before rate limiting so they're not rate limited)
+// Map reverse proxy endpoints; they share the authentication and rate-limit pipeline.
 app.MapReverseProxy();
 
 app.UseAuthentication();
@@ -444,15 +459,29 @@ if (!app.Environment.IsDevelopment())
     {
         var path = context.Request.Path.Value;
 
+        if (context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
+            || (!HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method)))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        // Browser redirects interpret //host and slash-backslash paths as external
+        // URLs. Reject these ambiguous paths instead of reflecting them in Location.
+        if (path != null && (path.StartsWith("//", StringComparison.Ordinal) || path.Contains('\\')))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
         // Redirect trailing slash requests to non-slash URLs (except root "/")
         if (path != null &&
             path.EndsWith('/') &&
             path.Length > 1 &&
             context.Request.Method == "GET")
         {
-            var newPath = path.TrimEnd('/');
-            var queryString = context.Request.QueryString.Value;
-            var redirectUrl = newPath + queryString;
+            var redirectUrl = UriHelper.BuildRelative(
+                context.Request.PathBase, new PathString(path.TrimEnd('/')), context.Request.QueryString);
 
             context.Response.Redirect(redirectUrl, permanent: true);
             return;
@@ -464,7 +493,10 @@ if (!app.Environment.IsDevelopment())
         context.Response.Headers.Expires = "0";
 
         var indexPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html");
-        await context.Response.SendFileAsync(indexPath);
+        if (!HttpMethods.IsHead(context.Request.Method))
+        {
+            await context.Response.SendFileAsync(indexPath);
+        }
     });
 }
 
