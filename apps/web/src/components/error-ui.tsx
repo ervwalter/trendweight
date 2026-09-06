@@ -51,9 +51,9 @@ export function ErrorUI({ error, componentStack }: ErrorUIProps) {
                 <Button asChild variant="default">
                   <a href="/">Go to Homepage</a>
                 </Button>
-                <a href={mailtoLink}>
-                  <Button variant="default">Email Support</Button>
-                </a>
+                <Button asChild variant="default">
+                  <a href={mailtoLink}>Email Support</a>
+                </Button>
               </div>
             </div>
             <img src="/error.svg" alt="error icon" className="h-auto w-full max-w-[300px] md:max-w-[250px] lg:max-w-[320px] xl:max-w-[360px]" />

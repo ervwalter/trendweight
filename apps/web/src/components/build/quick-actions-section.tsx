@@ -23,9 +23,9 @@ export function QuickActionsSection({ onCopyClick, copied, mailtoLink }: QuickAc
           </>
         )}
       </Button>
-      <a href={mailtoLink}>
-        <Button variant="default">Email Support</Button>
-      </a>
+      <Button asChild variant="default">
+        <a href={mailtoLink}>Email Support</a>
+      </Button>
     </div>
   );
 }
