@@ -75,12 +75,12 @@ test("docker run loads quoted local configuration and tolerates missing optional
   const setup = fixture(t);
   writeFileSync(
     path.join(setup.directory, ".env"),
-    "AllowedHosts='localhost;127.0.0.1'\nSupabase__AnonKey='test-public-key'\n",
+    "AllowedHosts='localhost;127.0.0.1'\nSupabase__Url='https://example.supabase.co'\n",
   );
   const result = setup.run("docker-run.sh");
   assert.equal(result.status, 0, result.stderr);
   assert.ok(result.args.includes("AllowedHosts"));
-  assert.ok(result.args.includes("Supabase__AnonKey"));
+  assert.ok(result.args.includes("Supabase__Url"));
   assert.equal(result.args.includes("Clerk__SecretKey"), false);
 });
 

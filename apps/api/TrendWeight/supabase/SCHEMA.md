@@ -33,6 +33,6 @@ succeeds, then writes its replacement and clears the flag. Realtime progress is
 advisory broadcast data, separate from table access; check live Realtime policies
 when configuring a project.
 
-Backend configuration names are `Supabase__Url`, `Supabase__AnonKey` and
-`Supabase__ServiceKey`. The service key is secret. Never place it in a frontend
+Backend configuration names are `Supabase__Url` and `Supabase__ServiceKey`.
+Use an `sb_secret_...` key; legacy service-role JWTs also work. The service key is secret. Never place it in a frontend
 `VITE_*` variable, build argument, log, or client bundle.

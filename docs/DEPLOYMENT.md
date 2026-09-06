@@ -13,6 +13,10 @@ The image needs three public build variables:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
+`VITE_SUPABASE_ANON_KEY` accepts an `sb_publishable_...` key despite its historical
+name. Use an `sb_secret_...` key for backend runtime `Supabase__ServiceKey`.
+Legacy API keys also remain supported.
+
 These become part of the browser bundle. Changing them requires rebuilding the
 image; runtime environment variables cannot replace them. Never pass backend
 secrets as build arguments.

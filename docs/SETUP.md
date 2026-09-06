@@ -24,13 +24,13 @@ initialize a project.
 For a disposable local database, follow Supabase's [local development setup](https://supabase.com/docs/guides/local-development/overview).
 `supabase start` starts the local stack. `supabase db reset` rebuilds the local
 database and applies migrations; it deletes existing local data. Use the local
-API URL and anon/service-role keys for the variables below.
+API URL and publishable/secret keys for the variables below.
 
 For a hosted development project, apply the committed migrations through the
 Supabase CLI migration workflow after verifying the target project. Do not point
 new development environments at production or make ad hoc dashboard schema changes.
 
-Tables are accessed through the backend's service role. The browser uses the anon
+Tables are accessed through the backend's service role. The browser uses the publishable
 key for Supabase Realtime progress messages; it does not read application tables
 directly. Check Realtime configuration if measurements work but progress messages
 are absent.
@@ -54,13 +54,23 @@ spaces, or semicolons. Only source files you control.
 | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `VITE_CLERK_PUBLISHABLE_KEY`, `Clerk__Authority`, `Clerk__SecretKey` | Matching frontend/backend Clerk application                                                                |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`                        | Browser Realtime configuration                                                                             |
-| `Supabase__Url`, `Supabase__AnonKey`, `Supabase__ServiceKey`         | Backend database and legacy-auth access to the same Supabase project                                       |
+| `Supabase__Url`, `Supabase__ServiceKey`                              | Backend database and legacy-auth access to the same Supabase project                                       |
 | `Jwt__SigningKey`                                                    | Random secret for signing provider OAuth state; at least 32 bytes of key text, shared across API instances |
 | `Withings__ClientId`, `Withings__ClientSecret`                       | Required to connect a Withings account                                                                     |
 | `Fitbit__ClientId`, `Fitbit__ClientSecret`                           | Required to connect Fitbit when enabled                                                                    |
 | `Fitbit__Enabled`                                                    | Set `false` to disable Fitbit linking/sync while retaining history                                         |
 | `PublicBaseUrl`                                                      | Frontend origin; defaults to `http://localhost:5173` only in Development                                   |
 | `AllowedHosts`                                                       | Semicolon-separated actual API hostnames; local example: `'localhost;127.0.0.1'`                           |
+
+`VITE_SUPABASE_ANON_KEY` keeps its historical name but accepts the new
+`sb_publishable_...` key. `Supabase__ServiceKey` accepts an `sb_secret_...` key;
+legacy `anon`/`service_role` API keys remain supported. Changing the browser key
+requires rebuilding the frontend. Never put an `sb_secret_...` key in a browser variable.
+
+The backend does not use `Supabase__AnonKey`, `Supabase__JwtSecret`, or
+`LegacyDbConnectionString`; remove them from runtime configuration. Supabase's
+JWT signing keys are managed by Supabase and do not replace `Jwt__SigningKey`.
+See Supabase's [API-key migration guide](https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys).
 
 Generate your own OAuth-state signing secret, for example with `openssl rand -base64 32`,
 and save it privately as `Jwt__SigningKey`. It is separate from Clerk's signing keys.

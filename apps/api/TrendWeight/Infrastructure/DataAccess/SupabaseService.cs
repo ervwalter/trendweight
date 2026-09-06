@@ -30,7 +30,7 @@ public class SupabaseService : ISupabaseService
         {
             var options = new SupabaseOptions
             {
-                AutoRefreshToken = true,
+                AutoRefreshToken = false,
                 AutoConnectRealtime = false
             };
 
@@ -39,8 +39,26 @@ public class SupabaseService : ISupabaseService
             // Use GetAwaiter().GetResult() instead of Wait() to avoid deadlock
             client.InitializeAsync().GetAwaiter().GetResult();
 
+            // This SDK version otherwise uses every API key as a bearer JWT.
+            // Our database client has no user session: new secret keys belong
+            // only in apikey, while legacy service-role JWTs also use Bearer.
+            client.Postgrest.GetHeaders = GetApiHeaders;
+
             return client;
         });
+    }
+
+    private Dictionary<string, string> GetApiHeaders()
+    {
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["apikey"] = _config.ServiceKey
+        };
+        if (!_config.ServiceKey.StartsWith("sb_secret_", StringComparison.Ordinal))
+        {
+            headers["Authorization"] = $"Bearer {_config.ServiceKey}";
+        }
+        return headers;
     }
 
     public async Task<T?> GetByIdAsync<T>(Guid id) where T : BaseModel, new()
@@ -180,8 +198,10 @@ public class SupabaseService : ISupabaseService
             var url = $"{_config.Url}/auth/v1/admin/users/{userId}";
 
             using var request = new HttpRequestMessage(HttpMethod.Delete, url);
-            request.Headers.Add("apikey", _config.ServiceKey);
-            request.Headers.Add("Authorization", $"Bearer {_config.ServiceKey}");
+            foreach (var (name, value) in GetApiHeaders())
+            {
+                request.Headers.Add(name, value);
+            }
 
             using var httpClient = _httpClientFactory.CreateClient();
             using var response = await httpClient.SendAsync(request);

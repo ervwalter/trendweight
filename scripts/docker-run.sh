@@ -16,7 +16,6 @@ fi
 ENV_VARS=(
     # Supabase configuration
     "Supabase__Url"
-    "Supabase__AnonKey"
     "Supabase__ServiceKey"
     
     # Clerk authentication configuration
