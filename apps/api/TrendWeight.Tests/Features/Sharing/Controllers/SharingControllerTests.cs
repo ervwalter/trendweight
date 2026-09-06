@@ -58,18 +58,16 @@ public class SharingControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetSharingSettings_WithNoUserIdClaim_ReturnsUnauthorized()
+    public async Task GetSharingSettings_WithNoUserIdClaim_ThrowsUnauthorized()
     {
         // Arrange
         SetupAuthenticatedUser(null);
 
         // Act
-        var result = await _sut.GetSharingSettings();
+        var act = () => _sut.GetSharingSettings();
 
-        // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>()
-            .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("User ID not found");
+        // Assert - the error middleware turns this into a 401
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [Fact]
@@ -91,7 +89,7 @@ public class SharingControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetSharingSettings_WhenExceptionThrown_ReturnsInternalServerError()
+    public async Task GetSharingSettings_WhenExceptionThrown_PropagatesToErrorMiddleware()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -100,14 +98,10 @@ public class SharingControllerTests : TestBase
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
-        var result = await _sut.GetSharingSettings();
+        var act = () => _sut.GetSharingSettings();
 
         // Assert
-        result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(500);
-        var errorResult = result.Result as ObjectResult;
-        errorResult!.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("Internal server error");
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
     }
 
     #endregion
@@ -189,19 +183,18 @@ public class SharingControllerTests : TestBase
     }
 
     [Fact]
-    public async Task ToggleSharing_WithNoUserIdClaim_ReturnsUnauthorized()
+    public async Task ToggleSharing_WithNoUserIdClaim_ThrowsUnauthorized()
     {
         // Arrange
         SetupAuthenticatedUser(null);
         var request = new ToggleSharingRequest { Enabled = true };
 
         // Act
-        var result = await _sut.ToggleSharing(request);
+        var act = () => _sut.ToggleSharing(request);
 
-        // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>()
-            .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("User ID not found");
+        // Assert - the error middleware turns this into a 401
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        _profileServiceMock.Verify(x => x.UpdateAsync(It.IsAny<DbProfile>()), Times.Never);
     }
 
     [Fact]
@@ -224,7 +217,7 @@ public class SharingControllerTests : TestBase
     }
 
     [Fact]
-    public async Task ToggleSharing_WhenExceptionThrown_ReturnsInternalServerError()
+    public async Task ToggleSharing_WhenExceptionThrown_PropagatesToErrorMiddleware()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -234,14 +227,10 @@ public class SharingControllerTests : TestBase
         var request = new ToggleSharingRequest { Enabled = true };
 
         // Act
-        var result = await _sut.ToggleSharing(request);
+        var act = () => _sut.ToggleSharing(request);
 
         // Assert
-        result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(500);
-        var errorResult = result.Result as ObjectResult;
-        errorResult!.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("Internal server error");
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
     }
 
     [Fact]

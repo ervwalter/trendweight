@@ -1,18 +1,13 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Common.Models;
-using TrendWeight.Features.Profile.Models;
+using TrendWeight.Features.Common;
 using TrendWeight.Features.Sharing.Models;
-using TrendWeight.Infrastructure.DataAccess.Models;
 
 namespace TrendWeight.Features.Sharing;
 
-[ApiController]
 [Route("api/sharing")]
-[Authorize]
-public class SharingController : ControllerBase
+public class SharingController : BaseAuthController
 {
     private readonly IProfileService _profileService;
     private readonly ILogger<SharingController> _logger;
@@ -32,35 +27,18 @@ public class SharingController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<SharingResponse>> GetSharingSettings()
     {
-        try
+        var user = await _profileService.GetByIdAsync(UserId);
+        if (user == null)
         {
-            // Get user ID from authenticated user claim
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning("User ID not found in authenticated user claims");
-                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
-            }
-
-            // Get user from Supabase by UID
-            var user = await _profileService.GetByIdAsync(userId);
-            if (user == null)
-            {
-                _logger.LogWarning("User document not found for Supabase UID: {UserId}", userId);
-                return NotFound(new ErrorResponse { Error = "User not found" });
-            }
-
-            return Ok(new SharingResponse
-            {
-                SharingEnabled = user.Profile.SharingEnabled,
-                SharingToken = user.Profile.SharingToken
-            });
+            _logger.LogWarning("User document not found for Supabase UID: {UserId}", UserId);
+            return NotFound(new ErrorResponse { Error = "User not found" });
         }
-        catch (Exception ex)
+
+        return Ok(new SharingResponse
         {
-            _logger.LogError(ex, "Error getting sharing settings for user");
-            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
-        }
+            SharingEnabled = user.Profile.SharingEnabled,
+            SharingToken = user.Profile.SharingToken
+        });
     }
 
     /// <summary>
@@ -71,42 +49,23 @@ public class SharingController : ControllerBase
     [HttpPost("toggle")]
     public async Task<ActionResult<SharingResponse>> ToggleSharing([FromBody] ToggleSharingRequest request)
     {
-        try
+        var user = await _profileService.GetByIdAsync(UserId);
+        if (user == null)
         {
-            // Get user ID from authenticated user claim
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning("User ID not found in authenticated user claims");
-                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
-            }
-
-            // Get user from Supabase by UID
-            var user = await _profileService.GetByIdAsync(userId);
-            if (user == null)
-            {
-                _logger.LogWarning("User document not found for Supabase UID: {UserId}", userId);
-                return NotFound(new ErrorResponse { Error = "User not found" });
-            }
-
-            // Update only the sharing enabled flag
-            user.Profile.SharingEnabled = request.Enabled;
-            user.UpdatedAt = DateTime.UtcNow.ToString("o");
-
-            // Save the update
-            var updatedUser = await _profileService.UpdateAsync(user);
-
-            return Ok(new SharingResponse
-            {
-                SharingEnabled = updatedUser.Profile.SharingEnabled,
-                SharingToken = updatedUser.Profile.SharingToken
-            });
+            _logger.LogWarning("User document not found for Supabase UID: {UserId}", UserId);
+            return NotFound(new ErrorResponse { Error = "User not found" });
         }
-        catch (Exception ex)
+
+        // Update only the sharing enabled flag
+        user.Profile.SharingEnabled = request.Enabled;
+        user.UpdatedAt = DateTime.UtcNow.ToString("o");
+
+        var updatedUser = await _profileService.UpdateAsync(user);
+
+        return Ok(new SharingResponse
         {
-            _logger.LogError(ex, "Error toggling sharing for user");
-            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
-        }
+            SharingEnabled = updatedUser.Profile.SharingEnabled,
+            SharingToken = updatedUser.Profile.SharingToken
+        });
     }
-
 }
