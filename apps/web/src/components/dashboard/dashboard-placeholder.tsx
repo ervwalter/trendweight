@@ -1,8 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSyncProgress } from "./sync-progress/hooks";
 
 const DashboardPlaceholder = () => {
-  useSyncProgress(); // Auto-manages toast when sync is active
   return (
     <div className="relative">
       {/* Buttons placeholder */}

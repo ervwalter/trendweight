@@ -19,14 +19,12 @@ import { NoDataCard } from "./no-data-card";
 import ProviderSyncErrors from "./provider-sync-errors";
 import RecentReadings from "./recent-readings";
 import Stats from "./stats";
-import { useSyncProgress } from "./sync-progress/hooks";
 
 const Dashboard: FC = () => {
   const sharingCode = useSharingCode();
   const { embed } = useEmbedParams();
 
   const dashboardData = useComputeDashboardData();
-  useSyncProgress(); // Auto-manages toast when sync is active
 
   // Check if profile exists - if not, redirect to initial setup (skip for shared views)
   if (!sharingCode && dashboardData.profileError instanceof ApiError && dashboardData.profileError.status === 404) {

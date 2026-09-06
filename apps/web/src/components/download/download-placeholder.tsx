@@ -1,9 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSyncProgress } from "@/components/dashboard/sync-progress/hooks";
 
 const DownloadPlaceholder = () => {
-  useSyncProgress(); // Auto-manages toast when sync is active
-
   return (
     <div className="space-y-6">
       {/* Page title */}
