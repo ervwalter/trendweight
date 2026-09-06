@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { useDeleteManualReading, useSaveManualReading } from "@/lib/api/mutations";
 import { useLatestReading, useManualReadings, useProfile } from "@/lib/api/queries";
 import type { ManualReading } from "@/lib/api/types";
-import { formatWeight } from "@/lib/core/numbers";
+import { formatPercent, formatWeight } from "@/lib/core/numbers";
 import { fromKg, toKg } from "@/lib/core/weight-units";
 import { useToast } from "@/lib/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -88,9 +88,7 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
   const lastManualWeight = readings[0] ? { date: readings[0].date, weightKg: readings[0].weight } : undefined;
   const lastManualFat = readings.flatMap((r) => (r.fatRatio !== undefined && r.fatRatio !== null ? [{ date: r.date, fatRatio: r.fatRatio }] : []))[0];
   const lastReading = !isEdit ? newerOf(latestAnySource.weight, lastManualWeight) : undefined;
-  const lastWeightDisplay = lastReading ? (Math.round(fromKg(lastReading.weightKg, useMetric) * 10) / 10).toString() : undefined;
   const lastFat = !isEdit ? newerOf(latestAnySource.fat, lastManualFat) : undefined;
-  const lastFatDisplay = lastFat ? (Math.round(lastFat.fatRatio * 1000) / 10).toString() : undefined;
 
   const onSubmit = async (values: ManualReadingFormValues) => {
     const reading: ManualReading = {
@@ -146,7 +144,6 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
             inputMode="decimal"
             enterKeyHint="done"
             autoComplete="off"
-            placeholder={lastWeightDisplay}
             className="pr-12 text-lg font-semibold tabular-nums md:text-lg"
             {...register("weight", { required: "Weight is required", validate: validateWeight })}
             aria-invalid={!!errors.weight}
@@ -190,7 +187,6 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
             inputMode="decimal"
             enterKeyHint="done"
             autoComplete="off"
-            placeholder={lastFatDisplay}
             className="pr-10 tabular-nums"
             {...register("fatPercent", { validate: validateFatPercent })}
             aria-invalid={!!errors.fatPercent}
@@ -198,6 +194,12 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
           <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm">%</span>
         </div>
         {errors.fatPercent && <p className="text-destructive mt-1 text-sm">{errors.fatPercent.message}</p>}
+        {lastFat && !existingForDate && (
+          <p className="text-muted-foreground mt-1 text-sm" suppressHydrationWarning>
+            Last body fat: {formatPercent(lastFat.fatRatio)} &middot; {lastEntryDateFormatter.format(convert(LocalDate.parse(lastFat.date)).toDate())} (
+            {describeDaysAgo(lastFat.date)})
+          </p>
+        )}
       </div>
 
       {existingForDate && (

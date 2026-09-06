@@ -159,19 +159,22 @@ describe("ManualReadingForm", () => {
     expect((mockSaveMutateAsync.mock.calls[0][0] as ManualReading).weight).toBe(82.5);
   });
 
-  it("has no weight or body fat placeholder when no reading from any source is known", () => {
+  it("shows no last-reading references when no reading from any source is known", () => {
     render(<ManualReadingForm />);
 
-    expect(screen.getByLabelText(/Weight/)).not.toHaveAttribute("placeholder");
-    expect(screen.getByLabelText(/Body Fat/)).not.toHaveAttribute("placeholder");
+    expect(screen.queryByText(/Last weight:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Last body fat:/)).not.toBeInTheDocument();
   });
 
-  it("shows the most recent entry as a reference and uses it as the placeholder", () => {
-    mockReadings = [{ date: LocalDate.now().minusDays(1).toString(), weight: 84.0 }];
+  it("shows the most recent entry as a reference below the field, never as a placeholder", () => {
+    mockReadings = [{ date: LocalDate.now().minusDays(1).toString(), weight: 84.0, fatRatio: 0.225 }];
     render(<ManualReadingForm />);
 
-    expect(screen.getByText(/Last weight:/)).toHaveTextContent(/yesterday/);
-    expect(screen.getByLabelText(/Weight/)).toHaveAttribute("placeholder", "185.2");
+    expect(screen.getByText(/Last weight:/)).toHaveTextContent(/185\.2.*yesterday/);
+    expect(screen.getByText(/Last body fat:/)).toHaveTextContent(/22\.5%.*yesterday/);
+    // The fields must read as empty until the user types — no placeholder that looks like a value
+    expect(screen.getByLabelText(/Weight/)).not.toHaveAttribute("placeholder");
+    expect(screen.getByLabelText(/Body Fat/)).not.toHaveAttribute("placeholder");
   });
 
   it("uses a scale reading as the reference when it is newer than the manual log", () => {
@@ -179,16 +182,14 @@ describe("ManualReadingForm", () => {
     mockLatestReading = { weight: { date: LocalDate.now().minusDays(1).toString(), weightKg: 82.0 } };
     render(<ManualReadingForm />);
 
-    expect(screen.getByText(/Last weight:/)).toHaveTextContent(/yesterday/);
-    expect(screen.getByLabelText(/Weight/)).toHaveAttribute("placeholder", "180.8");
+    expect(screen.getByText(/Last weight:/)).toHaveTextContent(/180\.8.*yesterday/);
   });
 
   it("uses a scale reading as the reference when the manual log is empty", () => {
     mockLatestReading = { weight: { date: LocalDate.now().minusDays(2).toString(), weightKg: 82.0 } };
     render(<ManualReadingForm />);
 
-    expect(screen.getByText(/Last weight:/)).toHaveTextContent(/2 days ago/);
-    expect(screen.getByLabelText(/Weight/)).toHaveAttribute("placeholder", "180.8");
+    expect(screen.getByText(/Last weight:/)).toHaveTextContent(/180\.8.*2 days ago/);
   });
 
   it("prefers the manual log when the dates tie, since it refreshes first after a save", () => {
@@ -197,8 +198,8 @@ describe("ManualReadingForm", () => {
     mockLatestReading = { weight: { date, weightKg: 82.0 }, fat: { date, fatRatio: 0.31 } };
     render(<ManualReadingForm />);
 
-    expect(screen.getByLabelText(/Weight/)).toHaveAttribute("placeholder", "185.2");
-    expect(screen.getByLabelText(/Body Fat/)).toHaveAttribute("placeholder", "22.5");
+    expect(screen.getByText(/Last weight:/)).toHaveTextContent(/185\.2/);
+    expect(screen.getByText(/Last body fat:/)).toHaveTextContent(/22\.5%/);
   });
 
   it("prefers the manual log when it is newer than the latest scale reading", () => {
@@ -206,10 +207,10 @@ describe("ManualReadingForm", () => {
     mockLatestReading = { weight: { date: LocalDate.now().minusDays(5).toString(), weightKg: 82.0 } };
     render(<ManualReadingForm />);
 
-    expect(screen.getByLabelText(/Weight/)).toHaveAttribute("placeholder", "185.2");
+    expect(screen.getByText(/Last weight:/)).toHaveTextContent(/185\.2/);
   });
 
-  it("uses the most recent body fat from any source as the placeholder, independent of the weight", () => {
+  it("uses the most recent body fat from any source as the reference, independent of the weight", () => {
     // Newest weight is a manual entry without fat; the fat reference comes from an older scale reading
     mockReadings = [{ date: LocalDate.now().minusDays(1).toString(), weight: 84.0 }];
     mockLatestReading = {
@@ -218,8 +219,8 @@ describe("ManualReadingForm", () => {
     };
     render(<ManualReadingForm />);
 
-    expect(screen.getByLabelText(/Weight/)).toHaveAttribute("placeholder", "185.2");
-    expect(screen.getByLabelText(/Body Fat/)).toHaveAttribute("placeholder", "31");
+    expect(screen.getByText(/Last weight:/)).toHaveTextContent(/185\.2.*yesterday/);
+    expect(screen.getByText(/Last body fat:/)).toHaveTextContent(/31\.0%.*3 days ago/);
   });
 
   it("prefers the manual log's body fat when it is newer", () => {
@@ -227,7 +228,7 @@ describe("ManualReadingForm", () => {
     mockLatestReading = { fat: { date: LocalDate.now().minusDays(5).toString(), fatRatio: 0.31 } };
     render(<ManualReadingForm />);
 
-    expect(screen.getByLabelText(/Body Fat/)).toHaveAttribute("placeholder", "22.5");
+    expect(screen.getByText(/Last body fat:/)).toHaveTextContent(/22\.5%/);
   });
 
   it("describes how long ago the last entry was", () => {
@@ -237,23 +238,25 @@ describe("ManualReadingForm", () => {
     expect(screen.getByText(/Last weight:/)).toHaveTextContent(/3 weeks ago/);
   });
 
-  it("hides the last-weight reference in edit mode", () => {
-    const initialReading: ManualReading = { date: "2024-05-01", weight: 81.8 };
+  it("hides the last-reading references in edit mode", () => {
+    const initialReading: ManualReading = { date: "2024-05-01", weight: 81.8, fatRatio: 0.225 };
     mockReadings = [initialReading];
-    mockLatestReading = { weight: { date: "2024-05-01", weightKg: 81.8 } };
+    mockLatestReading = { weight: { date: "2024-05-01", weightKg: 81.8 }, fat: { date: "2024-05-01", fatRatio: 0.225 } };
     render(<ManualReadingForm initialReading={initialReading} />);
 
     expect(screen.queryByText(/Last weight:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Last body fat:/)).not.toBeInTheDocument();
   });
 
   it("shows a replace hint and Replace label when the date already has an entry", async () => {
-    mockReadings = [{ date: LocalDate.now().toString(), weight: 84.0 }];
+    mockReadings = [{ date: LocalDate.now().toString(), weight: 84.0, fatRatio: 0.225 }];
     render(<ManualReadingForm />);
 
     expect(await screen.findByText(/Replaces today's entry/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Replace Entry" })).toBeInTheDocument();
-    // The replace hint supersedes the last-weight reference
+    // The replace hint supersedes the last-reading references
     expect(screen.queryByText(/Last weight:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Last body fat:/)).not.toBeInTheDocument();
   });
 
   it("prefills values in edit mode and deletes the original when the date changes", async () => {
