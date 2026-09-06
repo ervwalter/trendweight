@@ -54,6 +54,21 @@ public class SourceDataServiceTests : TestBase
     }
 
     [Fact]
+    public async Task UpdateSourceDataAsync_ReplacementClearsFullSyncFlagInSameWrite()
+    {
+        var userId = Guid.NewGuid();
+        var existing = new DbSourceData { Uid = userId, Provider = "withings", ForceFullSync = true };
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(
+            It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>())).ReturnsAsync(new List<DbSourceData> { existing });
+        var replacement = CreateTestSourceData("withings");
+
+        await _sut.UpdateSourceDataAsync(userId, new() { replacement });
+
+        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbSourceData>(d =>
+            !d.ForceFullSync && d.Measurements == replacement.Measurements)), Times.Once);
+    }
+
+    [Fact]
     public async Task UpdateSourceDataAsync_WithExistingProviderAndNoChanges_UpdatesTimestampOnly()
     {
         // Arrange

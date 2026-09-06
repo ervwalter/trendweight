@@ -60,17 +60,13 @@ public class MeasurementSyncService : IMeasurementSyncService
             // Check each provider's last sync time and resync flag
             foreach (var provider in activeProviders)
             {
-                // Check force_full_sync flag - if set, clear data to trigger full resync
+                // A full refresh must retain the last good data until the provider
+                // succeeds. The flag is cleared with the replacement document write.
                 var forceFullSync = await _sourceDataService.GetForceFullSyncAsync(userId, provider);
-                if (forceFullSync)
-                {
-                    _logger.LogInformation("Force full sync set for user {UserId} provider {Provider}, clearing data", userId, provider);
-                    await ClearProviderDataAsync(userId, provider);
-                }
 
                 // Check last sync time for this provider
                 var lastSync = await _sourceDataService.GetLastSyncTimeAsync(userId, provider);
-                var needsRefresh = lastSync == null || (now - lastSync.Value).TotalSeconds > _cacheDurationSeconds;
+                var needsRefresh = forceFullSync || lastSync == null || (now - lastSync.Value).TotalSeconds > _cacheDurationSeconds;
 
                 if (lastSync != null)
                 {
@@ -84,7 +80,7 @@ public class MeasurementSyncService : IMeasurementSyncService
                         provider, lastSync?.ToString("o") ?? "never");
 
                     // Add refresh task
-                    refreshTasks.Add(RefreshProviderAsync(userId, provider, useMetric));
+                    refreshTasks.Add(RefreshProviderAsync(userId, provider, useMetric, forceFullSync));
                 }
                 else
                 {
@@ -148,7 +144,7 @@ public class MeasurementSyncService : IMeasurementSyncService
         }
     }
 
-    private async Task<ProviderSyncResult> RefreshProviderAsync(Guid userId, string provider, bool useMetric)
+    private async Task<ProviderSyncResult> RefreshProviderAsync(Guid userId, string provider, bool useMetric, bool forceFullSync)
     {
         try
         {
@@ -168,7 +164,7 @@ public class MeasurementSyncService : IMeasurementSyncService
             DateTime? startDate = null;
             // For regular refresh, fetch from 90 days before last sync (with 2-day buffer to avoid boundary issues)
             var lastSyncTime = await _sourceDataService.GetLastSyncTimeAsync(userId, provider);
-            if (lastSyncTime.HasValue)
+            if (lastSyncTime.HasValue && !forceFullSync)
             {
                 startDate = lastSyncTime.Value.AddDays(-90);
                 _logger.LogDebug("Fetching {Provider} measurements from {StartDate} (90 days before last sync with 2-day buffer)",

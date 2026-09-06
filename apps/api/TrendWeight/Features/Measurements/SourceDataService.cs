@@ -89,6 +89,7 @@ public class SourceDataService : ISourceDataService
             // Update existing record with new data
             dbSourceData.Measurements = sourceData.Measurements ?? new List<RawMeasurement>();
             dbSourceData.LastSync = sourceData.LastUpdate.ToUniversalTime().ToString("o");
+            dbSourceData.ForceFullSync = false;
             dbSourceData.UpdatedAt = DateTime.UtcNow.ToString("o");
 
             await _supabaseService.UpdateAsync(dbSourceData);

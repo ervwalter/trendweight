@@ -707,129 +707,33 @@ public class MeasurementSyncServiceTests : TestBase
     #endregion
 
     #region ClearProviderDataAsync Tests
-    // 
-    //     [Fact]
-    //     public async Task ClearProviderDataAsync_WithLegacyProvider_ReturnsSuccess()
-    //     {
-    //         // Arrange
-    //         var userId = Guid.NewGuid();
-    //         var provider = "legacy";
-    // 
-    //         // Mock legacy service
-    //         var mockLegacyService = new Mock<IProviderService>();
-    //         mockLegacyService.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
-    //             .ReturnsAsync(new ProviderSyncResult
-    //             {
-    //                 Provider = "legacy",
-    //                 Success = true,
-    //                 Message = "Legacy data does not require sync"
-    //             });
-    // 
-    //         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
-    //             .Returns(mockLegacyService.Object);
-    // 
-    //         // Setup source data service
-    //         _sourceDataServiceMock.Setup(x => x.ClearSourceDataAsync(userId, provider))
-    //             .Returns(Task.CompletedTask);
-    // 
-    //         // Act
-    //         var result = await _sut.ClearProviderDataAsync(userId, provider);
-    // 
-    //         // Assert
-    //         result.Should().NotBeNull();
-    //         result.Provider.Should().Be("legacy");
-    //         result.Success.Should().BeTrue();
-    //         result.Message.Should().Be("Legacy data does not require sync");
-    // 
-    //         // Verify operations were performed in correct order
-    //         _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(userId, provider), Times.Once);
-    //         mockLegacyService.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once);
-    //     }
-    // 
-    //     [Fact]
-    //     public async Task ClearProviderDataAsync_WithValidProvider_ClearsDataAndRefreshes()
-    //     {
-    //         // Arrange
-    //         var userId = Guid.NewGuid();
-    //         var provider = "withings";
-    //         var refreshedMeasurements = new List<RawMeasurement>
-    //         {
-    //             CreateTestRawMeasurement()
-    //         };
-    // 
-    //         var mockProviderService = new Mock<IProviderService>();
-    //         mockProviderService.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
-    //             .ReturnsAsync(new ProviderSyncResult
-    //             {
-    //                 Provider = provider,
-    //                 Success = true,
-    //                 Measurements = refreshedMeasurements
-    //             });
-    // 
-    //         _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider))
-    //             .Returns(mockProviderService.Object);
-    // 
-    //         // Act
-    //         var result = await _sut.ClearProviderDataAsync(userId, provider);
-    // 
-    //         // Assert
-    //         result.Should().NotBeNull();
-    //         result.Provider.Should().Be(provider);
-    //         result.Success.Should().BeTrue();
-    //         result.Measurements.Should().NotBeNull();
-    //         result.Measurements!.Should().HaveCount(1);
-    // 
-    //         // Verify clear and refresh sequence
-    //         _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(userId, provider), Times.Once);
-    //         mockProviderService.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once);
-    //         _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()), Times.Once);
-    //     }
-    // 
-    //     [Fact]
-    //     public async Task ClearProviderDataAsync_WithUnknownProvider_ReturnsFailure()
-    //     {
-    //         // Arrange
-    //         var userId = Guid.NewGuid();
-    //         var provider = "unknown";
-    // 
-    //         _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider))
-    //             .Returns((IProviderService?)null);
-    // 
-    //         // Act
-    //         var result = await _sut.ClearProviderDataAsync(userId, provider);
-    // 
-    //         // Assert
-    //         result.Should().NotBeNull();
-    //         result.Provider.Should().Be(provider);
-    //         result.Success.Should().BeFalse();
-    //         result.Error.Should().Be(ProviderSyncError.Unknown);
-    //         result.Message.Should().Be("Provider service not found for unknown");
-    // 
-    //         // Verify clear was still called
-    //         _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(userId, provider), Times.Once);
-    //     }
-    // 
-    //     [Fact]
-    //     public async Task ClearProviderDataAsync_WithException_ReturnsFailureResult()
-    //     {
-    //         // Arrange
-    //         var userId = Guid.NewGuid();
-    //         var provider = "withings";
-    // 
-    //         _sourceDataServiceMock.Setup(x => x.ClearSourceDataAsync(userId, provider))
-    //             .ThrowsAsync(new InvalidOperationException("Database error"));
-    // 
-    //         // Act
-    //         var result = await _sut.ClearProviderDataAsync(userId, provider);
-    // 
-    //         // Assert
-    //         result.Should().NotBeNull();
-    //         result.Provider.Should().Be(provider);
-    //         result.Success.Should().BeFalse();
-    //         result.Error.Should().Be(ProviderSyncError.Unknown);
-    //         result.Message.Should().Be("Unexpected error resyncing withings data");
-    //     }
-    // 
+
+    [Fact]
+    public async Task ClearProviderDataAsync_DeletesOnlyRequestedProviderData()
+    {
+        var userId = Guid.NewGuid();
+
+        var result = await _sut.ClearProviderDataAsync(userId, "withings");
+
+        result.Success.Should().BeTrue();
+        result.Provider.Should().Be("withings");
+        _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(userId, "withings"), Times.Once);
+        _providerIntegrationServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ClearProviderDataAsync_DatabaseFailureReturnsFailure()
+    {
+        var userId = Guid.NewGuid();
+        _sourceDataServiceMock.Setup(x => x.ClearSourceDataAsync(userId, "withings"))
+            .ThrowsAsync(new InvalidOperationException("Database error"));
+
+        var result = await _sut.ClearProviderDataAsync(userId, "withings");
+
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(ProviderSyncError.Unknown);
+    }
+
     #endregion
 
     #region Data Merging Tests
@@ -997,7 +901,7 @@ public class MeasurementSyncServiceTests : TestBase
     }
 
     [Fact]
-    public async Task GetMeasurementsForUserAsync_WithForceFullSyncFlag_ClearsDataAndPerformsFullSync()
+    public async Task GetMeasurementsForUserAsync_WithForceFullSyncFlag_ReplacesDataOnlyAfterSuccessfulFullSync()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -1027,7 +931,7 @@ public class MeasurementSyncServiceTests : TestBase
         };
 
         var providerService = new Mock<IProviderService>();
-        // Verify that startDate is null (full sync) after clearing data
+        // A full sync must ignore the last-sync timestamp without clearing stored data.
         providerService.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
             .ReturnsAsync(new ProviderSyncResult
             {
@@ -1043,30 +947,50 @@ public class MeasurementSyncServiceTests : TestBase
         _sourceDataServiceMock.Setup(x => x.GetForceFullSyncAsync(userId, provider))
             .ReturnsAsync(true);
 
-        // Mock GetLastSyncTimeAsync to return null (simulating cleared data after ClearProviderDataAsync is called)
+        // Even freshly synced data must refresh when the full-sync flag is set.
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
-            .ReturnsAsync((DateTime?)null);
+            .ReturnsAsync(DateTime.UtcNow);
 
         _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
             .ReturnsAsync(existingSourceData);
-
-        // Mock ClearSourceDataAsync to simulate data being cleared
-        _sourceDataServiceMock.Setup(x => x.ClearSourceDataAsync(userId, provider))
-            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _sut.GetMeasurementsForUserAsync(userId, new List<string> { provider }, true);
 
         // Assert
-        // Verify ClearProviderDataAsync was called (this is called on MeasurementSyncService, not the mock)
-        // We verify this indirectly by checking that a full sync was performed (startDate = null)
         providerService.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once,
             "Should perform full sync (startDate = null) after force_full_sync flag is detected");
 
-        // Verify data was updated
+        _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(userId, provider), Times.Never);
+        // The fetched array replaces the old array, without retaining deleted provider readings.
         _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
             userId,
-            It.Is<List<SourceData>>(sd => sd.Count == 1 && sd[0].Source == provider)), Times.Once);
+            It.Is<List<SourceData>>(sd => VerifyFullSyncReplacement(sd, provider, newMeasurements))), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetMeasurementsForUserAsync_FailedForcedSyncPreservesLastGoodData()
+    {
+        var userId = Guid.NewGuid();
+        var readings = new List<SourceData>
+        {
+            new() { Source = "fitbit", Measurements = new() { CreateTestRawMeasurement("2024-01-01", 80m) } }
+        };
+        var providerService = new Mock<IProviderService>();
+        providerService.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
+            .ReturnsAsync(new ProviderSyncResult { Provider = "fitbit", Success = false });
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("fitbit")).Returns(providerService.Object);
+        _sourceDataServiceMock.Setup(x => x.GetForceFullSyncAsync(userId, "fitbit")).ReturnsAsync(true);
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "fitbit")).ReturnsAsync(DateTime.UtcNow);
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, It.IsAny<List<string>>())).ReturnsAsync(readings);
+
+        var result = await _sut.GetMeasurementsForUserAsync(userId, new() { "fitbit" }, true);
+
+        result.Data.Should().BeSameAs(readings);
+        result.ProviderStatus["fitbit"].Success.Should().BeFalse();
+        providerService.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once);
+        _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()), Times.Never);
     }
 
     [Fact]
