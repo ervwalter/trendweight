@@ -338,7 +338,7 @@ public class ProvidersControllerTests : TestBase
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("Invalid provider. Must be 'withings' or 'fitbit'");
+            .Which.Error.Should().Be("Invalid provider. Must be 'withings', 'fitbit', or 'legacy'");
     }
 
     [Fact]

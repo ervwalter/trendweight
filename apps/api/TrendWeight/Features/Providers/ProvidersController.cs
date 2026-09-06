@@ -129,7 +129,7 @@ public class ProvidersController : ControllerBase
             provider = provider.ToLowerInvariant();
             if (provider != "withings" && provider != "fitbit" && provider != "legacy")
             {
-                return BadRequest(new ErrorResponse { Error = "Invalid provider. Must be 'withings' or 'fitbit'" });
+                return BadRequest(new ErrorResponse { Error = "Invalid provider. Must be 'withings', 'fitbit', or 'legacy'" });
             }
 
             // Get user ID from authenticated user claim
