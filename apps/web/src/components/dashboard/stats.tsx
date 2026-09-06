@@ -2,6 +2,7 @@ import { Heading } from "@/components/common/heading";
 import { formatGoalDate } from "@/lib/core/dates";
 import type { Measurement } from "@/lib/core/interfaces";
 import { formatInteger, formatPlannedWeight, formatWeight } from "@/lib/core/numbers";
+import { KG_TO_LBS } from "@/lib/core/weight-units";
 import { useDashboardData } from "@/lib/dashboard/hooks";
 import { ChronoUnit, LocalDate, Period } from "@js-joda/core";
 
@@ -21,9 +22,9 @@ const Stats = () => {
   const dateOfGoal = calculateDateOfGoal(weightSlope, lastMeasurement, goalWeight, distanceToGoal);
 
   // convert everything to lbs for calorie calculations
-  const intendedChangePerWeek = (plannedPoundsPerWeek ?? 0) * (useMetric ? 2.20462262 : 1);
+  const intendedChangePerWeek = (plannedPoundsPerWeek ?? 0) * (useMetric ? KG_TO_LBS : 1);
   const intendedCaloriesPerWeek = intendedChangePerWeek * 3500;
-  const actualChangePerWeek = gainPerWeek * (useMetric ? 2.20462262 : 1);
+  const actualChangePerWeek = gainPerWeek * (useMetric ? KG_TO_LBS : 1);
   const actualCaloriesPerWeek = actualChangePerWeek * 3500;
 
   const caloriesVsPlan = (actualCaloriesPerWeek - intendedCaloriesPerWeek) / 7;

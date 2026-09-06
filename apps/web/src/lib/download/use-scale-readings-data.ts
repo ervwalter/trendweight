@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { LocalDate, LocalTime } from "@js-joda/core";
 import { useDownloadData, useProfile } from "@/lib/api/queries";
 import type { ScaleReading, ViewType } from "@/components/download/types";
+import { KG_TO_LBS } from "@/lib/core/weight-units";
 import { convertMeasurements } from "@/lib/dashboard/computations/conversion";
 
 export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolean) {
@@ -32,7 +33,7 @@ export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolea
       const providerData = apiSourceData?.find((d) => d.source === viewType);
       if (providerData?.measurements) {
         // Apply conversion factor for non-metric users
-        const conversionFactor = profile?.useMetric ? 1 : 2.20462262;
+        const conversionFactor = profile?.useMetric ? 1 : KG_TO_LBS;
         data = providerData.measurements.map((m) => ({
           date: LocalDate.parse(m.date),
           // Manual entries are date-only; their stored time is a placeholder
