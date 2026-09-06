@@ -57,6 +57,20 @@ describe("AdvancedSection trend algorithm setting", () => {
     expect(screen.queryByText("Holt (standard)")).not.toBeInTheDocument();
   });
 
+  it("associates each switch with its visible label so the label toggles it", () => {
+    render(<TestWrapper defaultValues={{ trendAlgorithm: "default", showCalories: false }} />);
+
+    const calories = screen.getByLabelText("Show calorie calculations");
+    const alternate = screen.getByLabelText("Use an alternate trend algorithm");
+    expect(calories).toHaveAttribute("role", "switch");
+    expect(alternate).toHaveAttribute("role", "switch");
+
+    fireEvent.click(screen.getByText("Use an alternate trend algorithm"));
+
+    expect(alternate).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText("Holt (standard)")).toBeInTheDocument();
+  });
+
   it("reveals the dropdown preset to Holt (standard) when toggled on", () => {
     render(<TestWrapper defaultValues={{ trendAlgorithm: "default" }} />);
 

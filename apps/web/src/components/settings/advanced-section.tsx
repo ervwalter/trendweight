@@ -87,7 +87,7 @@ export function AdvancedSection({ control, watch, setValue }: AdvancedSectionPro
             render={({ field }) => (
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">
-                  <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
+                  <Switch id={field.name} checked={field.value ?? false} onCheckedChange={field.onChange} />
                 </div>
                 <label htmlFor={field.name} className="cursor-pointer">
                   <div className="text-foreground/80 text-sm font-medium">Show calorie calculations</div>
@@ -102,13 +102,14 @@ export function AdvancedSection({ control, watch, setValue }: AdvancedSectionPro
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
               <Switch
+                id="alternateTrendAlgorithm"
                 checked={alternateTrendOn}
                 onCheckedChange={(checked) => {
                   setValue("trendAlgorithm", checked ? "holt" : TREND_ALGORITHM_DEFAULT, { shouldDirty: true });
                 }}
               />
             </div>
-            <label className="cursor-pointer">
+            <label htmlFor="alternateTrendAlgorithm" className="cursor-pointer">
               <div className="text-foreground/80 text-sm font-medium">Use an alternate trend algorithm</div>
             </label>
           </div>

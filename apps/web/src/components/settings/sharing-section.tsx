@@ -52,8 +52,10 @@ function SharingSectionContent() {
       </CardHeader>
       <CardContent>
         <div className="mb-6 flex items-center space-x-3">
-          <Switch checked={sharingData?.sharingEnabled ?? false} onCheckedChange={handleToggleSharing} disabled={toggleSharing.isPending} />
-          <label className="text-sm font-medium">Enable sharing</label>
+          <Switch id="sharingEnabled" checked={sharingData?.sharingEnabled ?? false} onCheckedChange={handleToggleSharing} disabled={toggleSharing.isPending} />
+          <label htmlFor="sharingEnabled" className="text-sm font-medium">
+            Enable sharing
+          </label>
           {toggleSharing.isPending && (
             <svg className="text-muted-foreground h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
