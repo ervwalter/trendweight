@@ -2,6 +2,7 @@ import { useState, Suspense } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/common/copy-button";
 import { useSharingSettings } from "@/lib/api/queries";
 import { useToggleSharing, useGenerateShareToken } from "@/lib/api/mutations";
 import { Switch } from "@/components/ui/switch";
@@ -9,24 +10,11 @@ import { Input } from "@/components/ui/input";
 
 function SharingSectionContent() {
   const [showNewUrlConfirm, setShowNewUrlConfirm] = useState(false);
-  const [copied, setCopied] = useState(false);
   const { data: sharingData } = useSharingSettings();
   const toggleSharing = useToggleSharing();
   const generateToken = useGenerateShareToken();
 
   const shareUrl = sharingData?.sharingToken ? `${window.location.origin}/u/${sharingData.sharingToken}` : null;
-
-  const handleCopy = async () => {
-    if (shareUrl) {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (err) {
-        console.error("Failed to copy:", err);
-      }
-    }
-  };
 
   const handleToggleSharing = (enabled: boolean) => {
     toggleSharing.mutate(enabled);
@@ -79,30 +67,7 @@ function SharingSectionContent() {
                 onClick={(e) => sharingData?.sharingEnabled && e.currentTarget.select()}
                 disabled={!sharingData?.sharingEnabled}
               />
-              <Button
-                type="button"
-                onClick={handleCopy}
-                variant="ghost"
-                size="sm"
-                className="absolute top-1/2 right-2 -translate-y-1/2 p-1"
-                title={copied ? "Copied!" : "Copy to clipboard"}
-                disabled={!sharingData?.sharingEnabled}
-              >
-                {copied ? (
-                  <svg className="text-success h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                )}
-              </Button>
+              <CopyButton value={shareUrl} disabled={!sharingData?.sharingEnabled} />
             </div>
             <Button type="button" onClick={() => setShowNewUrlConfirm(true)} variant="outline" size="sm" disabled={generateToken.isPending}>
               {generateToken.isPending ? "Generating..." : "Get a New URL"}
