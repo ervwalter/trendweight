@@ -1,3 +1,4 @@
+import { ChronoUnit, LocalDate } from "@js-joda/core";
 import type { ApiComputedMeasurement, MeasurementsResponse, ProviderSyncStatus } from "@/lib/api/types";
 import type { ProfileData } from "@/lib/core/interfaces";
 
@@ -2509,25 +2510,23 @@ export const demoProviderStatus: Record<string, ProviderSyncStatus> = {
   },
 };
 
+// First and last dates in the original demo data
+const ORIGINAL_START_DATE = LocalDate.parse("2011-03-23");
+const ORIGINAL_LAST_DATE = LocalDate.parse("2011-11-03");
+
+// Number of calendar days to add so the demo data ends on the user's local "today".
+// Pure calendar arithmetic (no Date/UTC round trips) so DST changes between the 2011
+// window and the target window cannot duplicate or drop a day.
+const daysToShift = () => ORIGINAL_LAST_DATE.until(LocalDate.now(), ChronoUnit.DAYS);
+
 // Function to get demo data with current dates
 export function getDemoData(): MeasurementsResponse {
-  const today = new Date();
+  const daysDiff = daysToShift();
 
-  // Calculate the offset between the original last date and today
-  const originalLastDate = new Date("2011-11-03"); // Last date from original demo data
-  const daysDiff = Math.floor((today.getTime() - originalLastDate.getTime()) / (1000 * 60 * 60 * 24));
-
-  // Adjust computed measurement dates by adding the offset
-  const computedMeasurementsWithAdjustedDates = preComputedDemoMeasurements.map((measurement) => {
-    const originalDate = new Date(measurement.date);
-    const adjustedDate = new Date(originalDate);
-    adjustedDate.setDate(adjustedDate.getDate() + daysDiff);
-
-    return {
-      ...measurement,
-      date: adjustedDate.toISOString().split("T")[0],
-    };
-  });
+  const computedMeasurementsWithAdjustedDates = preComputedDemoMeasurements.map((measurement) => ({
+    ...measurement,
+    date: LocalDate.parse(measurement.date).plusDays(daysDiff).toString(),
+  }));
 
   return {
     computedMeasurements: computedMeasurementsWithAdjustedDates,
@@ -2538,18 +2537,8 @@ export function getDemoData(): MeasurementsResponse {
 
 // Function to get demo profile with adjusted dates
 export function getDemoProfile(): ProfileData {
-  // Calculate the offset to adjust the goal start date
-  const today = new Date();
-  const originalLastDate = new Date("2011-11-03"); // Last date from original demo data
-  const daysDiff = Math.floor((today.getTime() - originalLastDate.getTime()) / (1000 * 60 * 60 * 24));
-
-  // Adjust the original start date from the data
-  const originalStartDate = new Date("2011-03-23"); // First date from original demo data
-  const adjustedStartDate = new Date(originalStartDate);
-  adjustedStartDate.setDate(adjustedStartDate.getDate() + daysDiff);
-
   return {
     ...demoProfile,
-    goalStart: adjustedStartDate.toISOString().split("T")[0],
+    goalStart: ORIGINAL_START_DATE.plusDays(daysToShift()).toString(),
   };
 }
