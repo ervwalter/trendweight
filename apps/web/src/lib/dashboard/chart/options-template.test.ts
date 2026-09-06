@@ -165,7 +165,7 @@ describe("chartOptionsTemplate", () => {
       expect(vi.mocked(formatNumber)).toHaveBeenCalledWith(75.2);
     });
 
-    it("should skip ohlc series in tooltip", () => {
+    it("should skip hlc (sinker) series in tooltip", () => {
       const options = chartOptionsTemplate();
       const formatter = options.tooltip?.formatter;
 
@@ -173,7 +173,7 @@ describe("chartOptionsTemplate", () => {
         x: 1642339200000,
         points: [
           {
-            series: { name: "Weight Range", type: "ohlc" },
+            series: { name: "Weight Range", type: "hlc" },
             color: "#cccccc",
             y: 75.5,
           },

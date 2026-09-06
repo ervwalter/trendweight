@@ -70,7 +70,7 @@ const chartOptionsTemplate = (): Highstock.Options => ({
       try {
         return this.points?.reduce(
           (s, point) => {
-            if (point.series.type === "ohlc") {
+            if (point.series.type === "hlc") {
               return s;
             }
             return s + `<br/><span style="color: ${point.color};">${point.series.name}:</span> <b>${formatNumber(point.y as number)}</b>`;
