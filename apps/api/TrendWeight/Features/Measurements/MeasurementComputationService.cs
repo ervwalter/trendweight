@@ -39,7 +39,13 @@ public class MeasurementComputationService : IMeasurementComputationService
         // Step 4: Compute weight trends
         var measurements = ComputeWeightTrends(sourceMeasurements, preset);
 
-        // Step 5: Process fat measurements if available
+        // Step 5: Process fat measurements if available.
+        // The fat series is deliberately built from all readings rather than from each
+        // day's weight winner. A day whose winning reading (manual, or the earliest scale
+        // reading) carries no body-fat value still gets its fat trend from a same-day
+        // reading that does, and fat/lean mass are seeded from that reading's own weight
+        // so the two stay internally consistent. This matches the legacy TypeScript port
+        // and keeps fat data available on days where only a later reading measured it.
         var fatSourceMeasurements = FilterAndGroupFatMeasurements(rawData);
 
         if (fatSourceMeasurements.Count > 0)
@@ -307,7 +313,6 @@ public class MeasurementComputationService : IMeasurementComputationService
     private static List<ComputedMeasurement> ComputeFatTrends(List<SourceMeasurement> fatSourceMeasurements, List<ComputedMeasurement> measurements, TrendAlgorithmPreset preset)
     {
         var measurementsByDate = measurements.ToDictionary(m => m.Date, m => m);
-        var additionalMeasurements = new List<ComputedMeasurement>();
 
         var fatRatioSmoother = new TrendSmoother(preset);
         var fatMassSmoother = new TrendSmoother(preset);
@@ -327,45 +332,31 @@ public class MeasurementComputationService : IMeasurementComputationService
 
             var dateKey = sourceMeasurement.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-            if (measurementsByDate.TryGetValue(dateKey, out var existingMeasurement))
+            // Every fat day is also a weight day: both series are grouped from the same
+            // readings and weight interpolation fills every day in between, so this lookup
+            // cannot miss. Fail loudly rather than fabricate a row if that invariant breaks.
+            if (!measurementsByDate.TryGetValue(dateKey, out var existingMeasurement))
             {
-                // Update existing measurement with fat data
-                // Since ComputedMeasurement has init-only properties, we need to create a new one
-                var updatedMeasurement = new ComputedMeasurement
-                {
-                    Date = existingMeasurement.Date,
-                    ActualWeight = existingMeasurement.ActualWeight,
-                    TrendWeight = existingMeasurement.TrendWeight,
-                    WeightIsInterpolated = existingMeasurement.WeightIsInterpolated,
-                    FatIsInterpolated = sourceMeasurement.FatRatioIsInterpolated,
-                    ActualFatPercent = Math.Round(fatRatio, 4),
-                    TrendFatPercent = Math.Round(trendFatRatio, 4),
-                    TrendFatMass = Math.Round(trendFatMass, 3),
-                    TrendLeanMass = Math.Round(trendLeanMass, 3)
-                };
+                throw new InvalidOperationException($"Fat reading on {dateKey} has no matching weight measurement");
+            }
 
-                measurementsByDate[dateKey] = updatedMeasurement;
-            }
-            else
+            // Update existing measurement with fat data
+            // Since ComputedMeasurement has init-only properties, we need to create a new one
+            measurementsByDate[dateKey] = new ComputedMeasurement
             {
-                // This is an interpolated fat day that doesn't have a corresponding weight measurement
-                additionalMeasurements.Add(new ComputedMeasurement
-                {
-                    Date = sourceMeasurement.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    ActualWeight = Math.Round(sourceMeasurement.Weight, 3),
-                    TrendWeight = Math.Round(sourceMeasurement.Weight, 3), // Use the interpolated weight as trend too
-                    WeightIsInterpolated = true,
-                    FatIsInterpolated = sourceMeasurement.FatRatioIsInterpolated,
-                    ActualFatPercent = Math.Round(fatRatio, 4),
-                    TrendFatPercent = Math.Round(trendFatRatio, 4),
-                    TrendFatMass = Math.Round(trendFatMass, 3),
-                    TrendLeanMass = Math.Round(trendLeanMass, 3)
-                });
-            }
+                Date = existingMeasurement.Date,
+                ActualWeight = existingMeasurement.ActualWeight,
+                TrendWeight = existingMeasurement.TrendWeight,
+                WeightIsInterpolated = existingMeasurement.WeightIsInterpolated,
+                FatIsInterpolated = sourceMeasurement.FatRatioIsInterpolated,
+                ActualFatPercent = Math.Round(fatRatio, 4),
+                TrendFatPercent = Math.Round(trendFatRatio, 4),
+                TrendFatMass = Math.Round(trendFatMass, 3),
+                TrendLeanMass = Math.Round(trendLeanMass, 3)
+            };
         }
 
-        // Combine original measurements with additional ones and re-sort
-        return measurementsByDate.Values.Concat(additionalMeasurements)
+        return measurementsByDate.Values
             .OrderBy(m => m.Date)
             .ToList();
     }

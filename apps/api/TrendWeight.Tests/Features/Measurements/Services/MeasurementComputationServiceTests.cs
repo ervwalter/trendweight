@@ -501,6 +501,44 @@ public class MeasurementComputationServiceTests
     }
 
     [Fact]
+    public void ComputeMeasurements_WhenDayWinnerHasNoFat_TakesFatFromSameDayScaleReading()
+    {
+        // Arrange: a manual entry (weight only) wins the day, but a Withings reading later
+        // that morning measured body fat. Weight comes from the manual entry; the fat series
+        // is intentionally independent, so fat data is not lost for the day.
+        var profile = CreateTestProfile();
+        var sourceData = new List<SourceData>
+        {
+            new()
+            {
+                Source = "manual",
+                Measurements = new List<RawMeasurement>
+                {
+                    new() { Date = "2024-01-01", Time = "07:00:00", Weight = 80.0m }
+                }
+            },
+            new()
+            {
+                Source = "withings",
+                Measurements = new List<RawMeasurement>
+                {
+                    new() { Date = "2024-01-01", Time = "08:00:00", Weight = 81.0m, FatRatio = 0.25m }
+                }
+            }
+        };
+
+        // Act
+        var result = _sut.ComputeMeasurements(sourceData, profile);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].ActualWeight.Should().Be(80.0m, "the manual entry wins the day's weight");
+        result[0].ActualFatPercent.Should().Be(0.25m, "fat comes from the scale reading that measured it");
+        result[0].TrendFatMass.Should().Be(20.25m, "fat mass is seeded from that reading's own weight (81 * 0.25)");
+        result[0].FatIsInterpolated.Should().BeFalse();
+    }
+
+    [Fact]
     public void ComputeMeasurements_WithMixedSources_PreservesSourceInfo()
     {
         // Arrange
