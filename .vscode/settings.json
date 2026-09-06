@@ -42,9 +42,6 @@
     "resetpassword"
   ],
   "dotnet.defaultSolution": "apps/api/TrendWeight.sln",
-  "dotrush.roslyn.projectOrSolutionFiles": [
-    "/Users/erv/development/trendweight/apps/api/TrendWeight.sln"
-  ],
   "chatgpt.openOnStartup": true,
   "workbench.browser.openLocalhostLinks": false
 }

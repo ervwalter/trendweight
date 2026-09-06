@@ -1,31 +1,56 @@
-# AGENTS.md - Coding Agent Guidelines
+# Coding agent guidelines
 
-## Essential Commands (run from root only)
+TrendWeight is an npm-workspace monorepo: React/TypeScript in `apps/web`, ASP.NET
+Core in `apps/api`. Read [architecture](docs/ARCHITECTURE.md) and
+[testing](docs/TESTING.md) for cross-component behavior and verification.
+
+## Commands — run from repository root
+
 ```bash
-# Development
-npm run dev                     # Start both frontend/backend via tmuxinator
-npm run -w apps/web dev         # Frontend only (port 5173)
-npm run -w apps/api dev         # Backend only (port 5199)
-
-# Testing
-npm test                        # All tests
-npm run -w apps/web test        # Frontend tests only
-npm run -w apps/api test        # Backend tests only
-vitest run path/to/file.test.ts # Single frontend test
-dotnet test --filter "TestName" # Single backend test
-
-# Quality checks (MANDATORY before commits)
-npm run check && npm run test   # TypeScript + lint + all tests
-npm run check                   # TypeScript + lint only
-npm run format                  # Format all code
+npm ci
+npm run dev                         # Requires tmux and tmuxinator
+npm run -w apps/web dev              # Frontend, port 5173
+npm run -w apps/api dev              # Backend, port 5199
+npm run check && npm run test        # Mandatory before every commit
+npm run check:ci                     # Also checks formatting
+npm run format                      # Formats both workspaces; review its diff
+npm run -w apps/web test -- src/lib/core/dates.test.ts
+dotnet test --project apps/api/TrendWeight.Tests --filter-class '*ProfileServiceTests'
 ```
 
-## Code Style & Conventions
-- **Frontend**: 2-space indent, kebab-case files, PascalCase components, `@/` imports (never `../`)
-- **Backend**: 4-space indent, PascalCase public members, camelCase locals/params
-- **Routes**: Minimal (<30 lines), NO logic/hooks, delegate to components
-- **Tailwind**: Use semantic variables (`bg-background`) never explicit colors (`bg-gray-500`)
-- **Types**: Strict TypeScript, avoid `any`, functional components with hooks
-- **Tests**: Vitest (frontend) + xUnit (backend), MSW for HTTP mocking, colocated `*.test.ts(x)`
-- **Commits**: Conventional format (`feat:`, `fix:`, `refactor:`), never "BREAKING CHANGE"
-- **Naming**: TrendWeight (capital T+W), snake_case database, kebab-case routes, PascalCase components
+The backend uses Microsoft.Testing.Platform and xUnit v3. Do not use legacy
+VSTest `--filter` examples. On macOS, sandbox restrictions can block .NET named
+pipes and package downloads; use an approved execution context if this occurs,
+without weakening repository checks.
+
+## Conventions
+
+- Frontend: two-space indentation, kebab-case filenames, PascalCase components,
+  strict TypeScript, `@/` imports instead of parent-relative imports.
+- Keep routes minimal (normally under 30 lines). Delegate rendering, hooks, and
+  business logic to components/helpers; pass the route context's query client to
+  loaders so accounts cannot share cached data.
+- Use semantic Tailwind colors from `index.css` and existing UI components.
+- Backend: four-space indentation, PascalCase public members, camelCase locals.
+  Keep controllers thin and I/O asynchronous.
+- Store weights in kilograms and database names in snake_case. Preserve existing
+  timestamp and JSON property formats when changing storage contracts.
+- Test observable behavior and realistic failures with Vitest/Testing Library/MSW
+  and xUnit. Use HTTP integration tests when middleware/authentication composition
+  is the behavior being verified. Add regressions with bug fixes.
+- Use conventional commits (`fix:`, `refactor:`, `test:`, `docs:`, `chore:`), with
+  one independently reversible concern per commit. Reserve `feat:` for significant
+  new user functionality; do not use `BREAKING CHANGE` in commit messages.
+
+## Operational boundaries
+
+- Preserve unrelated edits. Commit/push/deploy only when authorized; deployment is
+  a separate action from local validation.
+- Never print credentials, OAuth codes, signed state, or token response bodies.
+- Review executable editor/agent hooks and install scripts as code. Do not run
+  obfuscated or unexplained startup scripts to investigate them.
+- `supabase/migrations` is the schema source of truth. Create versioned migrations;
+  never change the remote schema directly through a dashboard or ad hoc SQL.
+  Applying migrations to a remote project requires deployment authorization.
+- Keep architecture and setup instructions in `docs/` and `README.md`; other
+  agent instruction files should refer here instead of duplicating these rules.

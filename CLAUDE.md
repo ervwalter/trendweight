@@ -7,13 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 TrendWeight is a monorepo web application for tracking weight trends by integrating with smart scales from Withings and Fitbit. React frontend (`apps/web/`), C# ASP.NET Core backend (`apps/api/`), deployed as a single Docker container. Turborepo with npm workspaces; the standard commands (`npm run dev|build|test|check|format`, plus `-w` variants per workspace) live in the root and workspace `package.json` files.
 
 - **Project name**: TrendWeight (capital T, capital W, no space)
-- read the files in @docs/steering/ for guidance on the project
+- Follow @AGENTS.md for canonical coding rules, test commands, and operational boundaries.
+- Read @docs/ARCHITECTURE.md and @docs/TESTING.md for architecture and verification.
 
 ## Database (Supabase)
 
 Tables: `user_accounts` (Clerk ID → internal UUID), `profiles` (settings, JSONB), `provider_links` (OAuth tokens, JSONB), `source_data` (raw measurements, JSONB).
 
 ### Migrations
+
 - `supabase/` (config.toml + migrations) is the source of truth for schema and is committed to the repo
 - Schema changes MUST go through migration files: `supabase migration new <name>`, then `supabase db push`
 - NEVER apply SQL directly to the remote database (via Supabase MCP or otherwise) — the remote migration history table will drift from `supabase/migrations/` and break branching and `supabase db pull`
@@ -41,4 +43,4 @@ Tables: `user_accounts` (Clerk ID → internal UUID), `profiles` (settings, JSON
 
 ## Deployment
 
-- A single Docker container serves both the frontend static files and the API, with a YARP reverse proxy routing between them
+- A single Docker container serves both the frontend static files and the API, with ASP.NET static-file middleware serving the SPA and YARP proxying analytics

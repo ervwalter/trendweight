@@ -3,10 +3,10 @@
 A web application for tracking weight trends by integrating with smart scales from Withings and Fitbit.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-9.0-blue.svg)](https://dotnet.microsoft.com/)
-[![React](https://img.shields.io/badge/React-19.1-blue.svg)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.3-purple.svg)](https://vitejs.dev/)
+[![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-10.0-blue.svg)](https://dotnet.microsoft.com/)
+[![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-blue.svg)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-purple.svg)](https://vitejs.dev/)
 
 ## Features
 
@@ -31,8 +31,9 @@ For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.m
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [Node.js](https://nodejs.org/) 26 (matches the Docker build; npm version in `package.json`)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- `tmux` and `tmuxinator` for `npm run dev`, or use the individual workspace commands below
 - A Supabase project (for database)
 - A Clerk account (for authentication)
 
@@ -48,22 +49,35 @@ For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.m
 2. Install dependencies:
 
    ```bash
-   npm install
+   npm ci
+   dotnet restore apps/api/TrendWeight.sln
    ```
 
-3. Copy `.env.example` to `.env` and configure your environment variables:
+3. Copy `.env.example` to `.env` and replace the placeholder values:
 
    ```bash
    cp .env.example .env
    ```
 
-4. Start the development servers:
+4. Export the configuration into your shell before starting development. Vite and
+   ASP.NET do not automatically load the repository-root `.env` for both workspaces.
+   The file is trusted shell input; quote values containing spaces, `$`, or semicolons.
+
+   ```bash
+   set -a
+   source .env
+   set +a
+   ```
+
+5. Start the development servers:
 
    ```bash
    npm run dev
    ```
 
    This starts both the frontend (http://localhost:5173) and backend (http://localhost:5199) servers.
+   Without tmuxinator, use `npm run -w apps/web dev` and `npm run -w apps/api dev`
+   in separate terminals, each with the configuration exported.
 
 ### Clerk Setup
 
@@ -75,12 +89,13 @@ For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.m
    - Apple OAuth
 
 3. Set the following environment variables in your `.env` file:
+
    ```
    # Frontend (Vite)
    VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
    VITE_SUPABASE_URL=https://your-project-ref.supabase.co
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   
+
    # Backend (ASP.NET Core)
    Clerk__Authority=https://your-instance.clerk.accounts.dev
    Clerk__SecretKey=your_clerk_secret_key
@@ -102,6 +117,9 @@ For detailed architecture information, see [ARCHITECTURE.md](docs/ARCHITECTURE.m
 - `npm run build` - Build all workspaces for production
 - `npm run test` - Run tests in all workspaces
 - `npm run check` - Run TypeScript and lint checks
+- `npm run check:ci` - Also verify formatting
+- `npm run test:tooling` - Test local Docker helpers without running Docker
+- `npm run -w apps/web test:coverage` - Frontend coverage report
 - `npm run format` - Format code in all workspaces
 - `npm run clean` - Clean all build artifacts and dependencies
 
@@ -121,10 +139,12 @@ The application is designed to be deployed as a Docker container. The included D
 Build the Docker image:
 
 ```bash
-docker build -t trendweight:latest .
+npm run docker:build
 ```
 
-The container runs on port 8080 and requires environment variables for backend configuration. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for deployment details.
+The container runs on port 8080. Browser configuration is embedded at build time; backend secrets are runtime environment variables. Configure trusted ingress proxies and allowed hostnames before production rollout. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for deployment details.
+
+See [TESTING.md](docs/TESTING.md) for focused tests and verification boundaries.
 
 ## License
 
