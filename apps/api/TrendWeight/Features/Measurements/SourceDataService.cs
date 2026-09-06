@@ -281,62 +281,6 @@ public class SourceDataService : ISourceDataService
         ClearCache(userId, provider);
     }
 
-    /// <inheritdoc />
-    public async Task ClearSourceDataAsync(Guid userId, string? provider = null)
-    {
-        try
-        {
-            if (provider != null)
-            {
-                // Clear specific provider data
-                var sourceData = await _supabaseService.QueryAsync<DbSourceData>(q =>
-                    q.Where(sd => sd.Uid == userId && sd.Provider == provider));
-
-                var data = sourceData.FirstOrDefault();
-                if (data != null)
-                {
-                    // Clear measurements array and reset force_full_sync flag
-                    data.Measurements = new List<RawMeasurement>();
-                    data.LastSync = null;
-                    data.ForceFullSync = false;
-                    data.UpdatedAt = DateTime.UtcNow.ToString("o");
-
-                    await _supabaseService.UpdateAsync(data);
-                    _logger.LogInformation("Cleared source data for user {UserId} provider {Provider}", userId, provider);
-                }
-
-                // Clear from cache
-                ClearCache(userId, provider);
-            }
-            else
-            {
-                // Clear all source data for the user
-                var allSourceData = await _supabaseService.QueryAsync<DbSourceData>(q =>
-                    q.Where(sd => sd.Uid == userId));
-
-                foreach (var data in allSourceData)
-                {
-                    data.Measurements = new List<RawMeasurement>();
-                    data.LastSync = null;
-                    data.ForceFullSync = false;
-                    data.UpdatedAt = DateTime.UtcNow.ToString("o");
-
-                    await _supabaseService.UpdateAsync(data);
-                }
-
-                // Clear from cache
-                ClearCache(userId);
-
-                _logger.LogInformation("Cleared all source data for user {UserId}", userId);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error clearing source data for user {UserId} provider {Provider}", userId, provider);
-            throw;
-        }
-    }
-
 
 
     /// <inheritdoc />

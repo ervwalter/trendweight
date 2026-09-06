@@ -1,5 +1,3 @@
-using TrendWeight.Features.Providers.Models;
-
 namespace TrendWeight.Features.Measurements.Models;
 
 /// <summary>
@@ -47,24 +45,5 @@ public class ProviderSyncStatus
     /// Human-readable error message
     /// </summary>
     public string? Message { get; init; }
-}
-
-/// <summary>
-/// Response model for data refresh operations
-/// </summary>
-public class DataRefreshResponse
-{
-    public required string Message { get; set; }
-    public required Dictionary<string, ProviderStatusInfo> Providers { get; set; }
-    public required DateTime Timestamp { get; set; }
-}
-
-/// <summary>
-/// Provider status information in refresh responses
-/// </summary>
-public class ProviderStatusInfo
-{
-    public required bool Success { get; set; }
-    public required bool Synced { get; set; }
 }
 

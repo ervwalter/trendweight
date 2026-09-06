@@ -1015,7 +1015,6 @@ public class MeasurementSyncServiceTests : TestBase
         providerService.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once,
             "Should perform full sync (startDate = null) after force_full_sync flag is detected");
 
-        _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(userId, provider), Times.Never);
         // The fetched array replaces the old array, without retaining deleted provider readings.
         _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
             userId,
@@ -1043,7 +1042,6 @@ public class MeasurementSyncServiceTests : TestBase
         result.Data.Should().BeSameAs(readings);
         result.ProviderStatus["fitbit"].Success.Should().BeFalse();
         providerService.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once);
-        _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
         _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()), Times.Never);
     }
 
