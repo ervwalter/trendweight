@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using TrendWeight.Features.Common;
 using TrendWeight.Features.Common.Models;
 using TrendWeight.Features.Providers.Exceptions;
-using TrendWeight.Features.Providers.Models;
 
 namespace TrendWeight.Features.Providers.Withings;
 
@@ -34,13 +33,12 @@ public class WithingsLinkController : BaseAuthController
     /// <summary>
     /// Gets the Withings authorization URL for linking
     /// </summary>
-    /// <returns>Authorization URL and state</returns>
+    /// <returns>Authorization URL</returns>
     [HttpGet("link")]
     public IActionResult GetAuthorizationUrl()
     {
         try
         {
-
             // Get JWT signing key
             var jwtSigningKey = _configuration["Jwt:SigningKey"];
             if (string.IsNullOrEmpty(jwtSigningKey))
@@ -49,13 +47,7 @@ public class WithingsLinkController : BaseAuthController
                 return StatusCode(500, new { error = "JWT signing key not configured" });
             }
 
-            // Create OAuth state
-            var state = new OAuthState
-            {
-                Uid = UserId,
-                Reason = "link"
-            };
-
+            // The signed state rides along in the authorization URL and is validated on exchange
             var signedState = OAuthStateToken.Create(jwtSigningKey, UserId, "withings");
 
             // Use the same configured origin for initiation and token exchange.
@@ -66,13 +58,7 @@ public class WithingsLinkController : BaseAuthController
             // Get authorization URL
             var authorizationUrl = _withingsService.GetAuthorizationUrl(signedState, callbackUrl);
 
-
-
-            return Ok(new
-            {
-                authorizationUrl = authorizationUrl,
-                state = state
-            });
+            return Ok(new { authorizationUrl });
         }
         catch (Exception ex)
         {

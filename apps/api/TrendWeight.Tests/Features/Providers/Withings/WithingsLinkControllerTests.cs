@@ -10,7 +10,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using TrendWeight.Features.Common.Models;
 using TrendWeight.Features.Providers.Exceptions;
-using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.Providers.Withings;
 using TrendWeight.Tests.Fixtures;
 using Xunit;
@@ -81,13 +80,10 @@ public class WithingsLinkControllerTests : TestBase
 
         // Use reflection to check the anonymous object properties
         var authUrlProperty = response!.GetType().GetProperty("authorizationUrl");
-        var stateProperty = response.GetType().GetProperty("state");
-
         authUrlProperty!.GetValue(response).Should().Be(expectedAuthUrl);
 
-        var state = stateProperty!.GetValue(response) as OAuthState;
-        state!.Uid.Should().Be(userId.ToString());
-        state.Reason.Should().Be("link");
+        // The signed state is carried only in the authorization URL, never echoed unsigned
+        response.GetType().GetProperty("state").Should().BeNull();
 
         // Verify JWT was created with correct state
         _withingsServiceMock.Verify(x => x.GetAuthorizationUrl(
