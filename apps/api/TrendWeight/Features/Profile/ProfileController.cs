@@ -196,6 +196,11 @@ public class ProfileController : ControllerBase
                 return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
             }
 
+            if (request.DayStartOffset is < 0 or > 23)
+            {
+                return BadRequest(new ErrorResponse { Error = "Day start must be between 0 and 23 hours" });
+            }
+
             if (!TrendAlgorithmPresets.IsValid(request.TrendAlgorithm))
             {
                 return BadRequest(new ErrorResponse { Error = "Invalid trend algorithm" });

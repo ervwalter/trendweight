@@ -381,6 +381,22 @@ public class ProfileControllerTests : TestBase
         response.IsMe.Should().Be(true);
     }
 
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(24)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue)]
+    public async Task UpdateProfile_WithInvalidDayStart_RejectsBeforeSaving(int offset)
+    {
+        SetupAuthenticatedUser(Guid.NewGuid().ToString(), "test@example.com");
+
+        var result = await _sut.UpdateProfile(new UpdateProfileRequest { DayStartOffset = offset });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+    }
+
     [Fact]
     public async Task UpdateProfile_WithInvalidTrendAlgorithm_ReturnsBadRequest()
     {
