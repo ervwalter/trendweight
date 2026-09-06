@@ -26,6 +26,40 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
 
     public RequestPipelineTests(StartupTestFactory factory) => _factory = factory;
 
+    [Theory]
+    [InlineData("Development", null, "http://localhost:5173")]
+    [InlineData("Production", "https://canonical.example/", "https://canonical.example")]
+    public async Task ClerkAuthentication_UsesPublicOriginBehindProxy(string environment, string? configuredOrigin, string expectedOrigin)
+    {
+        var tokens = new Mock<IClerkTokenService>();
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("sub", "clerk-test") }, "jwt"));
+        tokens.Setup(x => x.ValidateTokenAsync("origin-test-jwt", expectedOrigin)).ReturnsAsync(principal);
+        tokens.Setup(x => x.GetClerkUserId(principal)).Returns("clerk-test");
+        tokens.Setup(x => x.GetEmail(principal)).Returns("clerk@example.com");
+        using var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment(environment);
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
+                new Dictionary<string, string?> { ["PublicBaseUrl"] = configuredOrigin }));
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IClerkTokenService>();
+                services.AddSingleton(tokens.Object);
+            });
+        });
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5199/api/measurements/manual");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "origin-test-jwt");
+        request.Headers.Add("Origin", "https://attacker.example");
+        request.Headers.Add("X-Forwarded-Host", "attacker.example");
+        request.Headers.Add("X-Forwarded-Proto", "https");
+
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        tokens.Verify(x => x.ValidateTokenAsync("origin-test-jwt", expectedOrigin), Times.Once);
+    }
+
     [Fact]
     public async Task ApiDocumentation_AdvertisesCanonicalOriginForInternalHttp()
     {

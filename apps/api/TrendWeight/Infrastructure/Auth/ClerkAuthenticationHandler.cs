@@ -2,12 +2,14 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
+using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Infrastructure.Auth;
 
 public class ClerkAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     private readonly IClerkTokenService _clerkTokenService;
+    private readonly PublicUrl _publicUrl;
     private readonly IUserAccountMappingService _userAccountMappingService;
     private readonly ILogger<ClerkAuthenticationHandler> _logger;
 
@@ -16,10 +18,12 @@ public class ClerkAuthenticationHandler : AuthenticationHandler<AuthenticationSc
         ILoggerFactory logger,
         UrlEncoder encoder,
         IClerkTokenService clerkTokenService,
-        IUserAccountMappingService userAccountMappingService)
+        IUserAccountMappingService userAccountMappingService,
+        PublicUrl publicUrl)
         : base(options, logger, encoder)
     {
         _clerkTokenService = clerkTokenService;
+        _publicUrl = publicUrl;
         _userAccountMappingService = userAccountMappingService;
         _logger = logger.CreateLogger<ClerkAuthenticationHandler>();
     }
@@ -48,9 +52,8 @@ public class ClerkAuthenticationHandler : AuthenticationHandler<AuthenticationSc
 
         try
         {
-            // Build the request origin from the current request
-            var request = Context.Request;
-            var requestOrigin = $"{request.Scheme}://{request.Host}";
+            // Clerk identifies the browser origin, not the internal proxy destination.
+            var requestOrigin = _publicUrl.BaseUri.GetLeftPart(UriPartial.Authority);
 
             // Validate the Clerk JWT
             var claimsPrincipal = await _clerkTokenService.ValidateTokenAsync(token, requestOrigin);

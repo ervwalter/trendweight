@@ -21,7 +21,8 @@ exact dependency versions belong in package manifests and lockfiles.
 
 The React SPA uses Clerk for login and sends session tokens to the ASP.NET Core
 API. Clerk JWT validation checks signature, issuer, lifetime and the `azp` origin
-when present. `user_accounts` maps the external Clerk ID to an internal UUID.
+against `PublicBaseUrl` when present (defaulting to `http://localhost:5173` in
+Development), independent of internal proxy addresses or request headers. `user_accounts` maps the external Clerk ID to an internal UUID.
 Internal API endpoints use the Clerk authentication scheme. `/api/v1` explicitly
 uses API-key authentication; those keys do not grant access to internal settings.
 API-key hashes are stored in profile JSON and indexed by a database migration.

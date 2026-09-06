@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using TrendWeight.Infrastructure.Auth;
+using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using Xunit;
@@ -54,7 +55,8 @@ public class ClerkAuthenticationHandlerTests
             _loggerFactoryMock.Object,
             _encoderMock.Object,
             _clerkTokenServiceMock.Object,
-            _userAccountMappingServiceMock.Object);
+            _userAccountMappingServiceMock.Object,
+            new PublicUrl("https://example.com", false));
 
         var scheme = new AuthenticationScheme("Clerk", "Clerk", typeof(ClerkAuthenticationHandler));
         _handler.InitializeAsync(scheme, _context).GetAwaiter().GetResult();
@@ -203,12 +205,12 @@ public class ClerkAuthenticationHandlerTests
     }
 
     [Fact]
-    public async Task AuthenticateAsync_BuildsCorrectRequestOrigin()
+    public async Task AuthenticateAsync_UsesConfiguredOriginDespiteInternalRequest()
     {
         // Arrange
         _context.Request.Headers["Authorization"] = "Bearer valid-token";
         _context.Request.Scheme = "http";
-        _context.Request.Host = new HostString("localhost", 5173);
+        _context.Request.Host = new HostString("localhost", 5199);
 
         var clerkPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
@@ -217,7 +219,7 @@ public class ClerkAuthenticationHandlerTests
         }));
 
         _clerkTokenServiceMock
-            .Setup(x => x.ValidateTokenAsync("valid-token", "http://localhost:5173"))
+            .Setup(x => x.ValidateTokenAsync("valid-token", "https://example.com"))
             .ReturnsAsync(clerkPrincipal);
 
         _clerkTokenServiceMock
@@ -242,7 +244,7 @@ public class ClerkAuthenticationHandlerTests
 
         // Assert
         Assert.True(result.Succeeded);
-        _clerkTokenServiceMock.Verify(x => x.ValidateTokenAsync("valid-token", "http://localhost:5173"), Times.Once);
+        _clerkTokenServiceMock.Verify(x => x.ValidateTokenAsync("valid-token", "https://example.com"), Times.Once);
     }
 
     [Fact]
