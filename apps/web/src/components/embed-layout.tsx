@@ -12,7 +12,7 @@ interface EmbedLayoutProps {
 function LoadingFallback() {
   return (
     <div className="flex h-screen w-full items-center justify-center">
-      <div className="border-border h-8 w-8 animate-spin rounded-full border-2 border-t-gray-400" />
+      <div className="border-border border-t-muted-foreground h-8 w-8 animate-spin rounded-full border-2" />
     </div>
   );
 }
