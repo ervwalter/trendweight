@@ -12,7 +12,7 @@ npm run check:ci
 ```
 
 `check` runs TypeScript and lint checks; backend lint builds with warnings as
-errors. `test` runs the Docker helper tests, then builds and tests both workspaces.
+errors. `test` runs the Docker helper and release automation tests, then builds and tests both workspaces.
 `check:ci` also verifies formatting. `npm run format` writes formatting changes;
 review the diff before committing.
 
@@ -51,3 +51,7 @@ for those boundaries.
 On sandboxed macOS, .NET can fail when named-pipe sockets or NuGet access are
 blocked. Use an execution environment permitting those operations; an infrastructure
 failure is not a passing or failing application test.
+
+- `.github/scripts/release-please.test.mjs` verifies dependency summaries, version bumps,
+  preserved release notes, and read-only preview behavior using the pinned library
+  with synthetic commits and no network access.

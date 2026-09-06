@@ -40,6 +40,17 @@
         "lockFileMaintenance"
       ],
       "automerge": true
+    },
+    {
+      "description": "Review release automation library updates monthly with its compatibility tests",
+      "matchPackageNames": [
+        "release-please"
+      ],
+      "schedule": [
+        "before 4am on the first day of the month"
+      ],
+      "automerge": false,
+      "groupName": "release automation"
     }
   ],
   "ignoreScripts": true,

@@ -93,3 +93,29 @@ Development mode permits an HTTP public origin; do not use it for a public deplo
 Create database changes under `supabase/migrations` and apply them through the
 migration workflow to the verified target project. Schema changes require their
 own rollout and rollback consideration; rolling back an image does not undo them.
+
+## Release automation
+
+The release workflow runs `.github/scripts/release-please.mjs` using the exact
+`release-please` version in the root package manifest and lockfile. It uses the
+existing `.github/release-config.json` and `.github/release-manifest.json`.
+Version calculation still sees every commit; only the notes renderer changes.
+Routine `deps:` commits become one “Updated dependencies.” entry per release.
+Breaking dependency changes retain their individual descriptions and migration
+notes. Other sections follow the existing configuration. The same generated notes
+feed the changelog, release PR, and eventual GitHub release.
+
+The wrapper uses upstream's changelog registration API rather than a fork.
+Its renderer imports an upstream implementation path, so version upgrades must
+pass `node --test .github/scripts/release-please.test.mjs`. Renovate proposes library
+updates monthly without automerging them. Review urgent security updates sooner.
+The tests also run under `npm test` and before the release workflow writes to GitHub.
+Track upstream [template configuration support](https://github.com/googleapis/release-please/pull/2706);
+once released in the standard action, reassess replacing this wrapper.
+
+For a read-only preview, set `GITHUB_REPOSITORY=ervwalter/trendweight` and provide
+`RELEASE_PLEASE_TOKEN` through your environment, then run
+`node .github/scripts/release-please.mjs --dry-run`. This reads the configuration and history
+from GitHub's `main`, so unpushed configuration changes are not included. Do not
+paste tokens into commands or logs. Normal execution publishes merged release PRs
+and then reloads repository state before creating/updating the next release PR.

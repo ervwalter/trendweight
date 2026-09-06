@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: release-please-main
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
@@ -26,9 +30,25 @@ jobs:
             exit 1
           fi
 
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
-        id: release
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          config-file: ".github/release-config.json"
-          manifest-file: ".github/release-manifest.json"
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "26"
+          cache: "npm"
+
+      - name: Use pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')" --ignore-scripts
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Test release customization
+        run: node --test .github/scripts/release-please.test.mjs
+
+      - name: Update releases and release PR
+        env:
+          RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: node .github/scripts/release-please.mjs

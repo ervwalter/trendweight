@@ -11,7 +11,7 @@
     "dev:stop": "tmuxinator stop trendweight",
     "build": "turbo run build",
     "test": "npm run test:tooling && turbo run test",
-    "test:tooling": "node --test scripts/*.test.mjs",
+    "test:tooling": "node --test scripts/*.test.mjs .github/scripts/*.test.mjs",
     "check": "turbo run typecheck lint",
     "check:ci": "turbo run format:check typecheck lint",
     "format": "turbo run format",
@@ -29,6 +29,7 @@
   "devDependencies": {
     "husky": "9.1.7",
     "lint-staged": "17.4.1",
+    "release-please": "17.11.2",
     "turbo": "2.10.12"
   },
   "version": "2.0.0-alpha.1",
