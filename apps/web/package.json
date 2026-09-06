@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "generate-routes": "npx @tanstack/router-cli generate",
+    "generate-routes": "tsr generate",
     "typecheck": "npm run generate-routes && tsc -b --noEmit",
     "preview": "vite preview",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",

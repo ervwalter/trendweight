@@ -12,6 +12,8 @@ application; local development can create, modify, and delete account data.
 - tmux and tmuxinator only if using `npm run dev`.
 
 Install dependencies with `npm ci` and `dotnet restore apps/api/TrendWeight.sln`.
+Run `npm run setup:hooks` once per checkout to install the repository's Git hooks;
+installation lifecycle scripts are intentionally disabled.
 Tests mock external services and do not need live service credentials; see
 [testing](TESTING.md).
 
@@ -107,3 +109,36 @@ linking. `/api/health` is a liveness response, not a database connectivity check
 If provider linking reports a missing signing key, check `Jwt__SigningKey`. If a
 callback points to the wrong origin, check `PublicBaseUrl`. If configuration edits
 have no effect, restart the relevant server with the updated environment.
+
+## Dependency updates
+
+The root `.npmrc` disables install lifecycle scripts and Git dependencies. npm 12
+blocks arbitrary remote tarballs by default. Use the npm version in `packageManager`;
+`npm run` commands still execute explicitly requested scripts. Route generation uses
+the installed `tsr` binary and never downloads a missing CLI through `npx`.
+
+New npm resolutions have a five-day release-age floor, including transitive updates.
+`npm ci` reuses the committed lockfile; this is not a retrospective age check of
+already locked packages. Review lockfile changes before accepting them. Renovate
+inherits a five-day normal cooldown and a twelve-hour security-fix cooldown from
+`ervwalter/renovate-config:default`. The npm resolution floor can delay a fresh
+security fix beyond twelve hours; an urgent exception should be reviewed and
+limited to the affected package, rather than disabling the policy globally.
+Unknown npm/NuGet publication timestamps block Renovate updates. Routine updates
+may automerge after the required Build and Test and Docker Build checks; major
+updates and release PRs remain manual.
+
+Renovate alone retains `allow-remote=all` for the npm bundled-dependency bug tracked
+in [#463](https://github.com/ervwalter/trendweight/issues/463). Do not copy that
+exception into the root `.npmrc`; `npmrcMerge` prepends the override during Renovate
+runs. Install scripts remain disabled in those runs.
+
+NuGet restores use only nuget.org. Commit both projects' `packages.lock.json` files.
+After an intentional package update, run
+`dotnet restore apps/api/TrendWeight.sln --force-evaluate` locally and review the
+lockfile diff. CI uses locked restore; Docker restores in locked mode and publishes
+without another restore. Direct and transitive vulnerability findings, or an audit
+service failure, fail restore. Do not combine `--force-evaluate` with locked mode.
+
+CI also runs `npm audit`. Install-script blocking does not sandbox build tools,
+NuGet MSBuild tasks, or application dependencies when they are executed.

@@ -4,12 +4,12 @@ FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f
 WORKDIR /app
 
 # Copy package files for all workspaces
-COPY package*.json ./
+COPY package*.json .npmrc ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
 
 # Install dependencies from root (npm workspaces)
-RUN npm ci
+RUN npm install --global "$(node -p 'require("./package.json").packageManager')" --ignore-scripts && npm ci --ignore-scripts
 
 # Copy frontend source
 COPY apps/web/ ./apps/web/
@@ -55,8 +55,8 @@ COPY apps/api/ ./
 COPY --from=frontend-build /app/apps/web/dist ./TrendWeight/wwwroot
 
 # Restore and build
-RUN dotnet restore TrendWeight.sln
-RUN dotnet publish TrendWeight/TrendWeight.csproj -c Release -o /app/publish
+RUN dotnet restore TrendWeight.sln --locked-mode
+RUN dotnet publish TrendWeight/TrendWeight.csproj --no-restore -c Release -o /app/publish
 
 # Stage 3: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a4556ed033fa96f984bb7a8d348851cb2d36b1281dd2420070045f664fbb5f94 AS runtime

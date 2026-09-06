@@ -1,19 +1,52 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>ervwalter/renovate-config:default"],
+  "extends": [
+    "github>ervwalter/renovate-config:default"
+  ],
   "semanticCommitType": "deps",
-  "semanticCommitScope": null,
+  "semanticCommitScope": "",
   "npmrc": "allow-remote=all",
   "npmrcMerge": true,
   "packageRules": [
     {
       "description": "config:recommended's :semanticPrefixFixDepsChoreOthers sets fix:/chore: via packageRules, which override the top-level semanticCommitType; this later rule wins and restores deps: for release-please",
-      "matchPackageNames": ["*"],
+      "matchPackageNames": [
+        "*"
+      ],
       "semanticCommitType": "deps"
     },
     {
-      "matchDepNames": ["typescript"],
+      "matchDepNames": [
+        "typescript"
+      ],
       "allowedVersions": "<7.0.0"
+    },
+    {
+      "description": "Require publication timestamps for npm and NuGet cooldown checks",
+      "matchDatasources": [
+        "npm",
+        "nuget"
+      ],
+      "minimumReleaseAgeBehaviour": "timestamp-required"
+    },
+    {
+      "description": "Automerge routine updates only after cooldown and required CI checks",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest",
+        "pin",
+        "pinDigest",
+        "lockFileMaintenance"
+      ],
+      "automerge": true
     }
-  ]
+  ],
+  "ignoreScripts": true,
+  "internalChecksFilter": "strict",
+  "internalChecksAsSuccess": true,
+  "automerge": false,
+  "platformAutomerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash"
 }

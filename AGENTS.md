@@ -7,7 +7,8 @@ Core in `apps/api`. Read [architecture](docs/ARCHITECTURE.md) and
 ## Commands — run from repository root
 
 ```bash
-npm ci
+npm ci                             # Install scripts are disabled
+npm run setup:hooks                 # Explicit, once per checkout
 npm run dev                         # Requires tmux and tmuxinator
 npm run -w apps/web dev              # Frontend, port 5173
 npm run -w apps/api dev              # Backend, port 5199
