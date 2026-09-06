@@ -3,7 +3,6 @@ using System.Net;
 using System.Text.Json;
 using System.Web;
 using Microsoft.Extensions.Options;
-using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
@@ -20,15 +19,14 @@ namespace TrendWeight.Features.Providers.Withings;
 /// </summary>
 public class WithingsService : ProviderServiceBase, IWithingsService
 {
+    private const string TokenEndpoint = "https://wbsapi.withings.net/v2/oauth2";
+
     private readonly HttpClient _httpClient;
     private readonly WithingsConfig _config;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
-
-    // Token refresh buffer - refresh tokens 5 minutes before they expire
-    private const int TOKEN_EXPIRY_BUFFER_SECONDS = 300;
 
     /// <summary>
     /// Constructor
@@ -52,23 +50,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
     /// <inheritdoc />
     public override string GetAuthorizationUrl(string state, string callbackUrl)
     {
-        var url = new UriBuilder("https://account.withings.com/oauth2_user/authorize2");
-        var query = HttpUtility.ParseQueryString(string.Empty);
-        query["client_id"] = _config.ClientId;
-        query["response_type"] = "code";
-        query["scope"] = "user.metrics";
-        query["state"] = state;
-        query["redirect_uri"] = callbackUrl;
-        url.Query = query.ToString();
-
-        // Remove default port 443 from HTTPS URLs
-        var result = url.ToString();
-        if (url.Scheme == "https" && url.Port == 443)
-        {
-            result = result.Replace(":443", string.Empty);
-        }
-
-        return result;
+        return BuildAuthorizationUrl("https://account.withings.com/oauth2_user/authorize2", _config.ClientId, "user.metrics", state, callbackUrl);
     }
 
     /// <inheritdoc />
@@ -85,24 +67,13 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         };
 
         using var content = new FormUrlEncodedContent(parameters);
-        using var response = await _httpClient.PostAsync("https://wbsapi.withings.net/v2/oauth2", content);
+        using var response = await _httpClient.PostAsync(TokenEndpoint, content);
 
         if (!response.IsSuccessStatusCode)
         {
             Logger.LogError("Withings HTTP error: {StatusCode} {ReasonPhrase}",
                 response.StatusCode, response.ReasonPhrase);
-
-            var (message, errorCode, isRetryable) = response.StatusCode switch
-            {
-                HttpStatusCode.TooManyRequests => ("Withings is currently experiencing high traffic. Please try again in a few minutes.", "RATE_LIMITED", true),
-                HttpStatusCode.Unauthorized => ("Authorization failed. Please try connecting your Withings account again.", "UNAUTHORIZED", false),
-                HttpStatusCode.BadRequest => ("Invalid authorization code. Please try connecting your Withings account again.", "INVALID_CODE", false),
-                HttpStatusCode.Forbidden => ("Access denied by Withings. Please check your account permissions.", "FORBIDDEN", false),
-                HttpStatusCode.ServiceUnavailable => ("Withings services are temporarily unavailable. Please try again later.", "SERVICE_UNAVAILABLE", true),
-                _ => ($"Unable to connect to Withings (Error: {response.StatusCode}). Please try again later.", "UNEXPECTED_ERROR", false)
-            };
-
-            throw new ProviderException(message, response.StatusCode, errorCode, isRetryable);
+            throw MapHttpError(response.StatusCode, "Invalid authorization code. Please try connecting your Withings account again.");
         }
 
         var responseContent = await response.Content.ReadAsStringAsync();
@@ -147,52 +118,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                 isRetryable: false);
         }
 
-        var tokenData = withingsResponse!.Body;
-        if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
-            || string.IsNullOrWhiteSpace(tokenData.RefreshToken) || tokenData.ExpiresIn <= 0)
-        {
-            throw new JsonException("Withings returned an incomplete token response");
-        }
-
-        // Create token dictionary (excluding userid since we don't use it)
-        return new Dictionary<string, object>
-        {
-            ["access_token"] = tokenData.AccessToken ?? string.Empty,
-            ["refresh_token"] = tokenData.RefreshToken ?? string.Empty,
-            ["token_type"] = tokenData.TokenType ?? string.Empty,
-            ["scope"] = tokenData.Scope ?? string.Empty,
-            ["received_at"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            ["expires_in"] = tokenData.ExpiresIn
-        };
-    }
-
-    /// <inheritdoc />
-    protected override bool IsTokenExpired(Dictionary<string, object> token)
-    {
-        // Check if we have the required fields
-        if (!token.TryGetValue("received_at", out var receivedAtObj) ||
-            !token.TryGetValue("expires_in", out var expiresInObj))
-        {
-            Logger.LogDebug("Withings token missing received_at/expires_in fields, considering expired");
-            return true;
-        }
-
-        // Calculate expiration from Unix timestamps
-        if (long.TryParse(receivedAtObj.ToString(), out var receivedAt) &&
-            int.TryParse(expiresInObj.ToString(), out var expiresIn))
-        {
-            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var expiresAt = receivedAt + expiresIn;
-            var isExpired = expiresAt <= now + TOKEN_EXPIRY_BUFFER_SECONDS;
-
-            Logger.LogDebug("Withings token - Received: {ReceivedAt}, ExpiresIn: {ExpiresIn}s, ExpiresAt: {ExpiresAt}, Now: {Now}, IsExpired: {IsExpired}",
-                receivedAt, expiresIn, expiresAt, now, isExpired);
-
-            return isExpired;
-        }
-
-        Logger.LogDebug("Failed to parse Withings token timestamps");
-        return true;
+        return ToToken(withingsResponse.Body);
     }
 
     /// <inheritdoc />
@@ -204,36 +130,23 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             throw new InvalidOperationException("No refresh token found");
         }
 
-        var refreshToken = refreshTokenObj.ToString();
-
         var parameters = new Dictionary<string, string>
         {
             ["action"] = "requesttoken",
             ["grant_type"] = "refresh_token",
             ["client_id"] = _config.ClientId,
             ["client_secret"] = _config.ClientSecret,
-            ["refresh_token"] = refreshToken!
+            ["refresh_token"] = refreshTokenObj.ToString()!
         };
 
         using var content = new FormUrlEncodedContent(parameters);
-        using var response = await _httpClient.PostAsync("https://wbsapi.withings.net/v2/oauth2", content);
+        using var response = await _httpClient.PostAsync(TokenEndpoint, content);
 
         if (!response.IsSuccessStatusCode)
         {
             Logger.LogError("Withings HTTP error: {StatusCode} {ReasonPhrase}",
                 response.StatusCode, response.ReasonPhrase);
-
-            var (message, errorCode, isRetryable) = response.StatusCode switch
-            {
-                HttpStatusCode.TooManyRequests => ("Withings is currently experiencing high traffic. Please try again in a few minutes.", "RATE_LIMITED", true),
-                HttpStatusCode.Unauthorized => ("Authorization failed. Please try connecting your Withings account again.", "UNAUTHORIZED", false),
-                HttpStatusCode.BadRequest => ("Invalid authorization code. Please try connecting your Withings account again.", "INVALID_CODE", false),
-                HttpStatusCode.Forbidden => ("Access denied by Withings. Please check your account permissions.", "FORBIDDEN", false),
-                HttpStatusCode.ServiceUnavailable => ("Withings services are temporarily unavailable. Please try again later.", "SERVICE_UNAVAILABLE", true),
-                _ => ($"Unable to connect to Withings (Error: {response.StatusCode}). Please try again later.", "UNEXPECTED_ERROR", false)
-            };
-
-            throw new ProviderException(message, response.StatusCode, errorCode, isRetryable);
+            throw MapHttpError(response.StatusCode, "Withings rejected the token refresh request. Please try connecting your Withings account again.");
         }
 
         var responseContent = await response.Content.ReadAsStringAsync();
@@ -245,42 +158,10 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         {
             Logger.LogError("Withings API error: {Status} {Error}",
                 withingsResponse?.Status, withingsResponse?.Error);
-
-            // Check for auth-related errors
-            // Withings uses status 401 for invalid token
-            // Withings also uses status 503 with "invalid refresh_token" message
-            if (withingsResponse?.Status == 401 ||
-                withingsResponse?.Error?.Contains("invalid_token", StringComparison.OrdinalIgnoreCase) == true ||
-                withingsResponse?.Error?.Contains("invalid refresh_token", StringComparison.OrdinalIgnoreCase) == true ||
-                withingsResponse?.Error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true ||
-                (withingsResponse?.Status == 503 && withingsResponse?.Error?.Contains("invalid", StringComparison.OrdinalIgnoreCase) == true))
-            {
-                throw new ProviderAuthException(
-                    "withings",
-                    $"Withings authentication failed: {withingsResponse.Error}",
-                    withingsResponse.Status.ToString(CultureInfo.InvariantCulture));
-            }
-
-            throw new ProviderApiException("withings", $"Withings API error: {withingsResponse?.Status} {withingsResponse?.Error}", withingsResponse?.Error, withingsResponse?.Status);
+            throw ApiError(withingsResponse);
         }
 
-        var tokenData = withingsResponse!.Body;
-        if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
-            || string.IsNullOrWhiteSpace(tokenData.RefreshToken) || tokenData.ExpiresIn <= 0)
-        {
-            throw new JsonException("Withings returned an incomplete token response");
-        }
-
-        // Create refreshed token dictionary (excluding userid since we don't use it)
-        return new Dictionary<string, object>
-        {
-            ["access_token"] = tokenData.AccessToken ?? string.Empty,
-            ["refresh_token"] = tokenData.RefreshToken ?? string.Empty,
-            ["token_type"] = tokenData.TokenType ?? string.Empty,
-            ["scope"] = tokenData.Scope ?? string.Empty,
-            ["received_at"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            ["expires_in"] = tokenData.ExpiresIn
-        };
+        return ToToken(withingsResponse.Body);
     }
 
     /// <inheritdoc />
@@ -303,7 +184,6 @@ public class WithingsService : ProviderServiceBase, IWithingsService
 
         while (hasMore)
         {
-
             // Report progress before each page
             if (ProgressReporter != null)
             {
@@ -333,7 +213,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                     total: null); // Withings API doesn't provide total page count
             }
 
-            var (measurements, more, newOffset, timezone) = await GetMeasurementPageAsync(accessToken!, startTimestamp, offset);
+            var (measurements, more, newOffset) = await GetMeasurementPageAsync(accessToken!, startTimestamp, offset);
             allMeasurements.AddRange(measurements);
 
             // Track the most recent year from each page for progress messages
@@ -360,8 +240,6 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             hasMore = more;
             offset = newOffset;
             pageNumber++;
-
-
         }
 
         // Report completion
@@ -381,7 +259,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
     /// <summary>
     /// Gets a single page of measurements from Withings API
     /// </summary>
-    private async Task<(List<RawMeasurement> measurements, bool more, object? offset, string timezone)>
+    private async Task<(List<RawMeasurement> measurements, bool more, object? offset)>
         GetMeasurementPageAsync(string accessToken, long start, object? offset = null)
     {
         Logger.LogDebug("Fetching Withings measurements page with offset: {Offset}", offset);
@@ -425,18 +303,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             var errorContent = await response.Content.ReadAsStringAsync();
             Logger.LogError("Withings HTTP error: {StatusCode} {ReasonPhrase}. Response content: {Content}",
                 response.StatusCode, response.ReasonPhrase, errorContent);
-
-            var (message, errorCode, isRetryable) = response.StatusCode switch
-            {
-                HttpStatusCode.TooManyRequests => ("Withings is currently experiencing high traffic. Please try again in a few minutes.", "RATE_LIMITED", true),
-                HttpStatusCode.Unauthorized => ("Authorization failed. Please try connecting your Withings account again.", "UNAUTHORIZED", false),
-                HttpStatusCode.BadRequest => ("Invalid request to Withings. Please try again.", "INVALID_CODE", false),
-                HttpStatusCode.Forbidden => ("Access denied by Withings. Please check your account permissions.", "FORBIDDEN", false),
-                HttpStatusCode.ServiceUnavailable => ("Withings services are temporarily unavailable. Please try again later.", "SERVICE_UNAVAILABLE", true),
-                _ => ($"Unable to connect to Withings (Error: {response.StatusCode}). Please try again later.", "UNEXPECTED_ERROR", false)
-            };
-
-            throw new ProviderException(message, response.StatusCode, errorCode, isRetryable);
+            throw MapHttpError(response.StatusCode, "Invalid request to Withings. Please try again.");
         }
 
         var responseContent = await response.Content.ReadAsStringAsync();
@@ -448,26 +315,10 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         {
             Logger.LogError("Withings API error: {Status} {Error}",
                 withingsResponse?.Status, withingsResponse?.Error);
-
-            // Check for auth-related errors
-            // Withings uses status 401 for invalid token
-            // Withings also uses status 503 with "invalid refresh_token" message
-            if (withingsResponse?.Status == 401 ||
-                withingsResponse?.Error?.Contains("invalid_token", StringComparison.OrdinalIgnoreCase) == true ||
-                withingsResponse?.Error?.Contains("invalid refresh_token", StringComparison.OrdinalIgnoreCase) == true ||
-                withingsResponse?.Error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true ||
-                (withingsResponse?.Status == 503 && withingsResponse?.Error?.Contains("invalid", StringComparison.OrdinalIgnoreCase) == true))
-            {
-                throw new ProviderAuthException(
-                    "withings",
-                    $"Withings authentication failed: {withingsResponse.Error}",
-                    withingsResponse.Status.ToString(CultureInfo.InvariantCulture));
-            }
-
-            throw new ProviderApiException("withings", $"Withings API error: {withingsResponse?.Status} {withingsResponse?.Error}", withingsResponse?.Error, withingsResponse?.Status);
+            throw ApiError(withingsResponse);
         }
 
-        var body = withingsResponse!.Body!;
+        var body = withingsResponse.Body!;
         var timezone = body.Timezone;
 
         // Get timezone info for conversion with robust IANA/Windows ID support
@@ -543,7 +394,74 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         // Sort measurements in descending order by date/time
         measurements.Sort((a, b) => string.Compare($"{b.Date} {b.Time}", $"{a.Date} {a.Time}", StringComparison.Ordinal));
 
-        return (measurements, body.More > 0, body.Offset, timezone);
+        return (measurements, body.More > 0, body.Offset);
+    }
+
+    /// <summary>
+    /// Maps a non-success HTTP status from the Withings API to a ProviderException.
+    /// The 400 message depends on which call was rejected.
+    /// </summary>
+    private static ProviderException MapHttpError(HttpStatusCode statusCode, string badRequestMessage)
+    {
+        var (message, errorCode, isRetryable) = statusCode switch
+        {
+            HttpStatusCode.TooManyRequests => ("Withings is currently experiencing high traffic. Please try again in a few minutes.", "RATE_LIMITED", true),
+            HttpStatusCode.Unauthorized => ("Authorization failed. Please try connecting your Withings account again.", "UNAUTHORIZED", false),
+            HttpStatusCode.BadRequest => (badRequestMessage, "INVALID_CODE", false),
+            HttpStatusCode.Forbidden => ("Access denied by Withings. Please check your account permissions.", "FORBIDDEN", false),
+            HttpStatusCode.ServiceUnavailable => ("Withings services are temporarily unavailable. Please try again later.", "SERVICE_UNAVAILABLE", true),
+            _ => ($"Unable to connect to Withings (Error: {statusCode}). Please try again later.", "UNEXPECTED_ERROR", false)
+        };
+
+        return new ProviderException(message, statusCode, errorCode, isRetryable);
+    }
+
+    /// <summary>
+    /// Withings reports failures as HTTP 200 with a non-zero status. Token problems
+    /// (status 401, or 503 with an "invalid refresh_token"-style message) become
+    /// ProviderAuthException; anything else is a ProviderApiException.
+    /// </summary>
+    private static Exception ApiError<T>(WithingsResponse<T>? response)
+    {
+        var error = response?.Error;
+        var isAuthError = response != null && (
+            response.Status == 401 ||
+            error?.Contains("invalid_token", StringComparison.OrdinalIgnoreCase) == true ||
+            error?.Contains("invalid refresh_token", StringComparison.OrdinalIgnoreCase) == true ||
+            error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true ||
+            (response.Status == 503 && error?.Contains("invalid", StringComparison.OrdinalIgnoreCase) == true));
+
+        if (isAuthError)
+        {
+            return new ProviderAuthException(
+                "withings",
+                $"Withings authentication failed: {error}",
+                response!.Status.ToString(CultureInfo.InvariantCulture));
+        }
+
+        return new ProviderApiException("withings", $"Withings API error: {response?.Status} {error}", error, response?.Status);
+    }
+
+    /// <summary>
+    /// Converts a token endpoint body into the stored token shape (userid is not kept)
+    /// </summary>
+    private static Dictionary<string, object> ToToken(WithingsTokenResponse? tokenData)
+    {
+        if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
+            || string.IsNullOrWhiteSpace(tokenData.RefreshToken) || tokenData.ExpiresIn <= 0)
+        {
+            throw new JsonException("Withings returned an incomplete token response");
+        }
+
+        return new Dictionary<string, object>
+        {
+            ["access_token"] = tokenData.AccessToken,
+            ["refresh_token"] = tokenData.RefreshToken,
+            ["token_type"] = tokenData.TokenType ?? string.Empty,
+            ["scope"] = tokenData.Scope ?? string.Empty,
+            ["received_at"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            ["expires_in"] = tokenData.ExpiresIn
+        };
     }
 
     /// <summary>
@@ -553,5 +471,4 @@ public class WithingsService : ProviderServiceBase, IWithingsService
     {
         return (decimal)(measure.Value * Math.Pow(10, measure.Unit));
     }
-
 }

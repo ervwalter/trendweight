@@ -3,9 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using System.Web;
 using Microsoft.Extensions.Options;
-using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
@@ -31,9 +29,6 @@ public class FitbitService : ProviderServiceBase, IFitbitService
     // Fitbit's quota resets hourly. Never hold a request open for that long: short waits
     // are absorbed, anything longer fails the sync as retryable so the next load retries.
     private static readonly TimeSpan MaxRateLimitWait = TimeSpan.FromSeconds(30);
-
-    // Token refresh buffer - refresh tokens 5 minutes before they expire
-    private const int TOKEN_EXPIRY_BUFFER_SECONDS = 300;
 
     /// <summary>
     /// Constructor
@@ -84,47 +79,18 @@ public class FitbitService : ProviderServiceBase, IFitbitService
     /// <inheritdoc />
     public override string GetAuthorizationUrl(string state, string callbackUrl)
     {
-        var url = new UriBuilder("https://www.fitbit.com/oauth2/authorize");
-        var query = HttpUtility.ParseQueryString(string.Empty);
-        query["client_id"] = _config.ClientId;
-        query["response_type"] = "code";
-        query["scope"] = "weight";
-        query["state"] = state;
-        query["redirect_uri"] = callbackUrl;
-        url.Query = query.ToString();
-
-        Logger.LogDebug("Generated Fitbit authorization URL");
-
-        // Remove default port 443 from HTTPS URLs
-        var result = url.ToString();
-        if (url.Scheme == "https" && url.Port == 443)
-        {
-            result = result.Replace(":443", string.Empty);
-        }
-
-        return result;
+        return BuildAuthorizationUrl("https://www.fitbit.com/oauth2/authorize", _config.ClientId, "weight", state, callbackUrl);
     }
 
     /// <inheritdoc />
     protected override async Task<Dictionary<string, object>> ExchangeCodeForTokenAsync(string code, string callbackUrl)
     {
-        var parameters = new Dictionary<string, string>
+        using var request = CreateTokenRequest(new Dictionary<string, string>
         {
             ["code"] = code,
             ["grant_type"] = "authorization_code",
             ["redirect_uri"] = callbackUrl
-        };
-
-        using var content = new FormUrlEncodedContent(parameters);
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.fitbit.com/oauth2/token")
-        {
-            Content = content
-        };
-
-        // Use Basic Auth with client credentials
-        var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{_config.ClientId}:{_config.ClientSecret}"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+        });
 
         using var response = await _httpClient.SendAsync(request);
 
@@ -147,56 +113,9 @@ public class FitbitService : ProviderServiceBase, IFitbitService
             throw new ProviderException(message, response.StatusCode, errorCode, isRetryable);
         }
 
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var tokenData = JsonSerializer.Deserialize<FitbitTokenResponse>(responseContent);
-
-        if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
-            || string.IsNullOrWhiteSpace(tokenData.RefreshToken) || tokenData.ExpiresIn <= 0)
-        {
-            throw new JsonException("Failed to parse Fitbit token response");
-        }
-
+        var token = ToToken(await response.Content.ReadAsStringAsync());
         Logger.LogDebug("Successfully exchanged Fitbit authorization code for tokens");
-
-        // Create token dictionary (excluding user_id since we don't use it)
-        return new Dictionary<string, object>
-        {
-            ["access_token"] = tokenData.AccessToken,
-            ["refresh_token"] = tokenData.RefreshToken,
-            ["token_type"] = tokenData.TokenType,
-            ["scope"] = tokenData.Scope,
-            ["received_at"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            ["expires_in"] = tokenData.ExpiresIn
-        };
-    }
-
-    /// <inheritdoc />
-    protected override bool IsTokenExpired(Dictionary<string, object> token)
-    {
-        // Check if we have the required fields
-        if (!token.TryGetValue("received_at", out var receivedAtObj) ||
-            !token.TryGetValue("expires_in", out var expiresInObj))
-        {
-            Logger.LogDebug("Fitbit token missing received_at/expires_in fields, considering expired");
-            return true;
-        }
-
-        // Calculate expiration from Unix timestamps
-        if (long.TryParse(receivedAtObj.ToString(), out var receivedAt) &&
-            int.TryParse(expiresInObj.ToString(), out var expiresIn))
-        {
-            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var expiresAt = receivedAt + expiresIn;
-            var isExpired = expiresAt <= now + TOKEN_EXPIRY_BUFFER_SECONDS;
-
-            Logger.LogDebug("Fitbit token - Received: {ReceivedAt}, ExpiresIn: {ExpiresIn}s, ExpiresAt: {ExpiresAt}, Now: {Now}, IsExpired: {IsExpired}",
-                receivedAt, expiresIn, expiresAt, now, isExpired);
-
-            return isExpired;
-        }
-
-        Logger.LogDebug("Failed to parse Fitbit token timestamps");
-        return true;
+        return token;
     }
 
     /// <inheritdoc />
@@ -209,24 +128,11 @@ public class FitbitService : ProviderServiceBase, IFitbitService
             throw new InvalidOperationException("No refresh token found");
         }
 
-        var refreshToken = refreshTokenObj.ToString();
-
-        var parameters = new Dictionary<string, string>
+        using var request = CreateTokenRequest(new Dictionary<string, string>
         {
             ["grant_type"] = "refresh_token",
-            ["refresh_token"] = refreshToken!
-        };
-
-        using var content = new FormUrlEncodedContent(parameters);
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.fitbit.com/oauth2/token")
-        {
-            Content = content
-        };
-
-        // Use Basic Auth with client credentials
-        var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{_config.ClientId}:{_config.ClientSecret}"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+            ["refresh_token"] = refreshTokenObj.ToString()!
+        });
 
         using var response = await _httpClient.SendAsync(request);
 
@@ -251,18 +157,41 @@ public class FitbitService : ProviderServiceBase, IFitbitService
             throw new HttpRequestException($"Fitbit token refresh failed: {response.StatusCode}");
         }
 
-        var responseContent = await response.Content.ReadAsStringAsync();
+        var refreshedToken = ToToken(await response.Content.ReadAsStringAsync());
+        Logger.LogDebug("Successfully refreshed Fitbit access token");
+        return refreshedToken;
+    }
+
+    /// <summary>
+    /// Builds a request to Fitbit's token endpoint authenticated with the client credentials
+    /// </summary>
+    private HttpRequestMessage CreateTokenRequest(Dictionary<string, string> parameters)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.fitbit.com/oauth2/token")
+        {
+            Content = new FormUrlEncodedContent(parameters)
+        };
+
+        // Use Basic Auth with client credentials
+        var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{_config.ClientId}:{_config.ClientSecret}"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+
+        return request;
+    }
+
+    /// <summary>
+    /// Parses a token endpoint response into the stored token shape (user_id is not kept)
+    /// </summary>
+    private static Dictionary<string, object> ToToken(string responseContent)
+    {
         var tokenData = JsonSerializer.Deserialize<FitbitTokenResponse>(responseContent);
 
         if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
             || string.IsNullOrWhiteSpace(tokenData.RefreshToken) || tokenData.ExpiresIn <= 0)
         {
-            throw new JsonException("Failed to parse Fitbit token refresh response");
+            throw new JsonException("Failed to parse Fitbit token response");
         }
 
-        Logger.LogDebug("Successfully refreshed Fitbit access token");
-
-        // Create refreshed token dictionary (excluding user_id since we don't use it)
         return new Dictionary<string, object>
         {
             ["access_token"] = tokenData.AccessToken,
@@ -486,7 +415,6 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         {
             throw new JsonException("Fitbit response is missing its weight log");
         }
-
 
         if (weightLog.Weight.Count == 0)
         {

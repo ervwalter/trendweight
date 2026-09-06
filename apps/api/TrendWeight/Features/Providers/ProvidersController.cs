@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -9,7 +8,6 @@ using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.Providers.Models;
 using TrendWeight.Common.Models;
-using TrendWeight.Features.Profile.Models;
 using TrendWeight.Infrastructure.DataAccess.Models;
 
 namespace TrendWeight.Features.Providers;

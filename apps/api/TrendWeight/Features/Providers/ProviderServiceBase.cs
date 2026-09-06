@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Web;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
@@ -14,6 +15,9 @@ namespace TrendWeight.Features.Providers;
 /// </summary>
 public abstract class ProviderServiceBase : IProviderService
 {
+    // Refresh tokens 5 minutes before they expire
+    private const int TokenExpiryBufferSeconds = 300;
+
     protected IProviderLinkService ProviderLinkService { get; }
     protected IProfileService ProfileService { get; }
     protected ISyncProgressReporter? ProgressReporter { get; }
@@ -232,7 +236,6 @@ public abstract class ProviderServiceBase : IProviderService
             return null;
         }
 
-        // Check if token needs refresh (provider-specific logic)
         if (!IsTokenExpired(providerLink.Token))
         {
             return providerLink;
@@ -255,6 +258,13 @@ public abstract class ProviderServiceBase : IProviderService
                 return providerLink;
             }
 
+            if (!providerLink.Token.TryGetValue("refresh_token", out var refreshToken) || string.IsNullOrEmpty(refreshToken?.ToString()))
+            {
+                Logger.LogWarning("Token for {Provider} user {UserId} has no refresh token and cannot be refreshed. User needs to re-link account.", ProviderName, userId);
+                // No valid provider link
+                return null;
+            }
+
             Logger.LogDebug("Token expired for {Provider} user {UserId}, attempting refresh", ProviderName, userId);
 
             try
@@ -269,12 +279,6 @@ public abstract class ProviderServiceBase : IProviderService
                 Logger.LogWarning("Token refresh failed with auth error for {Provider} user {UserId}. User needs to re-link account.", ProviderName, userId);
                 // Re-throw to be handled by the calling method
                 throw;
-            }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("null or undefined") || ex.Message.Contains("No refresh token"))
-            {
-                Logger.LogWarning("Token for {Provider} user {UserId} is invalid and cannot be refreshed. User needs to re-link account.", ProviderName, userId);
-                // Return null to indicate no valid provider link
-                return null;
             }
             catch (Exception ex)
             {
@@ -291,6 +295,48 @@ public abstract class ProviderServiceBase : IProviderService
     }
 
     /// <summary>
+    /// Both providers store the token issue time as received_at (Unix seconds) and its lifetime
+    /// as expires_in (seconds). A token missing either field, or within the refresh buffer of
+    /// its expiry, is treated as expired.
+    /// </summary>
+    protected virtual bool IsTokenExpired(Dictionary<string, object> token)
+    {
+        if (!token.TryGetValue("received_at", out var receivedAtObj) ||
+            !token.TryGetValue("expires_in", out var expiresInObj) ||
+            !long.TryParse(receivedAtObj?.ToString(), out var receivedAt) ||
+            !int.TryParse(expiresInObj?.ToString(), out var expiresIn))
+        {
+            return true;
+        }
+
+        return receivedAt + expiresIn <= DateTimeOffset.UtcNow.ToUnixTimeSeconds() + TokenExpiryBufferSeconds;
+    }
+
+    /// <summary>
+    /// Builds the OAuth authorization URL for a provider's authorize endpoint
+    /// </summary>
+    protected static string BuildAuthorizationUrl(string authorizeEndpoint, string clientId, string scope, string state, string callbackUrl)
+    {
+        var url = new UriBuilder(authorizeEndpoint);
+        var query = HttpUtility.ParseQueryString(string.Empty);
+        query["client_id"] = clientId;
+        query["response_type"] = "code";
+        query["scope"] = scope;
+        query["state"] = state;
+        query["redirect_uri"] = callbackUrl;
+        url.Query = query.ToString();
+
+        // UriBuilder renders the default port explicitly; providers expect it omitted
+        var result = url.ToString();
+        if (url.Scheme == "https" && url.Port == 443)
+        {
+            result = result.Replace(":443", string.Empty);
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Extension point to convert Unix timestamp to DateTime
     /// </summary>
     protected static long ToUnixTimeSeconds(DateTime dateTime)
@@ -298,18 +344,12 @@ public abstract class ProviderServiceBase : IProviderService
         return ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
     }
 
-
     // Abstract methods that provider-specific implementations must provide
 
     /// <summary>
     /// Exchanges authorization code for access token (provider-specific)
     /// </summary>
     protected abstract Task<Dictionary<string, object>> ExchangeCodeForTokenAsync(string code, string callbackUrl);
-
-    /// <summary>
-    /// Checks if a token is expired (provider-specific)
-    /// </summary>
-    protected abstract bool IsTokenExpired(Dictionary<string, object> token);
 
     /// <summary>
     /// Refreshes an expired access token (provider-specific)
