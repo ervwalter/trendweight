@@ -1,4 +1,4 @@
-import { setLogger } from "release-please";
+import { Manifest, setLogger } from "release-please";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -160,3 +160,51 @@ test("publication failure stops subsequent PR creation", async () => {
   });
   await assert.rejects(runRelease(github, { loadManifest }), /API unavailable/);
 });
+
+for (const addedCommit of [
+  "deps: update package-b",
+  "chore: adjust automation",
+]) {
+  test(`refreshes an existing release PR after ${addedCommit} even with identical notes`, async () => {
+    const original = await candidate(["deps: update package-a"]);
+    const updated = await candidate(["deps: update package-a", addedCommit]);
+    assert.equal(original.body.toString(), updated.body.toString());
+    const writes = [];
+    const fakeGithub = {
+      ...github,
+      getFileJson: async (path) =>
+        path.endsWith("release-config.json") ? config : { ".": "2.11.0" },
+      async *pullRequestIterator(_branch, state) {
+        if (state === "OPEN")
+          yield {
+            number: 460,
+            headBranchName: original.headRefName,
+            body: original.body.toString(),
+            labels: ["autorelease: pending"],
+          };
+      },
+      updatePullRequest: async (number, pr, targetBranch) => {
+        writes.push({ number, pr, targetBranch });
+        return { number };
+      },
+      createPullRequest: () => assert.fail("must update the existing PR"),
+    };
+    const manifest = await Manifest.fromManifest(
+      fakeGithub,
+      "main",
+      ".github/release-config.json",
+      ".github/release-manifest.json",
+    );
+    // Candidate generation is exercised above; stub history traversal only.
+    manifest.buildPullRequests = async () => [updated];
+    await manifest.createPullRequests();
+    assert.equal(
+      writes.length,
+      1,
+      "unchanged notes must not skip the branch refresh",
+    );
+    assert.equal(writes[0].number, 460);
+    assert.equal(writes[0].targetBranch, "main");
+    assert.equal(writes[0].pr, updated);
+  });
+}

@@ -99,6 +99,8 @@ own rollout and rollback consideration; rolling back an image does not undo them
 The release workflow runs `.github/scripts/release-please.mjs` using the exact
 `release-please` version in the root package manifest and lockfile. It uses the
 existing `.github/release-config.json` and `.github/release-manifest.json`.
+`always-update: true` keeps an existing release PR current with `main` even when
+additional dependency or hidden maintenance commits leave its notes unchanged.
 Version calculation still sees every commit; only the notes renderer changes.
 Routine `deps:` commits become one “Updated dependencies.” entry per release.
 Breaking dependency changes retain their individual descriptions and migration
