@@ -9,9 +9,9 @@ describe("ChangeArrow", () => {
       expect(screen.getByText("↓")).toBeInTheDocument();
     });
 
-    it("shows down arrow for zero change", () => {
-      render(<ChangeArrow change={0} />);
-      expect(screen.getByText("↓")).toBeInTheDocument();
+    it("shows no arrow for zero change", () => {
+      const { container } = render(<ChangeArrow change={0} intendedDirection={-1} />);
+      expect(container).toBeEmptyDOMElement();
     });
 
     it("shows up arrow for positive change", () => {
@@ -51,10 +51,9 @@ describe("ChangeArrow", () => {
       expect(arrow).toHaveAttribute("aria-label", "Negative change");
     });
 
-    it("indicates positive for zero change with any intended direction", () => {
+    it("renders nothing for zero change regardless of intended direction", () => {
       const { container } = render(<ChangeArrow change={0} intendedDirection={1} />);
-      const arrow = container.querySelector("span");
-      expect(arrow).toHaveAttribute("aria-label", "Positive change");
+      expect(container.querySelector("span")).toBeNull();
     });
   });
 

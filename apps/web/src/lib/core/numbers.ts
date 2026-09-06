@@ -8,7 +8,7 @@ const numberFormatter = Intl.NumberFormat([], {
 const numberDeltaFormatter = Intl.NumberFormat([], {
   maximumFractionDigits: 1,
   minimumFractionDigits: 1,
-  signDisplay: "always",
+  signDisplay: "exceptZero",
 });
 
 const integerFormatter = Intl.NumberFormat([], {
@@ -35,7 +35,7 @@ const metricDeltaFormatter = Intl.NumberFormat([], {
   minimumFractionDigits: 1,
   style: "unit",
   unit: "kilogram",
-  signDisplay: "always",
+  signDisplay: "exceptZero",
 });
 
 const imperialDeltaFormatter = Intl.NumberFormat([], {
@@ -43,7 +43,7 @@ const imperialDeltaFormatter = Intl.NumberFormat([], {
   minimumFractionDigits: 1,
   style: "unit",
   unit: "pound",
-  signDisplay: "always",
+  signDisplay: "exceptZero",
 });
 
 const percentFormatter = Intl.NumberFormat([], {
@@ -56,7 +56,7 @@ const percentDeltaFormatter = Intl.NumberFormat([], {
   maximumFractionDigits: 1,
   minimumFractionDigits: 1,
   style: "percent",
-  signDisplay: "always",
+  signDisplay: "exceptZero",
 });
 
 const metricPlannedFormatter = Intl.NumberFormat([], {

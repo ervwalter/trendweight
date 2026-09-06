@@ -30,11 +30,16 @@ describe("numbers", () => {
       expect(imperialResult).toMatch(/0\.0.*lb/i);
     });
 
-    it("should handle zero values with sign", () => {
+    it("should not show a sign for zero change", () => {
       const metricResult = formatWeight(0, true, true);
       const imperialResult = formatWeight(0, false, true);
-      expect(metricResult).toMatch(/\+0\.0.*kg/i);
-      expect(imperialResult).toMatch(/\+0\.0.*lb/i);
+      expect(metricResult).toMatch(/^0\.0.*kg/i);
+      expect(imperialResult).toMatch(/^0\.0.*lb/i);
+    });
+
+    it("should still sign non-zero changes", () => {
+      expect(formatWeight(1.5, true, true)).toMatch(/^\+1\.5/);
+      expect(formatWeight(-1.5, false, true)).toMatch(/^-1\.5/);
     });
   });
 
@@ -59,9 +64,9 @@ describe("numbers", () => {
       expect(result).toMatch(/0\.0.*%/);
     });
 
-    it("should handle zero percentage with sign", () => {
+    it("should not show a sign for zero percentage change", () => {
       const result = formatPercent(0, true);
-      expect(result).toMatch(/\+0\.0.*%/);
+      expect(result).toMatch(/^0\.0.*%/);
     });
 
     it("should handle very small percentages", () => {
@@ -87,7 +92,7 @@ describe("numbers", () => {
       const withoutSign = formatNumber(0, false);
       const withSign = formatNumber(0, true);
       expect(withoutSign).toBe("0.0");
-      expect(withSign).toBe("+0.0");
+      expect(withSign).toBe("0.0");
     });
 
     it("should round to one decimal place", () => {
