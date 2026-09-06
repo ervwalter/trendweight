@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>ervwalter/renovate-config:default"
+    "github>ervwalter/renovate-config:auto-merge"
   ],
   "semanticCommitType": "deps",
   "semanticCommitScope": "",
@@ -30,18 +30,6 @@
       "minimumReleaseAgeBehaviour": "timestamp-required"
     },
     {
-      "description": "Automerge routine updates only after cooldown and required CI checks",
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "digest",
-        "pin",
-        "pinDigest",
-        "lockFileMaintenance"
-      ],
-      "automerge": true
-    },
-    {
       "description": "Review release automation library updates monthly with its compatibility tests",
       "matchPackageNames": [
         "release-please"
@@ -49,15 +37,14 @@
       "schedule": [
         "before 4am on the first day of the month"
       ],
-      "automerge": false,
-      "groupName": "release automation"
+      "groupName": "release automation",
+      "addLabels": [
+        "manual-review"
+      ],
+      "assignees": [
+        "ervwalter"
+      ],
+      "groupSlug": "release-automation"
     }
-  ],
-  "ignoreScripts": true,
-  "internalChecksFilter": "strict",
-  "internalChecksAsSuccess": true,
-  "automerge": false,
-  "platformAutomerge": true,
-  "automergeType": "pr",
-  "automergeStrategy": "squash"
+  ]
 }

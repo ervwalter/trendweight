@@ -124,9 +124,17 @@ inherits a five-day normal cooldown and a twelve-hour security-fix cooldown from
 `ervwalter/renovate-config:default`. The npm resolution floor can delay a fresh
 security fix beyond twelve hours; an urgent exception should be reviewed and
 limited to the affected package, rather than disabling the policy globally.
-Unknown npm/NuGet publication timestamps block Renovate updates. Routine updates
-may automerge after the required Build and Test and Docker Build checks; major
-updates and release PRs remain manual.
+Unknown npm/NuGet publication timestamps block version updates subject to the
+release-age gate. Lockfile maintenance itself has no Renovate release-age gate;
+npm still applies the local five-day resolution floor, while NuGet has no
+equivalent package-manager age filter. The shared
+`auto-merge` preset labels eligible PRs, and `.github/workflows/automerge.yml`
+calls the shared workflow to enable GitHub squash auto-merge after the required
+Build and Test and Docker Build checks. Ordinary major updates remain manual;
+the shared policy also labels GitHub Actions majors and security updates.
+Release Please library updates carry `manual-review`, which prevents the caller
+workflow from enabling auto-merge. It does not cancel auto-merge already enabled
+manually. Renovate's built-in automerge is not enabled.
 
 Renovate alone retains `allow-remote=all` for the npm bundled-dependency bug tracked
 in [#463](https://github.com/ervwalter/trendweight/issues/463). Do not copy that
