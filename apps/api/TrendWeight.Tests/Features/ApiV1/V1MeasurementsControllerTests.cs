@@ -23,9 +23,7 @@ public class V1MeasurementsControllerTests
     public V1MeasurementsControllerTests()
     {
         _orchestrationServiceMock = new Mock<IMeasurementOrchestrationService>();
-        _sut = new V1MeasurementsController(
-            _orchestrationServiceMock.Object,
-            Mock.Of<ILogger<V1MeasurementsController>>());
+        _sut = new V1MeasurementsController(_orchestrationServiceMock.Object);
 
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, _userId.ToString()) };
         _sut.ControllerContext = new ControllerContext

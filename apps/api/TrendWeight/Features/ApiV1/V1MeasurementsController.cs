@@ -18,14 +18,10 @@ public class V1MeasurementsController : BaseApiV1Controller
     private static readonly string[] SourceProviders = ["withings", "fitbit", "legacy"];
 
     private readonly IMeasurementOrchestrationService _orchestrationService;
-    private readonly ILogger<V1MeasurementsController> _logger;
 
-    public V1MeasurementsController(
-        IMeasurementOrchestrationService orchestrationService,
-        ILogger<V1MeasurementsController> logger)
+    public V1MeasurementsController(IMeasurementOrchestrationService orchestrationService)
     {
         _orchestrationService = orchestrationService;
-        _logger = logger;
     }
 
     /// <summary>

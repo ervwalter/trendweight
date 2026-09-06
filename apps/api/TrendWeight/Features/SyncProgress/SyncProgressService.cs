@@ -22,8 +22,6 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
         _supabaseService = supabaseService;
         _requestContext = requestContext;
         _logger = logger;
-
-        _logger.LogInformation("SyncProgressService created with broadcast support");
     }
 
     public async Task ReportSyncProgressAsync(string status, string message)
@@ -31,7 +29,7 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
         await _messageLock.WaitAsync();
         try
         {
-            await EnsureMessageInitializedAsync();
+            EnsureMessageInitialized();
             if (_currentMessage == null) return;
 
             _currentMessage.Status = status;
@@ -50,31 +48,21 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
         }
     }
 
-    private Task EnsureMessageInitializedAsync()
+    private void EnsureMessageInitialized()
     {
-        if (_currentMessage != null) return Task.CompletedTask;
+        if (_currentMessage != null) return;
 
         var progressId = _requestContext.ProgressId;
-        if (!progressId.HasValue) return Task.CompletedTask;
+        if (!progressId.HasValue) return;
 
-        try
+        _currentMessage = new SyncProgressMessage
         {
-            _currentMessage = new SyncProgressMessage
-            {
-                Id = progressId.Value,
-                Status = "running",
-                Providers = []
-            };
+            Id = progressId.Value,
+            Status = "running",
+            Providers = []
+        };
 
-            _logger.LogDebug("Initialized progress message for {ProgressId}", progressId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to initialize progress message for {ProgressId}", progressId);
-            _currentMessage = null;
-        }
-
-        return Task.CompletedTask;
+        _logger.LogDebug("Initialized progress message for {ProgressId}", progressId);
     }
 
     public async Task ReportProviderProgressAsync(string provider, string stage, string? message = null, int? current = null, int? total = null)
@@ -82,7 +70,7 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
         await _messageLock.WaitAsync();
         try
         {
-            await EnsureMessageInitializedAsync();
+            EnsureMessageInitialized();
             if (_currentMessage == null) return;
 
             // Normalize provider name to lowercase
