@@ -313,6 +313,24 @@ describe("Stats", () => {
       expect(screen.getByText(/to lose 1.0 lb/)).toBeInTheDocument();
     });
 
+    it("describes a maintain plan as maintaining rather than losing 0 lb/week", () => {
+      mockUseDashboardData.mockReturnValue({
+        ...defaultMockData,
+        profile: {
+          ...defaultMockData.profile,
+          showCalories: true,
+          plannedPoundsPerWeek: 0,
+        } as any,
+        weightSlope: 0.1, // Gaining 0.7 lb/week
+      } as any);
+
+      render(<Stats />);
+
+      expect(screen.getByText(/You must cut/)).toBeInTheDocument();
+      expect(screen.getByText(/to maintain your weight/)).toBeInTheDocument();
+      expect(screen.queryByText(/to lose/)).not.toBeInTheDocument();
+    });
+
     it("handles metric calorie calculations", () => {
       mockUseDashboardData.mockReturnValue({
         ...defaultMockData,

@@ -74,9 +74,15 @@ const Stats = () => {
                 </>
               ) : (
                 <>
-                  {isMe ? "You" : "They"} must cut <strong>{formatInteger(Math.abs(caloriesVsPlan))} cal/day</strong> to lose{" "}
-                  {formatPlannedWeight(Math.abs(plannedPoundsPerWeek), useMetric)}
-                  /week.
+                  {isMe ? "You" : "They"} must cut <strong>{formatInteger(Math.abs(caloriesVsPlan))} cal/day</strong>{" "}
+                  {plannedPoundsPerWeek === 0 ? (
+                    <>to maintain {isMe ? "your" : "their"} weight.</>
+                  ) : (
+                    <>
+                      to lose {formatPlannedWeight(Math.abs(plannedPoundsPerWeek), useMetric)}
+                      /week.
+                    </>
+                  )}
                 </>
               )}
             </li>
