@@ -18,15 +18,12 @@ export async function ensureProfile(client: QueryClient, getToken: GetToken, sha
       return;
     }
 
-    // For shared dashboards, check if profile exists
-    try {
-      const profile = await client.fetchQuery(queryOptions.profile(getToken, sharingCode));
+    // For shared dashboards, an unknown code (404, normalized to null by the query) goes
+    // home. Anything else (server error, network failure) propagates to the router's error
+    // component so the viewer sees a message instead of a silent redirect
+    const profile = await client.fetchQuery(queryOptions.profile(getToken, sharingCode));
 
-      if (!profile) {
-        throw redirect({ to: "/", replace: true });
-      }
-    } catch {
-      // If profile not found or any error, redirect to home
+    if (!profile) {
       throw redirect({ to: "/", replace: true });
     }
   } else {

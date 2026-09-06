@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { redirect } from "@tanstack/react-router";
-import { ensureProviderLinks } from "./utils";
+import { ensureProfile, ensureProviderLinks } from "./utils";
 import type { ProviderLink } from "@/lib/api/types";
 
 // Mock dependencies
@@ -16,8 +16,47 @@ vi.mock("@/lib/api/queries", () => ({
     providerLinks: vi.fn((sharingCode?: string) => ({
       queryKey: ["providerLinks", sharingCode],
     })),
+    profile: vi.fn((_getToken: unknown, sharingCode?: string) => ({
+      queryKey: ["profile", sharingCode],
+    })),
   },
 }));
+
+describe("ensureProfile", () => {
+  const mockRedirect = vi.mocked(redirect);
+  const nullTokenGetter = vi.fn().mockResolvedValue(null);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("shared dashboards", () => {
+    it("passes when the sharing code resolves to a profile", async () => {
+      const client = new QueryClient();
+      vi.spyOn(client, "fetchQuery").mockResolvedValue({ user: { firstName: "Sam" } });
+
+      await expect(ensureProfile(client, nullTokenGetter, "abc123")).resolves.toBeUndefined();
+      expect(mockRedirect).not.toHaveBeenCalled();
+    });
+
+    it("redirects home when the sharing code is unknown", async () => {
+      const client = new QueryClient();
+      vi.spyOn(client, "fetchQuery").mockResolvedValue(null);
+
+      await expect(ensureProfile(client, nullTokenGetter, "abc123")).rejects.toThrow("Redirect");
+      expect(mockRedirect).toHaveBeenCalledWith({ to: "/", replace: true });
+    });
+
+    it("surfaces server and network failures instead of silently redirecting home", async () => {
+      const client = new QueryClient();
+      const failure = new Error("Internal Server Error");
+      vi.spyOn(client, "fetchQuery").mockRejectedValue(failure);
+
+      await expect(ensureProfile(client, nullTokenGetter, "abc123")).rejects.toBe(failure);
+      expect(mockRedirect).not.toHaveBeenCalled();
+    });
+  });
+});
 
 describe("ensureProviderLinks", () => {
   const queryClient = new QueryClient();
