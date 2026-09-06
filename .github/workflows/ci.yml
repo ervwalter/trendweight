@@ -15,6 +15,9 @@ env:
   DOTNET_NOLOGO: "1"
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
 
+permissions:
+  contents: read
+
 jobs:
   checks:
     name: Build and Test
@@ -26,7 +29,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "24"
+          node-version: "26"
           cache: "npm"
 
       - name: Setup .NET
@@ -59,6 +62,7 @@ jobs:
 
   docker-build:
     name: Docker Build
+    needs: checks
     runs-on: ubuntu-latest
     permissions:
       contents: read

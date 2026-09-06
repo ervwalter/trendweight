@@ -1,4 +1,13 @@
 #!/bin/bash
+set -euo pipefail
+
+# Load the same local configuration used by docker:build. This is a trusted shell
+# file; values containing spaces or semicolons must be quoted.
+if [[ -f .env ]]; then
+    set -a
+    source .env
+    set +a
+fi
 
 # Script to run TrendWeight Docker container with environment variables passed through
 
@@ -7,6 +16,7 @@
 ENV_VARS=(
     # Supabase configuration
     "Supabase__Url"
+    "Supabase__AnonKey"
     "Supabase__ServiceKey"
     
     # Clerk authentication configuration
@@ -29,21 +39,26 @@ ENV_VARS=(
 )
 
 # Build the docker run command with all environment variables
-DOCKER_CMD="docker run --rm -p 8080:8080"
+DOCKER_CMD=(docker run --rm -p 8080:8080)
 
 # Add each environment variable if it exists
 for var in "${ENV_VARS[@]}"; do
-    if [ ! -z "${!var}" ]; then
-        DOCKER_CMD="$DOCKER_CMD -e \"$var=${!var}\""
+    if [[ -n "${!var:-}" ]]; then
+        # Let Docker read the value from the environment. Never interpolate
+        # secrets into shell source or expose them in command-line arguments.
+        DOCKER_CMD+=(-e "$var")
     fi
 done
 
-# Add the image name
-DOCKER_CMD="$DOCKER_CMD trendweight:local"
+# Trusted ingress lists have a variable number of indexed entries.
+while IFS= read -r var; do
+    if [[ "$var" =~ ^ForwardedHeaders__Known(Proxies|Networks)__[0-9]+$ ]]; then
+        DOCKER_CMD+=(-e "$var")
+    fi
+done < <(compgen -e)
 
-# # Echo the command for debugging (optional - remove if not needed)
-# echo "Running: $DOCKER_CMD"
-# echo ""
+# Add the image name
+DOCKER_CMD+=(trendweight:local)
 
 # Execute the command
-eval $DOCKER_CMD
+exec "${DOCKER_CMD[@]}"

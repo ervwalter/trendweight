@@ -51,7 +51,7 @@ WORKDIR /src
 COPY apps/api/ ./
 
 # Copy frontend build to wwwroot BEFORE building the backend
-# This is required for MapStaticAssets() to work
+# Publishing includes these files for the API static-file middleware
 COPY --from=frontend-build /app/apps/web/dist ./TrendWeight/wwwroot
 
 # Restore and build
