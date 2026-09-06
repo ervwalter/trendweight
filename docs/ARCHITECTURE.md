@@ -66,13 +66,27 @@ because current users authenticate with Clerk and may lack a legacy Auth account
 
 ## Database authority
 
-The canonical schema is `supabase/migrations`, not the older files under
-`apps/api/TrendWeight/supabase`. Tables hold user mappings, profiles, OAuth provider
-links, raw source documents, and legacy migration data. Profile deletion cascades
-to provider links and source data. The committed schema enables row-level security
-and denies anon/authenticated table access; the backend uses the service role.
-Progress messages use Supabase Realtime broadcasts on random progress-ID topics.
-These are advisory status messages, not an authorization mechanism.
+The canonical schema is `supabase/migrations`; there is no other schema copy.
+
+| Table             | Purpose and boundaries                                               |
+| ----------------- | -------------------------------------------------------------------- |
+| `profiles`        | Internal UUID, email and profile JSON; API-key hash expression index |
+| `provider_links`  | Provider OAuth token JSON; composite user/provider primary key       |
+| `source_data`     | Raw measurement arrays, last sync and forced-full-sync flag          |
+| `user_accounts`   | Unique external-provider identity mapped to internal UUID            |
+| `legacy_profiles` | Legacy profile and measurement import data                           |
+
+Profile deletion cascades to provider links and source data. The committed schema
+enables row-level security and revokes anon/authenticated privileges on tables,
+sequences, and functions (including default privileges for future objects); the
+backend uses the service role. Progress messages use Supabase Realtime broadcasts
+on random progress-ID topics. These are advisory status messages, not an
+authorization mechanism.
+
+OAuth tokens are stored as readable JSON; there is no application-level token
+encryption. Profile JSON uses the PascalCase property names serialized by
+`ProfileData` (for example `ApiKeyHash` and `SharingToken`); do not change their
+casing without a migration and compatible query changes.
 
 Create schema changes with `supabase migration new <name>` and review the SQL.
 Apply to remote projects only through the approved migration workflow; never edit

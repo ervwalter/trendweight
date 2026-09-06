@@ -19,9 +19,8 @@ Tests mock external services and do not need live service credentials; see
 
 ## Database
 
-Use the versioned SQL in [supabase/migrations](../supabase/migrations). The files
-under `apps/api/TrendWeight/supabase` are historical and must not be used to
-initialize a project.
+Use the versioned SQL in [supabase/migrations](../supabase/migrations); it is the
+only schema definition in the repository.
 
 For a disposable local database, follow Supabase's [local development setup](https://supabase.com/docs/guides/local-development/overview).
 `supabase start` starts the local stack. `supabase db reset` rebuilds the local
