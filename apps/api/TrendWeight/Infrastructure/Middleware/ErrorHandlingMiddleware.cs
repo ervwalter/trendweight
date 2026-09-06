@@ -66,9 +66,11 @@ public class ErrorHandlingMiddleware
                 break;
 
             case UnauthorizedAccessException:
-                response.Error = "Access denied";
-                statusCode = (int)HttpStatusCode.Forbidden;
-                response.ErrorCode = "ACCESS_DENIED";
+                // Thrown by the base controllers when the principal carries no identity
+                // claim: the caller is not authenticated, not authenticated-but-refused.
+                response.Error = "Authentication required";
+                statusCode = (int)HttpStatusCode.Unauthorized;
+                response.ErrorCode = ErrorCodes.Unauthorized;
                 break;
 
             default:

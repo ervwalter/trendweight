@@ -45,6 +45,20 @@ public class ErrorHandlingMiddlewareTests
     }
 
     [Fact]
+    public async Task MissingIdentity_IsUnauthorizedNotForbidden()
+    {
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+        var middleware = Create(_ => throw new UnauthorizedAccessException("User ID not found"));
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(401);
+        using var document = JsonDocument.Parse(await ReadBody(context));
+        document.RootElement.GetProperty("errorCode").GetString().Should().Be("UNAUTHORIZED");
+    }
+
+    [Fact]
     public async Task ErrorAfterResponseStarted_PropagatesWithoutRewritingResponse()
     {
         var context = new DefaultHttpContext();
