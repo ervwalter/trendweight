@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { LocalDate } from "@js-joda/core";
 import { useForm } from "react-hook-form";
 import { StartDateSettings } from "./start-date-settings";
 import type { ProfileData } from "@/lib/core/interfaces";
@@ -15,7 +16,7 @@ function TestWrapper({ defaultValues = {} }: { defaultValues?: Partial<ProfileDa
 }
 
 describe("StartDateSettings", () => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = LocalDate.now().toString();
 
   it("should render start date input and toggle", () => {
     render(<TestWrapper />);
@@ -66,6 +67,22 @@ describe("StartDateSettings", () => {
 
     const dateInput = screen.getByLabelText("Start Date");
     expect(dateInput).toHaveAttribute("max", today);
+  });
+
+  it("uses the local calendar date for the limit, even when UTC has already rolled over", () => {
+    vi.stubEnv("TZ", "America/New_York");
+    vi.useFakeTimers();
+    // 23:30 on March 10 in New York is already March 11 in UTC
+    vi.setSystemTime(new Date("2024-03-11T03:30:00Z"));
+
+    try {
+      render(<TestWrapper />);
+
+      expect(screen.getByLabelText("Start Date")).toHaveAttribute("max", "2024-03-10");
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllEnvs();
+    }
   });
 
   it("should display existing start date", () => {

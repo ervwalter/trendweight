@@ -1,3 +1,4 @@
+import { LocalDate } from "@js-joda/core";
 import type { Control, UseFormRegister, UseFormWatch } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import type { ProfileData } from "@/lib/core/interfaces";
@@ -11,13 +12,17 @@ interface StartDateSettingsProps {
 }
 
 export function StartDateSettings({ register, control }: StartDateSettingsProps) {
+  // The user's local calendar date, not the UTC one; late in the evening west of UTC
+  // "today" would otherwise be rejected as a future date
+  const today = LocalDate.now().toString();
+
   return (
     <div className="space-y-4">
       <div>
         <label htmlFor="goalStart" className="text-foreground/80 mb-1 block text-sm font-medium">
           Start Date
         </label>
-        <Input id="goalStart" type="date" {...register("goalStart")} max={new Date().toISOString().split("T")[0]} className="w-auto" />
+        <Input id="goalStart" type="date" {...register("goalStart")} max={today} className="w-auto" />
         <p className="text-muted-foreground mt-1 text-sm">Calculate your total weight change starting from this date.</p>
       </div>
 
