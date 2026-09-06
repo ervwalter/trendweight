@@ -93,6 +93,15 @@ describe("AccountSecuritySection", () => {
     expect(securityLink).toHaveAttribute("href", "https://accounts.trendweight.com/user/security");
   });
 
+  it("appends the security path even when the profile URL has a trailing slash or contains /user elsewhere", () => {
+    mockBuildUserProfileUrl.mockReturnValue("https://user.example.com/user-portal/user/");
+
+    render(<AccountSecuritySection />);
+
+    const securityLink = screen.getByRole("link", { name: /Open Security Settings/ });
+    expect(securityLink).toHaveAttribute("href", "https://user.example.com/user-portal/user/security");
+  });
+
   it("should use fallback URLs when Clerk is not available", () => {
     // Mock useClerk to return null
     vi.mocked(useClerk).mockReturnValue(null as any);

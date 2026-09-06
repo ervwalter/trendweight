@@ -9,7 +9,9 @@ export function AccountSecuritySection() {
 
   // Use Clerk's built-in method if available, otherwise fallback
   const profileUrl = clerk?.buildUserProfileUrl?.() || "https://accounts.trendweight.com/user";
-  const securityUrl = profileUrl.replace("/user", "/user/security");
+  // The security page lives under the profile URL; append rather than string-replace so a
+  // host or path containing "/user" elsewhere cannot be rewritten
+  const securityUrl = `${profileUrl.replace(/\/+$/, "")}/security`;
 
   return (
     <>
