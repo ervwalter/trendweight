@@ -7,13 +7,6 @@ export interface ProfileResponse {
   isMe?: boolean;
 }
 
-export interface Measurement {
-  date: string;
-  weight: number;
-  trend?: number;
-  change?: number;
-}
-
 // Provider availability from GET /api/providers/config
 export interface ProvidersConfig {
   // Providers that no longer accept new connections or syncs (e.g. "fitbit"
@@ -90,19 +83,3 @@ export interface MeasurementsResponse {
   providerStatus?: Record<string, ProviderSyncStatus>;
   isMe: boolean;
 }
-
-// API error response with error codes
-export interface ApiErrorResponse {
-  error: string;
-  errorCode?: string;
-  isRetryable?: boolean;
-}
-
-export const ErrorCodes = {
-  RATE_LIMITED: "RATE_LIMITED",
-  UNAUTHORIZED: "UNAUTHORIZED",
-  INVALID_CODE: "INVALID_CODE",
-  FORBIDDEN: "FORBIDDEN",
-  SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
-  UNEXPECTED_ERROR: "UNEXPECTED_ERROR",
-} as const;

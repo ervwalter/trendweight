@@ -136,14 +136,13 @@ export function Header() {
 interface NavLinkProps {
   to: string;
   children: React.ReactNode;
-  visibility?: string;
 }
 
-function NavLink({ to, children, visibility = "visible" }: NavLinkProps) {
+function NavLink({ to, children }: NavLinkProps) {
   return (
     <Link
       to={to}
-      className={`hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors dark:hover:bg-white/10 ${visibility}`}
+      className="hover:bg-background/20 text-primary-foreground hover:text-primary-foreground flex items-center px-3 transition-colors dark:hover:bg-white/10"
       activeProps={{
         className: "bg-background/25 dark:bg-white/5",
       }}
@@ -157,11 +156,11 @@ interface MobileNavLinkProps extends NavLinkProps {
   onClick: () => void;
 }
 
-function MobileNavLink({ to, children, onClick, visibility = "visible" }: MobileNavLinkProps) {
+function MobileNavLink({ to, children, onClick }: MobileNavLinkProps) {
   return (
     <Link
       to={to}
-      className={`hover:bg-primary/80 text-primary-foreground rounded px-3 py-2 dark:hover:bg-white/10 ${visibility}`}
+      className="hover:bg-primary/80 text-primary-foreground rounded px-3 py-2 dark:hover:bg-white/10"
       activeProps={{
         className: "bg-background/20 dark:bg-white/5",
       }}

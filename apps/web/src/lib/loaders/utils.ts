@@ -64,24 +64,3 @@ export async function ensureProviderLinks(client: QueryClient, getToken: GetToke
     throw redirect({ to: redirectTo, replace: true });
   }
 }
-
-/**
- * Ensures the user is newly migrated, redirecting if not.
- * Used specifically for the migration welcome page.
- * @param client - Query client owned by the current account
- * @param getToken - Function to get auth token
- * @throws Redirect to /dashboard if user is not newly migrated
- */
-export async function ensureNewlyMigrated(client: QueryClient, getToken: GetToken): Promise<void> {
-  const profile = await client.fetchQuery(queryOptions.profile(getToken));
-
-  // If no profile exists, redirect to initial setup
-  if (!profile) {
-    throw redirect({ to: "/initial-setup", replace: true });
-  }
-
-  // If user is not newly migrated, redirect to dashboard
-  if (!profile.user?.isNewlyMigrated) {
-    throw redirect({ to: "/dashboard", replace: true });
-  }
-}
