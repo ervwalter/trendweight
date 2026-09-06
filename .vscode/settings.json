@@ -42,6 +42,5 @@
     "resetpassword"
   ],
   "dotnet.defaultSolution": "apps/api/TrendWeight.sln",
-  "chatgpt.openOnStartup": true,
   "workbench.browser.openLocalhostLinks": false
 }
