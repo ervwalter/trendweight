@@ -111,7 +111,7 @@ export function Header() {
               </MobileNavLink>
             ) : (
               <button
-                className={`hover:bg-primary/80 text-primary-foreground $ block w-full rounded px-3 py-2 text-left dark:hover:bg-white/10`}
+                className={`hover:bg-primary/80 text-primary-foreground block w-full rounded px-3 py-2 text-left dark:hover:bg-white/10`}
                 onClick={async (e) => {
                   e.preventDefault();
                   await signOut();

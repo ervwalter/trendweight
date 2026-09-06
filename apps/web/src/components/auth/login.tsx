@@ -4,7 +4,7 @@ const clerkAppearance = {
   elements: {
     rootBox: "w-full",
     cardBox: "w-full",
-    formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-forground font-medium px-6 py-3 rounded-md",
+    formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-6 py-3 rounded-md",
     formFieldInput: "px-4 py-3 max-h-none leading-normal",
     logoBox: "hidden",
     headerTitle: "text-2xl font-bold text-foreground",
