@@ -50,6 +50,24 @@ describe("usePersistedState", () => {
     expect(result.current[0]).toBe("storedValue");
   });
 
+  it("falls back to the default when the stored value fails validation", () => {
+    localStorageMock.getItem.mockReturnValue(JSON.stringify("bogus"));
+    const isRange = (value: unknown): value is "4w" | "all" => value === "4w" || value === "all";
+
+    const { result } = renderHook(() => usePersistedState("timeRange", "4w" as "4w" | "all", true, isRange));
+
+    expect(result.current[0]).toBe("4w");
+  });
+
+  it("keeps a stored value that passes validation", () => {
+    localStorageMock.getItem.mockReturnValue(JSON.stringify("all"));
+    const isRange = (value: unknown): value is "4w" | "all" => value === "4w" || value === "all";
+
+    const { result } = renderHook(() => usePersistedState("timeRange", "4w" as "4w" | "all", true, isRange));
+
+    expect(result.current[0]).toBe("all");
+  });
+
   it("stores value in localStorage when state changes", () => {
     localStorageMock.getItem.mockReturnValue(null);
 

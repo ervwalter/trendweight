@@ -2,13 +2,16 @@ import { useContext, useMemo, useState } from "react";
 import { dashboardContext } from "./dashboard-context";
 import type { DashboardData } from "./dashboard-context";
 import { useDashboardQueries } from "@/lib/api/queries";
-import type { Mode, TimeRange } from "@/lib/core/interfaces";
+import { TimeRanges, type Mode, type TimeRange } from "@/lib/core/interfaces";
 import { usePersistedState } from "@/lib/hooks/use-persisted-state";
 import { useSharingCode } from "@/lib/hooks/use-sharing-code";
 import { useSharingSearchParams } from "@/lib/hooks/use-sharing-search-params";
 import { computeDataPoints } from "./computations/data-points";
 import { computeActiveSlope, computeDeltas, computeWeightSlope } from "./computations/stats";
 import { convertMeasurements } from "./computations/conversion";
+
+// A stale or hand-edited localStorage value would otherwise render a chart with no series
+const isTimeRange = (value: unknown): value is TimeRange => typeof value === "string" && value in TimeRanges;
 
 export const useDashboardData = (): DashboardData => {
   const data = useContext(dashboardContext);
@@ -29,6 +32,7 @@ export const useComputeDashboardData = (): DashboardData => {
     "timeRange",
     searchParams.range || "4w",
     !searchParams.range, // Only persist if no range param
+    isTimeRange,
   );
 
   // Get profile and measurement data in parallel
