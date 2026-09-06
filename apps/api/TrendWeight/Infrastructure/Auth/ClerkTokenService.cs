@@ -1,13 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TrendWeight.Infrastructure.Configuration;
 
 namespace TrendWeight.Infrastructure.Auth;
 
-public class ClerkTokenService : IClerkTokenService
+public class ClerkTokenService : IClerkTokenService, IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<ClerkTokenService> _logger;
@@ -16,6 +15,8 @@ public class ClerkTokenService : IClerkTokenService
     private JsonWebKeySet? _cachedKeySet;
     private DateTime _cacheExpiry = DateTime.MinValue;
     private const int CacheDurationMinutes = 60;
+    private readonly SemaphoreSlim _keySetLock = new(1, 1);
+    private DateTime _lastKeyRefreshAttempt = DateTime.MinValue;
 
     public ClerkTokenService(
         IHttpClientFactory httpClientFactory,
@@ -46,7 +47,19 @@ public class ClerkTokenService : IClerkTokenService
                 ClockSkew = TimeSpan.FromMinutes(5)
             };
 
-            var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+            ClaimsPrincipal principal;
+            try
+            {
+                principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+            }
+            catch (SecurityTokenSignatureKeyNotFoundException)
+            {
+                // Clerk can rotate signing keys before our cached JWKS expires.
+                // Coalesce concurrent refreshes and limit untrusted unknown-kid requests.
+                var refreshedKeySet = await GetJsonWebKeySetAsync(keySet);
+                validationParameters.IssuerSigningKeys = refreshedKeySet.Keys;
+                principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+            }
 
             // Validate azp claim if request origin is provided
             if (!string.IsNullOrEmpty(requestOrigin))
@@ -82,15 +95,26 @@ public class ClerkTokenService : IClerkTokenService
             ?? principal.FindFirst("email")?.Value;
     }
 
-    private async Task<JsonWebKeySet> GetJsonWebKeySetAsync()
+    private async Task<JsonWebKeySet> GetJsonWebKeySetAsync(JsonWebKeySet? previousKeySet = null)
     {
-        if (_cachedKeySet != null && DateTime.UtcNow < _cacheExpiry)
-        {
-            return _cachedKeySet;
-        }
-
+        await _keySetLock.WaitAsync();
         try
         {
+            var now = DateTime.UtcNow;
+            if (_cachedKeySet != null && now < _cacheExpiry)
+            {
+                if (previousKeySet == null || !ReferenceEquals(previousKeySet, _cachedKeySet)
+                    || now - _lastKeyRefreshAttempt < TimeSpan.FromSeconds(30))
+                {
+                    return _cachedKeySet;
+                }
+            }
+
+            if (previousKeySet != null)
+            {
+                _lastKeyRefreshAttempt = now;
+            }
+
             var response = await _httpClient.GetStringAsync(_jwksUrl);
             _cachedKeySet = JsonWebKeySet.Create(response);
             _cacheExpiry = DateTime.UtcNow.AddMinutes(CacheDurationMinutes);
@@ -101,6 +125,16 @@ public class ClerkTokenService : IClerkTokenService
             _logger.LogError(ex, "Failed to fetch Clerk JWKS from {Url}", _jwksUrl);
             throw;
         }
+        finally
+        {
+            _keySetLock.Release();
+        }
     }
 
+    public void Dispose()
+    {
+        _keySetLock.Dispose();
+        _httpClient.Dispose();
+        GC.SuppressFinalize(this);
+    }
 }

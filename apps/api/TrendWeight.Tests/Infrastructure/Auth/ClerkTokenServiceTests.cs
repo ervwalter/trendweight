@@ -45,6 +45,61 @@ public class ClerkTokenServiceTests
     }
 
     [Fact]
+    public async Task ValidateTokenAsync_WhenSigningKeyRotates_RefreshesCachedKeys()
+    {
+        var oldKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_testSigningKey)) { KeyId = "old-key" };
+        var newKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_testSigningKey + "-rotated")) { KeyId = "new-key" };
+        _httpMessageHandlerMock.Protected()
+            .SetupSequence<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(KeyResponse(oldKey))
+            .ReturnsAsync(KeyResponse(newKey));
+        using var service = new ClerkTokenService(_httpClientFactoryMock.Object, _loggerMock.Object, _options);
+
+        Assert.NotNull(await service.ValidateTokenAsync(TokenWithKey(oldKey)));
+        Assert.NotNull(await service.ValidateTokenAsync(TokenWithKey(newKey)));
+        _httpMessageHandlerMock.Protected().Verify("SendAsync", Times.Exactly(2),
+            ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ValidateTokenAsync_WithRepeatedUnknownKeys_DoesNotRepeatedlyFetchJwks()
+    {
+        var knownKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_testSigningKey)) { KeyId = "known-key" };
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .Returns(() => Task.FromResult(KeyResponse(knownKey)));
+        using var service = new ClerkTokenService(_httpClientFactoryMock.Object, _loggerMock.Object, _options);
+        Assert.NotNull(await service.ValidateTokenAsync(TokenWithKey(knownKey)));
+
+        for (var i = 0; i < 3; i++)
+        {
+            var unknownKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_testSigningKey + i)) { KeyId = $"unknown-{i}" };
+            Assert.Null(await service.ValidateTokenAsync(TokenWithKey(unknownKey)));
+        }
+
+        _httpMessageHandlerMock.Protected().Verify("SendAsync", Times.Exactly(2),
+            ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
+    }
+
+    private static HttpResponseMessage KeyResponse(SecurityKey key)
+    {
+        var keySet = new JsonWebKeySet();
+        keySet.Keys.Add(JsonWebKeyConverter.ConvertFromSecurityKey(key));
+        return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(keySet))
+        };
+    }
+
+    private string TokenWithKey(SecurityKey key)
+    {
+        var token = new JwtSecurityToken(_testAuthority, claims: new[] { new Claim("sub", "user_123") },
+            expires: DateTime.UtcNow.AddMinutes(5),
+            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    [Fact]
     public async Task ValidateTokenAsync_WithValidToken_ReturnsClaimsPrincipal()
     {
         // Arrange
