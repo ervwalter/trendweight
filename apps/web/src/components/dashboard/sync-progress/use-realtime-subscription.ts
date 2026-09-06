@@ -4,7 +4,9 @@ import type { SyncProgress } from "./types";
 
 export function useRealtimeSubscription(progressId: string | undefined, onProgressUpdate: (progress: SyncProgress) => void) {
   useEffect(() => {
-    if (!progressId) {
+    // No realtime configuration means no live progress; the sync still completes normally
+    const client = supabase;
+    if (!progressId || !client) {
       return;
     }
 
@@ -17,7 +19,7 @@ export function useRealtimeSubscription(progressId: string | undefined, onProgre
 
     const channelName = `sync-progress:${progressId}`;
 
-    const channel = supabase
+    const channel = client
       .channel(channelName)
       .on("broadcast", { event: "progress_update" }, (payload) => {
         // The backend sends the progress message in payload.payload
@@ -35,7 +37,7 @@ export function useRealtimeSubscription(progressId: string | undefined, onProgre
       });
 
     return () => {
-      supabase.removeChannel(channel);
+      client.removeChannel(channel);
     };
   }, [progressId, onProgressUpdate]);
 }
