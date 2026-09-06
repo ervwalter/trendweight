@@ -73,24 +73,44 @@ CI runs formatting/type/lint/build/tests before the container publication job.
 Only main/tag runs publish images. A Git push starts CI; it does not by itself
 prove production rollout or health. No deployment was performed for the audit fixes.
 
-### Trusted ingress — required before deploying the audit change
+### Public origin and HTTPS — required before deployment
 
-Forwarded headers are accepted only from framework loopback defaults or explicitly
-configured proxies/networks. Set indexed environment variables using real ingress
-addresses from your hosting configuration:
+Set the backend runtime environment variable `PublicBaseUrl` to the public origin:
 
-```text
-ForwardedHeaders__KnownProxies__0=<actual proxy IP>
-ForwardedHeaders__KnownNetworks__0=<actual proxy CIDR>
-```
+| Environment         | Value                             |
+| ------------------- | --------------------------------- |
+| Production          | `https://trendweight.com`         |
+| Staging             | `https://staging.trendweight.com` |
+| Development default | `http://localhost:5173`           |
 
-Use additional indices for additional entries. Do not literally use the placeholders
-or trust all networks. IPv4 and IPv6 peers must match the actual connection address.
-`AllowedHosts` independently constrains accepted hostnames, for example the actual
-production domains separated by semicolons. At most two trusted hops are processed.
-Restrict direct access to the origin and configure upstream header sanitization.
+Withings/Fitbit authorization and token exchanges, the Apple callback redirect,
+and OpenAPI server URLs use this origin. Incoming Host and forwarded headers cannot
+change those destinations. Origins cannot contain credentials, a path beyond `/`,
+a query, or a fragment. Startup fails if the setting is missing outside Development,
+or if the value is invalid. HTTP origins are permitted only in Development; explicit
+ports are preserved. Set an override for a different local frontend port.
 
-Existing external-proxy deployments must supply their trusted ingress IPs/CIDRs
-before rollout. Otherwise forwarded HTTPS/host values are ignored, which can break
-OAuth redirects or cause HTTPS redirect loops. Loopback development retains its
-existing behavior. See Microsoft's [forwarded-header guidance](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-10.0).
+The app does not consume forwarded headers or perform HTTP-to-HTTPS redirection.
+The hosting ingress must enforce public HTTPS; verify its redirect/rejection behavior
+before rollout. Internal HTTP, including readiness probes, remains usable without
+redirect loops. Do not expose this HTTP listener directly on the public Internet.
+This follows Microsoft's [reverse-proxy HTTPS guidance](https://learn.microsoft.com/en-us/aspnet/core/security/enforcing-ssl?view=aspnetcore-10.0).
+
+`AllowedHosts` still independently validates the actual Host header. Keep the
+legitimate application/probe hostnames allowed for your deployment. No proxy IP
+allowlist is needed; `ForwardedHeaders__KnownProxies__N` and
+`ForwardedHeaders__KnownNetworks__N` are obsolete and no longer consumed. Do not set
+`ASPNETCORE_FORWARDEDHEADERS_ENABLED`, which can enable framework forwarding outside
+this application's pipeline. Client IP attribution is not established by the public
+origin setting; the API-key limiter remains partitioned by authenticated identity.
+
+In DigitalOcean App Platform, set `PublicBaseUrl` under each web service's runtime
+environment variables before deploying the new image. Check the registered provider
+callback URLs against the selected origin. Validate staging first: health checks,
+HTTP-to-HTTPS handling at ingress, login, provider linking, Apple callback forwarding,
+and the API docs. Only then promote the tested image to production.
+
+For a local Docker container serving the UI on port 8080, explicitly export
+`ASPNETCORE_ENVIRONMENT=Development` and `PublicBaseUrl=http://localhost:8080`
+before `npm run docker:run`. The script forwards these runtime settings. Do not
+use Development mode on a publicly hosted deployment.

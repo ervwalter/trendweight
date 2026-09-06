@@ -26,6 +26,62 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
 
     public RequestPipelineTests(StartupTestFactory factory) => _factory = factory;
 
+    [Fact]
+    public async Task ApiDocumentation_AdvertisesCanonicalOriginForInternalHttp()
+    {
+        using var client = _factory.CreateHttpsClient();
+        using var response = await client.GetAsync("http://localhost/openapi/v1.json", TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+        using var document = System.Text.Json.JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        document.RootElement.GetProperty("servers")[0].GetProperty("url").GetString()
+            .Should().Be("https://canonical.example");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("http://canonical.example")]
+    public void InvalidPublicOrigin_PreventsProductionStartup(string? origin)
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
+                new Dictionary<string, string?> { ["PublicBaseUrl"] = origin })));
+        var start = () => factory.CreateClient();
+        start.Should().Throw<InvalidOperationException>().WithMessage("PublicBaseUrl*");
+    }
+
+    [Theory]
+    [InlineData("http", "untrusted.example")]
+    [InlineData("https", "localhost")]
+    public async Task AppleCallback_UsesCanonicalOriginDespiteIncomingHeaders(string scheme, string host)
+    {
+        using var client = _factory.CreateHttpsClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{scheme}://{host}/api/auth/apple/callback");
+        request.Headers.Add("X-Forwarded-Host", "attacker.example");
+        request.Headers.Add("X-Forwarded-Proto", "http");
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["code"] = "test-code" });
+
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location!.AbsoluteUri.Should().Be("https://canonical.example/auth/apple/callback?code=test-code");
+    }
+
+    [Fact]
+    public async Task HostValidation_RejectsInvalidHostEvenWhenForwardedHostIsAllowed()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
+                new Dictionary<string, string?> { ["AllowedHosts"] = "localhost" })));
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://attacker.example/api/health");
+        request.Headers.Add("X-Forwarded-Host", "localhost");
+
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     [Theory]
     [InlineData("/api/measurements/manual", null, HttpStatusCode.Unauthorized)]
     [InlineData("/api/v1/measurements/manual", null, HttpStatusCode.Unauthorized)]
@@ -185,11 +241,11 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
     }
 
     [Theory]
-    [InlineData("127.0.0.1", true)]
-    [InlineData("10.20.30.40", true)]
-    [InlineData("10.30.40.50", true)]
-    [InlineData("203.0.113.10", false)]
-    public async Task ForwardedHeaders_AreAppliedOnlyForTrustedPeers(string peer, bool trusted)
+    [InlineData("127.0.0.1")]
+    [InlineData("10.20.30.40")]
+    [InlineData("10.30.40.50")]
+    [InlineData("203.0.113.10")]
+    public async Task ForwardedHeaders_AreIgnoredAndInternalHttpDoesNotRedirect(string peer)
     {
         var response = await _factory.Server.SendAsync(context =>
         {
@@ -203,10 +259,10 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
             context.Request.Headers["X-Forwarded-Proto"] = "https";
         }, TestContext.Current.CancellationToken);
 
-        response.Response.StatusCode.Should().Be(trusted ? StatusCodes.Status200OK : StatusCodes.Status307TemporaryRedirect);
-        response.Request.Scheme.Should().Be(trusted ? "https" : "http");
-        response.Request.Host.Host.Should().Be(trusted ? "forwarded.example" : "localhost");
-        response.Connection.RemoteIpAddress.Should().Be(IPAddress.Parse(trusted ? "198.51.100.20" : peer));
+        response.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
+        response.Request.Scheme.Should().Be("http");
+        response.Request.Host.Host.Should().Be("localhost");
+        response.Connection.RemoteIpAddress.Should().Be(IPAddress.Parse(peer));
     }
 }
 
@@ -236,12 +292,10 @@ public sealed class StartupTestFactory : WebApplicationFactory<Program>
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["AllowedHosts"] = "*",
-            ["ForwardedHeaders:KnownProxies:0"] = "10.20.30.40",
-            ["ForwardedHeaders:KnownNetworks:0"] = "10.30.40.0/24"
+            ["PublicBaseUrl"] = "https://canonical.example"
         }));
         builder.ConfigureServices(services =>
         {
-            services.Configure<Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionOptions>(options => options.HttpsPort = 443);
             var clerkUserId = Guid.NewGuid();
             var apiUserId = Guid.NewGuid();
             var tokens = new Mock<IClerkTokenService>();

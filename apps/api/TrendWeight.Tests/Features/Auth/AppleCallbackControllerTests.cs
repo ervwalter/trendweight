@@ -1,3 +1,4 @@
+using TrendWeight.Infrastructure.Configuration;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +15,7 @@ public class AppleCallbackControllerTests : TestBase
 
     public AppleCallbackControllerTests()
     {
-        _sut = new AppleCallbackController();
+        _sut = new AppleCallbackController(new PublicUrl("https://canonical.example", false));
     }
 
     #region Callback Tests
@@ -39,7 +40,7 @@ public class AppleCallbackControllerTests : TestBase
         result.Should().BeOfType<RedirectResult>();
         var redirectResult = result as RedirectResult;
 
-        var expectedUrl = "https://api.trendweight.com/auth/apple/callback?code=auth-code-123&state=state-token-456&user=%7B%22name%22%3A%7B%22firstName%22%3A%22John%22%2C%22lastName%22%3A%22Doe%22%7D%2C%22email%22%3A%22john%40example.com%22%7D";
+        var expectedUrl = "https://canonical.example/auth/apple/callback?code=auth-code-123&state=state-token-456&user=%7B%22name%22%3A%7B%22firstName%22%3A%22John%22%2C%22lastName%22%3A%22Doe%22%7D%2C%22email%22%3A%22john%40example.com%22%7D";
         redirectResult!.Url.Should().Be(expectedUrl);
     }
 
@@ -57,7 +58,7 @@ public class AppleCallbackControllerTests : TestBase
         result.Should().BeOfType<RedirectResult>();
         var redirectResult = result as RedirectResult;
 
-        redirectResult!.Url.Should().Be("https://localhost/auth/apple/callback?");
+        redirectResult!.Url.Should().Be("https://canonical.example/auth/apple/callback?");
     }
 
     [Fact]
@@ -78,7 +79,7 @@ public class AppleCallbackControllerTests : TestBase
         result.Should().BeOfType<RedirectResult>();
         var redirectResult = result as RedirectResult;
 
-        redirectResult!.Url.Should().Be("http://localhost:3000/auth/apple/callback?error=access_denied");
+        redirectResult!.Url.Should().Be("https://canonical.example/auth/apple/callback?error=access_denied");
     }
 
     [Fact]
@@ -100,7 +101,7 @@ public class AppleCallbackControllerTests : TestBase
         result.Should().BeOfType<RedirectResult>();
         var redirectResult = result as RedirectResult;
 
-        var expectedUrl = "https://app.example.com/auth/apple/callback?test_key=value%20with%20spaces%20%26%20symbols%21&another=special%3Dchars%26more%3Ddata";
+        var expectedUrl = "https://canonical.example/auth/apple/callback?test_key=value%20with%20spaces%20%26%20symbols%21&another=special%3Dchars%26more%3Ddata";
         redirectResult!.Url.Should().Be(expectedUrl);
     }
 
@@ -124,12 +125,12 @@ public class AppleCallbackControllerTests : TestBase
         var redirectResult = result as RedirectResult;
 
         // The StringValues.ToString() method will join multiple values with commas
-        var expectedUrl = "https://test.com/auth/apple/callback?scopes=read%2Cwrite%2Cadmin&code=test-code";
+        var expectedUrl = "https://canonical.example/auth/apple/callback?scopes=read%2Cwrite%2Cadmin&code=test-code";
         redirectResult!.Url.Should().Be(expectedUrl);
     }
 
     [Fact]
-    public void Callback_UsesRequestSchemeAndHost()
+    public void Callback_IgnoresRequestSchemeAndHost()
     {
         // Arrange
         var formData = new Dictionary<string, StringValues>
@@ -146,7 +147,7 @@ public class AppleCallbackControllerTests : TestBase
         result.Should().BeOfType<RedirectResult>();
         var redirectResult = result as RedirectResult;
 
-        redirectResult!.Url.Should().StartWith("http://dev.local:8080/auth/apple/callback");
+        redirectResult!.Url.Should().StartWith("https://canonical.example/auth/apple/callback");
     }
 
     #endregion

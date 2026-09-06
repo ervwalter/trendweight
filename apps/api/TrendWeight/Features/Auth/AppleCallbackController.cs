@@ -1,3 +1,4 @@
+using TrendWeight.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +9,10 @@ namespace TrendWeight.Features.Auth;
 [AllowAnonymous]
 public class AppleCallbackController : ControllerBase
 {
+    private readonly PublicUrl _publicUrl;
+
+    public AppleCallbackController(PublicUrl publicUrl) => _publicUrl = publicUrl;
+
     [HttpPost("callback")]
     public IActionResult Callback()
     {
@@ -16,8 +21,7 @@ public class AppleCallbackController : ControllerBase
             $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value.ToString())}"));
 
         // Redirect to frontend with all the form data as query parameters
-        // The ForwardedHeaders middleware has already updated Request.Scheme and Request.Host
-        var redirectUrl = $"{Request.Scheme}://{Request.Host}/auth/apple/callback?{queryString}";
+        var redirectUrl = $"{_publicUrl.Callback("/auth/apple/callback")}?{queryString}";
 
         return Redirect(redirectUrl);
     }

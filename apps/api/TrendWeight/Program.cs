@@ -1,8 +1,7 @@
-using System.Net;
+using TrendWeight.Infrastructure.Configuration;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
@@ -93,6 +92,7 @@ builder.Services.AddOpenApi("v1", options =>
     };
     options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
+        document.Servers = [new OpenApiServer { Url = context.ApplicationServices.GetRequiredService<PublicUrl>().BaseUri.GetLeftPart(UriPartial.Authority) }];
         document.Info.Title = "TrendWeight API";
         document.Info.Version = "v1";
         document.Info.Description =
@@ -140,6 +140,11 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddOpenApi("internal", options =>
     {
         options.ShouldInclude = description => description.GroupName != "v1";
+        options.AddDocumentTransformer((document, context, cancellationToken) =>
+        {
+            document.Servers = [new OpenApiServer { Url = context.ApplicationServices.GetRequiredService<PublicUrl>().BaseUri.GetLeftPart(UriPartial.Authority) }];
+            return Task.CompletedTask;
+        });
     });
 }
 
@@ -189,36 +194,13 @@ builder.Services.AddHttpLogging(options =>
                           Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.Duration;
 });
 
-// Configure forwarded headers for proxy scenarios
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
-
-    // Keep the framework's loopback defaults for local development. Production
-    // proxies must be explicitly trusted; a hop limit alone does not establish trust.
-    foreach (var proxy in builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
-    {
-        options.KnownProxies.Add(IPAddress.Parse(proxy));
-    }
-    foreach (var network in builder.Configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [])
-    {
-        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
-    }
-
-    // Limit the number of trusted proxy hops processed.
-    options.ForwardLimit = 2; // Allows for Cloudflare -> DigitalOcean chain
-    options.RequireHeaderSymmetry = false;
-
-    // Configure allowed hosts for forwarded headers (semicolon-separated)
-    // This validates the host header after forwarded headers are processed
-    var allowedHosts = builder.Configuration["AllowedHosts"];
-    if (!string.IsNullOrEmpty(allowedHosts) && allowedHosts != "*")
-    {
-        options.AllowedHosts = allowedHosts.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    }
-});
+// Resolve after building so all configuration sources participate in startup validation.
+builder.Services.AddSingleton(services => new PublicUrl(
+    services.GetRequiredService<IConfiguration>()["PublicBaseUrl"],
+    services.GetRequiredService<IHostEnvironment>().IsDevelopment()));
 
 var app = builder.Build();
+_ = app.Services.GetRequiredService<PublicUrl>(); // Fail startup for missing/invalid origins.
 
 // Configure the HTTP request pipeline
 app.UseMiddleware<RequestTimingMiddleware>();
@@ -227,12 +209,7 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 // Enable HTTP request logging
 app.UseHttpLogging();
 
-// Use forwarded headers from proxies
-// The ForwardedHeaders middleware also validates allowed hosts if configured
-app.UseForwardedHeaders();
-
-
-// Validate host header after ForwardedHeaders middleware
+// Validate the actual Host header; forwarded headers are not consumed.
 var allowedHosts = app.Configuration["AllowedHosts"];
 if (!string.IsNullOrEmpty(allowedHosts) && allowedHosts != "*")
 {
@@ -383,7 +360,7 @@ app.MapScalarApiReference("/api-docs", options =>
         """);
 });
 
-app.UseHttpsRedirection();
+// The hosting ingress enforces HTTPS. Internal HTTP must not cause redirect loops.
 
 // Handle legacy chart image URLs
 app.Use(async (context, next) =>

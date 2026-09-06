@@ -98,14 +98,14 @@ test("docker build includes all browser configuration needed for startup", (t) =
   }
 });
 
-test("docker run forwards explicitly configured trusted ingress entries", (t) => {
+test("docker run forwards the public origin and optional development environment", (t) => {
   const result = fixture(t).run("docker-run.sh", {
-    ForwardedHeaders__KnownProxies__0: "192.0.2.10",
-    ForwardedHeaders__KnownNetworks__2: "192.0.2.0/24",
+    PublicBaseUrl: "https://staging.trendweight.com",
+    ASPNETCORE_ENVIRONMENT: "Development",
   });
   assert.equal(result.status, 0, result.stderr);
-  assert.ok(result.args.includes("ForwardedHeaders__KnownProxies__0"));
-  assert.ok(result.args.includes("ForwardedHeaders__KnownNetworks__2"));
+  assert.ok(result.args.includes("PublicBaseUrl"));
+  assert.ok(result.args.includes("ASPNETCORE_ENVIRONMENT"));
 });
 
 test("docker build fails early when required browser configuration is missing", (t) => {

@@ -14,6 +14,7 @@ namespace TrendWeight.Features.Providers.Fitbit;
 [Route("api/fitbit")]
 public class FitbitLinkController : BaseAuthController
 {
+    private readonly PublicUrl _publicUrl;
     private readonly IFitbitService _fitbitService;
     private readonly FitbitConfig _config;
     private readonly IConfiguration _configuration;
@@ -26,12 +27,14 @@ public class FitbitLinkController : BaseAuthController
         IFitbitService fitbitService,
         IOptions<AppOptions> appOptions,
         IConfiguration configuration,
-        ILogger<FitbitLinkController> logger)
+        ILogger<FitbitLinkController> logger,
+        PublicUrl publicUrl)
     {
         _fitbitService = fitbitService;
         _config = appOptions.Value.Fitbit;
         _configuration = configuration;
         _logger = logger;
+        _publicUrl = publicUrl;
     }
 
     /// <summary>
@@ -55,8 +58,8 @@ public class FitbitLinkController : BaseAuthController
 
         var state = OAuthStateToken.Create(jwtSigningKey, UserId, "fitbit");
 
-        // Get callback URL - ForwardedHeaders middleware has already updated Request.Scheme and Request.Host
-        var callbackUrl = $"{Request.Scheme}://{Request.Host}/oauth/fitbit/callback";
+        // Use the same configured origin for initiation and token exchange.
+        var callbackUrl = _publicUrl.Callback("/oauth/fitbit/callback");
 
         _logger.LogInformation("Using callback URL: {CallbackUrl}", callbackUrl);
 
@@ -92,8 +95,7 @@ public class FitbitLinkController : BaseAuthController
             }
 
             // Build the redirect URI that was used in the authorization request
-            // ForwardedHeaders middleware has already updated Request.Scheme and Request.Host
-            var redirectUri = $"{Request.Scheme}://{Request.Host}/oauth/fitbit/callback";
+            var redirectUri = _publicUrl.Callback("/oauth/fitbit/callback");
 
             _logger.LogDebug("Exchanging Fitbit code for token with redirect URI: {RedirectUri}", redirectUri);
 

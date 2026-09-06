@@ -1,4 +1,5 @@
 {
+  "PublicBaseUrl": "http://localhost:5173",
   "Logging": {
     "LogLevel": {
       "Default": "Debug",

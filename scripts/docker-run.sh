@@ -33,6 +33,8 @@ ENV_VARS=(
     
     # Security configuration
     "AllowedHosts"
+    "PublicBaseUrl"
+    "ASPNETCORE_ENVIRONMENT"
     
     # Reverse proxy configuration (if using Plausible analytics)
     "ReverseProxy__Clusters__plausible__Destinations__plausible__Address"
@@ -49,13 +51,6 @@ for var in "${ENV_VARS[@]}"; do
         DOCKER_CMD+=(-e "$var")
     fi
 done
-
-# Trusted ingress lists have a variable number of indexed entries.
-while IFS= read -r var; do
-    if [[ "$var" =~ ^ForwardedHeaders__Known(Proxies|Networks)__[0-9]+$ ]]; then
-        DOCKER_CMD+=(-e "$var")
-    fi
-done < <(compgen -e)
 
 # Add the image name
 DOCKER_CMD+=(trendweight:local)

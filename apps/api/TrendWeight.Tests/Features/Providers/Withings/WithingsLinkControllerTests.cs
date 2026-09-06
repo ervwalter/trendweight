@@ -1,3 +1,4 @@
+using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Features.Providers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -34,7 +35,8 @@ public class WithingsLinkControllerTests : TestBase
         _sut = new WithingsLinkController(
             _withingsServiceMock.Object,
             _configurationMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            new PublicUrl("https://canonical.example", false));
     }
 
     [Theory]
@@ -140,7 +142,7 @@ public class WithingsLinkControllerTests : TestBase
     }
 
     [Fact]
-    public void GetAuthorizationUrl_UsesCorrectCallbackUrl()
+    public void GetAuthorizationUrl_IgnoresRequestOriginForCallbackUrl()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -159,7 +161,7 @@ public class WithingsLinkControllerTests : TestBase
         // Assert
         _withingsServiceMock.Verify(x => x.GetAuthorizationUrl(
             It.IsAny<string>(),
-            "https://example.com/oauth/withings/callback"), Times.Once);
+            "https://canonical.example/oauth/withings/callback"), Times.Once);
     }
 
     #endregion
@@ -325,7 +327,7 @@ public class WithingsLinkControllerTests : TestBase
     }
 
     [Fact]
-    public async Task ExchangeToken_UsesCorrectRedirectUri()
+    public async Task ExchangeToken_IgnoresRequestOriginForRedirectUri()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -346,7 +348,7 @@ public class WithingsLinkControllerTests : TestBase
         // Assert
         _withingsServiceMock.Verify(x => x.ExchangeAuthorizationCodeAsync(
             request.Code,
-            "https://app.trendweight.com/oauth/withings/callback",
+            "https://canonical.example/oauth/withings/callback",
             userId), Times.Once);
     }
 
@@ -371,6 +373,8 @@ public class WithingsLinkControllerTests : TestBase
         var principal = new ClaimsPrincipal(identity);
 
         var httpContext = new DefaultHttpContext { User = principal };
+        httpContext.Request.Headers["X-Forwarded-Host"] = "attacker.example";
+        httpContext.Request.Headers["X-Forwarded-Proto"] = "http";
         httpContext.Request.Scheme = scheme;
         httpContext.Request.Host = new HostString(host);
 

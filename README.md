@@ -142,7 +142,7 @@ Build the Docker image:
 npm run docker:build
 ```
 
-The container runs on port 8080. Browser configuration is embedded at build time; backend secrets are runtime environment variables. Configure trusted ingress proxies and allowed hostnames before production rollout. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for deployment details.
+The container runs on port 8080. Browser configuration is embedded at build time; backend secrets are runtime environment variables. Set `PublicBaseUrl` to the public HTTPS origin and configure allowed hostnames before production rollout. The hosting ingress must enforce HTTPS. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for deployment details.
 
 See [TESTING.md](docs/TESTING.md) for focused tests and verification boundaries.
 

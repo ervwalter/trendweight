@@ -49,7 +49,8 @@ public class FitbitLinkControllerTests : TestBase
             _fitbitServiceMock.Object,
             _appOptionsMock.Object,
             _configurationMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            new PublicUrl("https://canonical.example", false));
     }
 
     private FitbitLinkController CreateDisabledFitbitController()
@@ -69,7 +70,8 @@ public class FitbitLinkControllerTests : TestBase
             _fitbitServiceMock.Object,
             optionsMock.Object,
             _configurationMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            new PublicUrl("https://canonical.example", false));
     }
 
     [Fact]
@@ -179,7 +181,7 @@ public class FitbitLinkControllerTests : TestBase
 
 
     [Fact]
-    public void LinkFitbit_UsesCorrectCallbackUrl()
+    public void LinkFitbit_IgnoresRequestOriginForCallbackUrl()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -198,7 +200,7 @@ public class FitbitLinkControllerTests : TestBase
         // Assert
         _fitbitServiceMock.Verify(x => x.GetAuthorizationUrl(
             It.IsAny<string>(),
-            "https://api.trendweight.com/oauth/fitbit/callback"), Times.Once);
+            "https://canonical.example/oauth/fitbit/callback"), Times.Once);
     }
 
     #endregion
@@ -364,7 +366,7 @@ public class FitbitLinkControllerTests : TestBase
     }
 
     [Fact]
-    public async Task ExchangeToken_UsesCorrectRedirectUri()
+    public async Task ExchangeToken_IgnoresRequestOriginForRedirectUri()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -385,7 +387,7 @@ public class FitbitLinkControllerTests : TestBase
         // Assert
         _fitbitServiceMock.Verify(x => x.ExchangeAuthorizationCodeAsync(
             request.Code,
-            "https://api.trendweight.com/oauth/fitbit/callback",
+            "https://canonical.example/oauth/fitbit/callback",
             userId), Times.Once);
     }
 
@@ -410,6 +412,8 @@ public class FitbitLinkControllerTests : TestBase
         var principal = new ClaimsPrincipal(identity);
 
         var httpContext = new DefaultHttpContext { User = principal };
+        httpContext.Request.Headers["X-Forwarded-Host"] = "attacker.example";
+        httpContext.Request.Headers["X-Forwarded-Proto"] = "http";
         httpContext.Request.Scheme = scheme;
         httpContext.Request.Host = new HostString(host);
 

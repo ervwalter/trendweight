@@ -1,3 +1,4 @@
+using TrendWeight.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using TrendWeight.Features.Common;
 using TrendWeight.Features.Common.Models;
@@ -13,6 +14,7 @@ namespace TrendWeight.Features.Providers.Withings;
 [Route("api/withings")]
 public class WithingsLinkController : BaseAuthController
 {
+    private readonly PublicUrl _publicUrl;
     private readonly IWithingsService _withingsService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<WithingsLinkController> _logger;
@@ -20,11 +22,13 @@ public class WithingsLinkController : BaseAuthController
     public WithingsLinkController(
         IWithingsService withingsService,
         IConfiguration configuration,
-        ILogger<WithingsLinkController> logger)
+        ILogger<WithingsLinkController> logger,
+        PublicUrl publicUrl)
     {
         _withingsService = withingsService;
         _configuration = configuration;
         _logger = logger;
+        _publicUrl = publicUrl;
     }
 
     /// <summary>
@@ -54,8 +58,8 @@ public class WithingsLinkController : BaseAuthController
 
             var signedState = OAuthStateToken.Create(jwtSigningKey, UserId, "withings");
 
-            // Get callback URL - ForwardedHeaders middleware has already updated Request.Scheme and Request.Host
-            var callbackUrl = $"{Request.Scheme}://{Request.Host}/oauth/withings/callback";
+            // Use the same configured origin for initiation and token exchange.
+            var callbackUrl = _publicUrl.Callback("/oauth/withings/callback");
 
             _logger.LogInformation("Using callback URL: {CallbackUrl}", callbackUrl);
 
@@ -96,8 +100,7 @@ public class WithingsLinkController : BaseAuthController
             }
 
             // Build the redirect URI that was used in the authorization request
-            // ForwardedHeaders middleware has already updated Request.Scheme and Request.Host
-            var redirectUri = $"{Request.Scheme}://{Request.Host}/oauth/withings/callback";
+            var redirectUri = _publicUrl.Callback("/oauth/withings/callback");
 
             _logger.LogDebug("Exchanging Withings code for token with redirect URI: {RedirectUri}", redirectUri);
 
