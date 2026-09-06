@@ -7,14 +7,6 @@ export interface RawMeasurement {
   fatRatio?: number; // 0-1 ratio
 }
 
-export type Sources = "withings" | "fitbit";
-
-export interface SourceData {
-  source: Sources;
-  lastUpdate: string;
-  measurements?: RawMeasurement[];
-}
-
 export interface SourceMeasurement {
   date: LocalDate;
   timestamp: LocalDateTime;

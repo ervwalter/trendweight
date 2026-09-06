@@ -24,6 +24,29 @@ describe("conversion", () => {
       expect(result).toEqual([]);
     });
 
+    it("should keep a zero fat percentage instead of dropping it", () => {
+      const apiMeasurements: ApiComputedMeasurement[] = [
+        {
+          date: "2024-01-01",
+          actualWeight: 70.0,
+          trendWeight: 70.0,
+          weightIsInterpolated: false,
+          fatIsInterpolated: false,
+          actualFatPercent: 0,
+          trendFatPercent: 0,
+          trendFatMass: 0,
+          trendLeanMass: 70.0,
+        },
+      ];
+
+      const result = convertMeasurements(apiMeasurements, defaultProfile);
+
+      expect(result[0].actualFatMass).toBe(0);
+      expect(result[0].actualLeanMass).toBe(70.0);
+      expect(result[0].trendFatMass).toBe(0);
+      expect(result[0].trendLeanMass).toBe(70.0);
+    });
+
     it("should handle null profile", () => {
       const apiMeasurements: ApiComputedMeasurement[] = [
         {

@@ -20,13 +20,14 @@ export function convertMeasurements(computedMeasurements: ApiComputedMeasurement
     const actualWeight = computed.actualWeight * conversionFactor;
     const trendWeight = computed.trendWeight * conversionFactor;
 
-    // Calculate fat/lean mass if fat data is available (already in correct units after weight conversion)
-    const actualFatMass = computed.actualFatPercent ? actualWeight * computed.actualFatPercent : undefined;
-    const actualLeanMass = computed.actualFatPercent ? actualWeight * (1 - computed.actualFatPercent) : undefined;
+    // Calculate fat/lean mass if fat data is available (already in correct units after weight conversion).
+    // Check for presence rather than truthiness so a legitimate 0 is not dropped.
+    const actualFatMass = computed.actualFatPercent != null ? actualWeight * computed.actualFatPercent : undefined;
+    const actualLeanMass = computed.actualFatPercent != null ? actualWeight * (1 - computed.actualFatPercent) : undefined;
 
     // Use API-provided trend mass values (independent moving averages) with proper unit conversion
-    const trendFatMass = computed.trendFatMass ? computed.trendFatMass * conversionFactor : undefined;
-    const trendLeanMass = computed.trendLeanMass ? computed.trendLeanMass * conversionFactor : undefined;
+    const trendFatMass = computed.trendFatMass != null ? computed.trendFatMass * conversionFactor : undefined;
+    const trendLeanMass = computed.trendLeanMass != null ? computed.trendLeanMass * conversionFactor : undefined;
 
     return {
       date,
