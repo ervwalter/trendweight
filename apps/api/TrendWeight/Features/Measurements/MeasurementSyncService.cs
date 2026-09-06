@@ -15,7 +15,7 @@ public class MeasurementSyncService : IMeasurementSyncService
     private readonly IProviderIntegrationService _providerIntegrationService;
     private readonly ISourceDataService _sourceDataService;
     private readonly ILogger<MeasurementSyncService> _logger;
-    private readonly ISyncProgressReporter? _progressReporter;
+    private readonly ISyncProgressReporter _progressReporter;
     private readonly int _cacheDurationSeconds;
 
     // Providers that never talk to an external API; sync is a no-op and progress is not reported
@@ -98,11 +98,7 @@ public class MeasurementSyncService : IMeasurementSyncService
             // Wait for all refresh tasks to complete
             if (refreshTasks.Count > 0)
             {
-                // Start progress reporting if we have a reporter
-                if (_progressReporter != null)
-                {
-                    await _progressReporter.ReportSyncProgressAsync("running", "Downloading data from providers...");
-                }
+                await _progressReporter.ReportSyncProgressAsync("running", "Downloading data from providers...");
 
                 var refreshResults = await Task.WhenAll(refreshTasks);
                 foreach (var result in refreshResults)
@@ -122,11 +118,7 @@ public class MeasurementSyncService : IMeasurementSyncService
                 }
             }
 
-            // Update overall status based on results
-            if (_progressReporter != null)
-            {
-                await _progressReporter.ReportSyncProgressAsync("running", "Finishing up...");
-            }
+            await _progressReporter.ReportSyncProgressAsync("running", "Finishing up...");
 
             // Get the current data (whether refreshed or cached) - only for active providers
             var currentData = await _sourceDataService.GetSourceDataAsync(userId, activeProviders) ?? new List<SourceData>();
@@ -162,12 +154,13 @@ public class MeasurementSyncService : IMeasurementSyncService
 
             // Calculate start date for sync
             DateTime? startDate = null;
-            // For regular refresh, fetch from 90 days before last sync (with 2-day buffer to avoid boundary issues)
+            // For regular refresh, fetch from 90 days before last sync; the merge below keeps
+            // a 2-day buffer at the start of that window to absorb boundary quirks
             var lastSyncTime = await _sourceDataService.GetLastSyncTimeAsync(userId, provider);
             if (lastSyncTime.HasValue && !forceFullSync)
             {
                 startDate = lastSyncTime.Value.AddDays(-90);
-                _logger.LogDebug("Fetching {Provider} measurements from {StartDate} (90 days before last sync with 2-day buffer)",
+                _logger.LogDebug("Fetching {Provider} measurements from {StartDate} (90 days before last sync)",
                     provider, startDate.Value.ToString("o"));
             }
             else
@@ -184,7 +177,7 @@ public class MeasurementSyncService : IMeasurementSyncService
             {
 
                 // Don't report progress for non-syncing providers
-                if (_progressReporter != null && !NonSyncingProviders.Contains(provider))
+                if (!NonSyncingProviders.Contains(provider))
                 {
                     await _progressReporter.ReportProviderProgressAsync(
                         provider,
@@ -243,7 +236,7 @@ public class MeasurementSyncService : IMeasurementSyncService
             }
 
             // Don't report progress for non-syncing providers
-            if (_progressReporter != null && !NonSyncingProviders.Contains(provider))
+            if (!NonSyncingProviders.Contains(provider))
             {
                 await _progressReporter.ReportProviderProgressAsync(
                     provider,
