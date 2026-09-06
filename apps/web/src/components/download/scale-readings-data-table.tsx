@@ -139,49 +139,44 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
   const currentPage = table.getState().pagination.pageIndex + 1;
   const showPagination = pageCount > 1;
 
+  // Rendered above and below the table
+  const paginationControls = showPagination && (
+    <PaginationContent>
+      <PaginationItem>
+        <Button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} variant="outline" size="icon" aria-label="First page">
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+      </PaginationItem>
+      <PaginationItem>
+        <Button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} variant="outline" size="icon" aria-label="Previous page">
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </PaginationItem>
+      <PaginationItem>
+        <span className="text-muted-foreground px-3 text-sm">
+          Page {currentPage} of {pageCount}
+        </span>
+      </PaginationItem>
+      <PaginationItem>
+        <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} variant="outline" size="icon" aria-label="Next page">
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </PaginationItem>
+      <PaginationItem>
+        <Button onClick={() => table.setPageIndex(pageCount - 1)} disabled={!table.getCanNextPage()} variant="outline" size="icon" aria-label="Last page">
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </PaginationItem>
+    </PaginationContent>
+  );
+
   return (
     <div className="inline-block space-y-4">
       {/* Top info and pagination */}
       {(showPagination || readings.length > 0) && (
         <div className="flex items-center justify-between gap-4">
           <div className="text-muted-foreground text-sm whitespace-nowrap">{readings.length} total readings</div>
-          {showPagination && (
-            <div>
-              <PaginationContent className="flex">
-                <PaginationItem>
-                  <Button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} variant="outline" size="icon" aria-label="First page">
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                </PaginationItem>
-                <PaginationItem>
-                  <Button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} variant="outline" size="icon" aria-label="Previous page">
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                </PaginationItem>
-                <PaginationItem>
-                  <span className="text-muted-foreground px-3 text-sm">
-                    Page {currentPage} of {pageCount}
-                  </span>
-                </PaginationItem>
-                <PaginationItem>
-                  <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} variant="outline" size="icon" aria-label="Next page">
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </PaginationItem>
-                <PaginationItem>
-                  <Button
-                    onClick={() => table.setPageIndex(pageCount - 1)}
-                    disabled={!table.getCanNextPage()}
-                    variant="outline"
-                    size="icon"
-                    aria-label="Last page"
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </PaginationItem>
-              </PaginationContent>
-            </div>
-          )}
+          {paginationControls}
         </div>
       )}
 
@@ -214,37 +209,7 @@ export function ScaleReadingsDataTable({ readings, viewType, useMetric }: ScaleR
       </div>
 
       {/* Bottom pagination */}
-      {showPagination && (
-        <div className="flex justify-end">
-          <PaginationContent>
-            <PaginationItem>
-              <Button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} variant="outline" size="icon" aria-label="First page">
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-            </PaginationItem>
-            <PaginationItem>
-              <Button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} variant="outline" size="icon" aria-label="Previous page">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </PaginationItem>
-            <PaginationItem>
-              <span className="text-muted-foreground px-3 text-sm">
-                Page {currentPage} of {pageCount}
-              </span>
-            </PaginationItem>
-            <PaginationItem>
-              <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} variant="outline" size="icon" aria-label="Next page">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </PaginationItem>
-            <PaginationItem>
-              <Button onClick={() => table.setPageIndex(pageCount - 1)} disabled={!table.getCanNextPage()} variant="outline" size="icon" aria-label="Last page">
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </PaginationItem>
-          </PaginationContent>
-        </div>
-      )}
+      {showPagination && <div className="flex justify-end">{paginationControls}</div>}
     </div>
   );
 }

@@ -52,6 +52,27 @@ export function ManualReadingsList() {
   const pageReadings = readings.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
   const showPagination = pageCount > 1;
 
+  // Rendered above and below the list
+  const paginationControls = showPagination && (
+    <PaginationContent>
+      <PaginationItem>
+        <Button onClick={() => setPage(currentPage - 1)} disabled={currentPage === 0} variant="outline" size="icon" aria-label="Previous page">
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </PaginationItem>
+      <PaginationItem>
+        <span className="text-muted-foreground px-3 text-sm">
+          Page {currentPage + 1} of {pageCount}
+        </span>
+      </PaginationItem>
+      <PaginationItem>
+        <Button onClick={() => setPage(currentPage + 1)} disabled={currentPage >= pageCount - 1} variant="outline" size="icon" aria-label="Next page">
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </PaginationItem>
+    </PaginationContent>
+  );
+
   const handleDelete = async () => {
     if (!deletingReading) return;
     try {
@@ -81,25 +102,7 @@ export function ManualReadingsList() {
         <div className="text-muted-foreground text-sm whitespace-nowrap">
           {readings.length} {readings.length === 1 ? "entry" : "entries"}
         </div>
-        {showPagination && (
-          <PaginationContent>
-            <PaginationItem>
-              <Button onClick={() => setPage(currentPage - 1)} disabled={currentPage === 0} variant="outline" size="icon" aria-label="Previous page">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </PaginationItem>
-            <PaginationItem>
-              <span className="text-muted-foreground px-3 text-sm">
-                Page {currentPage + 1} of {pageCount}
-              </span>
-            </PaginationItem>
-            <PaginationItem>
-              <Button onClick={() => setPage(currentPage + 1)} disabled={currentPage >= pageCount - 1} variant="outline" size="icon" aria-label="Next page">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </PaginationItem>
-          </PaginationContent>
-        )}
+        {paginationControls}
       </div>
 
       <ul aria-label="Weight log entries" className="divide-border border-border divide-y border-y">
@@ -136,25 +139,7 @@ export function ManualReadingsList() {
         <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmDeleteAll(true)}>
           Delete all entries
         </Button>
-        {showPagination && (
-          <PaginationContent>
-            <PaginationItem>
-              <Button onClick={() => setPage(currentPage - 1)} disabled={currentPage === 0} variant="outline" size="icon" aria-label="Previous page">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </PaginationItem>
-            <PaginationItem>
-              <span className="text-muted-foreground px-3 text-sm">
-                Page {currentPage + 1} of {pageCount}
-              </span>
-            </PaginationItem>
-            <PaginationItem>
-              <Button onClick={() => setPage(currentPage + 1)} disabled={currentPage >= pageCount - 1} variant="outline" size="icon" aria-label="Next page">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </PaginationItem>
-          </PaginationContent>
-        )}
+        {paginationControls}
       </div>
 
       <ManualReadingDialog open={!!editingReading} onOpenChange={(open) => !open && setEditingReading(null)} initialReading={editingReading ?? undefined} />
