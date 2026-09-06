@@ -187,23 +187,6 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         start.Should().Throw<InvalidOperationException>().WithMessage("PublicBaseUrl*");
     }
 
-    [Theory]
-    [InlineData("http", "untrusted.example")]
-    [InlineData("https", "localhost")]
-    public async Task AppleCallback_UsesCanonicalOriginDespiteIncomingHeaders(string scheme, string host)
-    {
-        using var client = _factory.CreateHttpsClient();
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"{scheme}://{host}/api/auth/apple/callback");
-        request.Headers.Add("X-Forwarded-Host", "attacker.example");
-        request.Headers.Add("X-Forwarded-Proto", "http");
-        request.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["code"] = "test-code" });
-
-        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
-        response.Headers.Location!.AbsoluteUri.Should().Be("https://canonical.example/auth/apple/callback?code=test-code");
-    }
-
     [Fact]
     public async Task HostValidation_RejectsInvalidHostEvenWhenForwardedHostIsAllowed()
     {

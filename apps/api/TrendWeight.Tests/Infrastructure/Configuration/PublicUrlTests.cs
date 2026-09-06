@@ -32,10 +32,10 @@ public class PublicUrlTests
     }
 
     [Theory]
-    [InlineData(null, "http://localhost:5173/auth/apple/callback")]
-    [InlineData("http://localhost:3000", "http://localhost:3000/auth/apple/callback")]
+    [InlineData(null, "http://localhost:5173/oauth/withings/callback")]
+    [InlineData("http://localhost:3000", "http://localhost:3000/oauth/withings/callback")]
     public void Development_AllowsHttpAndHasLocalDefault(string? value, string expected)
     {
-        new PublicUrl(value, true).Callback("/auth/apple/callback").Should().Be(expected);
+        new PublicUrl(value, true).Callback("/oauth/withings/callback").Should().Be(expected);
     }
 }
