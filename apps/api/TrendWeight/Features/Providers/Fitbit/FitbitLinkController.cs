@@ -68,7 +68,8 @@ public class FitbitLinkController : BaseAuthController
 
 
 
-        return Ok(new { url = authUrl });
+        // Same shape as the Withings link endpoint so the client needs one response type
+        return Ok(new { authorizationUrl = authUrl });
     }
 
     /// <summary>

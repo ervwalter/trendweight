@@ -149,7 +149,7 @@ describe("ProviderSyncError", () => {
 
   it("should call reconnectProvider mutation when button is clicked", async () => {
     const user = userEvent.setup();
-    mockMutateAsync.mockResolvedValue({ url: "https://auth.example.com" });
+    mockMutateAsync.mockResolvedValue({ authorizationUrl: "https://auth.example.com" });
 
     const status: ProviderSyncStatus = { success: false, error: "authfailed" };
     render(<ProviderSyncError provider="fitbit" status={status} />);
@@ -159,19 +159,7 @@ describe("ProviderSyncError", () => {
     expect(mockMutateAsync).toHaveBeenCalledWith("fitbit");
   });
 
-  it("should redirect to auth URL after successful mutation (url field)", async () => {
-    const user = userEvent.setup();
-    mockMutateAsync.mockResolvedValue({ url: "https://auth.example.com" });
-
-    const status: ProviderSyncStatus = { success: false, error: "authfailed" };
-    render(<ProviderSyncError provider="fitbit" status={status} />);
-
-    await user.click(screen.getByRole("button", { name: "Reconnect →" }));
-
-    expect(mockLocationAssign).toHaveBeenCalledWith("https://auth.example.com");
-  });
-
-  it("should redirect to auth URL after successful mutation (authorizationUrl field)", async () => {
+  it("should redirect to auth URL after successful mutation", async () => {
     const user = userEvent.setup();
     mockMutateAsync.mockResolvedValue({ authorizationUrl: "https://auth2.example.com" });
 

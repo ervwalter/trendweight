@@ -149,7 +149,7 @@ public class FitbitLinkControllerTests : TestBase
         var response = okResult!.Value;
 
         // Use reflection to check the anonymous object properties
-        var urlProperty = response!.GetType().GetProperty("url");
+        var urlProperty = response!.GetType().GetProperty("authorizationUrl");
         urlProperty!.GetValue(response).Should().Be(expectedAuthUrl);
 
         // Verify JWT was created with correct callback URL

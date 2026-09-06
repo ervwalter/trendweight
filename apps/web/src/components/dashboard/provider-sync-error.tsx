@@ -71,9 +71,8 @@ const ProviderSyncError: FC<ProviderSyncErrorProps> = ({ provider, status }) => 
       const response = await reconnectProvider.mutateAsync(provider);
 
       // Redirect to the authorization URL
-      const authUrl = response.url || response.authorizationUrl;
-      if (authUrl) {
-        window.location.assign(authUrl);
+      if (response.authorizationUrl) {
+        window.location.assign(response.authorizationUrl);
       }
     } catch (error) {
       console.error(`Error initiating ${provider} reconnection:`, error);

@@ -103,7 +103,7 @@ export function useReconnectProvider() {
     mutationFn: async (provider: string) => {
       const endpoint = provider === "fitbit" ? "/fitbit/link" : "/withings/link";
       const token = await getToken();
-      return apiRequest<{ url?: string; authorizationUrl?: string }>(endpoint, { token });
+      return apiRequest<{ authorizationUrl: string }>(endpoint, { token });
     },
   });
 }

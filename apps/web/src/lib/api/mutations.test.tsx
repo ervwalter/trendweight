@@ -451,7 +451,7 @@ describe("mutations", () => {
   describe("useReconnectProvider", () => {
     it("should reconnect Fitbit provider", async () => {
       const provider = "fitbit";
-      const mockResponse = { url: "https://fitbit.com/auth" };
+      const mockResponse = { authorizationUrl: "https://fitbit.com/auth" };
 
       server.use(
         http.get("/api/fitbit/link", () => {

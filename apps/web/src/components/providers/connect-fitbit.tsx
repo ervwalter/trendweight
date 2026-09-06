@@ -23,10 +23,9 @@ export function ConnectFitbit() {
     const connect = async () => {
       try {
         const token = await getToken();
-        const response = await apiRequest<{ url?: string; authorizationUrl?: string }>("/fitbit/link", { token });
-        const redirectUrl = response.authorizationUrl || response.url;
-        if (redirectUrl) {
-          window.location.assign(redirectUrl);
+        const response = await apiRequest<{ authorizationUrl: string }>("/fitbit/link", { token });
+        if (response.authorizationUrl) {
+          window.location.assign(response.authorizationUrl);
         } else {
           setFailed(true);
         }
