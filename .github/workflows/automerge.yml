@@ -9,4 +9,8 @@ jobs:
   call:
     # Release Please upgrades need review even when the shared preset labels them.
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'manual-review') }}
-    uses: ervwalter/renovate-config/.github/workflows/automerge.yml@67dc7078de9973e13f59d6ed5fa3304c361590de # main
+    uses: ervwalter/renovate-config/.github/workflows/automerge.yml@90cb24e39b570f062b88899de250a7807e91011a # main
+    with:
+      app-client-id: ${{ vars.AUTOMERGE_APP_CLIENT_ID }}
+    secrets:
+      app-private-key: ${{ secrets.AUTOMERGE_APP_PRIVATE_KEY }}
