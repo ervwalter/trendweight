@@ -117,6 +117,8 @@ public class ManualMeasurementsControllerTests
 
     [Theory]
     [InlineData(0)]
+    [InlineData(0.0004)]
+    [InlineData(699.9999)]
     [InlineData(-5)]
     [InlineData(700)]
     public async Task UpsertReading_WithInvalidWeight_ReturnsBadRequest(double weight)
@@ -132,6 +134,8 @@ public class ManualMeasurementsControllerTests
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(22.5)] // a percentage instead of a ratio
+    [InlineData(0.00001)]
+    [InlineData(0.99999)]
     public async Task UpsertReading_WithInvalidFatRatio_ReturnsBadRequest(double fatRatio)
     {
         // Act

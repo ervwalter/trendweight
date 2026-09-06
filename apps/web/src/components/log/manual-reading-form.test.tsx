@@ -61,6 +61,29 @@ describe("ManualReadingForm", () => {
     expect(mockSaveMutateAsync).not.toHaveBeenCalled();
   });
 
+  it.each(["180oops", "180.5.2", "180,5,2"])("rejects malformed weight %s without silently truncating it", async (weight) => {
+    const user = userEvent.setup();
+    render(<ManualReadingForm />);
+
+    await user.type(screen.getByLabelText(/Weight/), weight);
+    await user.click(screen.getByRole("button", { name: "Log Weight" }));
+
+    expect(await screen.findByText("Enter a valid weight")).toBeInTheDocument();
+    expect(mockSaveMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("rejects trailing text in body fat without silently truncating it", async () => {
+    const user = userEvent.setup();
+    render(<ManualReadingForm />);
+
+    await user.type(screen.getByLabelText(/Weight/), "180");
+    await user.type(screen.getByLabelText(/Body Fat/), "22oops");
+    await user.click(screen.getByRole("button", { name: "Log Weight" }));
+
+    expect(await screen.findByText("Enter a valid body fat percentage")).toBeInTheDocument();
+    expect(mockSaveMutateAsync).not.toHaveBeenCalled();
+  });
+
   it("rejects out-of-range imperial weights with the unit in the message", async () => {
     const user = userEvent.setup();
     render(<ManualReadingForm />);

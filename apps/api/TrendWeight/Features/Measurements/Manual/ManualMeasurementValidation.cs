@@ -41,6 +41,11 @@ public static class ManualMeasurementValidation
 
     public static bool TryValidateReading(decimal weight, decimal? fatRatio, out string error)
     {
+        // Validate the values we will actually store; rounding must not turn an
+        // otherwise accepted reading into zero weight or a 0/100% fat ratio.
+        weight = decimal.Round(weight, 3);
+        fatRatio = fatRatio.HasValue ? decimal.Round(fatRatio.Value, 4) : null;
+
         if (weight <= 0 || weight >= 700)
         {
             error = "Weight must be between 0 and 700 kg";

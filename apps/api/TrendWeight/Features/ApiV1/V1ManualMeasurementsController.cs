@@ -103,6 +103,12 @@ public class V1ManualMeasurementsController : BaseApiV1Controller
         for (var i = 0; i < entries.Count; i++)
         {
             var entry = entries[i];
+            if (entry == null)
+            {
+                errors.Add(new V1EntryError { Index = i, Error = "Entry must not be null" });
+                continue;
+            }
+
             if (!ManualMeasurementValidation.TryValidateDate(entry.Date, out var error)
                 || !ManualMeasurementValidation.TryValidateReading(entry.Weight, entry.FatRatio, out error))
             {

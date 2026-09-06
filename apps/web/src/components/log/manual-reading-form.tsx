@@ -1,5 +1,5 @@
 import { ChronoUnit, convert, LocalDate } from "@js-joda/core";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useDeleteManualReading, useSaveManualReading } from "@/lib/api/mutations";
 import { useLatestReading, useManualReadings, useProfile } from "@/lib/api/queries";
 import type { ManualReading } from "@/lib/api/types";
@@ -23,7 +23,10 @@ interface ManualReadingFormProps {
 }
 
 // Mobile keyboards offer a comma key for the decimal separator in many locales
-const parseDecimal = (value: string) => parseFloat(value.replace(",", "."));
+const parseDecimal = (value: string) => {
+  const normalized = value.trim().replace(",", ".");
+  return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized) ? Number(normalized) : NaN;
+};
 
 const lastEntryDateFormatter = new Intl.DateTimeFormat([], { month: "short", day: "numeric" });
 
@@ -67,7 +70,7 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ManualReadingFormValues>({
@@ -75,7 +78,7 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
   });
 
   // One reading per date: saving over an existing date replaces it, so say so up front
-  const selectedDate = watch("date");
+  const selectedDate = useWatch({ control, name: "date" });
   const existingForDate = readings.find((r) => r.date === selectedDate && r.date !== initialReading?.date);
 
   // A reference point for the common case: "what did I weigh last time?" — the newest reading

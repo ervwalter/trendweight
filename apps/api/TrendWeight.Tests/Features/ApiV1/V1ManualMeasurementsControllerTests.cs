@@ -46,6 +46,22 @@ public class V1ManualMeasurementsControllerTests
     }
 
     [Fact]
+    public async Task UpsertReadings_NullEntryRejectsEntireBatchWithIndexedError()
+    {
+        var result = await _sut.UpsertReadings(new List<V1ManualBatchEntry>
+        {
+            new() { Date = "2024-05-01", Weight = 80m },
+            null!
+        });
+
+        var response = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject.Value
+            .Should().BeOfType<V1ErrorResponse>().Subject;
+        response.Errors.Should().ContainSingle().Which.Index.Should().Be(1);
+        _manualDataServiceMock.Verify(x => x.UpsertReadingsAsync(
+            It.IsAny<Guid>(), It.IsAny<List<RawMeasurement>>()), Times.Never);
+    }
+
+    [Fact]
     public async Task GetReadings_ReturnsMappedReadings()
     {
         _manualDataServiceMock.Setup(x => x.GetReadingsAsync(_userId))
@@ -79,6 +95,10 @@ public class V1ManualMeasurementsControllerTests
     [Theory]
     [InlineData("bad-date", 80, null)]
     [InlineData("2024-05-01", 0, null)]
+    [InlineData("2024-05-01", 0.0004, null)]
+    [InlineData("2024-05-01", 699.9999, null)]
+    [InlineData("2024-05-01", 80, 0.00001)]
+    [InlineData("2024-05-01", 80, 0.99999)]
     [InlineData("2024-05-01", 80, 22.5)] // percentage instead of ratio
     public async Task UpsertReading_RejectsInvalidInput(string date, decimal weight, double? fatRatio)
     {
