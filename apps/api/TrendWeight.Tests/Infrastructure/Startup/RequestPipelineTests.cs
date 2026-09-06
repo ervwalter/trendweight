@@ -291,6 +291,45 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         (await rejected.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).Should().Contain("RATE_LIMIT_EXCEEDED");
     }
 
+    [Fact]
+    public async Task AnonymousApiRequestsAndRejectedCredentials_ShareOnePeerRateLimit()
+    {
+        // A separate host gives this test an unused fixed-window partition.
+        using var factory = new StartupTestFactory();
+        using var client = factory.CreateHttpsClient();
+        var ct = TestContext.Current.CancellationToken;
+        for (var i = 0; i < 300; i++)
+        {
+            var guessing = i % 2 == 1;
+            using var request = new HttpRequestMessage(HttpMethod.Get, guessing ? "/api/v1/settings" : "/api/profile/disabled-share");
+            if (guessing)
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "sk-guessed-key");
+            }
+            using var allowed = await client.SendAsync(request, ct);
+            allowed.StatusCode.Should().Be(guessing ? HttpStatusCode.Unauthorized : HttpStatusCode.NotFound);
+        }
+
+        using var anonymous = await client.GetAsync("/api/profile/disabled-share", ct);
+        anonymous.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+
+        using var guess = new HttpRequestMessage(HttpMethod.Get, "/api/v1/settings");
+        guess.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "sk-guessed-key");
+        using var rejectedGuess = await client.SendAsync(guess, ct);
+        rejectedGuess.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        (await rejectedGuess.Content.ReadAsStringAsync(ct)).Should().Contain("RATE_LIMIT");
+
+        // Valid credentials, the application shell, and the health check keep their own budget.
+        using var authenticated = new HttpRequestMessage(HttpMethod.Get, "/api/v1/measurements/manual");
+        authenticated.Headers.Add("X-Api-Key", StartupTestFactory.ApiKey);
+        using var authenticatedResponse = await client.SendAsync(authenticated, ct);
+        authenticatedResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var shell = await client.GetAsync("/dashboard", ct);
+        shell.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var health = await client.GetAsync("/api/health", ct);
+        health.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     [Theory]
     [InlineData("/api/profile/disabled-share")]
     [InlineData("/api/data/disabled-share")]

@@ -410,8 +410,8 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
-// Map reverse proxy endpoints; they share the authentication and rate-limit pipeline.
-app.MapReverseProxy();
+// Analytics proxy endpoints (anonymous, including /api/event) are Plausible's to throttle.
+app.MapReverseProxy().DisableRateLimiting();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -419,7 +419,8 @@ app.UseAuthorization();
 // Rate limiting partitions on the authenticated principal, so it must run AFTER
 // UseAuthorization: endpoints authenticated via a non-default scheme (e.g. API keys)
 // only get their principal assigned to HttpContext.User by the authorization
-// middleware's policy evaluation, not by UseAuthentication itself.
+// middleware's policy evaluation, not by UseAuthentication itself. Requests that
+// authorization rejects are counted by RateLimitedAuthorizationResultHandler.
 app.UseRateLimiter();
 
 app.MapControllers();

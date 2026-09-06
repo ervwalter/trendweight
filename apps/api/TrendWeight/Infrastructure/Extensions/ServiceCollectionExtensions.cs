@@ -46,6 +46,9 @@ public static class ServiceCollectionExtensions
                 .Build();
         });
 
+        // Rejected credentials count against the anonymous rate limit (see handler)
+        services.AddSingleton<IAuthorizationMiddlewareResultHandler, RateLimitedAuthorizationResultHandler>();
+
         return services;
     }
 

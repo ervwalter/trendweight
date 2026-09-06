@@ -4,10 +4,11 @@ using System.Threading.RateLimiting;
 namespace TrendWeight.Infrastructure.Middleware;
 
 /// <summary>
-/// Resolves the rate limit partition for a request based on its authenticated principal.
-/// Anonymous requests are not rate limited (static assets, login pages, health checks are
-/// either unauthenticated or explicitly exempt). API-key principals get a stricter tier
-/// than interactive users, with writes tighter than reads.
+/// Resolves the rate limit partition for a request. Authenticated principals are
+/// partitioned per user, with API-key principals on a stricter tier than interactive
+/// users and writes tighter than reads. Anonymous requests to the API (sharing-code
+/// reads, rejected credentials) are partitioned per peer address; anonymous requests
+/// elsewhere (SPA shell, docs) are not limited.
 /// </summary>
 public static class RateLimitPartitionResolver
 {
@@ -18,14 +19,26 @@ public static class RateLimitPartitionResolver
     private const int ApiKeyReadLimitPerMinute = 60;
     private const int ApiKeyWriteLimitPerMinute = 20;
 
+    // The application does not consume forwarded headers, so behind the hosting
+    // ingress the peer address is the ingress itself and every anonymous API request
+    // shares one bucket. This limit is therefore sized as a ceiling on anonymous
+    // database work (sharing-token lookups, API-key hashing) rather than a per-client
+    // quota. Authenticated traffic never touches it.
+    private const int AnonymousLimitPerMinute = 300;
+
     public static RateLimitPartition<string> Resolve(HttpContext httpContext)
     {
         var userId = httpContext.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (string.IsNullOrEmpty(userId))
         {
-            // No rate limiting for anonymous requests
-            return RateLimitPartition.GetNoLimiter("anonymous");
+            if (!httpContext.Request.Path.StartsWithSegments("/api"))
+            {
+                return RateLimitPartition.GetNoLimiter("anonymous");
+            }
+
+            var peer = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            return CreateFixedWindow($"anonymous:{peer}", AnonymousLimitPerMinute);
         }
 
         if (httpContext.User!.HasClaim(ApiKeyAuthMethodClaim, ApiKeyAuthMethodValue))
