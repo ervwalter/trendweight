@@ -1,19 +1,5 @@
 {
   "servers": {
-    "spec-workflow": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@pimzino/spec-workflow-mcp@latest", "${workspaceFolder}"],
-      "envFile": "${workspaceFolder}/.env"
-    },
-
-    "claude-context": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@zilliz/claude-context-mcp@latest"],
-      "envFile": "${workspaceFolder}/.env"
-    },
-
     "supabase-prod": {
       "type": "stdio",
       "command": "npx",
@@ -24,7 +10,6 @@
       ],
       "envFile": "${workspaceFolder}/.env"
     },
-
     "supabase-dev": {
       "type": "stdio",
       "command": "npx",

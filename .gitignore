@@ -135,16 +135,20 @@ routeTree.gen.ts
 firebase-debug.log
 pglite-debug.log
 
-# Ignore context_portal (appears to be unrelated tool output)
+# Local agent state (shared resources in .agents/ are tracked)
+.claude/settings.local.json
+.claude/worktrees/
+.claude/.cc-writes/
+.claude/memory-bank/
+.claude/agent-memory/
+
+# Retired tool output
+.kiro/
+.spec-workflow/
+.windsurf/
+.chunkhound/
+.chunkhound.json
 context_portal/
 
-
-# Claude memory bank (personal workspace data)
-.claude/memory-bank/
-.chunkhound
-.spec-workflow/session.json
-.spec-workflow/approvals
 apps/api/TrendWeight/appsettings.Development.json
-.chunkhound
-.chunkhound.json
 .dummy_trigger*

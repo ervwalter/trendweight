@@ -76,3 +76,11 @@ context_portal/
 *.tmp
 *.temp
 .cache/
+# Agent resources and local state
+.agents/
+.claude/
+.kiro/
+.spec-workflow/
+.windsurf/
+.chunkhound/
+.playwright-cli/

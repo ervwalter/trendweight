@@ -54,3 +54,11 @@ without weakening repository checks.
   Applying migrations to a remote project requires deployment authorization.
 - Keep architecture and setup instructions in `docs/` and `README.md`; other
   agent instruction files should refer here instead of duplicating these rules.
+
+## Shared agent resources
+
+- Keep project skills in `.agents/skills/` and subagent definitions in
+  `.agents/agents/`. The `.claude/skills` and `.claude/agents` symlinks expose these
+  same resources to Claude Code.
+- `CLAUDE.md` is a symlink to this file; edit `AGENTS.md` for shared guidance.
+- Keep personal tool permissions, caches, and worktrees out of Git.
