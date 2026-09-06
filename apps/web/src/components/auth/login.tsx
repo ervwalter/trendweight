@@ -1,4 +1,3 @@
-import { NewVersionNotice } from "@/components/notices/new-version-notice";
 import { SignIn } from "@clerk/react";
 
 const clerkAppearance = {
@@ -28,7 +27,6 @@ interface LoginProps {
 export function Login({ redirectTo }: LoginProps) {
   return (
     <div className="mx-auto max-w-xl md:py-12">
-      <NewVersionNotice />
       <SignIn routing="hash" appearance={clerkAppearance} forceRedirectUrl={redirectTo} signUpForceRedirectUrl={redirectTo} />
     </div>
   );

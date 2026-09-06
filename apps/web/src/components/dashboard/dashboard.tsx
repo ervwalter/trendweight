@@ -9,7 +9,6 @@ import { useEmbedParams } from "@/lib/hooks/use-embed-params";
 import { EmbedDashboard } from "./embed-dashboard";
 import { Heading } from "@/components/common/heading";
 import { FitbitSunsetNotice } from "@/components/notices/fitbit-sunset-notice";
-import { NewVersionNotice } from "@/components/notices/new-version-notice";
 import { QuickLogButton } from "@/components/log/quick-log-button";
 import Buttons from "./buttons";
 import Chart from "./chart/chart";
@@ -72,7 +71,6 @@ const Dashboard: FC = () => {
         <ProviderSyncErrors providerStatus={dashboardData.providerStatus} />
         {/* "It's coming" heads-up yields to the "it happened" shutdown banner once syncing is disabled */}
         {dashboardData.isMe && dashboardData.providerStatus?.fitbit && dashboardData.providerStatus.fitbit.error !== "disabled" && <FitbitSunsetNotice />}
-        {dashboardData.isMe && dashboardData.profile.isMigrated && <NewVersionNotice />}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start print:hidden">
           <Buttons />
           {/* Compact and last so it reads as one of the chart controls, not the page's primary action */}

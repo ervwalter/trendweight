@@ -11,16 +11,10 @@ vi.mock("@clerk/react", () => ({
   ),
 }));
 
-// Mock dependencies
-vi.mock("@/components/notices/new-version-notice", () => ({
-  NewVersionNotice: () => <div data-testid="new-version-notice">New Version Notice</div>,
-}));
-
 describe("Login", () => {
-  it("should render all login components", () => {
+  it("should render the Clerk sign-in", () => {
     render(<Login />);
 
-    expect(screen.getByTestId("new-version-notice")).toBeInTheDocument();
     expect(screen.getByTestId("clerk-signin")).toBeInTheDocument();
     expect(screen.getByTestId("clerk-signin")).toHaveTextContent("routing: hash");
   });

@@ -5,7 +5,6 @@ import { useProfile } from "@/lib/api/queries";
 import type { ProfileData } from "@/lib/core/interfaces";
 import { KG_TO_LBS } from "@/lib/core/weight-units";
 import { useNavigationGuard } from "@/lib/hooks/use-navigation-guard";
-import { NewVersionNotice } from "@/components/notices/new-version-notice";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AccountSecuritySection } from "./account-security-section";
@@ -110,9 +109,6 @@ export function Settings() {
 
   return (
     <SettingsLayout>
-      {/* New Version Notice */}
-      {profileData?.isMigrated && <NewVersionNotice />}
-
       {/* Settings Form Card */}
       <Card className="mb-6 py-0">
         <form onSubmit={handleSubmit(onSubmit)}>
