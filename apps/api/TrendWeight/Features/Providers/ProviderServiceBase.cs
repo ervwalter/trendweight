@@ -1,4 +1,4 @@
-using System.Text.Json;
+using System.Collections.Concurrent;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
@@ -215,6 +215,12 @@ public abstract class ProviderServiceBase : IProviderService
         }
     }
 
+    // Both providers rotate refresh tokens, so two overlapping requests that each spend the
+    // same refresh token leave the loser with invalid_grant and a spurious "please reconnect"
+    // even though the winner just stored a valid token. Refreshes for a given link are
+    // serialized within this process and re-read the stored link before spending the token.
+    private static readonly ConcurrentDictionary<(Guid UserId, string Provider), SemaphoreSlim> RefreshLocks = new();
+
     /// <summary>
     /// Gets the active provider link, automatically refreshing token if needed
     /// </summary>
@@ -227,11 +233,28 @@ public abstract class ProviderServiceBase : IProviderService
         }
 
         // Check if token needs refresh (provider-specific logic)
-        var isExpired = IsTokenExpired(providerLink.Token);
-        Logger.LogDebug("Checking {Provider} token expiration for user {UserId}: {IsExpired}", ProviderName, userId, isExpired);
-
-        if (isExpired)
+        if (!IsTokenExpired(providerLink.Token))
         {
+            return providerLink;
+        }
+
+        var refreshLock = RefreshLocks.GetOrAdd((userId, ProviderName), _ => new SemaphoreSlim(1, 1));
+        await refreshLock.WaitAsync();
+        try
+        {
+            // A concurrent request may have refreshed while this one waited for the lock
+            providerLink = await ProviderLinkService.GetProviderLinkAsync(userId, ProviderName);
+            if (providerLink == null)
+            {
+                return null;
+            }
+
+            if (!IsTokenExpired(providerLink.Token))
+            {
+                Logger.LogDebug("{Provider} token for user {UserId} was refreshed by a concurrent request", ProviderName, userId);
+                return providerLink;
+            }
+
             Logger.LogDebug("Token expired for {Provider} user {UserId}, attempting refresh", ProviderName, userId);
 
             try
@@ -258,6 +281,10 @@ public abstract class ProviderServiceBase : IProviderService
                 Logger.LogError(ex, "Failed to refresh token for {Provider} user {UserId}", ProviderName, userId);
                 throw;
             }
+        }
+        finally
+        {
+            refreshLock.Release();
         }
 
         return providerLink;

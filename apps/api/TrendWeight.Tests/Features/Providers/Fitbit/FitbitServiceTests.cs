@@ -1190,6 +1190,47 @@ public class FitbitServiceTests : TestBase
             .Should().ThrowAsync<ProviderAuthException>();
     }
 
+    [Fact]
+    public async Task GetMeasurementsAsync_WhenConcurrentRequestAlreadyRefreshed_UsesStoredTokenWithoutRefreshing()
+    {
+        // Arrange - the first read sees an expired token; by the time the refresh lock is held,
+        // another request has stored a fresh token (both providers rotate refresh tokens, so
+        // spending the stale one would fail with invalid_grant)
+        var userId = Guid.NewGuid();
+        var freshToken = CreateValidToken("fitbit-user");
+        freshToken["access_token"] = "fresh-access-token";
+
+        _providerLinkServiceMock.SetupSequence(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "fitbit", Token = CreateExpiredToken() })
+            .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "fitbit", Token = freshToken });
+
+        string? bearerUsed = null;
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/body/log/weight/date")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync((HttpRequestMessage req, CancellationToken _) =>
+            {
+                bearerUsed = req.Headers.Authorization?.Parameter;
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"weight\":[]}", Encoding.UTF8, "application/json")
+                };
+            });
+
+        // Act
+        var result = await _sut.GetMeasurementsAsync(userId, true, DateTime.UtcNow.AddDays(-5));
+
+        // Assert
+        result.Should().NotBeNull();
+        bearerUsed.Should().Be("fresh-access-token");
+        _httpMessageHandlerMock.Protected().Verify("SendAsync", Times.Never(),
+            ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/oauth2/token")),
+            ItExpr.IsAny<CancellationToken>());
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(),
+            It.IsAny<Dictionary<string, object>>(), It.IsAny<string?>()), Times.Never);
+    }
+
     private Dictionary<string, object> CreateExpiredToken()
     {
         return new Dictionary<string, object>
