@@ -688,6 +688,22 @@ public class WithingsServiceTests : TestBase
         callCount.Should().Be(2);
     }
 
+    [Fact]
+    public async Task SyncMeasurementsAsync_WhenMeasureFetchReturnsHttp401_ReportsAuthFailed()
+    {
+        var userId = Guid.NewGuid();
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
+            .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "withings", Token = CreateValidToken() });
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Unauthorized) { Content = new StringContent("{}") });
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(ProviderSyncError.AuthFailed);
+    }
+
     [Theory]
     [InlineData(HttpStatusCode.TooManyRequests)]
     [InlineData(HttpStatusCode.ServiceUnavailable)]

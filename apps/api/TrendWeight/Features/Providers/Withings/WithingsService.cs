@@ -409,6 +409,17 @@ public class WithingsService : ProviderServiceBase, IWithingsService
 
         using var response = await _httpClient.SendAsync(request);
 
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            // A transport-level 401 means the access token was rejected outright; report it
+            // like Fitbit does so the sync surfaces AuthFailed instead of Unknown.
+            Logger.LogWarning("Withings API returned 401 Unauthorized for measurement fetch");
+            throw new ProviderAuthException(
+                "withings",
+                "Withings authorization expired. Please reconnect your account.",
+                "401");
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync();
