@@ -1,5 +1,22 @@
 # TrendWeight architecture
 
+## Code map
+
+| Path                                  | Responsibility                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| `apps/web/src/routes`                 | TanStack routes, loaders, and authentication guards                     |
+| `apps/web/src/components`             | Feature screens and shared UI components                                |
+| `apps/web/src/lib`                    | API clients, query/cache ownership, chart/trend calculations, utilities |
+| `apps/api/TrendWeight/Features`       | Controllers, services, and models grouped by feature                    |
+| `apps/api/TrendWeight/Infrastructure` | Authentication, data access, middleware, configuration                  |
+| `apps/api/TrendWeight.Tests`          | Backend unit tests and HTTP pipeline tests                              |
+| `supabase/migrations`                 | Database schema and migrations                                          |
+| `scripts`                             | Docker helpers and their tests                                          |
+
+The frontend uses React, TanStack Router/Query, Highcharts, and Tailwind CSS.
+The backend is ASP.NET Core. npm workspaces and Turborepo coordinate builds/checks;
+exact dependency versions belong in package manifests and lockfiles.
+
 ## Applications and request boundaries
 
 The React SPA uses Clerk for login and sends session tokens to the ASP.NET Core
@@ -53,64 +70,18 @@ These are advisory status messages, not an authorization mechanism.
 
 Create schema changes with `supabase migration new <name>` and review the SQL.
 Apply to remote projects only through the approved migration workflow; never edit
-remote tables/policies through ad hoc SQL or the dashboard. Live configuration was
-not verified by the repository audit.
+remote tables/policies through ad hoc SQL or the dashboard.
 
-## Serving and deployment
+## HTTP and deployment boundaries
 
-One container serves the published ASP.NET Core API and Vite assets on port 8080.
-YARP proxies analytics endpoints; it does not serve the production SPA. Unknown
-API paths return 404, while non-API GET/HEAD routes fall back to the SPA shell.
-The shell is not cached; hashed assets have long immutable cache lifetimes.
-The public API reference is `/api-docs/v1`; the internal document is development-only.
+One container serves the API and Vite assets on port 8080. YARP proxies analytics
+requests to Plausible. Non-API GET/HEAD routes fall back to the SPA shell; unknown
+API routes return 404. The shell is uncached and hashed assets are immutable.
 
-Frontend `VITE_*` values are embedded at build time. They must contain only public
-configuration. Backend secrets are supplied as runtime environment variables and
-must never be Docker build arguments. Local Docker helpers load a trusted `.env`
-file when present and accept already-exported environment variables.
+Callback destinations and OpenAPI server URLs come from `PublicBaseUrl`, not
+request headers. Hosting ingress enforces HTTPS; the application accepts internal
+HTTP and does not consume forwarded headers. `AllowedHosts` checks the actual
+request host. The API-key limiter is partitioned by authenticated user, not client IP.
 
-CI runs formatting/type/lint/build/tests before the container publication job.
-Only main/tag runs publish images. A Git push starts CI; it does not by itself
-prove production rollout or health. No deployment was performed for the audit fixes.
-
-### Public origin and HTTPS — required before deployment
-
-Set the backend runtime environment variable `PublicBaseUrl` to the public origin:
-
-| Environment         | Value                             |
-| ------------------- | --------------------------------- |
-| Production          | `https://trendweight.com`         |
-| Staging             | `https://staging.trendweight.com` |
-| Development default | `http://localhost:5173`           |
-
-Withings/Fitbit authorization and token exchanges, the Apple callback redirect,
-and OpenAPI server URLs use this origin. Incoming Host and forwarded headers cannot
-change those destinations. Origins cannot contain credentials, a path beyond `/`,
-a query, or a fragment. Startup fails if the setting is missing outside Development,
-or if the value is invalid. HTTP origins are permitted only in Development; explicit
-ports are preserved. Set an override for a different local frontend port.
-
-The app does not consume forwarded headers or perform HTTP-to-HTTPS redirection.
-The hosting ingress must enforce public HTTPS; verify its redirect/rejection behavior
-before rollout. Internal HTTP, including readiness probes, remains usable without
-redirect loops. Do not expose this HTTP listener directly on the public Internet.
-This follows Microsoft's [reverse-proxy HTTPS guidance](https://learn.microsoft.com/en-us/aspnet/core/security/enforcing-ssl?view=aspnetcore-10.0).
-
-`AllowedHosts` still independently validates the actual Host header. Keep the
-legitimate application/probe hostnames allowed for your deployment. No proxy IP
-allowlist is needed; `ForwardedHeaders__KnownProxies__N` and
-`ForwardedHeaders__KnownNetworks__N` are obsolete and no longer consumed. Do not set
-`ASPNETCORE_FORWARDEDHEADERS_ENABLED`, which can enable framework forwarding outside
-this application's pipeline. Client IP attribution is not established by the public
-origin setting; the API-key limiter remains partitioned by authenticated identity.
-
-In DigitalOcean App Platform, set `PublicBaseUrl` under each web service's runtime
-environment variables before deploying the new image. Check the registered provider
-callback URLs against the selected origin. Validate staging first: health checks,
-HTTP-to-HTTPS handling at ingress, login, provider linking, Apple callback forwarding,
-and the API docs. Only then promote the tested image to production.
-
-For a local Docker container serving the UI on port 8080, explicitly export
-`ASPNETCORE_ENVIRONMENT=Development` and `PublicBaseUrl=http://localhost:8080`
-before `npm run docker:run`. The script forwards these runtime settings. Do not
-use Development mode on a publicly hosted deployment.
+See [deployment](DEPLOYMENT.md) for required runtime configuration, image publication,
+and release verification, and [AGENTS.md](../AGENTS.md) for coding conventions.

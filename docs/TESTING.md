@@ -1,45 +1,53 @@
-# Testing and verification
+# Testing
 
-Run commands from the repository root. Install the locked npm dependencies with
-`npm ci` and restore .NET packages with `dotnet restore apps/api/TrendWeight.sln`.
+Run commands from the repository root after `npm ci` and
+`dotnet restore apps/api/TrendWeight.sln`. The suites mock external services and
+must not use live account credentials.
+
+## Required checks
 
 ```bash
 npm run check && npm run test
 npm run check:ci
-npm run -w apps/web test -- src/lib/core/dates.test.ts
-npm run -w apps/web test:coverage
-npm run -w apps/api test
-dotnet test --project apps/api/TrendWeight.Tests --filter-class '*ProfileServiceTests'
-npm run test:tooling
 ```
 
-`npm test` runs Docker-script tests with Node, then builds and tests both workspaces
-through Turborepo. Backend lint treats compiler/analyzer warnings as errors.
-`check:ci` additionally verifies formatting. `npm run format` writes formatting
-changes across both workspaces; inspect its diff before staging.
+`check` runs TypeScript and lint checks; backend lint builds with warnings as
+errors. `test` runs the Docker helper tests, then builds and tests both workspaces.
+`check:ci` also verifies formatting. `npm run format` writes formatting changes;
+review the diff before committing.
 
-The backend uses xUnit v3 with Microsoft.Testing.Platform, configured in
-`global.json`. Legacy VSTest `--filter` syntax is not the targeted-test interface.
-On sandboxed macOS, .NET may fail or hang when named-pipe sockets or NuGet access
-are denied. Run in an approved environment with those capabilities rather than
-interpreting an infrastructure failure as a test result.
+## Focused tests
 
-## Test the behavior that can fail
+| Task                  | Command                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| Frontend suite        | `npm run -w apps/web test`                                                               |
+| One frontend file     | `npm run -w apps/web test -- src/lib/core/dates.test.ts`                                 |
+| Frontend coverage     | `npm run -w apps/web test:coverage`                                                      |
+| Backend suite         | `npm run -w apps/api test`                                                               |
+| One backend class     | `dotnet test --project apps/api/TrendWeight.Tests --filter-class '*ProfileServiceTests'` |
+| Docker helper scripts | `npm run test:tooling`                                                                   |
 
-- Frontend: colocated Vitest/Testing Library tests, MSW for network boundaries.
-  Exercise malformed input, empty histories, locale/units, storage failures,
-  refetches while editing, and account transitions. Restore mocks after each test.
-- Backend: service/controller unit tests plus real HTTP middleware tests in
-  `Infrastructure/Startup/RequestPipelineTests.cs`. External identity/database
-  services are mocked; middleware and authentication schemes are real.
-- Scripts: the Node tests execute Docker helpers with a stub Docker binary and
-  synthetic credentials. They neither build containers nor contact services.
+The backend uses xUnit v3 with Microsoft.Testing.Platform (`global.json`), not
+legacy VSTest `--filter` syntax. Frontend coverage HTML is written under
+`apps/web/coverage`; it reflects the configured measured files, not the entire
+repository.
 
-A mock that ignores database predicates cannot prove row-level authorization.
-A controller-only test cannot prove middleware scheme selection. A passing build
-without public frontend configuration does not prove that the deployed app boots.
-Real provider OAuth, production RLS/proxy configuration, container rollout and
-account-deletion side effects require separately authorized integration validation.
+## Where to add a regression
 
-Coverage percentages are diagnostic, not proof of correctness. Add meaningful
-failure-path and boundary tests instead of implementation-mirroring assertions.
+- Frontend tests are colocated `*.test.ts(x)` files using Vitest, Testing Library,
+  and MSW. Cover user-visible behavior, including malformed input, empty data,
+  account transitions, and editing during refetches.
+- Backend tests mirror feature/service folders under `apps/api/TrendWeight.Tests`.
+  Use `Infrastructure/Startup/RequestPipelineTests.cs` for middleware ordering,
+  authentication scheme selection, redirects, and HTTP response behavior. These
+  tests run real middleware with external identity/database services mocked.
+- `scripts/docker-scripts.test.mjs` runs the Docker helpers with a stub executable
+  and synthetic configuration. It does not build or run containers.
+
+Tests do not establish live provider connectivity, production database policy,
+or successful deployment. Use the [deployment checks](DEPLOYMENT.md#verify-a-release)
+for those boundaries.
+
+On sandboxed macOS, .NET can fail when named-pipe sockets or NuGet access are
+blocked. Use an execution environment permitting those operations; an infrastructure
+failure is not a passing or failing application test.
