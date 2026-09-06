@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { render, renderHook, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/mocks/server";
@@ -213,35 +213,30 @@ describe("queries", () => {
         }),
       );
 
-      // Create a wrapper with error boundary for suspense errors
-      const wrapper = ({ children }: { children: React.ReactNode }) => {
-        const queryClient = new QueryClient({
-          defaultOptions: {
-            queries: {
-              retry: false,
-              gcTime: 0,
-            },
+      // useProfile suspends, so a thrown query error surfaces through the nearest error boundary
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+            gcTime: 0,
           },
-        });
-
-        return (
-          <QueryClientProvider client={queryClient}>
-            <ErrorBoundary>{children}</ErrorBoundary>
-          </QueryClientProvider>
-        );
+        },
+      });
+      const ProfileProbe = () => {
+        useProfile();
+        return <div>profile loaded</div>;
       };
 
-      const { result } = renderHook(() => useProfile(), { wrapper });
+      render(
+        <QueryClientProvider client={queryClient}>
+          <ErrorBoundary>
+            <ProfileProbe />
+          </ErrorBoundary>
+        </QueryClientProvider>,
+      );
 
-      // Wait for the error boundary to catch the error
-      await waitFor(() => {
-        const errorBoundary = result.current;
-        expect(errorBoundary).toBeDefined();
-      });
-
-      // For now, we'll just verify the hook was called
-      // In a real app, the error boundary would handle this
-      expect(true).toBe(true);
+      expect(await screen.findByText(/Error: Internal Server Error/)).toBeInTheDocument();
+      expect(screen.queryByText("profile loaded")).not.toBeInTheDocument();
 
       consoleErrorSpy.mockRestore();
     });

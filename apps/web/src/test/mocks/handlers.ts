@@ -83,30 +83,3 @@ export const apiHandlers = {
   // Network error (connection refused, timeout, etc.)
   networkError: (path: string) => http.get(path, () => HttpResponse.error()),
 };
-
-// Specific API endpoint handlers for common endpoints
-export const weightHandlers = {
-  getWeightData: (data: any) => http.get("/api/weight", () => HttpResponse.json(data)),
-
-  createWeight: (responseData: any) => http.post("/api/weight", () => HttpResponse.json(responseData)),
-
-  updateWeight: (id: string, responseData: any) => http.put(`/api/weight/${id}`, () => HttpResponse.json(responseData)),
-
-  deleteWeight: (id: string) => http.delete(`/api/weight/${id}`, () => new HttpResponse(null, { status: 204 })),
-};
-
-export const userHandlers = {
-  getSettings: (settings: any) => http.get("/api/user/settings", () => HttpResponse.json(settings)),
-
-  updateSettings: (responseData: any) => http.put("/api/user/settings", () => HttpResponse.json(responseData)),
-
-  getProfile: (profile: any) => http.get("/api/user/profile", () => HttpResponse.json(profile)),
-};
-
-export const providerHandlers = {
-  connectProvider: (provider: string, responseData: any) => http.post(`/api/providers/${provider}/connect`, () => HttpResponse.json(responseData)),
-
-  disconnectProvider: (provider: string) => http.delete(`/api/providers/${provider}`, () => new HttpResponse(null, { status: 204 })),
-
-  syncProvider: (provider: string, responseData: any) => http.post(`/api/providers/${provider}/sync`, () => HttpResponse.json(responseData)),
-};

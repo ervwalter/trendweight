@@ -154,11 +154,6 @@ describe("Build", () => {
     expect(screen.getByText("Commit Link")).toHaveAttribute("href", "https://github.com/anthropics/trendweight/commit/abc123def456");
   });
 
-  it("should handle development environment", () => {
-    // Skip this test since we can't override MODE in test environment
-    expect(true).toBe(true);
-  });
-
   it("should display browser information", () => {
     render(<Build />);
 
@@ -201,11 +196,5 @@ describe("Build", () => {
     expect(emailLink).toHaveAttribute("href", expect.stringContaining("mailto:erv@ewal.net"));
     expect(emailLink).toHaveAttribute("href", expect.stringContaining("subject=TrendWeight%20Support%20Request"));
     expect(emailLink).toHaveAttribute("href", expect.stringContaining("Please%20describe%20your%20issue%20here"));
-  });
-
-  it("should handle loading changelog state", async () => {
-    // This test needs a different approach since we can't dynamically change mocks
-    // Let's skip it for now as the functionality is covered by other tests
-    expect(true).toBe(true);
   });
 });

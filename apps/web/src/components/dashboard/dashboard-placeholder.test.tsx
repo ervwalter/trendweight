@@ -99,8 +99,7 @@ describe("DashboardPlaceholder", () => {
     const { container } = renderWithProviders(<DashboardPlaceholder />);
     // Look for skeleton elements in the stats section
     const statsSection = container.querySelector(".flex.flex-col.gap-4");
-    const skeletons = statsSection?.querySelectorAll("[data-slot='skeleton']");
-    expect(skeletons).toBeDefined();
-    expect(skeletons!.length).toBeGreaterThan(0);
+    expect(statsSection).not.toBeNull();
+    expect(statsSection!.querySelectorAll("[data-slot='skeleton']").length).toBeGreaterThan(0);
   });
 });
