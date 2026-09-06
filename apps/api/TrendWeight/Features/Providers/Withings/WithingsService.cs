@@ -136,22 +136,15 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                 );
             }
 
-            // Check for auth-related errors
-            // Withings uses status 401 for invalid token
-            // Withings also uses status 503 with "invalid refresh_token" message
-            if (withingsResponse?.Status == 401 ||
-                withingsResponse?.Error?.Contains("invalid_token", StringComparison.OrdinalIgnoreCase) == true ||
-                withingsResponse?.Error?.Contains("invalid refresh_token", StringComparison.OrdinalIgnoreCase) == true ||
-                withingsResponse?.Error?.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) == true ||
-                (withingsResponse?.Status == 503 && withingsResponse?.Error?.Contains("invalid", StringComparison.OrdinalIgnoreCase) == true))
-            {
-                throw new ProviderAuthException(
-                    "withings",
-                    $"Withings authentication failed: {withingsResponse.Error}",
-                    withingsResponse.Status.ToString(CultureInfo.InvariantCulture));
-            }
-
-            throw new ProviderApiException("withings", $"Withings API error: {withingsResponse?.Status} {withingsResponse?.Error}", withingsResponse?.Error, withingsResponse?.Status);
+            // No user token is involved in a code exchange, so any other rejection means the
+            // authorization code itself was invalid, expired, or already used (Withings reports
+            // this as status 503 "Invalid Params: invalid code"). Surface it as a 400 the
+            // link controller can relay instead of an auth failure that becomes a 500.
+            throw new ProviderException(
+                "Invalid authorization code. Please try connecting your Withings account again.",
+                HttpStatusCode.BadRequest,
+                "INVALID_CODE",
+                isRetryable: false);
         }
 
         var tokenData = withingsResponse!.Body;

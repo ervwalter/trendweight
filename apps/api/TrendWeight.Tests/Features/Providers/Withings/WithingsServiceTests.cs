@@ -141,6 +141,29 @@ public class WithingsServiceTests : TestBase
             It.IsAny<Exception>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Never);
     }
 
+    [Theory]
+    [InlineData(503, "Invalid Params: invalid code")]
+    [InlineData(401, "Unauthorized")]
+    [InlineData(2555, "Unknown error")]
+    public async Task ExchangeAuthorizationCodeAsync_WhenWithingsRejectsCode_ThrowsInvalidCodeAsBadRequest(int status, string error)
+    {
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new { status, error }))
+            });
+
+        var act = () => _sut.ExchangeAuthorizationCodeAsync("stale-code", "https://example.com/callback", Guid.NewGuid());
+
+        var thrown = await act.Should().ThrowAsync<ProviderException>();
+        thrown.Which.ErrorCode.Should().Be("INVALID_CODE");
+        thrown.Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        thrown.Which.IsRetryable.Should().BeFalse();
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(),
+            It.IsAny<Dictionary<string, object>>(), It.IsAny<string?>()), Times.Never);
+    }
+
     #region Pagination Tests - Critical for Withings
 
     [Fact]
