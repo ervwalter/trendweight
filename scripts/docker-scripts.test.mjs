@@ -130,3 +130,21 @@ test("docker run forwards provider state signing and the Fitbit enable flag", (t
     false,
   );
 });
+
+test("docker build defaults the version to local and honors an override", (t) => {
+  const setup = fixture(t);
+  const variables = {
+    VITE_CLERK_PUBLISHABLE_KEY: "pk_test_example",
+    VITE_SUPABASE_URL: "https://example.supabase.co",
+    VITE_SUPABASE_ANON_KEY: "public-example-key",
+  };
+  const defaulted = setup.run("docker-build.sh", variables);
+  assert.equal(defaulted.status, 0, defaulted.stderr);
+  assert.ok(defaulted.args.includes("BUILD_VERSION=local"));
+  const overridden = setup.run("docker-build.sh", {
+    ...variables,
+    BUILD_VERSION: "v9.9.9",
+  });
+  assert.equal(overridden.status, 0, overridden.stderr);
+  assert.ok(overridden.args.includes("BUILD_VERSION=v9.9.9"));
+});
