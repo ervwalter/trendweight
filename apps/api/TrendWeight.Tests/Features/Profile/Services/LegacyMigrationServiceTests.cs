@@ -115,6 +115,71 @@ public class LegacyMigrationServiceTests : TestBase
 
     #region MigrateLegacyProfileAsync Tests
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task MigrateLegacyProfileAsync_WithBlankPrivateUrlKey_GeneratesSharingToken(string? privateUrlKey)
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        var email = "test@example.com";
+        var legacyProfile = CreateTestLegacyProfile(email);
+        legacyProfile.PrivateUrlKey = privateUrlKey;
+
+        _profileServiceMock.Setup(x => x.GenerateUniqueShareTokenAsync()).ReturnsAsync("generated-token");
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
+
+        // Act
+        var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
+
+        // Assert - sharing is forced on, so a blank token must never be stored
+        result.Profile.SharingEnabled.Should().BeTrue();
+        result.Profile.SharingToken.Should().Be("generated-token");
+        _profileServiceMock.Verify(x => x.GetBySharingTokenAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MigrateLegacyProfileAsync_WhenPrivateUrlKeyAlreadyInUse_GeneratesSharingToken()
+    {
+        // Arrange - another profile already owns this token
+        var userId = Guid.NewGuid().ToString();
+        var email = "test@example.com";
+        var legacyProfile = CreateTestLegacyProfile(email);
+        legacyProfile.PrivateUrlKey = "taken-key";
+
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync("taken-key"))
+            .ReturnsAsync(CreateTestDbProfile(Guid.NewGuid(), "someone-else@example.com"));
+        _profileServiceMock.Setup(x => x.GenerateUniqueShareTokenAsync()).ReturnsAsync("generated-token");
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
+
+        // Act
+        var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
+
+        // Assert
+        result.Profile.SharingToken.Should().Be("generated-token");
+    }
+
+    [Fact]
+    public async Task MigrateLegacyProfileAsync_WithUnusedPrivateUrlKey_KeepsLegacyToken()
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        var email = "test@example.com";
+        var legacyProfile = CreateTestLegacyProfile(email);
+        legacyProfile.PrivateUrlKey = "legacy-key";
+
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync("legacy-key")).ReturnsAsync((DbProfile?)null);
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
+
+        // Act
+        var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
+
+        // Assert - existing private URLs keep working
+        result.Profile.SharingToken.Should().Be("legacy-key");
+        _profileServiceMock.Verify(x => x.GenerateUniqueShareTokenAsync(), Times.Never);
+    }
+
     [Fact]
     public async Task MigrateLegacyProfileAsync_WithFitbitDevice_CreatesProviderLink()
     {

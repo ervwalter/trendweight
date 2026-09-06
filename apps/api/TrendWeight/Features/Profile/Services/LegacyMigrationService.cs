@@ -67,6 +67,13 @@ public class LegacyMigrationService : ILegacyMigrationService
     /// <returns>The migrated profile</returns>
     public async Task<DbProfile> MigrateLegacyProfileAsync(string userId, string email, LegacyProfile legacyProfile)
     {
+        // Keep the legacy private URL working, but never adopt a blank key or one that
+        // already belongs to another profile: sharing is forced on for migrated users.
+        var sharingToken = string.IsNullOrWhiteSpace(legacyProfile.PrivateUrlKey)
+            || await _profileService.GetBySharingTokenAsync(legacyProfile.PrivateUrlKey) != null
+            ? await _profileService.GenerateUniqueShareTokenAsync()
+            : legacyProfile.PrivateUrlKey;
+
         // Create new profile with migrated data
         var userGuid = Guid.Parse(userId);
         var profile = new DbProfile
@@ -82,7 +89,7 @@ public class LegacyMigrationService : ILegacyMigrationService
                 PlannedPoundsPerWeek = legacyProfile.PlannedPoundsPerWeek ?? 0, // Already in correct units
                 DayStartOffset = legacyProfile.DayStartOffset ?? 0,
                 ShowCalories = true, // it was on in the old site
-                SharingToken = legacyProfile.PrivateUrlKey ?? string.Empty, // Use existing sharing token
+                SharingToken = sharingToken,
                 SharingEnabled = true, // Always enabled in legacy app
                 IsMigrated = true,
                 IsNewlyMigrated = true
