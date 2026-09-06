@@ -60,6 +60,109 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         tokens.Verify(x => x.ValidateTokenAsync("origin-test-jwt", expectedOrigin), Times.Once);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("test-clerk-jwt")]
+    [InlineData("sk-invalid")]
+    public async Task Settings_RequiresValidApiKey(string? token)
+    {
+        using var client = _factory.CreateHttpsClient();
+        if (token != null)
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+        using var response = await client.GetAsync("/api/v1/settings", TestContext.Current.CancellationToken);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Theory]
+    [InlineData(true, 70, -0.5)]
+    [InlineData(false, 155, -1)]
+    [InlineData(false, 160, 0)]
+    [InlineData(true, 75, 0.25)]
+    public async Task Settings_ReturnsOnlyDisplayPreferencesInSelectedUnits(bool metric, decimal goal, decimal weeklyChange)
+    {
+        using var factory = SettingsFactory(new ProfileData
+        {
+            FirstName = "Private name",
+            SharingEnabled = false,
+            SharingToken = "private-sharing-token",
+            ApiKeyHash = "private-hash",
+            ApiKeySuffix = "private-suffix",
+            ApiKeyCreatedAt = "private-date",
+            IsMigrated = true,
+            IsNewlyMigrated = true,
+            GoalStart = new DateTime(2026, 9, 1),
+            GoalWeight = goal,
+            PlannedPoundsPerWeek = weeklyChange,
+            UseMetric = metric,
+            DayStartOffset = 4,
+            ShowCalories = true,
+            HideDataBeforeStart = true,
+            TrendAlgorithm = "holt-gentle"
+        });
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", StartupTestFactory.ApiKey);
+        using var response = await client.GetAsync("/api/v1/settings", TestContext.Current.CancellationToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var document = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var settings = document.RootElement;
+        settings.EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo(
+            "goalStart", "goalWeight", "plannedWeightChangePerWeek", "useMetric", "dayStartOffset",
+            "showCalories", "hideDataBeforeStart", "trendAlgorithm");
+        settings.GetProperty("goalStart").GetString().Should().Be("2026-09-01");
+        settings.GetProperty("goalWeight").GetDecimal().Should().Be(goal);
+        settings.GetProperty("plannedWeightChangePerWeek").GetDecimal().Should().Be(weeklyChange);
+        settings.GetProperty("useMetric").GetBoolean().Should().Be(metric);
+        settings.GetProperty("dayStartOffset").GetInt32().Should().Be(4);
+        settings.GetProperty("showCalories").GetBoolean().Should().BeTrue();
+        settings.GetProperty("hideDataBeforeStart").GetBoolean().Should().BeTrue();
+        settings.GetProperty("trendAlgorithm").GetString().Should().Be("holt-gentle");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("unknown-preset")]
+    public async Task Settings_UsesDashboardDefaultsAndOmitsUnsetGoals(string? preset)
+    {
+        using var factory = SettingsFactory(new ProfileData { TrendAlgorithm = preset });
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", StartupTestFactory.ApiKey);
+        using var response = await client.GetAsync("/api/v1/settings", TestContext.Current.CancellationToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var document = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var settings = document.RootElement;
+        settings.EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo(
+            "useMetric", "dayStartOffset", "showCalories", "hideDataBeforeStart", "trendAlgorithm");
+        settings.GetProperty("dayStartOffset").GetInt32().Should().Be(0);
+        settings.GetProperty("showCalories").GetBoolean().Should().BeFalse();
+        settings.GetProperty("trendAlgorithm").GetString().Should().Be("default");
+    }
+
+    [Fact]
+    public async Task Settings_ProfileRemovedAfterAuthentication_ReturnsNotFound()
+    {
+        using var factory = SettingsFactory(null);
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", StartupTestFactory.ApiKey);
+        using var response = await client.GetAsync("/api/v1/settings", TestContext.Current.CancellationToken);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    private WebApplicationFactory<Program> SettingsFactory(ProfileData? settings)
+    {
+        var uid = Guid.NewGuid();
+        var profile = new DbProfile { Uid = uid, Email = "private@example.com", Profile = settings ?? new ProfileData() };
+        var profiles = new Mock<IProfileService>(MockBehavior.Strict);
+        profiles.Setup(x => x.GetByApiKeyHashAsync(ApiKeyService.HashKey(StartupTestFactory.ApiKey))).ReturnsAsync(profile);
+        profiles.Setup(x => x.GetByIdAsync(uid)).ReturnsAsync(settings == null ? null : profile);
+        return _factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IProfileService>();
+            services.AddSingleton(profiles.Object);
+        }));
+    }
+
     [Fact]
     public async Task ApiDocumentation_AdvertisesCanonicalOriginForInternalHttp()
     {

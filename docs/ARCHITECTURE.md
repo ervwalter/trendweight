@@ -26,6 +26,11 @@ Development), independent of internal proxy addresses or request headers. `user_
 Internal API endpoints use the Clerk authentication scheme. `/api/v1` explicitly
 uses API-key authentication; those keys do not grant access to internal settings.
 API-key hashes are stored in profile JSON and indexed by a database migration.
+`GET /api/v1/settings` returns only display and behavioral preferences for the key
+owner, without requiring sharing. Unlike measurement endpoints, its `goalWeight`
+and `plannedWeightChangePerWeek` use display units (`useMetric`: kilograms if true,
+pounds otherwise); negative weekly change means loss. Unset goals are omitted.
+Settings are read-only through the public API and documented in the v1 OpenAPI schema.
 
 Sharing endpoints allow anonymous access only when the profile's sharing switch
 is enabled and the supplied sharing token resolves. Computed and raw shared data
