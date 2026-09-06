@@ -11,14 +11,11 @@ export function DangerZoneSection() {
   const deleteAccountMutation = useDeleteAccount();
 
   const handleDeleteAccount = async () => {
-    console.log("[DangerZone] Starting account deletion");
     try {
       await deleteAccountMutation.mutateAsync();
-      console.log("[DangerZone] Account deleted, signing out with redirect to /account-deleted");
 
       // Sign out the user and redirect to account-deleted page
       await signOut("/account-deleted");
-      console.log("[DangerZone] signOut completed");
     } catch (error) {
       console.error("Failed to delete account:", error);
       // Keep the dialog open to show error state
