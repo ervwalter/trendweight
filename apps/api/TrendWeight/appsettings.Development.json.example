@@ -9,13 +9,17 @@
       "Microsoft.Hosting.Lifetime": "Information"
     }
   },
+  "Jwt": {
+    "SigningKey": "replace-with-your-own-random-signing-secret"
+  },
   "Withings": {
     "ClientId": "your-withings-client-id",
     "ClientSecret": "your-withings-client-secret"
   },
   "Fitbit": {
     "ClientId": "your-fitbit-client-id",
-    "ClientSecret": "your-fitbit-client-secret"
+    "ClientSecret": "your-fitbit-client-secret",
+    "Enabled": true
   },
   "Supabase": {
     "Url": "https://your-project-id.supabase.co",
