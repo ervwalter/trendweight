@@ -116,3 +116,17 @@ test("docker build fails early when required browser configuration is missing", 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /VITE_SUPABASE_URL/);
 });
+
+test("docker run forwards provider state signing and the Fitbit enable flag", (t) => {
+  const result = fixture(t).run("docker-run.sh", {
+    Jwt__SigningKey: "synthetic-test-secret-not-a-real-credential",
+    Fitbit__Enabled: "false",
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.args.includes("Jwt__SigningKey"));
+  assert.ok(result.args.includes("Fitbit__Enabled"));
+  assert.equal(
+    result.args.includes("synthetic-test-secret-not-a-real-credential"),
+    false,
+  );
+});

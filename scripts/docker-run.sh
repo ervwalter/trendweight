@@ -23,6 +23,9 @@ ENV_VARS=(
     "Clerk__SecretKey"
     "Clerk__Authority"
     
+    # OAuth state signing
+    "Jwt__SigningKey"
+
     # Withings configuration
     "Withings__ClientId"
     "Withings__ClientSecret"
@@ -30,6 +33,7 @@ ENV_VARS=(
     # Fitbit configuration
     "Fitbit__ClientId"
     "Fitbit__ClientSecret"
+    "Fitbit__Enabled"
     
     # Security configuration
     "AllowedHosts"
