@@ -26,7 +26,8 @@ public class ErrorHandlingMiddleware
         {
             await _next(context);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!context.Response.HasStarted
+            && !(ex is OperationCanceledException && context.RequestAborted.IsCancellationRequested))
         {
             var correlationId = Guid.NewGuid().ToString();
             _logger.LogError(ex, "An unhandled exception occurred. CorrelationId: {CorrelationId}", correlationId);
