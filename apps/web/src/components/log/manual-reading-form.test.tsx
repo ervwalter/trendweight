@@ -306,6 +306,35 @@ describe("ManualReadingForm", () => {
     expect(mockDeleteMutateAsync).toHaveBeenCalledWith("2024-05-01");
   });
 
+  it("reports that the new entry exists when moving a reading saves but the original cannot be removed", async () => {
+    mockDeleteMutateAsync.mockRejectedValue(new Error("boom"));
+    const onSaved = vi.fn();
+    const user = userEvent.setup();
+    const initialReading: ManualReading = { date: "2024-05-01", weight: 81.8 };
+    mockReadings = [initialReading];
+
+    render(<ManualReadingForm initialReading={initialReading} onSaved={onSaved} />);
+
+    const date = screen.getByLabelText("Date");
+    await user.clear(date);
+    await user.type(date, "2024-05-02");
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variant: "error",
+          title: expect.stringMatching(/original entry remains/),
+          description: expect.stringContaining("2024-05-01"),
+        }),
+      );
+    });
+    expect(mockSaveMutateAsync).toHaveBeenCalledTimes(1);
+    expect(mockShowToast).not.toHaveBeenCalledWith(expect.objectContaining({ description: expect.stringMatching(/could not be saved/) }));
+    // The dashboard must still refresh: the new reading is on the server
+    expect(onSaved).toHaveBeenCalled();
+  });
+
   it("shows an error toast when saving fails", async () => {
     mockSaveMutateAsync.mockRejectedValue(new Error("boom"));
     const user = userEvent.setup();

@@ -102,20 +102,33 @@ export function ManualReadingForm({ initialReading, onSaved }: ManualReadingForm
 
     try {
       await saveReading.mutateAsync(reading);
-
-      // Editing a reading onto a different date is a save + delete of the original
-      if (initialReading && initialReading.date !== reading.date) {
-        await deleteReading.mutateAsync(initialReading.date);
-      }
-
-      showToast({ title: isEdit ? "Entry updated" : "Weight logged", variant: "success" });
-      if (!isEdit) {
-        reset(defaultValuesFor(undefined, useMetric));
-      }
-      onSaved?.();
     } catch {
       showToast({ title: "Something went wrong", description: "Your entry could not be saved. Please try again.", variant: "error" });
+      return;
     }
+
+    // Editing a reading onto a different date is a save + delete of the original. The two
+    // calls are not atomic: if the delete fails the new entry already exists, so say that
+    // rather than claiming nothing was saved
+    if (initialReading && initialReading.date !== reading.date) {
+      try {
+        await deleteReading.mutateAsync(initialReading.date);
+      } catch {
+        showToast({
+          title: "Saved, but the original entry remains",
+          description: `Your reading was saved for ${reading.date}, but the entry for ${initialReading.date} could not be removed. Please delete it manually.`,
+          variant: "error",
+        });
+        onSaved?.();
+        return;
+      }
+    }
+
+    showToast({ title: isEdit ? "Entry updated" : "Weight logged", variant: "success" });
+    if (!isEdit) {
+      reset(defaultValuesFor(undefined, useMetric));
+    }
+    onSaved?.();
   };
 
   const validateWeight = (value: string) => {
