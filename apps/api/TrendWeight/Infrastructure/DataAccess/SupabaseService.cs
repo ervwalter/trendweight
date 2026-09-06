@@ -68,7 +68,7 @@ public class SupabaseService : ISupabaseService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting {Type} by ID {Id}", typeof(T).Name, id);
-            return null;
+            throw;
         }
     }
 
@@ -99,7 +99,7 @@ public class SupabaseService : ISupabaseService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting {Type} by ID {Id}", typeof(T).Name, id);
-            return null;
+            throw;
         }
     }
 
@@ -168,7 +168,7 @@ public class SupabaseService : ISupabaseService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error querying {Type}", typeof(T).Name);
-            return new List<T>();
+            throw;
         }
     }
 
@@ -184,7 +184,7 @@ public class SupabaseService : ISupabaseService
             request.Headers.Add("Authorization", $"Bearer {_config.ServiceKey}");
 
             using var httpClient = _httpClientFactory.CreateClient();
-            var response = await httpClient.SendAsync(request);
+            using var response = await httpClient.SendAsync(request);
 
             if (response.IsSuccessStatusCode)
             {
@@ -230,7 +230,7 @@ public class SupabaseService : ISupabaseService
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
             using var httpClient = _httpClientFactory.CreateClient();
-            var response = await httpClient.SendAsync(request);
+            using var response = await httpClient.SendAsync(request);
 
             if (response.IsSuccessStatusCode)
             {

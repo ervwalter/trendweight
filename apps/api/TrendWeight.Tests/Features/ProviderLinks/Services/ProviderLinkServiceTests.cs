@@ -24,6 +24,30 @@ public class ProviderLinkServiceTests : TestBase
     }
 
     [Fact]
+    public async Task DeleteAllProviderLinksAsync_WhenReadFails_DoesNotReportSuccess()
+    {
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
+            .ThrowsAsync(new HttpRequestException("Database unavailable"));
+
+        var act = () => _sut.DeleteAllProviderLinksAsync(Guid.NewGuid());
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<DbProviderLink>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task StoreProviderLinkAsync_WhenReadFails_DoesNotInsertDuplicateLink()
+    {
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
+            .ThrowsAsync(new HttpRequestException("Database unavailable"));
+
+        var act = () => _sut.StoreProviderLinkAsync(Guid.NewGuid(), "withings", new Dictionary<string, object>());
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbProviderLink>()), Times.Never);
+    }
+
+    [Fact]
     public async Task GetProviderLinkAsync_ReturnsProviderLink_WhenExists()
     {
         // Arrange
@@ -61,7 +85,7 @@ public class ProviderLinkServiceTests : TestBase
     }
 
     [Fact]
-    public async Task GetProviderLinkAsync_ReturnsNull_OnException()
+    public async Task GetProviderLinkAsync_PropagatesDatabaseFailure()
     {
         // Arrange
         var uid = Guid.NewGuid();
@@ -71,10 +95,10 @@ public class ProviderLinkServiceTests : TestBase
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
-        var result = await _sut.GetProviderLinkAsync(uid, provider);
+        var act = () => _sut.GetProviderLinkAsync(uid, provider);
 
         // Assert
-        result.Should().BeNull();
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
         _loggerMock.Verify(
             x => x.Log(
                 LogLevel.Error,

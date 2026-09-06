@@ -29,7 +29,7 @@ public class ProviderLinkService : IProviderLinkService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting provider link for user {Uid} and provider {Provider}", uid, provider);
-            return null;
+            throw;
         }
     }
 
@@ -44,7 +44,7 @@ public class ProviderLinkService : IProviderLinkService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting provider links for user {Uid}", uid);
-            return new List<DbProviderLink>();
+            throw;
         }
     }
 

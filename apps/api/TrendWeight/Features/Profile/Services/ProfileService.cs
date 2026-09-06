@@ -232,60 +232,20 @@ public class ProfileService : IProfileService
         {
             _logger.LogInformation("Starting account deletion for user {UserId}", userId);
 
-            // Step 1: Get the user_accounts record to find the Clerk external ID
             var userAccount = await _userAccountMappingService.GetByInternalIdAsync(userId);
-            string? clerkUserId = userAccount?.ExternalId;
-
-            // Step 2: Delete from Clerk (if user has a Clerk account)
-            if (!string.IsNullOrEmpty(clerkUserId))
-            {
-                _logger.LogInformation("Deleting Clerk user {ClerkUserId} for internal user {UserId}", clerkUserId, userId);
-                var clerkDeleted = await _clerkService.DeleteUserAsync(clerkUserId);
-                if (!clerkDeleted)
-                {
-                    _logger.LogWarning("Failed to delete Clerk user {ClerkUserId}, but continuing with other deletions", clerkUserId);
-                    // Continue with other deletions even if Clerk deletion fails
-                }
-            }
-            else
-            {
-                _logger.LogInformation("No Clerk user ID found for user {UserId}, skipping Clerk deletion", userId);
-            }
-
-            // Step 3: Delete from Supabase Auth (if user has a Supabase account)
-            var authDeleted = await _supabaseService.DeleteAuthUserAsync(userId);
-            if (!authDeleted)
-            {
-                _logger.LogWarning("Failed to delete Supabase auth user {UserId}, but continuing with other deletions", userId);
-                // Continue even if Supabase auth deletion fails - they might not have a Supabase account
-            }
-
-            // Step 4: Delete profile (this will CASCADE delete provider_links and source_data)
             var profile = await GetByIdAsync(userId);
+
+            // Remove legacy data before the profile: its email is needed to find it
+            // again on retry, and leaving it behind can restore deleted measurements.
             if (profile != null)
             {
-                try
-                {
-                    await _supabaseService.DeleteAsync(profile);
-                    _logger.LogInformation("Deleted profile for user {UserId}", userId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to delete profile for user {UserId}", userId);
-                    // Continue anyway
-                }
-
-                // Step 4b: Delete legacy profile if it exists
                 if (!string.IsNullOrEmpty(profile.Email))
                 {
                     try
                     {
                         var legacyProfiles = await _supabaseService.QueryAsync<DbLegacyProfile>(query =>
-                            query.Filter("email", Supabase.Postgrest.Constants.Operator.Equals, profile.Email)
-                        );
-
-                        var legacyProfile = legacyProfiles.FirstOrDefault();
-                        if (legacyProfile != null)
+                            query.Filter("email", Supabase.Postgrest.Constants.Operator.Equals, profile.Email));
+                        foreach (var legacyProfile in legacyProfiles)
                         {
                             await _supabaseService.DeleteAsync(legacyProfile);
                             _logger.LogInformation("Deleted legacy profile for email {Email}", profile.Email);
@@ -294,13 +254,30 @@ public class ProfileService : IProfileService
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to delete legacy profile for email {Email}", profile.Email);
-                        // Continue anyway - legacy profile deletion is not critical
+                        return false;
                     }
                 }
+
+                // Cascades to provider_links and source_data. Do not remove the
+                // user's login or mapping until application data deletion succeeds.
+                await _supabaseService.DeleteAsync(profile);
+                _logger.LogInformation("Deleted profile for user {UserId}", userId);
             }
-            else
+
+            var clerkUserId = userAccount?.ExternalId;
+            if (!string.IsNullOrEmpty(clerkUserId))
             {
-                _logger.LogInformation("No profile found for user {UserId}, skipping", userId);
+                if (!await _clerkService.DeleteUserAsync(clerkUserId))
+                {
+                    _logger.LogError("Failed to delete Clerk user {ClerkUserId}", clerkUserId);
+                    return false;
+                }
+            }
+
+            // Clerk users may not have an old Supabase Auth account.
+            if (!await _supabaseService.DeleteAuthUserAsync(userId))
+            {
+                _logger.LogWarning("Could not delete legacy Supabase auth user {UserId}; the account may not exist", userId);
             }
 
             // Step 5: Delete from user_accounts table

@@ -29,6 +29,9 @@ public class ProfileServiceTests : TestBase
     public ProfileServiceTests()
     {
         _supabaseServiceMock = new Mock<ISupabaseService>();
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbLegacyProfile>(
+            It.IsAny<Action<ISupabaseTable<DbLegacyProfile, RealtimeChannel>>>()))
+            .ReturnsAsync(new List<DbLegacyProfile>());
         _loggerMock = new Mock<ILogger<ProfileService>>();
         _sourceDataServiceMock = new Mock<ISourceDataService>();
         _providerLinkServiceMock = new Mock<IProviderLinkService>();
@@ -601,7 +604,7 @@ public class ProfileServiceTests : TestBase
     }
 
     [Fact]
-    public async Task DeleteAccountAsync_ContinuesWhenLegacyProfileDeletionFails()
+    public async Task DeleteAccountAsync_PreservesProfileAndLoginWhenLegacyDeletionFails()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -642,7 +645,7 @@ public class ProfileServiceTests : TestBase
         var result = await _sut.DeleteAccountAsync(userId);
 
         // Assert
-        result.Should().BeTrue(); // Should still succeed even if legacy deletion fails
+        result.Should().BeFalse();
         _supabaseServiceMock.Verify(x => x.DeleteAsync(legacyProfile), Times.Once);
         _loggerMock.Verify(
             x => x.Log(
@@ -652,7 +655,44 @@ public class ProfileServiceTests : TestBase
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
-        _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Once); // Should continue with other deletions
+        _supabaseServiceMock.Verify(x => x.DeleteAsync(profile), Times.Never);
+        _clerkServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<string>()), Times.Never);
+        _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAccountAsync_ProfileDeletionFailurePreservesLoginAndMapping()
+    {
+        var userId = Guid.NewGuid();
+        var profile = CreateTestProfile(userId);
+        _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
+            .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
+        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId)).ReturnsAsync(profile);
+        _supabaseServiceMock.Setup(x => x.DeleteAsync(profile)).ThrowsAsync(new Exception("Database unavailable"));
+
+        var result = await _sut.DeleteAccountAsync(userId);
+
+        result.Should().BeFalse();
+        _clerkServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<string>()), Times.Never);
+        _supabaseServiceMock.Verify(x => x.DeleteAuthUserAsync(userId), Times.Never);
+        _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAccountAsync_ClerkFailureReturnsFalseAndRetainsMappingForRetry()
+    {
+        var userId = Guid.NewGuid();
+        var profile = CreateTestProfile(userId);
+        _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
+            .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
+        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId)).ReturnsAsync(profile);
+        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123")).ReturnsAsync(false);
+
+        var result = await _sut.DeleteAccountAsync(userId);
+
+        result.Should().BeFalse();
+        _supabaseServiceMock.Verify(x => x.DeleteAsync(profile), Times.Once);
+        _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Never);
     }
 
     private static DbProfile CreateTestProfile(Guid userId, string? sharingToken = null)
