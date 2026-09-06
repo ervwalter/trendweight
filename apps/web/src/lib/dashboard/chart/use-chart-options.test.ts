@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useChartOptions } from "./use-chart-options";
+import { transformChartData } from "./data-transformers";
 import { useIsMobile } from "@/lib/hooks/use-media-query";
 import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 import { LocalDate } from "@js-joda/core";
@@ -45,6 +46,7 @@ const mockDashboardData: DashboardData = {
 
 describe("useChartOptions", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockOptionsTemplateState.xAxis = {};
     vi.mocked(useIsMobile).mockReturnValue(false);
   });
@@ -224,6 +226,7 @@ describe("useChartOptions", () => {
     };
 
     const { result } = renderHook(() => useChartOptions(emptyData));
+    expect(transformChartData).not.toHaveBeenCalled();
 
     expect(result.current).toBeDefined();
   });

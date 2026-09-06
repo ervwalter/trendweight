@@ -28,6 +28,9 @@ export const useChartOptions = (data: DashboardData, heightOverride?: string) =>
       options.chart.height = "75%";
     }
 
+    // Weight-only histories have no points when switching to a body-fat mode.
+    if (dataPoints.length === 0) return options;
+
     const modeText = Modes[mode];
     const lastMeasurement = dataPoints[dataPoints.length - 1];
 
