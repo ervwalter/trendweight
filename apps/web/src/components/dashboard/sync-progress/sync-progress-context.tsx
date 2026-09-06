@@ -14,7 +14,11 @@ interface SyncProgressProviderProps {
 export function SyncProgressProvider({ children, disableUI = false }: SyncProgressProviderProps) {
   const progressId = useMemo(() => crypto.randomUUID(), []);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
-  const [isActive, setIsActive] = useState(false);
+  // Whether a sync session is in flight. Kept in a ref (not state) so that starting a sync
+  // does not change the identity of setServerProgress: the realtime hook re-subscribes
+  // whenever its callback changes, and re-subscribing right as the backend starts
+  // broadcasting would drop the first progress messages.
+  const isActiveRef = useRef(false);
   const toastIdRef = useRef<string | null>(null);
 
   // Manage toast lifecycle at the provider level
@@ -53,7 +57,7 @@ export function SyncProgressProvider({ children, disableUI = false }: SyncProgre
 
   const startProgress = useCallback(
     (message: string) => {
-      setIsActive(true);
+      isActiveRef.current = true;
       setProgress({
         id: progressId,
         status: "starting",
@@ -66,14 +70,14 @@ export function SyncProgressProvider({ children, disableUI = false }: SyncProgre
 
   const endProgress = useCallback(() => {
     // Mark as inactive and clear progress entirely
-    setIsActive(false);
+    isActiveRef.current = false;
     setProgress(null);
   }, []);
 
   const setServerProgress = useCallback(
     (serverProgress: SyncProgress) => {
       // Ignore broadcasts if no active progress session
-      if (!isActive) {
+      if (!isActiveRef.current) {
         return;
       }
 
@@ -84,7 +88,7 @@ export function SyncProgressProvider({ children, disableUI = false }: SyncProgre
         setProgress(serverProgress);
       }
     },
-    [isActive, endProgress],
+    [endProgress],
   );
 
   // Subscribe to realtime updates
