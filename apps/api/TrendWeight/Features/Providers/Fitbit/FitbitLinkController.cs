@@ -1,8 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using TrendWeight.Features.Common;
 using Microsoft.Extensions.Options;
 using TrendWeight.Features.Common.Models;
@@ -57,23 +53,7 @@ public class FitbitLinkController : BaseAuthController
             return StatusCode(500, new { error = "JWT signing key not configured" });
         }
 
-        // Generate state token with user ID and expiration
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(jwtSigningKey);
-
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim("uid", UserId),
-                new Claim("reason", "link")
-            }),
-            Expires = DateTime.UtcNow.AddHours(1),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        var state = tokenHandler.WriteToken(token);
+        var state = OAuthStateToken.Create(jwtSigningKey, UserId, "fitbit");
 
         // Get callback URL - ForwardedHeaders middleware has already updated Request.Scheme and Request.Host
         var callbackUrl = $"{Request.Scheme}://{Request.Host}/oauth/fitbit/callback";
@@ -83,7 +63,7 @@ public class FitbitLinkController : BaseAuthController
         // Get authorization URL
         var authUrl = _fitbitService.GetAuthorizationUrl(state, callbackUrl);
 
-        _logger.LogInformation("Generated authorization URL: {AuthorizationUrl}", authUrl);
+
 
         return Ok(new { url = authUrl });
     }
@@ -104,6 +84,11 @@ public class FitbitLinkController : BaseAuthController
             if (string.IsNullOrEmpty(request.Code))
             {
                 return BadRequest(new { error = "Authorization code is required" });
+            }
+
+            if (!OAuthStateToken.IsValid(request.State, _configuration["Jwt:SigningKey"], UserId, "fitbit"))
+            {
+                return BadRequest(new { error = "Invalid or expired authorization state. Please connect your account again." });
             }
 
             // Build the redirect URI that was used in the authorization request
@@ -166,5 +151,7 @@ public class FitbitLinkController : BaseAuthController
         /// Authorization code from OAuth provider
         /// </summary>
         public string Code { get; set; } = string.Empty;
+
+        public string State { get; set; } = string.Empty;
     }
 }

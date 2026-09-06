@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { FitbitCallback } from "./fitbit-callback";
@@ -72,6 +73,25 @@ describe("FitbitCallback", () => {
     expect(ui).toHaveTextContent("State: invalid");
   });
 
+  it("rejects a callback without state instead of loading indefinitely", () => {
+    mockSearch = { code: "abc123", state: undefined };
+
+    render(<FitbitCallback />);
+
+    expect(screen.getByTestId("oauth-callback-ui")).toHaveTextContent("State: invalid");
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it("exchanges the one-use code only once under StrictMode", () => {
+    mockSearch = { code: "abc123", state: "xyz789" };
+    render(
+      <StrictMode>
+        <FitbitCallback />
+      </StrictMode>,
+    );
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+  });
+
   it("should show loading state and initiate token exchange when code and state are provided", () => {
     mockSearch = { code: "abc123", state: "xyz789" };
 
@@ -79,7 +99,7 @@ describe("FitbitCallback", () => {
 
     const ui = screen.getByTestId("oauth-callback-ui");
     expect(ui).toHaveTextContent("State: loading");
-    expect(mockMutate).toHaveBeenCalledWith({ code: "abc123" });
+    expect(mockMutate).toHaveBeenCalledWith({ code: "abc123", state: "xyz789" });
   });
 
   it("should show loading state while mutation is pending", () => {

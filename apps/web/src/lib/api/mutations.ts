@@ -281,6 +281,7 @@ export function useDeleteAccount() {
 
 interface ExchangeTokenRequest {
   code: string;
+  state: string;
 }
 
 interface ExchangeTokenResponse {
@@ -293,11 +294,11 @@ export function useExchangeFitbitToken() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ code }: ExchangeTokenRequest) => {
+    mutationFn: async ({ code, state }: ExchangeTokenRequest) => {
       const token = await getToken();
       return apiRequest<ExchangeTokenResponse>("/fitbit/exchange-token", {
         method: "POST",
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, state }),
         token,
       });
     },
@@ -313,11 +314,11 @@ export function useExchangeWithingsToken() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ code }: ExchangeTokenRequest) => {
+    mutationFn: async ({ code, state }: ExchangeTokenRequest) => {
       const token = await getToken();
       return apiRequest<ExchangeTokenResponse>("/withings/exchange-token", {
         method: "POST",
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, state }),
         token,
       });
     },

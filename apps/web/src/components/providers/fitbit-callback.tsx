@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Route } from "@/routes/oauth/fitbit/callback";
 import { useExchangeFitbitToken } from "@/lib/api/mutations";
 import { ApiError } from "@/lib/api/client";
@@ -9,6 +9,7 @@ export function FitbitCallback() {
   const navigate = useNavigate();
   const search = Route.useSearch() as { code?: string; state?: string };
 
+  const exchangedCode = useRef<string | null>(null);
   const exchangeTokenMutation = useExchangeFitbitToken();
   const { status, mutate, isSuccess, isPending, isError, error } = exchangeTokenMutation;
 
@@ -25,8 +26,9 @@ export function FitbitCallback() {
   useEffect(() => {
     // Handle initial OAuth callback from Fitbit
     // Only run if we have a code and the mutation hasn't been called yet
-    if (search.code && search.state && status === "idle") {
-      mutate({ code: search.code });
+    if (search.code && search.state && status === "idle" && exchangedCode.current !== search.code) {
+      exchangedCode.current = search.code;
+      mutate({ code: search.code, state: search.state });
     }
   }, [search.code, search.state, status, mutate]);
 
@@ -38,7 +40,7 @@ export function FitbitCallback() {
     uiState = "success";
   } else if (isError) {
     uiState = "error";
-  } else if (search.code) {
+  } else if (search.code && search.state) {
     // We have a code but haven't started the mutation yet
     uiState = "loading";
   } else {

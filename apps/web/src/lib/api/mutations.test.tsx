@@ -764,6 +764,7 @@ describe("mutations", () => {
   describe("useExchangeFitbitToken", () => {
     it("should exchange Fitbit token successfully", async () => {
       const code = "auth-code-123";
+      const state = "signed-oauth-state";
       const mockResponse = {
         success: true,
         message: "Successfully connected Fitbit account",
@@ -772,7 +773,7 @@ describe("mutations", () => {
       server.use(
         http.post("/api/fitbit/exchange-token", async ({ request }) => {
           const body = await request.json();
-          expect(body).toEqual({ code });
+          expect(body).toEqual({ code, state });
           return HttpResponse.json(mockResponse);
         }),
       );
@@ -782,7 +783,7 @@ describe("mutations", () => {
       });
 
       act(() => {
-        result.current.mutate({ code });
+        result.current.mutate({ code, state });
       });
 
       await waitFor(() => {
@@ -794,6 +795,7 @@ describe("mutations", () => {
 
     it("should invalidate provider links on success", async () => {
       const code = "auth-code-123";
+      const state = "signed-oauth-state";
 
       server.use(
         http.post("/api/fitbit/exchange-token", () => {
@@ -815,7 +817,7 @@ describe("mutations", () => {
       const { result } = renderHook(() => useExchangeFitbitToken(), { wrapper });
 
       act(() => {
-        result.current.mutate({ code });
+        result.current.mutate({ code, state });
       });
 
       await waitFor(() => {
@@ -829,6 +831,7 @@ describe("mutations", () => {
 
     it("should handle token exchange error", async () => {
       const code = "invalid-code";
+      const state = "signed-oauth-state";
 
       server.use(
         http.post("/api/fitbit/exchange-token", () => {
@@ -841,7 +844,7 @@ describe("mutations", () => {
       });
 
       act(() => {
-        result.current.mutate({ code });
+        result.current.mutate({ code, state });
       });
 
       await waitFor(() => {
@@ -855,6 +858,7 @@ describe("mutations", () => {
   describe("useExchangeWithingsToken", () => {
     it("should exchange Withings token successfully", async () => {
       const code = "withings-auth-code";
+      const state = "signed-oauth-state";
       const mockResponse = {
         success: true,
         message: "Successfully connected Withings account",
@@ -863,7 +867,7 @@ describe("mutations", () => {
       server.use(
         http.post("/api/withings/exchange-token", async ({ request }) => {
           const body = await request.json();
-          expect(body).toEqual({ code });
+          expect(body).toEqual({ code, state });
           return HttpResponse.json(mockResponse);
         }),
       );
@@ -873,7 +877,7 @@ describe("mutations", () => {
       });
 
       act(() => {
-        result.current.mutate({ code });
+        result.current.mutate({ code, state });
       });
 
       await waitFor(() => {
@@ -885,6 +889,7 @@ describe("mutations", () => {
 
     it("should invalidate provider links on success", async () => {
       const code = "withings-auth-code";
+      const state = "signed-oauth-state";
 
       server.use(
         http.post("/api/withings/exchange-token", () => {
@@ -906,7 +911,7 @@ describe("mutations", () => {
       const { result } = renderHook(() => useExchangeWithingsToken(), { wrapper });
 
       act(() => {
-        result.current.mutate({ code });
+        result.current.mutate({ code, state });
       });
 
       await waitFor(() => {

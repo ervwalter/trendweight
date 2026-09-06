@@ -1,3 +1,4 @@
+using TrendWeight.Features.Providers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +19,7 @@ namespace TrendWeight.Tests.Features.Providers.Withings;
 public class WithingsLinkControllerTests : TestBase
 {
     private readonly Mock<IWithingsService> _withingsServiceMock;
+    private const string SigningKey = "test-signing-key-that-is-long-enough-for-hmac-sha256-algorithm";
     private readonly Mock<IConfiguration> _configurationMock;
     private readonly Mock<ILogger<WithingsLinkController>> _loggerMock;
     private readonly WithingsLinkController _sut;
@@ -26,12 +28,30 @@ public class WithingsLinkControllerTests : TestBase
     {
         _withingsServiceMock = new Mock<IWithingsService>();
         _configurationMock = new Mock<IConfiguration>();
+        _configurationMock.Setup(x => x["Jwt:SigningKey"]).Returns(SigningKey);
         _loggerMock = new Mock<ILogger<WithingsLinkController>>();
 
         _sut = new WithingsLinkController(
             _withingsServiceMock.Object,
             _configurationMock.Object,
             _loggerMock.Object);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("malformed-state")]
+    public async Task ExchangeToken_WithInvalidState_DoesNotExchangeCode(string state)
+    {
+        SetupAuthenticatedUser(Guid.NewGuid().ToString());
+        var result = await _sut.ExchangeToken(new WithingsLinkController.ExchangeTokenRequest
+        {
+            Code = "attacker-code",
+            State = state
+        });
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+        _withingsServiceMock.Verify(x => x.ExchangeAuthorizationCodeAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>()), Times.Never);
     }
 
     #region GetAuthorizationUrl Tests
@@ -151,7 +171,7 @@ public class WithingsLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "valid-auth-code" };
+        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "valid-auth-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "withings") };
 
         SetupAuthenticatedUser(userId.ToString());
         _withingsServiceMock.Setup(x => x.ExchangeAuthorizationCodeAsync(
@@ -180,7 +200,7 @@ public class WithingsLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "" };
+        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "withings") };
 
         SetupAuthenticatedUser(userId.ToString());
 
@@ -201,7 +221,7 @@ public class WithingsLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new WithingsLinkController.ExchangeTokenRequest { Code = null! };
+        var request = new WithingsLinkController.ExchangeTokenRequest { Code = null!, State = OAuthStateToken.Create(SigningKey, userId.ToString(), "withings") };
 
         SetupAuthenticatedUser(userId.ToString());
 
@@ -222,7 +242,7 @@ public class WithingsLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "invalid-code" };
+        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "invalid-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "withings") };
 
         SetupAuthenticatedUser(userId.ToString());
         _withingsServiceMock.Setup(x => x.ExchangeAuthorizationCodeAsync(
@@ -248,7 +268,7 @@ public class WithingsLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "error-code" };
+        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "error-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "withings") };
         var providerException = new ProviderException(
             "Invalid authorization code",
             System.Net.HttpStatusCode.BadRequest,
@@ -281,7 +301,7 @@ public class WithingsLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "error-code" };
+        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "error-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "withings") };
 
         SetupAuthenticatedUser(userId.ToString());
         _withingsServiceMock.Setup(x => x.ExchangeAuthorizationCodeAsync(
@@ -309,7 +329,7 @@ public class WithingsLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "test-code" };
+        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "test-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "withings") };
 
         _withingsServiceMock.Setup(x => x.ExchangeAuthorizationCodeAsync(
             It.IsAny<string>(),

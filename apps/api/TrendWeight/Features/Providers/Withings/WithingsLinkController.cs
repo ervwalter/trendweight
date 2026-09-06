@@ -1,8 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using TrendWeight.Features.Common;
 using TrendWeight.Features.Common.Models;
 using TrendWeight.Features.Providers.Exceptions;
@@ -56,24 +52,7 @@ public class WithingsLinkController : BaseAuthController
                 Reason = "link"
             };
 
-            // Sign the state with JWT
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(jwtSigningKey);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim("uid", state.Uid),
-                    new Claim("reason", state.Reason)
-                }),
-                Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var signedState = tokenHandler.WriteToken(token);
+            var signedState = OAuthStateToken.Create(jwtSigningKey, UserId, "withings");
 
             // Get callback URL - ForwardedHeaders middleware has already updated Request.Scheme and Request.Host
             var callbackUrl = $"{Request.Scheme}://{Request.Host}/oauth/withings/callback";
@@ -83,7 +62,7 @@ public class WithingsLinkController : BaseAuthController
             // Get authorization URL
             var authorizationUrl = _withingsService.GetAuthorizationUrl(signedState, callbackUrl);
 
-            _logger.LogInformation("Generated authorization URL: {AuthorizationUrl}", authorizationUrl);
+
 
             return Ok(new
             {
@@ -109,6 +88,11 @@ public class WithingsLinkController : BaseAuthController
             if (string.IsNullOrEmpty(request.Code))
             {
                 return BadRequest(new { error = "Authorization code is required" });
+            }
+
+            if (!OAuthStateToken.IsValid(request.State, _configuration["Jwt:SigningKey"], UserId, "withings"))
+            {
+                return BadRequest(new { error = "Invalid or expired authorization state. Please connect your account again." });
             }
 
             // Build the redirect URI that was used in the authorization request
@@ -161,5 +145,7 @@ public class WithingsLinkController : BaseAuthController
         /// Authorization code from OAuth provider
         /// </summary>
         public string Code { get; set; } = string.Empty;
+
+        public string State { get; set; } = string.Empty;
     }
 }

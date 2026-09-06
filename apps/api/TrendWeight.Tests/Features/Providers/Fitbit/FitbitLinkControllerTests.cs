@@ -1,3 +1,4 @@
+using TrendWeight.Features.Providers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,7 @@ public class FitbitLinkControllerTests : TestBase
 {
     private readonly Mock<IFitbitService> _fitbitServiceMock;
     private readonly Mock<IOptions<AppOptions>> _appOptionsMock;
+    private const string SigningKey = "test-signing-key-that-is-long-enough-for-hmac-sha256-algorithm";
     private readonly Mock<IConfiguration> _configurationMock;
     private readonly Mock<ILogger<FitbitLinkController>> _loggerMock;
     private readonly FitbitLinkController _sut;
@@ -29,6 +31,7 @@ public class FitbitLinkControllerTests : TestBase
         _fitbitServiceMock = new Mock<IFitbitService>();
         _appOptionsMock = new Mock<IOptions<AppOptions>>();
         _configurationMock = new Mock<IConfiguration>();
+        _configurationMock.Setup(x => x["Jwt:SigningKey"]).Returns(SigningKey);
         _loggerMock = new Mock<ILogger<FitbitLinkController>>();
 
         // Setup default app options
@@ -101,6 +104,23 @@ public class FitbitLinkControllerTests : TestBase
         _fitbitServiceMock.Verify(
             x => x.ExchangeAuthorizationCodeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>()),
             Times.Never);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("malformed-state")]
+    public async Task ExchangeToken_WithInvalidState_DoesNotExchangeCode(string state)
+    {
+        SetupAuthenticatedUser(Guid.NewGuid().ToString());
+        var result = await _sut.ExchangeToken(new FitbitLinkController.ExchangeTokenRequest
+        {
+            Code = "attacker-code",
+            State = state
+        });
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+        _fitbitServiceMock.Verify(x => x.ExchangeAuthorizationCodeAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>()), Times.Never);
     }
 
     #region LinkFitbit Tests
@@ -190,7 +210,7 @@ public class FitbitLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "valid-auth-code" };
+        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "valid-auth-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "fitbit") };
 
         SetupAuthenticatedUser(userId.ToString());
         _fitbitServiceMock.Setup(x => x.ExchangeAuthorizationCodeAsync(
@@ -219,7 +239,7 @@ public class FitbitLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "" };
+        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "fitbit") };
 
         SetupAuthenticatedUser(userId.ToString());
 
@@ -240,7 +260,7 @@ public class FitbitLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new FitbitLinkController.ExchangeTokenRequest { Code = null! };
+        var request = new FitbitLinkController.ExchangeTokenRequest { Code = null!, State = OAuthStateToken.Create(SigningKey, userId.ToString(), "fitbit") };
 
         SetupAuthenticatedUser(userId.ToString());
 
@@ -261,7 +281,7 @@ public class FitbitLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "invalid-code" };
+        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "invalid-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "fitbit") };
 
         SetupAuthenticatedUser(userId.ToString());
         _fitbitServiceMock.Setup(x => x.ExchangeAuthorizationCodeAsync(
@@ -287,7 +307,7 @@ public class FitbitLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "error-code" };
+        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "error-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "fitbit") };
         var providerException = new ProviderException(
             "Invalid authorization code",
             System.Net.HttpStatusCode.BadRequest,
@@ -320,7 +340,7 @@ public class FitbitLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "error-code" };
+        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "error-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "fitbit") };
 
         SetupAuthenticatedUser(userId.ToString());
         _fitbitServiceMock.Setup(x => x.ExchangeAuthorizationCodeAsync(
@@ -348,7 +368,7 @@ public class FitbitLinkControllerTests : TestBase
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "test-code" };
+        var request = new FitbitLinkController.ExchangeTokenRequest { Code = "test-code", State = OAuthStateToken.Create(SigningKey, userId.ToString(), "fitbit") };
 
         _fitbitServiceMock.Setup(x => x.ExchangeAuthorizationCodeAsync(
             It.IsAny<string>(),
