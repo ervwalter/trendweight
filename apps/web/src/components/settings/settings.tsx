@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { useUpdateProfile } from "@/lib/api/mutations";
 import { useProfile } from "@/lib/api/queries";
 import type { ProfileData } from "@/lib/core/interfaces";
+import { KG_TO_LBS } from "@/lib/core/weight-units";
 import { useNavigationGuard } from "@/lib/hooks/use-navigation-guard";
 import { NewVersionNotice } from "@/components/notices/new-version-notice";
 import { Button } from "@/components/ui/button";
@@ -77,18 +78,12 @@ export function Settings() {
       }
     }
 
-    // Convert goal weight
+    // Convert goal weight, keeping one decimal so toggling back and forth is lossless
+    // for the precision the form accepts
     const currentGoalWeight = currentValues.goalWeight;
     if (currentGoalWeight && currentGoalWeight !== 0) {
-      if (newIsMetric) {
-        // Converting from lbs to kg (divide by 2.20462 and round)
-        const kgValue = Math.round(currentGoalWeight / 2.20462);
-        setValue("goalWeight", kgValue, { shouldDirty: true });
-      } else {
-        // Converting from kg to lbs (multiply by 2.20462 and round)
-        const lbsValue = Math.round(currentGoalWeight * 2.20462);
-        setValue("goalWeight", lbsValue, { shouldDirty: true });
-      }
+      const converted = newIsMetric ? currentGoalWeight / KG_TO_LBS : currentGoalWeight * KG_TO_LBS;
+      setValue("goalWeight", Math.round(converted * 10) / 10, { shouldDirty: true });
     }
   };
 

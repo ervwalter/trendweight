@@ -83,7 +83,7 @@ vi.mock("./goal-section", () => ({
 }));
 
 vi.mock("./profile-section", () => ({
-  ProfileSection: ({ register }: any) => (
+  ProfileSection: ({ register, onUnitChange }: any) => (
     <div data-testid="profile-section">
       <input {...register("firstName")} data-testid="first-name" />
       <input
@@ -95,10 +95,10 @@ vi.mock("./profile-section", () => ({
           register("useMetric").onChange(event);
         }}
       />
-      <button data-testid="unit-lbs" type="button">
+      <button data-testid="unit-lbs" type="button" onClick={() => onUnitChange(false)}>
         lbs
       </button>
-      <button data-testid="unit-kg" type="button">
+      <button data-testid="unit-kg" type="button" onClick={() => onUnitChange(true)}>
         kg
       </button>
     </div>
@@ -426,6 +426,33 @@ describe("Settings", () => {
     // Reset for other tests
     mockProfileData.goalWeight = 180;
     mockProfileData.plannedPoundsPerWeek = 1.0;
+  });
+
+  it("round-trips a fractional goal weight through a unit toggle without losing the decimal", async () => {
+    const user = userEvent.setup();
+
+    mockProfileData.useMetric = true;
+    mockProfileData.goalWeight = 70.5;
+
+    render(<Settings />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("goal-weight")).toHaveValue(70.5);
+    });
+
+    await user.click(screen.getByTestId("unit-lbs"));
+    await waitFor(() => {
+      expect(screen.getByTestId("goal-weight")).toHaveValue(155.4);
+    });
+
+    await user.click(screen.getByTestId("unit-kg"));
+    await waitFor(() => {
+      expect(screen.getByTestId("goal-weight")).toHaveValue(70.5);
+    });
+
+    // Reset for other tests
+    mockProfileData.useMetric = false;
+    mockProfileData.goalWeight = 180;
   });
 
   it("should not convert units when clicking the same unit button", async () => {
