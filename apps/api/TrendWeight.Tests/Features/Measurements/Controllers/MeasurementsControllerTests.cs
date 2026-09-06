@@ -207,6 +207,39 @@ public class MeasurementsControllerTests : TestBase
         response.ComputedMeasurements.Select(m => m.Date).Should().Equal("2024-06-15", "2024-12-31");
     }
 
+    [Theory]
+    [InlineData(null, "2024-06-15", "2024-06-16")]
+    [InlineData("2024-06-16", "2024-06-16", null)]
+    public async Task GetMeasurementsBySharingCode_RawDataRespectsHiddenHistoryAndSince(
+        string? since, string firstDate, string? secondDate)
+    {
+        var dataResult = CreateDataResult(Guid.NewGuid());
+        var user = dataResult.Profile;
+        user.Profile.HideDataBeforeStart = true;
+        user.Profile.GoalStart = new DateTime(2024, 6, 15);
+        user.Profile.DayStartOffset = 4;
+        var originalReadings = new List<RawMeasurement>
+        {
+            new() { Date = "2024-06-14", Time = "12:00:00", Weight = 80m },
+            new() { Date = "2024-06-15", Time = "03:59:59", Weight = 81m },
+            new() { Date = "2024-06-15", Time = "04:00:00", Weight = 82m },
+            new() { Date = "2024-06-16", Time = "08:00:00", Weight = 83m }
+        };
+        dataResult.SourceData[0].Measurements = originalReadings;
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync("code")).ReturnsAsync(user);
+        _orchestrationServiceMock.Setup(x => x.GetForProfileAsync(user)).ReturnsAsync(dataResult);
+
+        var result = await _sut.GetMeasurementsBySharingCode("code", includeSource: true, since: since);
+
+        var response = result.Result.Should().BeOfType<OkObjectResult>().Subject.Value
+            .Should().BeOfType<MeasurementsResponse>().Subject;
+        var readings = response.SourceData!.Single().Measurements!;
+        readings.Select(m => m.Date).Should().Equal(
+            secondDate == null ? new[] { firstDate } : new[] { firstDate, secondDate });
+        readings.Should().NotContain(m => m.Weight == 81m);
+        originalReadings.Should().HaveCount(4, "filtering public exports must not modify the owner's data");
+    }
+
     [Fact]
     public async Task GetMeasurementsBySharingCode_WithInvalidSince_ReturnsBadRequest()
     {

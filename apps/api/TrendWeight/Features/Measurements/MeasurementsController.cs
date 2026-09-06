@@ -145,7 +145,7 @@ public class MeasurementsController : ControllerBase
             return Ok(new MeasurementsResponse
             {
                 ComputedMeasurements = computedMeasurements,
-                SourceData = includeSource ? result.SourceData : null,
+                SourceData = includeSource ? FilterSharedSourceData(result, since) : null,
                 IsMe = false,
                 ProviderStatus = null
             });
@@ -157,4 +157,28 @@ public class MeasurementsController : ControllerBase
         }
     }
 
+    private static List<SourceData> FilterSharedSourceData(MeasurementDataResult result, string? since)
+    {
+        var profile = result.Profile.Profile;
+        var startDate = profile.HideDataBeforeStart ? profile.GoalStart?.Date : null;
+
+        return result.SourceData.Select(source => new SourceData
+        {
+            Source = source.Source,
+            LastUpdate = source.LastUpdate,
+            Measurements = source.Measurements?.Where(measurement =>
+            {
+                if (!string.IsNullOrEmpty(since) && string.Compare(measurement.Date, since, StringComparison.Ordinal) < 0)
+                {
+                    return false;
+                }
+
+                // Use the same day boundary as trend computation so early-morning
+                // readings assigned to a hidden day cannot leak through raw exports.
+                return !startDate.HasValue || DateTime.Parse(
+                    $"{measurement.Date} {measurement.Time}", CultureInfo.InvariantCulture)
+                    .AddHours(-(profile.DayStartOffset ?? 0)).Date >= startDate.Value;
+            }).ToList()
+        }).ToList();
+    }
 }
