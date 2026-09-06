@@ -1159,7 +1159,7 @@ public class FitbitServiceTests : TestBase
 
 
     [Fact]
-    public async Task GetMeasurementsAsync_WithExpiredTokenAndFailedRefresh_ReturnsNull()
+    public async Task GetMeasurementsAsync_WithExpiredTokenAndFailedRefresh_ThrowsProviderAuthException()
     {
         // Arrange
         var userId = Guid.NewGuid();

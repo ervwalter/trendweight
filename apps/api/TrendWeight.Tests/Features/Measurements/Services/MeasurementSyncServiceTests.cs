@@ -43,46 +43,6 @@ public class MeasurementSyncServiceTests : TestBase
             Mock.Of<ISyncProgressReporter>()); // ISyncProgressReporter
     }
 
-    #region Constructor Tests
-
-    [Fact]
-    public void Constructor_InProductionEnvironment_SetsCacheDurationTo300Seconds()
-    {
-        // Arrange
-        _environmentMock.Setup(x => x.EnvironmentName).Returns("Production");
-
-        // Act & Assert - We can't directly access the cache duration, but we can test the behavior
-        // This will be tested indirectly through the GetMeasurementsForUserAsync tests
-        var service = new MeasurementSyncService(
-            _providerIntegrationServiceMock.Object,
-            _sourceDataServiceMock.Object,
-            _loggerMock.Object,
-            _environmentMock.Object,
-            Mock.Of<ISyncProgressReporter>()); // ISyncProgressReporter
-
-        service.Should().NotBeNull();
-    }
-
-    [Fact]
-    public void Constructor_InDevelopmentEnvironment_SetsCacheDurationTo10Seconds()
-    {
-        // Arrange
-        _environmentMock.Setup(x => x.EnvironmentName).Returns("Development");
-
-        // Act
-        var service = new MeasurementSyncService(
-            _providerIntegrationServiceMock.Object,
-            _sourceDataServiceMock.Object,
-            _loggerMock.Object,
-            _environmentMock.Object,
-            Mock.Of<ISyncProgressReporter>()); // ISyncProgressReporter
-
-        // Assert - This will be tested indirectly through the GetMeasurementsForUserAsync tests
-        service.Should().NotBeNull();
-    }
-
-    #endregion
-
     #region GetMeasurementsForUserAsync Tests
 
     [Fact]
@@ -350,7 +310,7 @@ public class MeasurementSyncServiceTests : TestBase
     }
 
     [Fact]
-    public async Task GetMeasurementsForUserAsync_WithMixedProviders_SkipsLegacyButRefreshesOthers()
+    public async Task GetMeasurementsForUserAsync_WithMixedProviders_RefreshesLegacyAndOthers()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -1139,15 +1099,7 @@ public class MeasurementSyncServiceTests : TestBase
         capturedData[0].Source.Should().Be(provider);
         capturedData[0].Measurements.Should().NotBeNull();
 
-        // Debug: print what we actually got
         var measurements = capturedData[0].Measurements!;
-        Console.WriteLine($"Total measurements: {measurements.Count}");
-        Console.WriteLine($"Cutoff date: {cutoffDate:yyyy-MM-dd}");
-        foreach (var m in measurements.OrderBy(x => x.Date))
-        {
-            Console.WriteLine($"  {m.Date}: {m.Weight}kg");
-        }
-
         measurements.Count.Should().Be(7, "Expected 4 preserved (days -95, -93, -90, -89) + 3 from provider (days -88, -85, -80). Old data before cutoff is preserved, provider data from cutoff forward.");
 
         // Verify specific measurements - old data preserved
@@ -1187,7 +1139,8 @@ public class MeasurementSyncServiceTests : TestBase
     {
         return new RawMeasurement
         {
-            Date = DateTime.UtcNow.ToString("o"),
+            Date = DateTime.UtcNow.ToString("yyyy-MM-dd"),
+            Time = "08:00:00",
             Weight = 70.5m
         };
     }
@@ -1241,35 +1194,6 @@ public class MeasurementSyncServiceTests : TestBase
         var measurements = sd[0].Measurements!; // We already checked it's not null
         return measurements.Count == newMeasurements.Count &&
                measurements.All(m => newMeasurements.Any(nm => nm.Date == m.Date && nm.Weight == m.Weight));
-    }
-
-    private static bool VerifyBoundaryHandling(List<SourceData> sd, string provider, DateTime syncStartDate, DateTime cutoffDate)
-    {
-        if (sd.Count != 1 || sd[0].Source != provider || sd[0].Measurements == null)
-            return false;
-
-        var measurements = sd[0].Measurements!;
-
-        // Should have: 2 preserved (days -95, -93) + 3 from provider (days -88, -85, -80) = 5 total
-        if (measurements.Count != 5)
-            return false;
-
-        // Preserved measurements (before buffer zone, before day -90)
-        var hasDay95 = measurements.Any(m => m.Date == syncStartDate.AddDays(-5).ToString("yyyy-MM-dd") && m.Weight == 64.0m);
-        var hasDay93 = measurements.Any(m => m.Date == syncStartDate.AddDays(-3).ToString("yyyy-MM-dd") && m.Weight == 65.0m);
-
-        // Buffer zone measurements (days -90, -89) should be EXCLUDED
-        var hasDay90 = measurements.Any(m => m.Date == syncStartDate.AddDays(0).ToString("yyyy-MM-dd"));
-        var hasDay89 = measurements.Any(m => m.Date == syncStartDate.AddDays(1).ToString("yyyy-MM-dd"));
-
-        // New measurements from provider (at/after cutoff day -88)
-        var hasDay88 = measurements.Any(m => m.Date == cutoffDate.ToString("yyyy-MM-dd") && m.Weight == 68.5m);
-        var hasDay85 = measurements.Any(m => m.Date == syncStartDate.AddDays(5).ToString("yyyy-MM-dd") && m.Weight == 70.0m);
-        var hasDay80 = measurements.Any(m => m.Date == syncStartDate.AddDays(10).ToString("yyyy-MM-dd") && m.Weight == 71.0m);
-
-        return hasDay95 && hasDay93 &&      // Preserved old data
-               !hasDay90 && !hasDay89 &&    // Buffer zone excluded
-               hasDay88 && hasDay85 && hasDay80;  // New provider data
     }
 
     #endregion

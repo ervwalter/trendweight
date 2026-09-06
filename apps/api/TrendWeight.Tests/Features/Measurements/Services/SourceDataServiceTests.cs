@@ -784,7 +784,7 @@ public class SourceDataServiceTests : TestBase
             Date = date ?? DateTime.UtcNow.ToString("yyyy-MM-dd"),
             Time = "10:30:00",
             Weight = weight ?? 70.5m,
-            FatRatio = 15.2m
+            FatRatio = 0.152m
         };
     }
 
