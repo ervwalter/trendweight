@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { requireAuth } from "./auth-guard";
+import { requireAuth, safeRedirectPath } from "./auth-guard";
 import { redirect } from "@tanstack/react-router";
 import type { RouterContext } from "@/router";
 import type { ParsedLocation } from "@tanstack/router-core";
@@ -8,6 +8,8 @@ import type { ParsedLocation } from "@tanstack/router-core";
 vi.mock("@tanstack/react-router", () => ({
   redirect: vi.fn(),
 }));
+
+const location = (href: string): ParsedLocation => ({ href, pathname: href.split(/[?#]/)[0] }) as ParsedLocation;
 
 describe("authGuard", () => {
   beforeEach(() => {
@@ -20,12 +22,8 @@ describe("authGuard", () => {
         auth: { isLoggedIn: true } as any,
       };
 
-      const location: ParsedLocation = {
-        pathname: "/dashboard",
-      } as ParsedLocation;
-
       // Should not throw when authenticated
-      expect(() => requireAuth(context, location)).not.toThrow();
+      expect(() => requireAuth(context, location("/dashboard"))).not.toThrow();
       expect(redirect).not.toHaveBeenCalled();
     });
 
@@ -34,17 +32,13 @@ describe("authGuard", () => {
         auth: { isLoggedIn: false } as any,
       };
 
-      const location: ParsedLocation = {
-        pathname: "/dashboard",
-      } as ParsedLocation;
-
       const mockRedirect = new Error("Redirect");
       vi.mocked(redirect).mockImplementation(() => {
         throw mockRedirect;
       });
 
       // Should throw redirect error
-      expect(() => requireAuth(context, location)).toThrow(mockRedirect);
+      expect(() => requireAuth(context, location("/dashboard"))).toThrow(mockRedirect);
 
       expect(redirect).toHaveBeenCalledWith({
         to: "/login",
@@ -54,26 +48,22 @@ describe("authGuard", () => {
       });
     });
 
-    it("should preserve original path in redirect", () => {
+    it("should preserve the full deep link, including search params, in the redirect", () => {
       const context: Pick<RouterContext, "auth"> = {
         auth: { isLoggedIn: false } as any,
       };
-
-      const location: ParsedLocation = {
-        pathname: "/settings/profile",
-      } as ParsedLocation;
 
       const mockRedirect = new Error("Redirect");
       vi.mocked(redirect).mockImplementation(() => {
         throw mockRedirect;
       });
 
-      expect(() => requireAuth(context, location)).toThrow(mockRedirect);
+      expect(() => requireAuth(context, location("/link?provider=withings&success=true"))).toThrow(mockRedirect);
 
       expect(redirect).toHaveBeenCalledWith({
         to: "/login",
         search: {
-          from: "/settings/profile",
+          from: "/link?provider=withings&success=true",
         },
       });
     });
@@ -83,16 +73,12 @@ describe("authGuard", () => {
         auth: { isLoggedIn: false } as any,
       };
 
-      const location: ParsedLocation = {
-        pathname: "/",
-      } as ParsedLocation;
-
       const mockRedirect = new Error("Redirect");
       vi.mocked(redirect).mockImplementation(() => {
         throw mockRedirect;
       });
 
-      expect(() => requireAuth(context, location)).toThrow(mockRedirect);
+      expect(() => requireAuth(context, location("/"))).toThrow(mockRedirect);
 
       expect(redirect).toHaveBeenCalledWith({
         to: "/login",
@@ -100,6 +86,33 @@ describe("authGuard", () => {
           from: "/",
         },
       });
+    });
+  });
+
+  describe("safeRedirectPath", () => {
+    it("accepts same-origin paths", () => {
+      expect(safeRedirectPath("/settings")).toBe("/settings");
+      expect(safeRedirectPath("/link?provider=withings")).toBe("/link?provider=withings");
+      expect(safeRedirectPath("/")).toBe("/");
+    });
+
+    it("rejects protocol-relative and backslash-relative URLs", () => {
+      expect(safeRedirectPath("//evil.example/phish")).toBeUndefined();
+      expect(safeRedirectPath("/\\evil.example/phish")).toBeUndefined();
+    });
+
+    it("rejects absolute URLs and schemes", () => {
+      expect(safeRedirectPath("https://evil.example/")).toBeUndefined();
+      expect(safeRedirectPath("javascript:alert(1)")).toBeUndefined();
+      expect(safeRedirectPath("evil.example")).toBeUndefined();
+    });
+
+    it("rejects non-string values and the login page itself", () => {
+      expect(safeRedirectPath(undefined)).toBeUndefined();
+      expect(safeRedirectPath(42)).toBeUndefined();
+      expect(safeRedirectPath(["/settings"])).toBeUndefined();
+      expect(safeRedirectPath("/login")).toBeUndefined();
+      expect(safeRedirectPath("/login?from=/settings")).toBeUndefined();
     });
   });
 });

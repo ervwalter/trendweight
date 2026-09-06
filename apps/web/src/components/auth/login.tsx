@@ -20,11 +20,16 @@ const clerkAppearance = {
   },
 };
 
-export function Login() {
+interface LoginProps {
+  /** Same-origin path to return to after login; falls back to the app-wide default (/dashboard) */
+  redirectTo?: string;
+}
+
+export function Login({ redirectTo }: LoginProps) {
   return (
     <div className="mx-auto max-w-xl md:py-12">
       <NewVersionNotice />
-      <SignIn routing="hash" appearance={clerkAppearance} />
+      <SignIn routing="hash" appearance={clerkAppearance} forceRedirectUrl={redirectTo} signUpForceRedirectUrl={redirectTo} />
     </div>
   );
 }

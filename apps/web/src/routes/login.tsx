@@ -1,19 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Login } from "@/components/auth/login";
 import { Layout } from "@/components/layout";
+import { safeRedirectPath } from "@/lib/auth/auth-guard";
 
 export const Route = createFileRoute("/login")({
-  beforeLoad: () => {
-    console.log("[login] beforeLoad called");
-  },
+  validateSearch: (search: Record<string, unknown>): { from?: string } => ({
+    from: safeRedirectPath(search.from),
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
-  console.log("[login] LoginPage component rendering");
+  const { from } = Route.useSearch();
   return (
     <Layout title="Log In">
-      <Login />
+      <Login redirectTo={from} />
     </Layout>
   );
 }
