@@ -1,17 +1,26 @@
+# Patterns without a leading "**/" only match at the context root, so every
+# rule that must apply inside apps/* is prefixed with "**/".
+
 # Git
 .git/
-.gitignore
-.gitattributes
+**/.gitignore
+**/.gitattributes
 
-# Documentation
-*.md
+# Documentation (the math page imports its Markdown source at build time)
+**/*.md
+!apps/web/src/**/*.md
 LICENSE
 
-# Development files
-.env
-.env.*
-.envrc
-*.local
+# Local-only configuration and secrets: never bake these into the image
+**/.env
+**/.env.*
+**/.envrc
+**/*.local
+**/appsettings.Development.json
+**/appsettings.*.local.json
+**/secrets.json
+**/*.pem
+**/*.pfx
 
 # Node modules (we'll install fresh in container)
 **/node_modules/
@@ -27,13 +36,13 @@ LICENSE
 **/.turbo/
 **/.vite/
 
-# .NET build outputs
+# .NET build outputs and IDE state
 **/bin/
 **/obj/
 **/.vs/
 **/.idea/
-*.user
-*.suo
+**/*.user
+**/*.suo
 
 # Test results
 **/coverage/
@@ -41,20 +50,21 @@ LICENSE
 **/.nyc_output/
 
 # OS files
-.DS_Store
-Thumbs.db
+**/.DS_Store
+**/Thumbs.db
 
 # Editor files
-*.swp
-*~
-*.swo
+**/*.swp
+**/*~
+**/*.swo
+.vscode/
 
 # Logs
-logs/
-*.log
+**/logs/
+**/*.log
 
 # TypeScript
-*.tsbuildinfo
+**/*.tsbuildinfo
 **/.tanstack/
 **/routeTree.gen.ts
 
@@ -62,6 +72,8 @@ logs/
 .tmuxinator.yml
 tmuxinator.yml
 dev.sh
+.husky/
+scripts/
 
 # CI/CD
 .github/
@@ -73,9 +85,13 @@ trendweight-classic/
 context_portal/
 
 # Temporary files
-*.tmp
-*.temp
-.cache/
+**/*.tmp
+**/*.temp
+**/.cache/
+
+# Design sources
+**/*.afphoto
+
 # Agent resources and local state
 .agents/
 .claude/
