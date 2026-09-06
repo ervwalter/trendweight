@@ -2,17 +2,7 @@ import { DayOfWeek, LocalDate } from "@js-joda/core";
 import type { Options, XAxisOptions } from "highcharts";
 import { Modes } from "@/lib/core/interfaces";
 import { createDiamondsSeries, createDotSeries, createLineSeries, createProjectionSeries, createSinkersSeries, createTrendSeries } from "./create-chart-series";
-
-const toEpoch = (date: LocalDate) => date.toEpochDay() * 86400000;
-
-interface ChartDataArrays {
-  actualData: [number, number | null][];
-  interpolatedData: [number, number | null][];
-  trendData: [number, number][];
-  projectionsData: [number, number][];
-  actualSinkersData: [number, number | null, number | null, null][];
-  interpolatedSinkersData: [number, number | null, number | null, null][];
-}
+import { toEpoch, type TransformedChartData } from "./data-transformers";
 
 interface BuilderOptions {
   mode: keyof typeof Modes;
@@ -20,7 +10,7 @@ interface BuilderOptions {
   trendLabel: string;
   isNarrow: boolean;
   lastMeasurement: { date: LocalDate; trend: number };
-  dataArrays: ChartDataArrays;
+  dataArrays: TransformedChartData;
 }
 
 export function buildWeekendPlotBands(lastMeasurementDate: LocalDate): XAxisOptions["plotBands"] {
@@ -180,7 +170,7 @@ export function buildExploreOptions(options: Options, builderOptions: BuilderOpt
   }
 }
 
-function createAfterSetExtremesHandler(dataArrays: ChartDataArrays, mode: keyof typeof Modes, modeText: string, isNarrow: boolean) {
+function createAfterSetExtremesHandler(dataArrays: TransformedChartData, mode: keyof typeof Modes, modeText: string, isNarrow: boolean) {
   const { actualData, interpolatedData, projectionsData, actualSinkersData, interpolatedSinkersData } = dataArrays;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

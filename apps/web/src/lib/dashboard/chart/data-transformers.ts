@@ -2,7 +2,7 @@ import { LocalDate } from "@js-joda/core";
 import { Modes } from "@/lib/core/interfaces";
 import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 
-const toEpoch = (date: LocalDate) => date.toEpochDay() * 86400000;
+export const toEpoch = (date: LocalDate) => date.toEpochDay() * 86400000;
 
 export interface TransformedChartData {
   actualData: [number, number | null][];

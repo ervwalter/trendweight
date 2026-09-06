@@ -56,7 +56,6 @@ export function getDebugInfo(options?: DebugInfoOptions): string {
       "",
       options.componentStack ? "Component Stack:" : "",
       options.componentStack || "",
-      options.componentStack ? "" : "",
       "Page Information:",
       `- Current URL: ${window.location.href}`,
       `- Referrer: ${document.referrer || "Direct navigation"}`,
