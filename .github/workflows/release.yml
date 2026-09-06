@@ -9,10 +9,10 @@ concurrency:
   group: release-please-main
   cancel-in-progress: false
 
+# The release step authenticates with RELEASE_PLEASE_TOKEN; GITHUB_TOKEN only
+# needs to check out the repository.
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+  contents: read
 
 jobs:
   release-please:
