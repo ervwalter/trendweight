@@ -11,7 +11,7 @@ import type { RouterContext } from "@/router";
  *   component: DashboardPage,
  * })
  */
-export function requireAuth(context: RouterContext, location: ParsedLocation) {
+export function requireAuth(context: Pick<RouterContext, "auth">, location: ParsedLocation) {
   if (!context.auth.isLoggedIn) {
     throw redirect({
       to: "/login",

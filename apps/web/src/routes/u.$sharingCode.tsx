@@ -61,7 +61,7 @@ export const Route = createFileRoute("/u/$sharingCode")({
 
     return result;
   },
-  loader: async ({ params }) => {
+  loader: async ({ params, context }) => {
     const { sharingCode } = params;
 
     // Skip validation for demo
@@ -72,8 +72,8 @@ export const Route = createFileRoute("/u/$sharingCode")({
     // Only validate profile and provider links in the loader
     // For sharing codes, we use null token getter since these don't require auth
     const nullTokenGetter = async () => null;
-    await ensureProfile(nullTokenGetter, sharingCode);
-    await ensureProviderLinks(nullTokenGetter, sharingCode);
+    await ensureProfile(context.queryClient, nullTokenGetter, sharingCode);
+    await ensureProviderLinks(context.queryClient, nullTokenGetter, sharingCode);
 
     return null;
   },

@@ -1,7 +1,7 @@
+import { QueryClient } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { redirect } from "@tanstack/react-router";
 import { ensureProviderLinks } from "./utils";
-import { queryClient } from "@/lib/query-client";
 import type { ProviderLink } from "@/lib/api/types";
 
 // Mock dependencies
@@ -9,12 +9,6 @@ vi.mock("@tanstack/react-router", () => ({
   redirect: vi.fn(() => {
     throw new Error("Redirect");
   }),
-}));
-
-vi.mock("@/lib/query-client", () => ({
-  queryClient: {
-    fetchQuery: vi.fn(),
-  },
 }));
 
 vi.mock("@/lib/api/queries", () => ({
@@ -26,7 +20,8 @@ vi.mock("@/lib/api/queries", () => ({
 }));
 
 describe("ensureProviderLinks", () => {
-  const mockFetchQuery = vi.mocked(queryClient.fetchQuery);
+  const queryClient = new QueryClient();
+  const mockFetchQuery = vi.spyOn(queryClient, "fetchQuery");
   const mockRedirect = vi.mocked(redirect);
 
   const createProviderLink = (provider: string, isDisabled = false): ProviderLink => ({
@@ -43,11 +38,19 @@ describe("ensureProviderLinks", () => {
     mockGetToken.mockResolvedValue("mock-token");
   });
 
+  it("uses only the supplied account client", async () => {
+    const accountClient = new QueryClient();
+    const fetchQuery = vi.spyOn(accountClient, "fetchQuery").mockResolvedValue([createProviderLink("withings")]);
+    await ensureProviderLinks(accountClient, mockGetToken);
+    expect(fetchQuery).toHaveBeenCalledOnce();
+    expect(mockFetchQuery).not.toHaveBeenCalled();
+  });
+
   describe("authenticated users", () => {
     it("passes when user has non-legacy providers", async () => {
       mockFetchQuery.mockResolvedValue([createProviderLink("withings"), createProviderLink("fitbit")]);
 
-      await ensureProviderLinks(mockGetToken);
+      await ensureProviderLinks(queryClient, mockGetToken);
 
       expect(mockRedirect).not.toHaveBeenCalled();
     });
@@ -55,7 +58,7 @@ describe("ensureProviderLinks", () => {
     it("passes when user has both legacy and non-legacy providers", async () => {
       mockFetchQuery.mockResolvedValue([createProviderLink("withings"), createProviderLink("legacy")]);
 
-      await ensureProviderLinks(mockGetToken);
+      await ensureProviderLinks(queryClient, mockGetToken);
 
       expect(mockRedirect).not.toHaveBeenCalled();
     });
@@ -63,7 +66,7 @@ describe("ensureProviderLinks", () => {
     it("redirects to /link when user has no providers", async () => {
       mockFetchQuery.mockResolvedValue([]);
 
-      await expect(ensureProviderLinks(mockGetToken)).rejects.toThrow();
+      await expect(ensureProviderLinks(queryClient, mockGetToken)).rejects.toThrow();
 
       expect(mockRedirect).toHaveBeenCalledWith({ to: "/link", replace: true });
     });
@@ -71,7 +74,7 @@ describe("ensureProviderLinks", () => {
     it("redirects to /link when user has only legacy provider", async () => {
       mockFetchQuery.mockResolvedValue([createProviderLink("legacy")]);
 
-      await expect(ensureProviderLinks(mockGetToken)).rejects.toThrow();
+      await expect(ensureProviderLinks(queryClient, mockGetToken)).rejects.toThrow();
 
       expect(mockRedirect).toHaveBeenCalledWith({ to: "/link", replace: true });
     });
@@ -79,7 +82,7 @@ describe("ensureProviderLinks", () => {
     it("redirects to /link when user has only disabled non-legacy providers", async () => {
       mockFetchQuery.mockResolvedValue([createProviderLink("withings", true), createProviderLink("fitbit", true)]);
 
-      await expect(ensureProviderLinks(mockGetToken)).rejects.toThrow();
+      await expect(ensureProviderLinks(queryClient, mockGetToken)).rejects.toThrow();
 
       expect(mockRedirect).toHaveBeenCalledWith({ to: "/link", replace: true });
     });
@@ -87,7 +90,7 @@ describe("ensureProviderLinks", () => {
     it("redirects to /link when user has only providers without tokens", async () => {
       mockFetchQuery.mockResolvedValue([{ ...createProviderLink("withings"), hasToken: false }]);
 
-      await expect(ensureProviderLinks(mockGetToken)).rejects.toThrow();
+      await expect(ensureProviderLinks(queryClient, mockGetToken)).rejects.toThrow();
 
       expect(mockRedirect).toHaveBeenCalledWith({ to: "/link", replace: true });
     });
@@ -99,7 +102,7 @@ describe("ensureProviderLinks", () => {
         createProviderLink("legacy"),
       ]);
 
-      await ensureProviderLinks(mockGetToken);
+      await ensureProviderLinks(queryClient, mockGetToken);
 
       expect(mockRedirect).not.toHaveBeenCalled();
     });
@@ -109,7 +112,7 @@ describe("ensureProviderLinks", () => {
     const sharingCode = "test-sharing-code";
 
     it("passes for demo sharing code", async () => {
-      await ensureProviderLinks(mockGetToken, "demo");
+      await ensureProviderLinks(queryClient, mockGetToken, "demo");
 
       expect(mockFetchQuery).not.toHaveBeenCalled();
       expect(mockRedirect).not.toHaveBeenCalled();
@@ -118,7 +121,7 @@ describe("ensureProviderLinks", () => {
     it("passes when shared user has non-legacy providers", async () => {
       mockFetchQuery.mockResolvedValue([createProviderLink("withings")]);
 
-      await ensureProviderLinks(mockGetToken, sharingCode);
+      await ensureProviderLinks(queryClient, mockGetToken, sharingCode);
 
       expect(mockRedirect).not.toHaveBeenCalled();
     });
@@ -126,7 +129,7 @@ describe("ensureProviderLinks", () => {
     it("redirects to / when shared user has no providers", async () => {
       mockFetchQuery.mockResolvedValue([]);
 
-      await expect(ensureProviderLinks(mockGetToken, sharingCode)).rejects.toThrow();
+      await expect(ensureProviderLinks(queryClient, mockGetToken, sharingCode)).rejects.toThrow();
 
       expect(mockRedirect).toHaveBeenCalledWith({ to: "/", replace: true });
     });
@@ -134,7 +137,7 @@ describe("ensureProviderLinks", () => {
     it("redirects to / when shared user has only legacy provider", async () => {
       mockFetchQuery.mockResolvedValue([createProviderLink("legacy")]);
 
-      await expect(ensureProviderLinks(mockGetToken, sharingCode)).rejects.toThrow();
+      await expect(ensureProviderLinks(queryClient, mockGetToken, sharingCode)).rejects.toThrow();
 
       expect(mockRedirect).toHaveBeenCalledWith({ to: "/", replace: true });
     });
@@ -142,7 +145,7 @@ describe("ensureProviderLinks", () => {
     it("redirects to / when shared user has only disabled providers", async () => {
       mockFetchQuery.mockResolvedValue([createProviderLink("withings", true), createProviderLink("legacy")]);
 
-      await expect(ensureProviderLinks(mockGetToken, sharingCode)).rejects.toThrow();
+      await expect(ensureProviderLinks(queryClient, mockGetToken, sharingCode)).rejects.toThrow();
 
       expect(mockRedirect).toHaveBeenCalledWith({ to: "/", replace: true });
     });

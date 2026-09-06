@@ -8,7 +8,7 @@ export const Route = createFileRoute("/settings")({
   beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),
   loader: async ({ context }) => {
     // Ensure user has a profile
-    await ensureProfile(context.auth.getToken);
+    await ensureProfile(context.queryClient, context.auth.getToken);
     return null;
   },
   component: SettingsPage,

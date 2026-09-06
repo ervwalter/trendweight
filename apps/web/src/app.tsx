@@ -1,18 +1,15 @@
-import { ClerkProvider } from "@clerk/react";
+import { useState } from "react";
+import { AuthCacheBoundary } from "@/components/auth/auth-cache-boundary";
+import { ClerkProvider, useAuth as useClerkAuth } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
-import { QueryClientProvider } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider } from "@tanstack/react-router";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/sonner";
 import { useAuth } from "./lib/auth/use-auth";
-import { queryClient } from "./lib/query-client";
-import { setupVersionSkewHandler } from "./lib/version-skew/setup-version-skew-handler";
-import { router } from "./router";
-
-// Set up version skew handling
-setupVersionSkewHandler();
+import { createAppRouter } from "./router";
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -32,17 +29,35 @@ const clerkLocalization = {
   socialButtonsBlockButtonManyInView: "Continue with {{provider}}",
 };
 
-function InnerApp() {
-  const auth = useAuth();
-  if (!auth.isLoaded) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="border-border h-8 w-8 animate-spin rounded-full border-2 border-t-gray-400" />
-      </div>
-    );
-  }
+function LoadingApp() {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="border-border border-t-muted-foreground h-8 w-8 animate-spin rounded-full border-2" />
+    </div>
+  );
+}
 
-  return <RouterProvider router={router} context={{ auth }} />;
+function RoutedApp({ queryClient }: { queryClient: QueryClient }) {
+  const [router] = useState(createAppRouter);
+  const auth = useAuth();
+  if (!auth.isLoaded) return <LoadingApp />;
+  return <RouterProvider router={router} context={{ auth, queryClient }} />;
+}
+
+function InnerApp() {
+  const { isLoaded, userId } = useClerkAuth();
+  if (!isLoaded) return <LoadingApp />;
+
+  return (
+    <AuthCacheBoundary identity={userId ?? null}>
+      {(accountQueryClient) => (
+        <>
+          <RoutedApp queryClient={accountQueryClient} />
+          <ReactQueryDevtools initialIsOpen={false} />
+        </>
+      )}
+    </AuthCacheBoundary>
+  );
 }
 
 function App() {
@@ -64,11 +79,8 @@ function App() {
             },
           }}
         >
-          <QueryClientProvider client={queryClient}>
-            <InnerApp />
-            <Toaster />
-            <ReactQueryDevtools initialIsOpen={false} />
-          </QueryClientProvider>
+          <InnerApp />
+          <Toaster />
         </ClerkProvider>
       </ThemeProvider>
     </ErrorBoundary>

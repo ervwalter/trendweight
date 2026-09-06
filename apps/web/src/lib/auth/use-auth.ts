@@ -38,7 +38,7 @@ export function useAuth(): AuthState {
 
   return {
     user,
-    isLoaded,
+    isLoaded: isLoaded && (!isSignedIn || !!clerkUser),
     isLoggedIn: isSignedIn ?? false,
     signOut,
     getToken,

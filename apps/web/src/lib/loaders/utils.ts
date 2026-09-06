@@ -1,16 +1,17 @@
 import { redirect } from "@tanstack/react-router";
-import { queryClient } from "@/lib/query-client";
+import type { QueryClient } from "@tanstack/react-query";
 import { queryOptions } from "@/lib/api/queries";
 import { type GetToken } from "@/lib/auth/use-auth";
 
 /**
  * Ensures the user has a profile, redirecting to initial setup if not.
+ * @param client - Query client owned by the current account
  * @param getToken - Function to get auth token
  * @param sharingCode - Optional sharing code for shared dashboards
  * @throws Redirect to /initial-setup if no profile exists (authenticated users)
  * @throws Redirect to / if no profile exists (shared dashboards)
  */
-export async function ensureProfile(getToken: GetToken, sharingCode?: string): Promise<void> {
+export async function ensureProfile(client: QueryClient, getToken: GetToken, sharingCode?: string): Promise<void> {
   if (sharingCode) {
     // Skip validation for demo
     if (sharingCode === "demo") {
@@ -19,7 +20,7 @@ export async function ensureProfile(getToken: GetToken, sharingCode?: string): P
 
     // For shared dashboards, check if profile exists
     try {
-      const profile = await queryClient.fetchQuery(queryOptions.profile(getToken, sharingCode));
+      const profile = await client.fetchQuery(queryOptions.profile(getToken, sharingCode));
 
       if (!profile) {
         throw redirect({ to: "/", replace: true });
@@ -30,7 +31,7 @@ export async function ensureProfile(getToken: GetToken, sharingCode?: string): P
     }
   } else {
     // For authenticated users, check if profile exists
-    const profile = await queryClient.fetchQuery(queryOptions.profile(getToken));
+    const profile = await client.fetchQuery(queryOptions.profile(getToken));
 
     if (!profile) {
       throw redirect({ to: "/initial-setup", replace: true });
@@ -45,17 +46,18 @@ export async function ensureProfile(getToken: GetToken, sharingCode?: string): P
 
 /**
  * Ensures the user has at least one non-legacy provider connected, redirecting if not.
+ * @param client - Query client owned by the current account
  * @param getToken - Function to get auth token
  * @param sharingCode - Optional sharing code for shared dashboards
  * @throws Redirect to /link for authenticated users or / for shared dashboards if no non-legacy provider links exist
  */
-export async function ensureProviderLinks(getToken: GetToken, sharingCode?: string): Promise<void> {
+export async function ensureProviderLinks(client: QueryClient, getToken: GetToken, sharingCode?: string): Promise<void> {
   // Skip validation for demo
   if (sharingCode === "demo") {
     return;
   }
 
-  const providerLinks = await queryClient.fetchQuery(queryOptions.providerLinks(getToken, sharingCode));
+  const providerLinks = await client.fetchQuery(queryOptions.providerLinks(getToken, sharingCode));
 
   // Check if at least one non-legacy provider exists
   const hasNonLegacyProvider = providerLinks?.some((link) => link.provider !== "legacy" && link.hasToken && !link.isDisabled) ?? false;
@@ -69,11 +71,12 @@ export async function ensureProviderLinks(getToken: GetToken, sharingCode?: stri
 /**
  * Ensures the user is newly migrated, redirecting if not.
  * Used specifically for the migration welcome page.
+ * @param client - Query client owned by the current account
  * @param getToken - Function to get auth token
  * @throws Redirect to /dashboard if user is not newly migrated
  */
-export async function ensureNewlyMigrated(getToken: GetToken): Promise<void> {
-  const profile = await queryClient.fetchQuery(queryOptions.profile(getToken));
+export async function ensureNewlyMigrated(client: QueryClient, getToken: GetToken): Promise<void> {
+  const profile = await client.fetchQuery(queryOptions.profile(getToken));
 
   // If no profile exists, redirect to initial setup
   if (!profile) {

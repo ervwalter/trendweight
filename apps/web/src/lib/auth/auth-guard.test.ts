@@ -16,7 +16,7 @@ describe("authGuard", () => {
 
   describe("requireAuth", () => {
     it("should allow access when user is authenticated", () => {
-      const context: RouterContext = {
+      const context: Pick<RouterContext, "auth"> = {
         auth: { isLoggedIn: true } as any,
       };
 
@@ -30,7 +30,7 @@ describe("authGuard", () => {
     });
 
     it("should redirect to login when user is not authenticated", () => {
-      const context: RouterContext = {
+      const context: Pick<RouterContext, "auth"> = {
         auth: { isLoggedIn: false } as any,
       };
 
@@ -55,7 +55,7 @@ describe("authGuard", () => {
     });
 
     it("should preserve original path in redirect", () => {
-      const context: RouterContext = {
+      const context: Pick<RouterContext, "auth"> = {
         auth: { isLoggedIn: false } as any,
       };
 
@@ -79,7 +79,7 @@ describe("authGuard", () => {
     });
 
     it("should handle root path redirect", () => {
-      const context: RouterContext = {
+      const context: Pick<RouterContext, "auth"> = {
         auth: { isLoggedIn: false } as any,
       };
 

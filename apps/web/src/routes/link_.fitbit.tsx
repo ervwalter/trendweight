@@ -16,7 +16,7 @@ import { Heading } from "@/components/common/heading";
 export const Route = createFileRoute("/link_/fitbit")({
   beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),
   loader: async ({ context }) => {
-    await ensureProfile(context.auth.getToken);
+    await ensureProfile(context.queryClient, context.auth.getToken);
     return null;
   },
   component: ConnectFitbitPage,

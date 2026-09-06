@@ -10,8 +10,8 @@ export const Route = createFileRoute("/download")({
   beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),
   loader: async ({ context }) => {
     // Ensure user has profile and provider links
-    await ensureProfile(context.auth.getToken);
-    await ensureProviderLinks(context.auth.getToken);
+    await ensureProfile(context.queryClient, context.auth.getToken);
+    await ensureProviderLinks(context.queryClient, context.auth.getToken);
     return null;
   },
   component: ScaleReadingsPage,

@@ -8,7 +8,7 @@ export const Route = createFileRoute("/link")({
   beforeLoad: (ctx) => requireAuth(ctx.context, ctx.location),
   loader: async ({ context }) => {
     // Ensure user has completed initial setup
-    await ensureProfile(context.auth.getToken);
+    await ensureProfile(context.queryClient, context.auth.getToken);
     return null;
   },
   component: LinkPage,

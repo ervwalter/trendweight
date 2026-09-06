@@ -71,6 +71,14 @@ describe("useAuth", () => {
     expect(result.current.isLoaded).toBe(true);
   });
 
+  it("waits for the signed-in user before resolving the account identity", () => {
+    mockUseUser.mockReturnValue({ user: null });
+    mockUseClerkAuth.mockReturnValue({ isLoaded: true, isSignedIn: true, getToken: vi.fn() });
+    mockUseClerk.mockReturnValue({ signOut: vi.fn() });
+    const { result } = renderHook(() => useAuth());
+    expect(result.current.isLoaded).toBe(false);
+  });
+
   it("should return not loaded state when Clerk is not loaded", () => {
     mockUseUser.mockReturnValue({
       user: null,
