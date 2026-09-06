@@ -2,6 +2,7 @@ using TrendWeight.Infrastructure.Configuration;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
@@ -204,6 +205,11 @@ builder.Services.AddSingleton(services => new PublicUrl(
     services.GetRequiredService<IConfiguration>()["PublicBaseUrl"],
     services.GetRequiredService<IHostEnvironment>().IsDevelopment()));
 
+// Host validation is done by the middleware below so the health probe can be exempt.
+// The framework's own host filter also reads AllowedHosts and would reject the probe
+// first, so it is told to accept everything.
+builder.Services.Configure<HostFilteringOptions>(options => options.AllowedHosts = ["*"]);
+
 var app = builder.Build();
 _ = app.Services.GetRequiredService<PublicUrl>(); // Fail startup for missing/invalid origins.
 
@@ -221,6 +227,14 @@ if (!string.IsNullOrEmpty(allowedHosts) && allowedHosts != "*")
     var allowedHostList = allowedHosts.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     app.Use(async (context, next) =>
     {
+        // Container and platform probes reach the health endpoint by localhost or
+        // IP; it discloses nothing host-dependent, so it is exempt from the check.
+        if (context.Request.Path.Equals("/api/health", StringComparison.OrdinalIgnoreCase))
+        {
+            await next();
+            return;
+        }
+
         var host = context.Request.Host.Host;
         if (!allowedHostList.Contains(host, StringComparer.OrdinalIgnoreCase))
         {

@@ -194,12 +194,31 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
             builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
                 new Dictionary<string, string?> { ["AllowedHosts"] = "localhost" })));
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-        using var request = new HttpRequestMessage(HttpMethod.Get, "http://attacker.example/api/health");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://attacker.example/dashboard");
         request.Headers.Add("X-Forwarded-Host", "localhost");
 
         using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [InlineData("localhost")]
+    [InlineData("10.0.0.7")]
+    public async Task HealthCheck_IsExemptFromHostValidation(string probeHost)
+    {
+        // The Docker HEALTHCHECK curls localhost and platform probes may use an IP;
+        // neither needs to appear in AllowedHosts, but nothing else on that host passes.
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
+                new Dictionary<string, string?> { ["AllowedHosts"] = "canonical.example" })));
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        using var health = await client.GetAsync($"http://{probeHost}/api/health", TestContext.Current.CancellationToken);
+        using var shell = await client.GetAsync($"http://{probeHost}/dashboard", TestContext.Current.CancellationToken);
+
+        health.StatusCode.Should().Be(HttpStatusCode.OK);
+        shell.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Theory]
