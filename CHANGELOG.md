@@ -1,5 +1,58 @@
 # Changelog
 
+## [2.12.0](https://github.com/ervwalter/trendweight/compare/v2.11.0...v2.12.0) (2026-09-06)
+
+
+### Features
+
+* **api:** expose read-only display and behavioral settings ([372eadd](https://github.com/ervwalter/trendweight/commit/372eaddd919e6b7fe34df3812560211c15bbe4e9))
+
+
+### Fixes
+
+* **api:** preserve started responses and client cancellations ([04d1d7e](https://github.com/ervwalter/trendweight/commit/04d1d7edd416964c01d4b79e058b88c4522ce4a3))
+* **auth:** isolate query and router state between accounts ([99e5acc](https://github.com/ervwalter/trendweight/commit/99e5acce52418418cd2ffd2de58942e4e43da15c))
+* **auth:** refresh cached signing keys after Clerk key rotation ([05a4d37](https://github.com/ervwalter/trendweight/commit/05a4d379f03df701337211cda2e360fc0e49a493))
+* **auth:** use configured public origin instead of forwarded headers ([359c11d](https://github.com/ervwalter/trendweight/commit/359c11d98c3106e9673f2ccc6aa2075ff7f51415))
+* **auth:** validate OAuth state and exchange callback codes once ([efcd02a](https://github.com/ervwalter/trendweight/commit/efcd02a351eb65f6d1693e7e1b3092e751c9a146))
+* **chart:** handle body-fat views without fat readings ([f5a3c4f](https://github.com/ervwalter/trendweight/commit/f5a3c4f5b6b92b27fd53f7adcec21a2eb6e73c84))
+* **ci:** fail early when required secrets are missing ([5fca10d](https://github.com/ervwalter/trendweight/commit/5fca10dfe5a6e0722dcc39add4a0a7913697bb50))
+* **data:** propagate read failures and make account deletion retryable ([a064a1c](https://github.com/ervwalter/trendweight/commit/a064a1c3aa40f71dfe5b12ae3f4daad77cbee90b))
+* **download:** serialize CSV numbers without locale grouping ([21447fa](https://github.com/ervwalter/trendweight/commit/21447faa4e647afdadcae159111477420ca8d93b))
+* **http:** constrain forwarding and secure SPA response handling ([3d294d2](https://github.com/ervwalter/trendweight/commit/3d294d26336341b863214f8306572e1fb6255420))
+* **log:** reject malformed readings and invalid rounded values ([2ab8d2b](https://github.com/ervwalter/trendweight/commit/2ab8d2bc1663098a7658365d44a4a6bcee9b834c))
+* **profile:** reject invalid day-start offsets ([29dce92](https://github.com/ervwalter/trendweight/commit/29dce92a0e85189c7f107134b6fab59a931460b4))
+* **providers:** reject incomplete sync and token responses ([0359c18](https://github.com/ervwalter/trendweight/commit/0359c18860c2aaf9cf50f366e6749add1faa68c8))
+* refresh release PRs when notes are unchanged ([d0ae5d4](https://github.com/ervwalter/trendweight/commit/d0ae5d4bdabdc6d719a290f2fb3270d12391f2f0))
+* **security:** remove credential-stealing repository startup files ([2780a29](https://github.com/ervwalter/trendweight/commit/2780a29cf2c9b5ee3954232aa59a88dbc671d3df))
+* **settings:** preserve unsaved edits when profile data refreshes ([b5502fb](https://github.com/ervwalter/trendweight/commit/b5502fbf0a6a2129d121a6e224343d77baa3e496))
+* **sharing:** apply privacy filters to raw measurement exports ([43a90af](https://github.com/ervwalter/trendweight/commit/43a90af544448a6ce45f87bc649a32b378ad8c9c))
+* show last reading as helper text instead of input placeholder ([a2c9f68](https://github.com/ervwalter/trendweight/commit/a2c9f687711ef644f0a9c70c7aa321514f32e457))
+* **supabase:** support secret API keys without bearer JWT headers ([f2648eb](https://github.com/ervwalter/trendweight/commit/f2648eba67a63edf4555394a240f9e486a5051d5))
+* **sync:** preserve history when settings requests a resync ([324b737](https://github.com/ervwalter/trendweight/commit/324b7378c2f9660cdf60038ab2e7d8cdafa13d78))
+* **sync:** retain stored readings until a full refresh succeeds ([f5b3dd2](https://github.com/ervwalter/trendweight/commit/f5b3dd2ce6eb425cdcc3e0e9acb818268088f450))
+* **theme:** tolerate unavailable browser storage ([655ca46](https://github.com/ervwalter/trendweight/commit/655ca46948690c94622d96ae88a230153db2a300))
+* **tooling:** include required OAuth signing configuration ([1cb5081](https://github.com/ervwalter/trendweight/commit/1cb5081c19faa165953dd2475d75383160d1ecfd))
+* **tooling:** safely pass Docker configuration and gate publication ([0f3d1d9](https://github.com/ervwalter/trendweight/commit/0f3d1d90979b352960e7cb86aad5bbf478df4c36))
+* validate Clerk origin against public base URL ([c2854d2](https://github.com/ervwalter/trendweight/commit/c2854d2c6310196872c37352ba462a664288643a))
+
+
+### Documentation
+
+* align setup and agent guidance with the current repository ([80e8424](https://github.com/ervwalter/trendweight/commit/80e8424fe9d7c8d0cbba3975a6a27c120f9a523d))
+* correct schema reference and retire obsolete color migration ([e97e7dc](https://github.com/ervwalter/trendweight/commit/e97e7dce4359fca45d69debbaea7f076d0741ccd))
+* replace duplicate steering pages with practical contributor guides ([3dd681c](https://github.com/ervwalter/trendweight/commit/3dd681c3e80478532a05e5744788841246d65081))
+* update Claude Code notes for dotnet commands in sandbox environment ([cd4c490](https://github.com/ervwalter/trendweight/commit/cd4c49095f9ea86b40af211f80f0028c65be7996))
+
+
+### Refactoring
+
+* remove unused scaffolding and obsolete test doubles ([5a4565c](https://github.com/ervwalter/trendweight/commit/5a4565c26dcc5d82452a7a71428252262fbb3159))
+
+### Dependencies
+
+* Updated dependencies.
+
 ## [2.11.0](https://github.com/ervwalter/trendweight/compare/v2.10.1...v2.11.0) (2026-08-26)
 
 
