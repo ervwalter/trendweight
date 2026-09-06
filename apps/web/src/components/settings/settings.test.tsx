@@ -10,7 +10,7 @@ vi.mock("@/lib/hooks/use-navigation-guard", () => ({
 }));
 
 // Mock API calls
-const mockProfileData = {
+let mockProfileData = {
   firstName: "John Doe",
   useMetric: false,
   plannedPoundsPerWeek: 1.0,
@@ -189,6 +189,37 @@ describe("Settings", () => {
     expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
   });
 
+  it("preserves unsaved settings when a background refetch returns a new profile", async () => {
+    const original = mockProfileData;
+    const user = userEvent.setup();
+    const { rerender } = render(<Settings />);
+    await user.clear(screen.getByTestId("first-name"));
+    await user.type(screen.getByTestId("first-name"), "Unsaved Name");
+    try {
+      mockProfileData = { ...original, goalWeight: 175 };
+      rerender(<Settings />);
+      expect(screen.getByTestId("first-name")).toHaveValue("Unsaved Name");
+      expect(screen.getByTestId("goal-weight")).toHaveValue(180);
+      expect(screen.getByText("Save Settings")).toBeEnabled();
+      expect(mockNavigationGuard).toHaveBeenLastCalledWith(true);
+    } finally {
+      mockProfileData = original;
+    }
+  });
+
+  it("refreshes pristine settings when a background refetch returns a new profile", () => {
+    const original = mockProfileData;
+    const { rerender } = render(<Settings />);
+    try {
+      mockProfileData = { ...original, firstName: "Updated Elsewhere" };
+      rerender(<Settings />);
+      expect(screen.getByTestId("first-name")).toHaveValue("Updated Elsewhere");
+      expect(screen.getByText("Save Settings")).toBeDisabled();
+    } finally {
+      mockProfileData = original;
+    }
+  });
+
   it("should enable save button when form is dirty", async () => {
     const user = userEvent.setup();
     render(<Settings />);
@@ -293,7 +324,7 @@ describe("Settings", () => {
     const user = userEvent.setup();
     mockMutateAsync.mockRejectedValue(new Error("Network error"));
 
-    render(<Settings />);
+    const { rerender } = render(<Settings />);
 
     const firstNameInput = screen.getByTestId("first-name");
     await user.type(firstNameInput, " Updated");
@@ -301,10 +332,9 @@ describe("Settings", () => {
     const saveButton = screen.getByText("Save Settings");
     await user.click(saveButton);
 
-    await waitFor(() => {
-      mockUpdateProfile.isError = true;
-      render(<Settings />); // Re-render to show error
-    });
+    await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledOnce());
+    mockUpdateProfile.isError = true;
+    rerender(<Settings />);
 
     expect(screen.getByText("Failed to save settings. Please try again.")).toBeInTheDocument();
 
@@ -313,7 +343,7 @@ describe("Settings", () => {
 
   it("should show success message after saving", async () => {
     const user = userEvent.setup();
-    render(<Settings />);
+    const { rerender } = render(<Settings />);
 
     const firstNameInput = screen.getByTestId("first-name");
     await user.type(firstNameInput, " Updated");
@@ -321,12 +351,11 @@ describe("Settings", () => {
     const saveButton = screen.getByText("Save Settings");
     await user.click(saveButton);
 
-    await waitFor(() => {
-      mockUpdateProfile.isSuccess = true;
-      render(<Settings />); // Re-render to show success
-    });
+    await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledOnce());
+    mockUpdateProfile.isSuccess = true;
+    rerender(<Settings />);
 
-    expect(screen.getByText("Settings saved successfully!")).toBeInTheDocument();
+    expect(await screen.findByText("Settings saved successfully!")).toBeInTheDocument();
   });
 
   it("should disable save button while submitting", async () => {

@@ -44,12 +44,13 @@ export function Settings() {
     formState: { errors, isDirty, isSubmitting },
   } = useForm<ProfileData>();
 
-  // Update form when profile data loads
+  // Refresh pristine forms, but preserve the entire draft during background refetches.
+  // Keeping units and their dependent numeric values together avoids mixing systems.
   useEffect(() => {
-    if (profileData) {
+    if (profileData && !isDirty) {
       reset(toFormValues(profileData));
     }
-  }, [profileData, reset]);
+  }, [profileData, reset, isDirty]);
 
   // Handle unit conversion when toggle is clicked
   const handleUnitChange = (newIsMetric: boolean) => {

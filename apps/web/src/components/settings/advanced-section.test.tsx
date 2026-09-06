@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { AdvancedSection } from "./advanced-section";
 import type { ProfileData } from "@/lib/core/interfaces";
 
@@ -19,10 +19,12 @@ function TestWrapper({ defaultValues = {} }: { defaultValues?: Partial<ProfileDa
     defaultValues,
   });
 
+  const trendAlgorithm = useWatch({ control, name: "trendAlgorithm" });
+
   return (
     <>
       <AdvancedSection register={register} errors={formState.errors} watch={watch} setValue={setValue} control={control} />
-      <div data-testid="form-value">{watch("trendAlgorithm") ?? ""}</div>
+      <div data-testid="form-value">{trendAlgorithm ?? ""}</div>
       <div data-testid="form-dirty">{formState.isDirty ? "dirty" : "clean"}</div>
     </>
   );
