@@ -16,6 +16,16 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
+      - name: Verify release configuration
+        shell: bash
+        env:
+          RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          if [[ -z "${RELEASE_PLEASE_TOKEN//[[:space:]]/}" ]]; then
+            echo "::error::Missing required GitHub Actions secret: RELEASE_PLEASE_TOKEN"
+            exit 1
+          fi
+
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         id: release
         with:

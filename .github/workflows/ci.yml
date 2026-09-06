@@ -24,6 +24,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Verify publishing configuration
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        shell: bash
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          DIGITALOCEAN_REGISTRY_NAME: ${{ secrets.DIGITALOCEAN_REGISTRY_NAME }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          missing=0
+          for name in DIGITALOCEAN_ACCESS_TOKEN DIGITALOCEAN_REGISTRY_NAME VITE_CLERK_PUBLISHABLE_KEY VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do
+            if [[ -z "${!name//[[:space:]]/}" ]]; then
+              echo "::error::Missing required GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Node.js
