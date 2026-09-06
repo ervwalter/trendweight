@@ -174,4 +174,55 @@ public class SyncProgressServiceTests
                 msg.Providers[0].Current == 10 &&
                 msg.Providers[0].Total == 10)), Times.Once);
     }
+
+    [Fact]
+    public async Task Broadcasts_ReceiveSnapshotsThatLaterReportsDoNotMutate()
+    {
+        // Arrange - capture the payload objects handed to Realtime
+        var payloads = new List<SyncProgressMessage>();
+        _supabaseServiceMock.Setup(x => x.BroadcastAsync(It.IsAny<string>(), "progress_update", It.IsAny<object>()))
+            .Callback<string, string, object>((_, _, payload) => payloads.Add((SyncProgressMessage)payload))
+            .ReturnsAsync(true);
+
+        // Act
+        await _sut.ReportProviderProgressAsync("fitbit", "fetching", "Chunk 1", 1, 8);
+        await _sut.ReportProviderProgressAsync("fitbit", "fetching", "Chunk 2", 2, 8);
+        await _sut.ReportSyncProgressAsync("succeeded", "Done");
+
+        // Assert - each broadcast still describes the report that queued it
+        payloads.Should().HaveCount(3);
+        payloads[0].Status.Should().Be("running");
+        payloads[0].Providers.Should().ContainSingle().Which.Message.Should().Be("Chunk 1");
+        payloads[1].Providers.Should().ContainSingle().Which.Current.Should().Be(2);
+        payloads[2].Status.Should().Be("succeeded");
+        payloads[2].Providers.Should().ContainSingle().Which.Message.Should().Be("Chunk 2");
+        payloads.Distinct().Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task Broadcasts_LeaveInReportOrderEvenWhenAnEarlierOneIsSlow()
+    {
+        // Arrange - the first broadcast hangs until released
+        var firstBroadcast = new TaskCompletionSource<bool>();
+        var sent = new List<string>();
+        _supabaseServiceMock.Setup(x => x.BroadcastAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
+            .Returns<string, string, object>((_, _, payload) =>
+            {
+                sent.Add(((SyncProgressMessage)payload).Status);
+                return sent.Count == 1 ? firstBroadcast.Task : Task.FromResult(true);
+            });
+
+        // Act - reporting must not block on the slow broadcast
+        await _sut.ReportSyncProgressAsync("running", "Working");
+        await _sut.ReportSyncProgressAsync("succeeded", "Done");
+
+        // Assert - "succeeded" waits for "running" instead of overtaking it
+        sent.Should().Equal("running");
+        firstBroadcast.SetResult(true);
+        for (var i = 0; i < 100 && sent.Count < 2; i++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+        sent.Should().Equal("running", "succeeded");
+    }
 }

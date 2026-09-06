@@ -11,6 +11,7 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
     private readonly ILogger<SyncProgressService> _logger;
     private readonly SemaphoreSlim _messageLock = new(1, 1);
     private SyncProgressMessage? _currentMessage;
+    private Task _pendingBroadcast = Task.CompletedTask;
     private bool _disposed;
 
     public SyncProgressService(
@@ -134,23 +135,32 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
             return Task.CompletedTask;
         }
 
+        // The sync keeps mutating the message after this returns, so the broadcast
+        // gets a snapshot taken under the lock. Broadcasts are chained rather than
+        // awaited: the sync is not blocked on Realtime, but updates still leave in
+        // the order they were reported ("succeeded" cannot overtake "running").
+        var snapshot = _currentMessage.Clone();
+        _pendingBroadcast = BroadcastAfterAsync(_pendingBroadcast, snapshot);
+
+        _logger.LogDebug("Queued progress update broadcast for {ProgressId}", snapshot.Id);
+        return Task.CompletedTask;
+    }
+
+    private async Task BroadcastAfterAsync(Task previous, SyncProgressMessage snapshot)
+    {
+        // Never faults: every broadcast handles its own failure below.
+        await previous;
+
         try
         {
             // Use simple progressId-based topic (no user ID needed since progress data isn't sensitive)
-            var topic = $"sync-progress:{_currentMessage.Id}";
-            const string eventName = "progress_update";
-
-            // Fire and forget - don't await to avoid blocking the sync
-            _ = _supabaseService.BroadcastAsync(topic, eventName, _currentMessage);
-
-            _logger.LogDebug("Queued progress update broadcast for {ProgressId}", _currentMessage.Id);
+            var topic = $"sync-progress:{snapshot.Id}";
+            await _supabaseService.BroadcastAsync(topic, "progress_update", snapshot);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception occurred while broadcasting progress update for {ProgressId}", _currentMessage?.Id);
+            _logger.LogError(ex, "Exception occurred while broadcasting progress update for {ProgressId}", snapshot.Id);
         }
-
-        return Task.CompletedTask;
     }
 
     public void Dispose()

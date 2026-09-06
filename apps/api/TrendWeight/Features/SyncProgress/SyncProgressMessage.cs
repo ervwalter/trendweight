@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TrendWeight.Features.SyncProgress;
 
@@ -13,6 +14,17 @@ public class SyncProgressMessage
     public string Status { get; set; } = "running";
     public string? Message { get; set; }
     public List<ProviderProgressInfo>? Providers { get; set; }
+
+    /// <summary>
+    /// Deep copy, so a broadcast in flight is unaffected by later progress updates
+    /// </summary>
+    public SyncProgressMessage Clone() => new()
+    {
+        Id = Id,
+        Status = Status,
+        Message = Message,
+        Providers = Providers?.Select(p => p.Clone()).ToList()
+    };
 }
 
 /// <summary>
@@ -26,4 +38,13 @@ public class ProviderProgressInfo
     public string? Message { get; set; }
     public int? Current { get; set; }
     public int? Total { get; set; }
+
+    public ProviderProgressInfo Clone() => new()
+    {
+        Provider = Provider,
+        Stage = Stage,
+        Message = Message,
+        Current = Current,
+        Total = Total
+    };
 }
