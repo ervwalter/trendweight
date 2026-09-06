@@ -441,16 +441,41 @@ describe("queries", () => {
       const mockGetToken = vi.fn().mockResolvedValue("mock-token");
       const options = queryOptions.profile(mockGetToken);
 
-      // Mock the API request function
-      globalThis.fetch = vi.fn().mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        json: async () => ({}),
-      });
+      server.use(http.get("/api/profile", () => HttpResponse.json({ error: "Not found" }, { status: 404 })));
 
       // The queryFn should return null for 404s
       const result = await options.queryFn();
       expect(result).toBeNull();
+    });
+
+    it("URL-encodes sharing codes so they cannot alter the request path or query", async () => {
+      const requested: string[] = [];
+      const record = ({ request }: { request: Request }) => {
+        const url = new URL(request.url);
+        requested.push(url.pathname + url.search);
+      };
+      server.use(
+        http.get("/api/profile/*", (info) => {
+          record(info);
+          return HttpResponse.json(mockProfileResponse);
+        }),
+        http.get("/api/data/*", (info) => {
+          record(info);
+          return HttpResponse.json(mockMeasurementsResponse);
+        }),
+        http.get("/api/providers/links/*", (info) => {
+          record(info);
+          return HttpResponse.json([]);
+        }),
+      );
+      const getToken = async () => null;
+      const hostileCode = "api-key?x=1#frag";
+
+      await queryOptions.profile(getToken, hostileCode).queryFn();
+      await queryOptions.dashboardData(getToken, { sharingCode: hostileCode }).queryFn();
+      await queryOptions.providerLinks(getToken, hostileCode).queryFn();
+
+      expect(requested).toEqual(["/api/profile/api-key%3Fx%3D1%23frag", "/api/data/api-key%3Fx%3D1%23frag", "/api/providers/links/api-key%3Fx%3D1%23frag"]);
     });
   });
 });

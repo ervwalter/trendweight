@@ -111,7 +111,7 @@ export const queryOptions = {
     queryKey: queryKeys.profile(sharingCode),
     queryFn: async () => {
       try {
-        const endpoint = sharingCode ? `/profile/${sharingCode}` : "/profile";
+        const endpoint = sharingCode ? `/profile/${encodeURIComponent(sharingCode)}` : "/profile";
         const token = await getToken();
         return await apiRequest<ProfileResponse>(endpoint, { token });
       } catch (error) {
@@ -127,7 +127,7 @@ export const queryOptions = {
   dashboardData: (getToken: GetToken, opts?: { sharingCode?: string; progressId?: string }) => ({
     queryKey: queryKeys.dashboardData(opts?.sharingCode),
     queryFn: async () => {
-      const basePath = opts?.sharingCode ? `/data/${opts.sharingCode}` : "/data";
+      const basePath = opts?.sharingCode ? `/data/${encodeURIComponent(opts.sharingCode)}` : "/data";
       const params = new URLSearchParams();
       if (opts?.progressId) params.set("progressId", opts.progressId);
       const url = params.toString() ? `${basePath}?${params}` : basePath;
@@ -152,7 +152,7 @@ export const queryOptions = {
     queryKey: queryKeys.providerLinks(sharingCode),
     queryFn: async () => {
       try {
-        const endpoint = sharingCode ? `/providers/links/${sharingCode}` : "/providers/links";
+        const endpoint = sharingCode ? `/providers/links/${encodeURIComponent(sharingCode)}` : "/providers/links";
         const token = await getToken();
         return await apiRequest<ProviderLink[]>(endpoint, { token });
       } catch (error) {
