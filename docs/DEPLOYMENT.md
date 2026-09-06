@@ -33,12 +33,13 @@ API instances in one environment must share the OAuth-state signing key.
 | Staging     | `https://staging.trendweight.com` |
 
 Use an HTTPS origin without credentials, path, query, or fragment. Startup fails
-if the value is missing or invalid. Authorization and token exchange callback URLs,
-the Apple callback redirect, and OpenAPI URLs all use this setting.
+if the value is missing or invalid. Authorization and token exchange callback URLs
+and OpenAPI URLs all use this setting.
 
 `AllowedHosts` is a semicolon-separated list of actual hostnames accepted by the
-API. Include the legitimate domain and any hostnames used by readiness probes;
-the Docker health check uses `localhost`. Do not include schemes or paths.
+API. Include the legitimate domain; `/api/health` is exempt from the check, so
+the Docker health check does not need `localhost` listed. Do not include schemes
+or paths.
 
 The application does not process forwarded headers or redirect internal HTTP.
 Ingress must redirect or reject public HTTP while allowing private HTTP to port 8080. Do not expose that listener directly to the Internet. Do not enable

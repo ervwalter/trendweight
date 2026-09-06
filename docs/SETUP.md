@@ -95,8 +95,6 @@ Register callback URLs using the same origin as `PublicBaseUrl`:
 Use a registered development hostname if the provider rejects localhost. Update
 `PublicBaseUrl`, Clerk's allowed origins, and the provider's registered callback
 consistently. Authorization and token exchange must use the same callback URL.
-The backend Apple form callback, when used, forwards to `/auth/apple/callback`
-on the configured public origin.
 
 ## Start and verify
 
