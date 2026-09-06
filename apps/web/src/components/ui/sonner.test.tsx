@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 import { Toaster } from "./sonner";
 import { toast } from "sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 
 // Create a test component that uses sonner toast
 const TestComponent = () => {
@@ -46,6 +47,29 @@ const TestComponent = () => {
 describe("Toast System (Sonner)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
+    toast.dismiss();
+  });
+
+  describe("Theme", () => {
+    it.each(["light", "dark"] as const)("follows the app theme (%s)", async (theme) => {
+      const user = userEvent.setup();
+
+      render(
+        <ThemeProvider defaultTheme={theme}>
+          <button onClick={() => toast(`Themed ${theme}`)} data-testid="show-themed">
+            Show Themed
+          </button>
+          <Toaster />
+        </ThemeProvider>,
+      );
+
+      await user.click(screen.getByTestId("show-themed"));
+
+      await waitFor(() => {
+        expect(screen.getByText(`Themed ${theme}`).closest("[data-sonner-toaster]")).toHaveAttribute("data-sonner-theme", theme);
+      });
+    });
   });
 
   describe("Toast Functionality", () => {
@@ -55,7 +79,9 @@ describe("Toast System (Sonner)", () => {
       render(
         <>
           <TestComponent />
-          <Toaster />
+          <ThemeProvider>
+            <Toaster />
+          </ThemeProvider>
         </>,
       );
 
@@ -79,7 +105,9 @@ describe("Toast System (Sonner)", () => {
       render(
         <>
           <TestComponent />
-          <Toaster />
+          <ThemeProvider>
+            <Toaster />
+          </ThemeProvider>
         </>,
       );
 
@@ -148,7 +176,9 @@ describe("Toast System (Sonner)", () => {
       render(
         <>
           <LegacyComponent />
-          <Toaster />
+          <ThemeProvider>
+            <Toaster />
+          </ThemeProvider>
         </>,
       );
 
