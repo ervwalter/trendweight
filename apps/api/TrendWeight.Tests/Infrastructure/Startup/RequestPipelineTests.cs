@@ -288,7 +288,10 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         using var rejected = await client.GetAsync("/api/v1/measurements/manual", TestContext.Current.CancellationToken);
 
         rejected.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
-        (await rejected.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).Should().Contain("RATE_LIMIT_EXCEEDED");
+        using var body = System.Text.Json.JsonDocument.Parse(await rejected.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        body.RootElement.GetProperty("error").GetString().Should().Be("Too many requests. Please try again later.");
+        body.RootElement.GetProperty("errorCode").GetString().Should().Be("RATE_LIMITED");
+        body.RootElement.GetProperty("isRetryable").GetBoolean().Should().BeTrue();
     }
 
     [Fact]
@@ -317,7 +320,7 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         guess.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "sk-guessed-key");
         using var rejectedGuess = await client.SendAsync(guess, ct);
         rejectedGuess.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
-        (await rejectedGuess.Content.ReadAsStringAsync(ct)).Should().Contain("RATE_LIMIT");
+        (await rejectedGuess.Content.ReadAsStringAsync(ct)).Should().Contain("\"errorCode\":\"RATE_LIMITED\"");
 
         // Valid credentials, the application shell, and the health check keep their own budget.
         using var authenticated = new HttpRequestMessage(HttpMethod.Get, "/api/v1/measurements/manual");

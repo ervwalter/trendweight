@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using TrendWeight.Features.Common.Models;
 
 namespace TrendWeight.Infrastructure.Middleware;
 
@@ -10,7 +12,8 @@ public class ErrorHandlingMiddleware
     private readonly IHostEnvironment _environment;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger, IHostEnvironment environment)
@@ -39,10 +42,11 @@ public class ErrorHandlingMiddleware
     {
         context.Response.ContentType = "application/json";
 
-        var response = new ErrorResponse
+        var response = new ApiErrorResponse
         {
             CorrelationId = correlationId
         };
+        int statusCode;
 
         switch (exception)
         {
@@ -50,26 +54,26 @@ public class ErrorHandlingMiddleware
             case ArgumentException:
                 // Note: ArgumentExceptions are not thrown in this codebase, but keeping for safety
                 // Only expose the message for these validation exceptions after audit
-                response.Message = exception.Message;
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Error = exception.Message;
+                statusCode = (int)HttpStatusCode.BadRequest;
                 response.ErrorCode = "VALIDATION_ERROR";
                 break;
 
             case KeyNotFoundException:
-                response.Message = "Resource not found";
-                response.StatusCode = (int)HttpStatusCode.NotFound;
+                response.Error = "Resource not found";
+                statusCode = (int)HttpStatusCode.NotFound;
                 response.ErrorCode = "RESOURCE_NOT_FOUND";
                 break;
 
             case UnauthorizedAccessException:
-                response.Message = "Access denied";
-                response.StatusCode = (int)HttpStatusCode.Forbidden;
+                response.Error = "Access denied";
+                statusCode = (int)HttpStatusCode.Forbidden;
                 response.ErrorCode = "ACCESS_DENIED";
                 break;
 
             default:
-                response.Message = "An error occurred while processing your request";
-                response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                response.Error = "An error occurred while processing your request";
+                statusCode = (int)HttpStatusCode.InternalServerError;
                 response.ErrorCode = "INTERNAL_ERROR";
 
                 // Only include exception details in development mode
@@ -80,19 +84,10 @@ public class ErrorHandlingMiddleware
                 break;
         }
 
-        context.Response.StatusCode = response.StatusCode;
+        context.Response.StatusCode = statusCode;
 
         var jsonResponse = JsonSerializer.Serialize(response, JsonOptions);
 
         await context.Response.WriteAsync(jsonResponse);
     }
-}
-
-public class ErrorResponse
-{
-    public string Message { get; set; } = string.Empty;
-    public int StatusCode { get; set; }
-    public string? Details { get; set; }
-    public string? ErrorCode { get; set; }
-    public string? CorrelationId { get; set; }
 }

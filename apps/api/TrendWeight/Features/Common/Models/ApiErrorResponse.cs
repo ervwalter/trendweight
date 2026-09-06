@@ -1,7 +1,8 @@
 namespace TrendWeight.Features.Common.Models;
 
 /// <summary>
-/// Standard API error response
+/// Standard API error response. The web client reads <see cref="Error"/> and
+/// <see cref="ErrorCode"/>, so every error body the API writes uses this shape.
 /// </summary>
 public class ApiErrorResponse
 {
@@ -19,6 +20,16 @@ public class ApiErrorResponse
     /// Whether the error is retryable
     /// </summary>
     public bool IsRetryable { get; set; }
+
+    /// <summary>
+    /// Identifier logged with an unhandled exception so a report can be matched to it
+    /// </summary>
+    public string? CorrelationId { get; set; }
+
+    /// <summary>
+    /// Exception details; only populated in Development
+    /// </summary>
+    public string? Details { get; set; }
 }
 
 /// <summary>

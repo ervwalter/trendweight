@@ -7,12 +7,17 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
+using TrendWeight.Features.Common.Models;
 using TrendWeight.Features.Measurements.Manual;
 using TrendWeight.Infrastructure.Extensions;
 using TrendWeight.Infrastructure.Middleware;
 
 // Create a singleton JsonSerializerOptions for rate limiting responses
-var rateLimitJsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+var rateLimitJsonOptions = new JsonSerializerOptions
+{
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+};
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -169,11 +174,11 @@ builder.Services.AddRateLimiter(options =>
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         context.HttpContext.Response.ContentType = "application/json";
 
-        var response = new
+        var response = new ApiErrorResponse
         {
-            message = "Too many requests. Please try again later.",
-            statusCode = 429,
-            errorCode = "RATE_LIMIT_EXCEEDED"
+            Error = "Too many requests. Please try again later.",
+            ErrorCode = ErrorCodes.RateLimited,
+            IsRetryable = true
         };
 
         await context.HttpContext.Response.WriteAsync(

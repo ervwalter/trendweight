@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -21,9 +22,26 @@ public class ErrorHandlingMiddlewareTests
         await middleware.InvokeAsync(context);
 
         context.Response.StatusCode.Should().Be(500);
-        context.Response.Body.Position = 0;
-        var body = await new StreamReader(context.Response.Body).ReadToEndAsync(TestContext.Current.CancellationToken);
+        var body = await ReadBody(context);
         body.Should().Contain("INTERNAL_ERROR").And.NotContain("secret connection details");
+    }
+
+    [Fact]
+    public async Task UnexpectedError_UsesTheErrorFieldTheWebClientReads()
+    {
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+        var middleware = Create(_ => throw new InvalidOperationException("boom"));
+
+        await middleware.InvokeAsync(context);
+
+        using var document = JsonDocument.Parse(await ReadBody(context));
+        var root = document.RootElement;
+        root.GetProperty("error").GetString().Should().Be("An error occurred while processing your request");
+        root.GetProperty("errorCode").GetString().Should().Be("INTERNAL_ERROR");
+        root.GetProperty("correlationId").GetString().Should().NotBeNullOrEmpty();
+        root.TryGetProperty("message", out _).Should().BeFalse();
+        root.TryGetProperty("details", out _).Should().BeFalse();
     }
 
     [Fact]
@@ -53,6 +71,12 @@ public class ErrorHandlingMiddlewareTests
 
         await act.Should().ThrowAsync<OperationCanceledException>();
         context.Response.Body.Length.Should().Be(0);
+    }
+
+    private static async Task<string> ReadBody(HttpContext context)
+    {
+        context.Response.Body.Position = 0;
+        return await new StreamReader(context.Response.Body).ReadToEndAsync(TestContext.Current.CancellationToken);
     }
 
     private static ErrorHandlingMiddleware Create(RequestDelegate next)
