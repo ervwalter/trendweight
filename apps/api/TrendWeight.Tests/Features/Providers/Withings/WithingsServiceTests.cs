@@ -66,6 +66,80 @@ public class WithingsServiceTests : TestBase
             _loggerMock.Object);
     }
 
+    [Theory]
+    [InlineData(null, 1)]
+    [InlineData(123, 2)]
+    public async Task SyncMeasurementsAsync_WithInvalidPagination_FailsInsteadOfLooping(int? offset, int expectedCalls)
+    {
+        var userId = Guid.NewGuid();
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
+            .ReturnsAsync(new DbProviderLink { Provider = "withings", Token = CreateValidToken() });
+        var calls = 0;
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .Returns(() =>
+            {
+                calls++;
+                // Stop the old implementation after a finite number of responses.
+                var response = new WithingsResponse<WithingsGetMeasuresResponse>
+                {
+                    Status = 0,
+                    Body = new WithingsGetMeasuresResponse { More = calls <= 3 ? 1 : 0, Offset = offset }
+                };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(response))
+                });
+            });
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeFalse();
+        result.Measurements.Should().BeNull();
+        calls.Should().Be(expectedCalls);
+    }
+
+    [Fact]
+    public async Task ExchangeAuthorizationCodeAsync_WithIncompleteToken_DoesNotStoreCredentials()
+    {
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"status\":0,\"body\":{}}")
+            });
+
+        var act = () => _sut.ExchangeAuthorizationCodeAsync("code", "https://example.com/callback", Guid.NewGuid());
+
+        await act.Should().ThrowAsync<JsonException>();
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(),
+            It.IsAny<Dictionary<string, object>>(), It.IsAny<string?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExchangeAuthorizationCodeAsync_DoesNotLogProviderCredentials()
+    {
+        const string accessToken = "secret-access-token-never-log";
+        const string refreshToken = "secret-refresh-token-never-log";
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new
+                {
+                    status = 0,
+                    body = new { access_token = accessToken, refresh_token = refreshToken, expires_in = 3600, token_type = "Bearer" }
+                }))
+            });
+
+        var result = await _sut.ExchangeAuthorizationCodeAsync("code", "https://example.com/callback", Guid.NewGuid());
+
+        result.Should().BeTrue();
+        _loggerMock.Verify(x => x.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((value, type) => value.ToString()!.Contains(accessToken) || value.ToString()!.Contains(refreshToken)),
+            It.IsAny<Exception>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Never);
+    }
+
     #region Pagination Tests - Critical for Withings
 
     [Fact]

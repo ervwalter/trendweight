@@ -16,19 +16,6 @@ public class ClerkService : IClerkService
         _logger = logger;
         _secretKey = appOptions.Value.Clerk?.SecretKey ?? throw new InvalidOperationException("Clerk:SecretKey is not configured");
 
-        // Log the secret key details for debugging (mask most of it)
-        if (!string.IsNullOrEmpty(_secretKey))
-        {
-            var maskedKey = _secretKey.Length > 10
-                ? $"{_secretKey.Substring(0, 10)}...{_secretKey.Substring(_secretKey.Length - 4)}"
-                : "KEY_TOO_SHORT";
-            _logger.LogInformation("ClerkService initialized with secret key: {MaskedKey} (length: {Length})", maskedKey, _secretKey.Length);
-        }
-        else
-        {
-            _logger.LogError("ClerkService initialized with empty secret key!");
-        }
-
         // Configure the HttpClient with base URL and auth header
         _httpClient.BaseAddress = new Uri("https://api.clerk.com/v1/");
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _secretKey);
@@ -45,21 +32,7 @@ public class ClerkService : IClerkService
         {
             _logger.LogInformation("Attempting to delete Clerk user {ClerkUserId}", clerkUserId);
 
-            // Log the authorization header for debugging
-            if (_httpClient.DefaultRequestHeaders.Authorization != null)
-            {
-                var authHeader = _httpClient.DefaultRequestHeaders.Authorization.ToString();
-                var maskedAuth = authHeader.Length > 20
-                    ? $"{authHeader.Substring(0, 20)}..."
-                    : "AUTH_HEADER_TOO_SHORT";
-                _logger.LogInformation("Authorization header: {MaskedAuth}", maskedAuth);
-            }
-            else
-            {
-                _logger.LogError("No authorization header set!");
-            }
-
-            var response = await _httpClient.DeleteAsync($"users/{clerkUserId}");
+            using var response = await _httpClient.DeleteAsync($"users/{Uri.EscapeDataString(clerkUserId)}");
 
             if (response.IsSuccessStatusCode)
             {

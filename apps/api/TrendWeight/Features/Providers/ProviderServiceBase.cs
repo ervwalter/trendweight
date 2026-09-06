@@ -96,6 +96,11 @@ public abstract class ProviderServiceBase : IProviderService
             // Re-throw auth exceptions to be handled by SyncMeasurementsAsync
             throw;
         }
+        catch (HttpRequestException)
+        {
+            // Preserve network failures for SyncMeasurementsAsync to classify.
+            throw;
+        }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to get {Provider} measurements for user {UserId}", ProviderName, userId);

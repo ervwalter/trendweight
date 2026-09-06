@@ -111,9 +111,9 @@ public class FitbitService : ProviderServiceBase, IFitbitService
             ["redirect_uri"] = callbackUrl
         };
 
-        var content = new FormUrlEncodedContent(parameters);
+        using var content = new FormUrlEncodedContent(parameters);
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.fitbit.com/oauth2/token")
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.fitbit.com/oauth2/token")
         {
             Content = content
         };
@@ -122,7 +122,7 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{_config.ClientId}:{_config.ClientSecret}"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
 
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -146,7 +146,8 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         var responseContent = await response.Content.ReadAsStringAsync();
         var tokenData = JsonSerializer.Deserialize<FitbitTokenResponse>(responseContent);
 
-        if (tokenData == null)
+        if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
+            || string.IsNullOrWhiteSpace(tokenData.RefreshToken) || tokenData.ExpiresIn <= 0)
         {
             throw new JsonException("Failed to parse Fitbit token response");
         }
@@ -212,9 +213,9 @@ public class FitbitService : ProviderServiceBase, IFitbitService
             ["refresh_token"] = refreshToken!
         };
 
-        var content = new FormUrlEncodedContent(parameters);
+        using var content = new FormUrlEncodedContent(parameters);
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.fitbit.com/oauth2/token")
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.fitbit.com/oauth2/token")
         {
             Content = content
         };
@@ -223,7 +224,7 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{_config.ClientId}:{_config.ClientSecret}"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
 
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -249,7 +250,8 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         var responseContent = await response.Content.ReadAsStringAsync();
         var tokenData = JsonSerializer.Deserialize<FitbitTokenResponse>(responseContent);
 
-        if (tokenData == null)
+        if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
+            || string.IsNullOrWhiteSpace(tokenData.RefreshToken) || tokenData.ExpiresIn <= 0)
         {
             throw new JsonException("Failed to parse Fitbit token refresh response");
         }
@@ -436,14 +438,14 @@ public class FitbitService : ProviderServiceBase, IFitbitService
 
         Logger.LogDebug("Fetching Fitbit weight log from {StartDate} to {EndDate}", startStr, endStr);
 
-        var request = new HttpRequestMessage(HttpMethod.Get,
+        using var request = new HttpRequestMessage(HttpMethod.Get,
             $"https://api.fitbit.com/1/user/-/body/log/weight/date/{startStr}/{endStr}.json");
 
         // Always request in US locale to get pounds (avoids Fitbit rounding error)
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Add("Accept-Language", "en_US");
 
-        var response = await SendRateLimitedRequestAsync(request);
+        using var response = await SendRateLimitedRequestAsync(request);
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
@@ -460,7 +462,7 @@ public class FitbitService : ProviderServiceBase, IFitbitService
         {
             var errorContent = await response.Content.ReadAsStringAsync();
             Logger.LogError("Failed to get weight log: {StatusCode} {Content}", response.StatusCode, errorContent);
-            return measurements;
+            throw new HttpRequestException("Failed to retrieve Fitbit weight log", null, response.StatusCode);
         }
 
         var content = await response.Content.ReadAsStringAsync();
@@ -468,8 +470,7 @@ public class FitbitService : ProviderServiceBase, IFitbitService
 
         if (weightLog?.Weight == null)
         {
-            Logger.LogWarning("No weight data in Fitbit response");
-            return measurements;
+            throw new JsonException("Fitbit response is missing its weight log");
         }
 
 

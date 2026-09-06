@@ -69,6 +69,48 @@ public class FitbitServiceTests : TestBase
             _loggerMock.Object);
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.TooManyRequests)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public async Task SyncMeasurementsAsync_WhenLaterPageFails_DiscardsPartialResults(HttpStatusCode failureStatus)
+    {
+        var userId = Guid.NewGuid();
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
+            .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "fitbit", Token = CreateValidToken("fitbit-user") });
+        _httpMessageHandlerMock.Protected()
+            .SetupSequence<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"weight\":[{\"date\":\"2026-01-01\",\"time\":\"08:00:00\",\"weight\":180}]}")
+            })
+            .ReturnsAsync(new HttpResponseMessage(failureStatus) { Content = new StringContent("Unavailable") });
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true, DateTime.UtcNow.AddDays(-40));
+
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(ProviderSyncError.NetworkError);
+        result.Measurements.Should().BeNull();
+        _httpMessageHandlerMock.Protected().Verify("SendAsync", Times.Exactly(2),
+            ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExchangeAuthorizationCodeAsync_WithIncompleteToken_DoesNotStoreCredentials()
+    {
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{}")
+            });
+
+        var act = () => _sut.ExchangeAuthorizationCodeAsync("code", "https://example.com/callback", Guid.NewGuid());
+
+        await act.Should().ThrowAsync<JsonException>();
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(),
+            It.IsAny<Dictionary<string, object>>(), It.IsAny<string?>()), Times.Never);
+    }
+
     [Fact]
     public async Task SyncMeasurementsAsync_WhenDisabled_ReturnsDisabledWithoutNetworkOrStorage()
     {

@@ -84,8 +84,8 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             ["redirect_uri"] = callbackUrl
         };
 
-        var content = new FormUrlEncodedContent(parameters);
-        var response = await _httpClient.PostAsync("https://wbsapi.withings.net/v2/oauth2", content);
+        using var content = new FormUrlEncodedContent(parameters);
+        using var response = await _httpClient.PostAsync("https://wbsapi.withings.net/v2/oauth2", content);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -106,7 +106,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         }
 
         var responseContent = await response.Content.ReadAsStringAsync();
-        Logger.LogDebug("Withings authorization code exchange completed. Response: {Response}", responseContent);
+        Logger.LogDebug("Withings authorization code exchange completed");
 
         WithingsResponse<WithingsTokenResponse>? withingsResponse;
         try
@@ -115,7 +115,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to deserialize Withings response: {Response}", responseContent);
+            Logger.LogError(ex, "Failed to deserialize Withings token response");
             throw;
         }
 
@@ -154,7 +154,12 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             throw new ProviderApiException("withings", $"Withings API error: {withingsResponse?.Status} {withingsResponse?.Error}", withingsResponse?.Error, withingsResponse?.Status);
         }
 
-        var tokenData = withingsResponse!.Body!;
+        var tokenData = withingsResponse!.Body;
+        if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
+            || string.IsNullOrWhiteSpace(tokenData.RefreshToken) || tokenData.ExpiresIn <= 0)
+        {
+            throw new JsonException("Withings returned an incomplete token response");
+        }
 
         // Create token dictionary (excluding userid since we don't use it)
         return new Dictionary<string, object>
@@ -217,8 +222,8 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             ["refresh_token"] = refreshToken!
         };
 
-        var content = new FormUrlEncodedContent(parameters);
-        var response = await _httpClient.PostAsync("https://wbsapi.withings.net/v2/oauth2", content);
+        using var content = new FormUrlEncodedContent(parameters);
+        using var response = await _httpClient.PostAsync("https://wbsapi.withings.net/v2/oauth2", content);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -239,7 +244,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         }
 
         var responseContent = await response.Content.ReadAsStringAsync();
-        Logger.LogDebug("Withings token refresh response: {Response}", responseContent);
+        Logger.LogDebug("Withings token refresh completed");
 
         var withingsResponse = JsonSerializer.Deserialize<WithingsResponse<WithingsTokenResponse>>(responseContent, JsonOptions);
 
@@ -266,7 +271,12 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             throw new ProviderApiException("withings", $"Withings API error: {withingsResponse?.Status} {withingsResponse?.Error}", withingsResponse?.Error, withingsResponse?.Status);
         }
 
-        var tokenData = withingsResponse!.Body!;
+        var tokenData = withingsResponse!.Body;
+        if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.AccessToken)
+            || string.IsNullOrWhiteSpace(tokenData.RefreshToken) || tokenData.ExpiresIn <= 0)
+        {
+            throw new JsonException("Withings returned an incomplete token response");
+        }
 
         // Create refreshed token dictionary (excluding userid since we don't use it)
         return new Dictionary<string, object>
@@ -296,6 +306,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
         object? offset = null;
         var pageNumber = 1;
         var mostRecentYear = 0;
+        var seenOffsets = new HashSet<string>();
 
         while (hasMore)
         {
@@ -311,9 +322,6 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                 else
                 {
                     // For page 2+, show year-based message if we have multiple years of data
-                    var startDate = DateTimeOffset.FromUnixTimeSeconds(startTimestamp).DateTime;
-                    var isLongSync = mostRecentYear > 0 && (mostRecentYear - startDate.Year) > 1;
-
                     if (mostRecentYear > 0)
                     {
                         message = $"Downloading readings from Withings for {mostRecentYear}";
@@ -351,6 +359,11 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                 }
             }
 
+            if (more && (newOffset == null || !seenOffsets.Add(newOffset.ToString()!)))
+            {
+                throw new ProviderApiException("withings", "Withings returned an invalid pagination cursor");
+            }
+
             hasMore = more;
             offset = newOffset;
             pageNumber++;
@@ -380,7 +393,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
     {
         Logger.LogDebug("Fetching Withings measurements page with offset: {Offset}", offset);
 
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://wbsapi.withings.net/measure");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://wbsapi.withings.net/measure");
         request.Headers.Add("Authorization", $"Bearer {accessToken}");
 
         var uriBuilder = new UriBuilder(request.RequestUri!);
@@ -401,7 +414,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
 
         Logger.LogDebug("Withings API request: {Uri}", request.RequestUri);
 
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request);
 
         if (!response.IsSuccessStatusCode)
         {
