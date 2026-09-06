@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Supabase.Interfaces;
+using Supabase.Postgrest.Exceptions;
 using Supabase.Realtime;
 using TrendWeight.Infrastructure.Auth;
 using TrendWeight.Infrastructure.DataAccess;
@@ -201,6 +202,43 @@ public class UserAccountMappingServiceTests
     }
 
     [Fact]
+    public async Task CreateMappingAsync_AdoptsTheWinningRow_WhenAConcurrentSignInInsertedFirst()
+    {
+        // Arrange - no profile yet; the insert loses the race to a parallel first request
+        var winner = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "clerk" };
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<ISupabaseTable<DbProfile, RealtimeChannel>>>()))
+            .ReturnsAsync(new List<DbProfile>());
+        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbUserAccount>()))
+            .ThrowsAsync(UniqueViolation());
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbUserAccount>(It.IsAny<Action<ISupabaseTable<DbUserAccount, RealtimeChannel>>>()))
+            .ReturnsAsync(new List<DbUserAccount> { winner });
+
+        // Act
+        var result = await _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
+
+        // Assert
+        result.Should().BeSameAs(winner);
+    }
+
+    [Fact]
+    public async Task CreateMappingAsync_Rethrows_WhenAUniqueViolationHasNoMatchingMapping()
+    {
+        // Arrange
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<ISupabaseTable<DbProfile, RealtimeChannel>>>()))
+            .ReturnsAsync(new List<DbProfile>());
+        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbUserAccount>()))
+            .ThrowsAsync(UniqueViolation());
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbUserAccount>(It.IsAny<Action<ISupabaseTable<DbUserAccount, RealtimeChannel>>>()))
+            .ReturnsAsync(new List<DbUserAccount>());
+
+        // Act
+        var act = () => _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
+
+        // Assert
+        await act.Should().ThrowAsync<PostgrestException>();
+    }
+
+    [Fact]
     public async Task GetOrCreateMappingAsync_ReturnsExisting_WhenUserAccountExists()
     {
         // Arrange
@@ -262,5 +300,13 @@ public class UserAccountMappingServiceTests
         // Assert
         result.Should().BeFalse();
         _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<DbUserAccount>()), Times.Never);
+    }
+
+    private static PostgrestException UniqueViolation()
+    {
+        // PostgREST answers a unique violation with 409; the client only sets StatusCode internally.
+        var exception = new PostgrestException("duplicate key value violates unique constraint");
+        typeof(PostgrestException).GetProperty(nameof(PostgrestException.StatusCode))!.SetValue(exception, 409);
+        return exception;
     }
 }

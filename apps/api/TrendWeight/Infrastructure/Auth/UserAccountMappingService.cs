@@ -1,3 +1,5 @@
+using System.Net;
+using Supabase.Postgrest.Exceptions;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 
@@ -87,11 +89,35 @@ public class UserAccountMappingService : IUserAccountMappingService
             UpdatedAt = now
         };
 
-        var result = await _supabaseService.InsertAsync(userAccount);
+        DbUserAccount result;
+        try
+        {
+            result = await _supabaseService.InsertAsync(userAccount);
+        }
+        catch (PostgrestException ex) when (IsUniqueViolation(ex))
+        {
+            // A new user's first page load issues several requests at once; each saw
+            // no mapping and raced to insert one. The unique constraint let exactly
+            // one through, so the others adopt that row instead of failing the request.
+            var winner = await GetByExternalIdAsync(externalId, provider);
+            if (winner == null)
+            {
+                throw;
+            }
+
+            _logger.LogInformation("Concurrent sign-in already created the user account mapping for {Provider} user {ExternalId} -> {Uid}", provider, externalId, winner.Uid);
+            return winner;
+        }
 
         _logger.LogInformation("Created user account mapping for {Provider} user {ExternalId} -> {Uid}", provider, externalId, uid);
 
         return result;
+    }
+
+    private static bool IsUniqueViolation(PostgrestException exception)
+    {
+        return exception.Reason == FailureHint.Reason.UniquenessViolation
+            || exception.StatusCode == (int)HttpStatusCode.Conflict;
     }
 
     public async Task<DbUserAccount> GetOrCreateMappingAsync(string externalId, string email, string provider = "clerk")
