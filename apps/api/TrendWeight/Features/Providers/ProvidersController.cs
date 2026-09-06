@@ -10,6 +10,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.Providers.Models;
 using TrendWeight.Common.Models;
 using TrendWeight.Features.Profile.Models;
+using TrendWeight.Infrastructure.DataAccess.Models;
 
 namespace TrendWeight.Features.Providers;
 
@@ -84,7 +85,7 @@ public class ProvidersController : ControllerBase
                 .Select(link => new ProviderLinkResponse
                 {
                     Provider = link.Provider,
-                    ConnectedAt = link.UpdatedAt,
+                    ConnectedAt = ConnectedAtFor(link),
                     UpdateReason = link.UpdateReason,
                     HasToken = link.Token != null && link.Token.Count > 0,
                     IsDisabled = link.Provider == "legacy" && link.Token?.GetValueOrDefault("disabled") as bool? == true
@@ -291,6 +292,15 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
+    /// The date a link was established. updated_at is rewritten on every token
+    /// refresh, so it only serves as a fallback for rows that predate created_at.
+    /// </summary>
+    private static string ConnectedAtFor(DbProviderLink link)
+    {
+        return string.IsNullOrEmpty(link.CreatedAt) ? link.UpdatedAt : link.CreatedAt;
+    }
+
+    /// <summary>
     /// Gets provider links for a user via sharing code (no authentication required)
     /// </summary>
     /// <param name="sharingCode">The sharing code</param>
@@ -317,7 +327,7 @@ public class ProvidersController : ControllerBase
                 .Select(link => new ProviderLinkResponse
                 {
                     Provider = link.Provider,
-                    ConnectedAt = link.UpdatedAt,
+                    ConnectedAt = ConnectedAtFor(link),
                     UpdateReason = link.UpdateReason,
                     HasToken = link.Token != null && link.Token.Count > 0,
                     IsDisabled = link.Provider == "legacy" && link.Token?.GetValueOrDefault("disabled") as bool? == true

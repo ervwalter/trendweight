@@ -152,6 +152,51 @@ public class ProviderLinkServiceTests : TestBase
     }
 
     [Fact]
+    public async Task CreateAsync_SetsCreatedAtOnce()
+    {
+        // Arrange
+        var link = CreateTestProviderLink(Guid.NewGuid(), "withings");
+        link.CreatedAt = null;
+
+        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbProviderLink>()))
+            .ReturnsAsync((DbProviderLink l) => l);
+
+        // Act
+        var result = await _sut.CreateAsync(link);
+
+        // Assert
+        result.CreatedAt.Should().NotBeNullOrEmpty();
+        DateTime.Parse(result.CreatedAt!, null, System.Globalization.DateTimeStyles.RoundtripKind)
+            .ToUniversalTime()
+            .Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task StoreProviderLinkAsync_OnTokenRefresh_PreservesCreatedAt()
+    {
+        // Arrange - an existing link whose token is being replaced by a refresh
+        var uid = Guid.NewGuid();
+        var connectedAt = DateTime.UtcNow.AddDays(-30).ToString("o");
+        var existing = CreateTestProviderLink(uid, "withings");
+        existing.CreatedAt = connectedAt;
+        existing.UpdatedAt = DateTime.UtcNow.AddHours(-3).ToString("o");
+
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
+            .ReturnsAsync(new List<DbProviderLink> { existing });
+        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProviderLink>()))
+            .ReturnsAsync((DbProviderLink l) => l);
+
+        // Act
+        await _sut.StoreProviderLinkAsync(uid, "withings", new Dictionary<string, object> { { "access_token", "rotated" } });
+
+        // Assert - updated_at moves, created_at does not
+        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbProviderLink>(l =>
+            l.CreatedAt == connectedAt &&
+            l.UpdatedAt != existing.CreatedAt)), Times.Once);
+        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbProviderLink>()), Times.Never);
+    }
+
+    [Fact]
     public async Task UpdateAsync_SetsUpdatedAt()
     {
         // Arrange

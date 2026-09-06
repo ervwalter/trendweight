@@ -50,7 +50,13 @@ public class ProviderLinkService : IProviderLinkService
 
     public async Task<DbProviderLink> CreateAsync(DbProviderLink providerLink)
     {
-        providerLink.UpdatedAt = DateTime.UtcNow.ToString("o");
+        var now = DateTime.UtcNow.ToString("o");
+        if (string.IsNullOrEmpty(providerLink.CreatedAt))
+        {
+            providerLink.CreatedAt = now;
+        }
+
+        providerLink.UpdatedAt = now;
         return await _supabaseService.InsertAsync(providerLink);
     }
 

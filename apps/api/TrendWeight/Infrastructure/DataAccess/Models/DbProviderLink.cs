@@ -22,4 +22,10 @@ public class DbProviderLink : BaseModel
 
     [Column("updated_at")]
     public string UpdatedAt { get; set; } = string.Empty;
+
+    /// <summary>
+    /// When the link was first created. Null for rows that predate the column.
+    /// </summary>
+    [Column("created_at")]
+    public string? CreatedAt { get; set; }
 }

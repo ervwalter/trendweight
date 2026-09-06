@@ -79,6 +79,49 @@ public class ProvidersControllerTests : TestBase
     }
 
     [Fact]
+    public async Task GetProviderLinks_ReportsCreationDateAsConnectedAt_NotLastTokenRefresh()
+    {
+        // Arrange - a link created a month ago whose token was refreshed minutes ago,
+        // plus a legacy row that predates the created_at column
+        var userId = Guid.NewGuid();
+        var connectedAt = DateTime.UtcNow.AddDays(-30).ToString("o");
+        var refreshedAt = DateTime.UtcNow.AddMinutes(-5).ToString("o");
+        var legacyUpdatedAt = DateTime.UtcNow.AddDays(-400).ToString("o");
+        var providerLinks = new List<DbProviderLink>
+        {
+            new()
+            {
+                Uid = userId,
+                Provider = "withings",
+                Token = new Dictionary<string, object> { { "access_token", "token" } },
+                CreatedAt = connectedAt,
+                UpdatedAt = refreshedAt
+            },
+            new()
+            {
+                Uid = userId,
+                Provider = "legacy",
+                Token = new Dictionary<string, object> { { "disabled", false } },
+                CreatedAt = null,
+                UpdatedAt = legacyUpdatedAt
+            }
+        };
+
+        SetupAuthenticatedUser(userId.ToString());
+        _providerLinkServiceMock.Setup(x => x.GetAllForUserAsync(userId))
+            .ReturnsAsync(providerLinks);
+
+        // Act
+        var result = await _sut.GetProviderLinks();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
+        response.Single(r => r.Provider == "withings").ConnectedAt.Should().Be(connectedAt);
+        response.Single(r => r.Provider == "legacy").ConnectedAt.Should().Be(legacyUpdatedAt, "rows without created_at fall back to updated_at");
+    }
+
+    [Fact]
     public async Task GetProviderLinks_WithDisabledLegacyProvider_IncludesItWithIsDisabledTrue()
     {
         // Arrange
