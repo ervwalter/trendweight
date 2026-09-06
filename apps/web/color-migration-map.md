@@ -1,4 +1,8 @@
-# Color Migration Mapping
+# Historical color migration reference
+
+These mappings document the original semantic-color migration. Use the current
+variables in `src/index.css` and review colors in context; do not apply blanket
+search-and-replace substitutions to the current UI.
 
 ## Background Colors
 
@@ -82,4 +86,4 @@
 - Use opacity modifiers (`/10`, `/20`, etc.) for subtle backgrounds
 - All status colors must use semantic variables (success, warning, info, destructive)
 - Brand colors should map to `primary` for consistency with shadcn
-- Need to add CSS variables for success, warning, and info colors to globals.css
+- Semantic status variables are defined in `src/index.css`.
