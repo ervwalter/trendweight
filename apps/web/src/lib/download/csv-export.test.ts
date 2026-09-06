@@ -74,13 +74,13 @@ describe("csvExport", () => {
 
   describe("downloadScaleReadingsCSV", () => {
     it("should create CSV for raw readings with correct headers", () => {
-      downloadScaleReadingsCSV(sampleRawReadings, "raw", false);
+      downloadScaleReadingsCSV(sampleRawReadings, "raw");
 
       expect(globalThis.Blob).toHaveBeenCalledWith([expect.stringContaining("Date,Time,Weight,Body Fat %")], { type: "text/csv;charset=utf-8;" });
     });
 
     it("should create CSV for computed readings with correct headers", () => {
-      downloadScaleReadingsCSV(sampleComputedReadings, "computed", false);
+      downloadScaleReadingsCSV(sampleComputedReadings, "computed");
 
       expect(globalThis.Blob).toHaveBeenCalledWith(
         [expect.stringContaining("Date,Actual Weight,Weight Is Interpolated,Trend Weight,Actual Fat %,Fat Is Interpolated,Trend Fat %")],
@@ -89,7 +89,7 @@ describe("csvExport", () => {
     });
 
     it("should format raw readings data correctly", () => {
-      downloadScaleReadingsCSV(sampleRawReadings, "raw", false);
+      downloadScaleReadingsCSV(sampleRawReadings, "raw");
 
       const csvContent = (globalThis.Blob as any).mock.calls[0][0][0];
       expect(csvContent).toContain("2024-01-15,07:30:00,75.5,18.0");
@@ -97,24 +97,31 @@ describe("csvExport", () => {
     });
 
     it("should format computed readings data correctly", () => {
-      downloadScaleReadingsCSV(sampleComputedReadings, "computed", false);
+      downloadScaleReadingsCSV(sampleComputedReadings, "computed");
 
       const csvContent = (globalThis.Blob as any).mock.calls[0][0][0];
       expect(csvContent).toContain("2024-01-15,75.5,No,75.8,18.0,No,18.5");
       expect(csvContent).toContain("2024-01-16,,Yes,75.6,,Yes,");
     });
 
-    it("should use metric formatting when useMetric is true", () => {
-      downloadScaleReadingsCSV(sampleRawReadings, "raw", true);
+    it("preserves weights already converted by the download data layer", () => {
+      downloadScaleReadingsCSV(sampleRawReadings, "raw");
 
       const csvContent = (globalThis.Blob as any).mock.calls[0][0][0];
-      // Numbers should be the same but internally formatted as metric
+      // Unit conversion belongs to the download data layer.
       expect(csvContent).toContain("75.5");
       expect(csvContent).toContain("75.2");
     });
 
+    it("exports large weights without grouping separators that add CSV columns", () => {
+      downloadScaleReadingsCSV([{ date: LocalDate.of(2024, 1, 15), weight: 1234.5 }], "raw");
+
+      const csvContent = (globalThis.Blob as any).mock.calls[0][0][0];
+      expect(csvContent.split("\n")[1]).toBe("2024-01-15,,1234.5,");
+    });
+
     it("should handle empty readings array", () => {
-      downloadScaleReadingsCSV([], "raw", false);
+      downloadScaleReadingsCSV([], "raw");
 
       const csvContent = (globalThis.Blob as any).mock.calls[0][0][0];
       expect(csvContent).toBe("Date,Time,Weight,Body Fat %");
@@ -129,7 +136,7 @@ describe("csvExport", () => {
         },
       ];
 
-      downloadScaleReadingsCSV(readingsWithMissing, "raw", false);
+      downloadScaleReadingsCSV(readingsWithMissing, "raw");
 
       const csvContent = (globalThis.Blob as any).mock.calls[0][0][0];
       expect(csvContent).toContain("2024-01-15,,,");
@@ -138,7 +145,7 @@ describe("csvExport", () => {
     it("should create correct filename for raw export", () => {
       vi.spyOn(Date.prototype, "toISOString").mockReturnValue("2024-01-15T10:30:00.000Z");
 
-      downloadScaleReadingsCSV(sampleRawReadings, "raw", false);
+      downloadScaleReadingsCSV(sampleRawReadings, "raw");
 
       expect(mockLink.download).toBe("trendweight-raw-2024-01-15.csv");
     });
@@ -146,13 +153,13 @@ describe("csvExport", () => {
     it("should create correct filename for computed export", () => {
       vi.spyOn(Date.prototype, "toISOString").mockReturnValue("2024-01-15T10:30:00.000Z");
 
-      downloadScaleReadingsCSV(sampleComputedReadings, "computed", false);
+      downloadScaleReadingsCSV(sampleComputedReadings, "computed");
 
       expect(mockLink.download).toBe("trendweight-computed-2024-01-15.csv");
     });
 
     it("should trigger download by creating and clicking link", () => {
-      downloadScaleReadingsCSV(sampleRawReadings, "raw", false);
+      downloadScaleReadingsCSV(sampleRawReadings, "raw");
 
       expect(document.createElement).toHaveBeenCalledWith("a");
       expect(mockLink.href).toBe("blob:mock-url");
@@ -175,15 +182,15 @@ describe("csvExport", () => {
         },
       ];
 
-      downloadScaleReadingsCSV(readingsWithNullFat, "computed", false);
+      downloadScaleReadingsCSV(readingsWithNullFat, "computed");
 
       const csvContent = (globalThis.Blob as any).mock.calls[0][0][0];
       expect(csvContent).toContain("2024-01-15,75.5,No,75.8,,No,");
     });
 
-    it("should properly escape CSV values", () => {
+    it("keeps the expected column layout for raw readings", () => {
       // This test ensures that the CSV format is correct for edge cases
-      downloadScaleReadingsCSV(sampleRawReadings, "raw", false);
+      downloadScaleReadingsCSV(sampleRawReadings, "raw");
 
       const csvContent = (globalThis.Blob as any).mock.calls[0][0][0];
       const lines = csvContent.split("\n");

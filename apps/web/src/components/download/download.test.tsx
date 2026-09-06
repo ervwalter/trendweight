@@ -249,7 +249,7 @@ describe("Download", () => {
     const downloadButton = screen.getByText("Download as CSV");
     await user.click(downloadButton);
 
-    expect(downloadScaleReadingsCSV).toHaveBeenCalledWith(mockReadings, "computed", false);
+    expect(downloadScaleReadingsCSV).toHaveBeenCalledWith(mockReadings, "computed");
   });
 
   it("should display data table with pagination info", () => {

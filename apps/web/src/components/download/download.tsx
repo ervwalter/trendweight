@@ -21,7 +21,7 @@ export function Download() {
   const connectedProviders = providerLinks?.filter((link) => link.hasToken && !link.isDisabled) || [];
 
   const handleDownloadCSV = () => {
-    downloadScaleReadingsCSV(readings, viewType, profile?.useMetric ?? false);
+    downloadScaleReadingsCSV(readings, viewType);
   };
 
   if (connectedProviders.length === 0) {

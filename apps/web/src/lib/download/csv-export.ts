@@ -1,7 +1,6 @@
-import { formatMeasurement } from "@/lib/core/numbers";
 import type { ScaleReading, ViewType } from "@/components/download/types";
 
-export function downloadScaleReadingsCSV(readings: ScaleReading[], viewType: ViewType, useMetric: boolean) {
+export function downloadScaleReadingsCSV(readings: ScaleReading[], viewType: ViewType) {
   let headers: string[];
 
   if (viewType === "computed") {
@@ -10,50 +9,26 @@ export function downloadScaleReadingsCSV(readings: ScaleReading[], viewType: Vie
     headers = ["Date", "Time", "Weight", "Body Fat %"];
   }
 
+  // Export machine-readable decimals regardless of the browser's display locale.
+  // Readings have already been converted to the selected weight unit.
+  const formatValue = (value: number | null | undefined, scale = 1) => (value == null ? "" : (value * scale).toFixed(1));
   const rows = readings.map((reading) => {
     const dateStr = reading.date.toString();
-    const weightStr =
-      reading.weight !== undefined
-        ? formatMeasurement(reading.weight, {
-            type: "weight",
-            metric: useMetric,
-            units: false,
-          })
-        : "";
-    const fatStr =
-      reading.fatRatio !== undefined && reading.fatRatio !== null
-        ? formatMeasurement(reading.fatRatio, {
-            type: "fatpercent",
-            metric: useMetric,
-            units: false,
-          })
-        : "";
+    const weightStr = formatValue(reading.weight);
+    const fatStr = formatValue(reading.fatRatio, 100);
 
     if (viewType === "computed") {
       return [
         dateStr,
         weightStr,
         reading.weightIsInterpolated ? "Yes" : "No",
-        reading.trend
-          ? formatMeasurement(reading.trend, {
-              type: "weight",
-              metric: useMetric,
-              units: false,
-            })
-          : "",
+        formatValue(reading.trend),
         fatStr,
         reading.fatIsInterpolated ? "Yes" : "No",
-        reading.fatTrend !== undefined && reading.fatTrend !== null
-          ? formatMeasurement(reading.fatTrend, {
-              type: "fatpercent",
-              metric: useMetric,
-              units: false,
-            })
-          : "",
+        formatValue(reading.fatTrend, 100),
       ];
-    } else {
-      return [dateStr, reading.time || "", weightStr, fatStr];
     }
+    return [dateStr, reading.time || "", weightStr, fatStr];
   });
 
   const csvContent = [headers, ...rows].map((row) => row.join(",")).join("\n");
