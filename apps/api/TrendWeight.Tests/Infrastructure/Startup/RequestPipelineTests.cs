@@ -248,6 +248,39 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         }
     }
 
+    [Theory]
+    [InlineData("{\"weight\":\"heavy\"}")]
+    [InlineData("not json")]
+    [InlineData("")]
+    public async Task ApiV1BindingFailures_UseTheDocumentedErrorShape(string body)
+    {
+        using var client = _factory.CreateHttpsClient();
+        client.DefaultRequestHeaders.Add("X-Api-Key", StartupTestFactory.ApiKey);
+        using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+
+        using var response = await client.PutAsync("/api/v1/measurements/manual/2024-01-01", content, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using var document = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        document.RootElement.GetProperty("error").GetString().Should().NotBeNullOrWhiteSpace();
+        document.RootElement.TryGetProperty("title", out _).Should().BeFalse();
+        document.RootElement.TryGetProperty("status", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task InternalBindingFailures_KeepTheFrameworkProblemDetails()
+    {
+        using var client = _factory.CreateHttpsClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-clerk-jwt");
+        using var content = new StringContent("{\"weight\":\"heavy\"}", System.Text.Encoding.UTF8, "application/json");
+
+        using var response = await client.PutAsync("/api/measurements/manual/2024-01-01", content, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using var document = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        document.RootElement.TryGetProperty("title", out _).Should().BeTrue();
+    }
+
     [Fact]
     public async Task ApiKeyHeader_WorksOnlyOnExternalEndpoints()
     {

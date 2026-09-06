@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
+using TrendWeight.Features.ApiV1;
 using TrendWeight.Features.Common.Models;
 using TrendWeight.Features.Measurements.Manual;
 using TrendWeight.Infrastructure.Extensions;
@@ -33,7 +34,9 @@ builder.Services.AddControllers()
         // Ensure DateTime values are serialized with timezone info (as UTC)
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         options.JsonSerializerOptions.WriteIndented = false;
-    });
+    })
+    // The public v1 API documents { error } for 400s, including binding failures
+    .ConfigureApiBehaviorOptions(V1InvalidModelStateResponse.Configure);
 builder.Services.AddEndpointsApiExplorer();
 
 // OpenAPI documents served by Scalar: the public v1 API reference (API-key endpoints
