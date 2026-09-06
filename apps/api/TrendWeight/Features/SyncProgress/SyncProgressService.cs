@@ -136,13 +136,6 @@ public class SyncProgressService : ISyncProgressReporter, IDisposable
 
         try
         {
-            // Validate that progressId is a valid GUID to prevent injection
-            if (!Guid.TryParse(_currentMessage.Id.ToString(), out _))
-            {
-                _logger.LogError("Invalid progress ID format: {ProgressId}", _currentMessage.Id);
-                return Task.CompletedTask;
-            }
-
             // Use simple progressId-based topic (no user ID needed since progress data isn't sensitive)
             var topic = $"sync-progress:{_currentMessage.Id}";
             const string eventName = "progress_update";
