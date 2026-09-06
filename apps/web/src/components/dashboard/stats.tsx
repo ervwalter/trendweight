@@ -94,9 +94,9 @@ const calculateDuration = (start: LocalDate, end: LocalDate) => {
   const months = period.years() * 12 + period.months();
   const years = period.years();
   let duration;
-  if (years > 1) {
+  if (years >= 2) {
     duration = `${years} years`;
-  } else if (months > 12) {
+  } else if (months >= 2) {
     duration = `${months} months`;
   } else if (days > 7) {
     duration = `${weeks} weeks`;

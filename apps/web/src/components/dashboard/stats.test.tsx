@@ -128,7 +128,18 @@ describe("Stats", () => {
 
       render(<Stats />);
 
-      expect(screen.getByText(/30 weeks/)).toBeInTheDocument();
+      expect(screen.getByText(/7 months/)).toBeInTheDocument();
+    });
+
+    it("keeps counting in months until two full years have passed", () => {
+      mockUseDashboardData.mockReturnValue({
+        ...defaultMockData,
+        measurements: [createMeasurement("2022-06-01", 180), createMeasurement("2024-01-01", 150)],
+      } as any);
+
+      render(<Stats />);
+
+      expect(screen.getByText(/19 months/)).toBeInTheDocument();
     });
 
     it("displays duration in years for very long periods", () => {
