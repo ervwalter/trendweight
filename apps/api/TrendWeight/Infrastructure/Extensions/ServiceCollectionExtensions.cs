@@ -24,11 +24,11 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Configure app options (will be used by authentication handler)
-        services.Configure<AppOptions>(configuration);
+        // AppOptions (Clerk authority etc.) is bound once, in AddTrendWeightServices.
 
-        // Add Clerk services
-        services.AddHttpClient<ClerkTokenService>();
+        // Add Clerk services. The token service is a singleton that creates its own
+        // client from IHttpClientFactory.
+        services.AddHttpClient();
         services.AddSingleton<IClerkTokenService, ClerkTokenService>();
         services.AddScoped<IUserAccountMappingService, UserAccountMappingService>();
 
@@ -60,9 +60,10 @@ public static class ServiceCollectionExtensions
         // Register Supabase services
         services.AddSingleton<ISupabaseService, SupabaseService>();
 
-        // Register Clerk services
-        services.AddHttpClient<ClerkService>();
-        services.AddSingleton<IClerkService, ClerkService>();
+        // Register the Clerk management API client as a typed client, so its
+        // HttpClient comes from the factory (rotating handlers) per resolution
+        // instead of one transient client being captured for the process lifetime.
+        services.AddHttpClient<IClerkService, ClerkService>();
 
         // Register feature services
         services.AddScoped<IProfileService, ProfileService>();

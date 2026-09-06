@@ -14,7 +14,11 @@ public class ClerkService : IClerkService
     {
         _httpClient = httpClient;
         _logger = logger;
-        _secretKey = appOptions.Value.Clerk?.SecretKey ?? throw new InvalidOperationException("Clerk:SecretKey is not configured");
+        _secretKey = appOptions.Value.Clerk.SecretKey;
+        if (string.IsNullOrEmpty(_secretKey))
+        {
+            throw new InvalidOperationException("Clerk:SecretKey is not configured");
+        }
 
         // Configure the HttpClient with base URL and auth header
         _httpClient.BaseAddress = new Uri("https://api.clerk.com/v1/");

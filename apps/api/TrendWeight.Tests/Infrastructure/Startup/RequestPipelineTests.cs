@@ -17,6 +17,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Infrastructure.Auth;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Infrastructure.Services;
 
 namespace TrendWeight.Tests.Infrastructure.Startup;
 
@@ -173,6 +174,22 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
             await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         document.RootElement.GetProperty("servers")[0].GetProperty("url").GetString()
             .Should().Be("https://canonical.example");
+    }
+
+    [Fact]
+    public void ClerkClients_ResolveFromTheContainer()
+    {
+        // The token service builds its client from the factory; the management
+        // client is a typed client, so each resolution gets a factory-managed handler.
+        using var scope = _factory.Services.CreateScope();
+
+        var tokens = scope.ServiceProvider.GetRequiredService<IClerkTokenService>();
+        var first = scope.ServiceProvider.GetRequiredService<IClerkService>();
+        var second = scope.ServiceProvider.GetRequiredService<IClerkService>();
+
+        tokens.Should().NotBeNull();
+        first.Should().BeOfType<ClerkService>();
+        second.Should().NotBeSameAs(first);
     }
 
     [Theory]
