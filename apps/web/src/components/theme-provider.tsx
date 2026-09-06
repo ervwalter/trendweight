@@ -9,13 +9,13 @@ type ThemeProviderProps = {
 
 export function ThemeProvider({ children, defaultTheme = "light", storageKey = "trendweight-theme", ...props }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = window.localStorage.getItem(storageKey) as Theme;
-    // Validate stored value is either "light" or "dark"
-    if (stored === "light" || stored === "dark") {
-      return stored;
+    try {
+      const stored = window.localStorage.getItem(storageKey);
+      if (stored === "light" || stored === "dark") return stored;
+      window.localStorage.setItem(storageKey, defaultTheme);
+    } catch {
+      // Storage may be blocked in embedded pages or by browser privacy settings.
     }
-    // If invalid or not present, use default and save it
-    window.localStorage.setItem(storageKey, defaultTheme);
     return defaultTheme;
   });
 
@@ -43,7 +43,11 @@ export function ThemeProvider({ children, defaultTheme = "light", storageKey = "
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      window.localStorage.setItem(storageKey, theme);
+      try {
+        window.localStorage.setItem(storageKey, theme);
+      } catch {
+        // The theme still works for this page when persistence is unavailable.
+      }
       setTheme(theme);
     },
   };

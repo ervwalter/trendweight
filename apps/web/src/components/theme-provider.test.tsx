@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider } from "./theme-provider";
@@ -23,7 +23,26 @@ describe("ThemeProvider", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     document.documentElement.className = "";
+  });
+
+  it("renders and changes theme even when browser storage is blocked", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("Blocked", "SecurityError");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Blocked", "SecurityError");
+    });
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <TestComponent />
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("light");
+    await user.click(screen.getByText("Set Dark"));
+    expect(screen.getByTestId("current-theme")).toHaveTextContent("dark");
   });
 
   it("provides theme context to children", () => {
