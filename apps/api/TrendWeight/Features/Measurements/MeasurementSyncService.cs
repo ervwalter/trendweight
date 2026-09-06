@@ -266,32 +266,32 @@ public class MeasurementSyncService : IMeasurementSyncService
         }
     }
 
-    public async Task<ProviderSyncResult> ClearProviderDataAsync(
+    public async Task<ProviderSyncResult> RequestFullSyncAsync(
         Guid userId,
         string provider)
     {
         try
         {
-            // Clear existing source data for this provider
-            await _sourceDataService.ClearSourceDataAsync(userId, provider);
-            _logger.LogInformation("Cleared source data for {Provider} for user {UserId}", provider, userId);
+            // Keep the last successful readings available while the next full fetch runs.
+            await _sourceDataService.RequestFullSyncAsync(userId, provider);
+            _logger.LogInformation("Requested full sync for {Provider} for user {UserId}", provider, userId);
 
             return new ProviderSyncResult
             {
                 Provider = provider,
                 Success = true,
-                Message = $"Successfully cleared {provider} data"
+                Message = $"Full sync requested for {provider}"
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error clearing {Provider} data", provider);
+            _logger.LogError(ex, "Error requesting full sync for {Provider}", provider);
             return new ProviderSyncResult
             {
                 Provider = provider,
                 Success = false,
                 Error = ProviderSyncError.Unknown,
-                Message = $"Unexpected error clearing {provider} data"
+                Message = $"Unexpected error requesting full sync for {provider}"
             };
         }
     }

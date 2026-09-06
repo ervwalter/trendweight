@@ -266,6 +266,22 @@ public class SourceDataService : ISourceDataService
     }
 
     /// <inheritdoc />
+    public async Task RequestFullSyncAsync(Guid userId, string provider)
+    {
+        var rows = await _supabaseService.QueryAsync<DbSourceData>(query =>
+            query.Where(data => data.Uid == userId && data.Provider == provider));
+        var sourceData = rows.FirstOrDefault();
+        if (sourceData != null)
+        {
+            sourceData.ForceFullSync = true;
+            sourceData.UpdatedAt = DateTime.UtcNow.ToString("o");
+            await _supabaseService.UpdateAsync(sourceData);
+        }
+
+        ClearCache(userId, provider);
+    }
+
+    /// <inheritdoc />
     public async Task ClearSourceDataAsync(Guid userId, string? provider = null)
     {
         try

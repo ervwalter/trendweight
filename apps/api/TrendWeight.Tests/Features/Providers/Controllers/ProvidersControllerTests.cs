@@ -588,7 +588,7 @@ public class ProvidersControllerTests : TestBase
     [Fact]
     public async Task ClearProviderData_ForFitbitWhenDisabled_Returns503WithoutClearing()
     {
-        // Arrange - cleared Fitbit data could never be re-synced once the kill-switch is off
+        // Arrange - disabled Fitbit syncing cannot fulfill a refresh request.
         var userId = Guid.NewGuid();
         _fitbitConfig.Enabled = false;
         SetupAuthenticatedUser(userId.ToString());
@@ -599,7 +599,7 @@ public class ProvidersControllerTests : TestBase
         // Assert
         var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
         statusResult.StatusCode.Should().Be(503);
-        _measurementSyncServiceMock.Verify(x => x.ClearProviderDataAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+        _measurementSyncServiceMock.Verify(x => x.RequestFullSyncAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -615,7 +615,7 @@ public class ProvidersControllerTests : TestBase
         SetupAuthenticatedUser(userId.ToString());
         _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, provider))
             .ReturnsAsync(existingLink);
-        _measurementSyncServiceMock.Setup(x => x.ClearProviderDataAsync(userId, provider))
+        _measurementSyncServiceMock.Setup(x => x.RequestFullSyncAsync(userId, provider))
             .ReturnsAsync(new ProviderSyncResult { Provider = provider, Success = true });
 
         // Act
@@ -627,8 +627,8 @@ public class ProvidersControllerTests : TestBase
         var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
 
         response.Message.Should().Contain(provider);
-        response.Message.Should().MatchRegex("(cleared|clear).*successfully", "message should indicate successful clear");
-        // Clear logic is now handled internally by MeasurementSyncService
+        response.Message.Should().Be($"{provider} full sync requested");
+        _measurementSyncServiceMock.Verify(x => x.RequestFullSyncAsync(userId, provider), Times.Once);
     }
 
     [Theory]
@@ -683,8 +683,8 @@ public class ProvidersControllerTests : TestBase
         SetupAuthenticatedUser(userId.ToString());
         _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, provider))
             .ReturnsAsync(existingLink);
-        _measurementSyncServiceMock.Setup(x => x.ClearProviderDataAsync(userId, provider))
-            .ReturnsAsync(new ProviderSyncResult { Provider = provider, Success = false, Message = "Failed to clear withings data" });
+        _measurementSyncServiceMock.Setup(x => x.RequestFullSyncAsync(userId, provider))
+            .ReturnsAsync(new ProviderSyncResult { Provider = provider, Success = false, Message = "Failed to request full sync for withings" });
 
         // Act
         var result = await _sut.ClearProviderData(provider);

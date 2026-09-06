@@ -186,9 +186,9 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
-    /// Clears data for a specific provider (will trigger resync on next dashboard load)
+    /// Requests a full refresh on the next dashboard load, preserving existing readings
     /// </summary>
-    /// <param name="provider">The provider to clear data for (withings, fitbit)</param>
+    /// <param name="provider">The provider to refresh (withings, fitbit)</param>
     /// <returns>Success or error response</returns>
     [HttpPost("{provider}/clear-data")]
     public async Task<ActionResult<ProviderOperationResponse>> ClearProviderData(string provider)
@@ -202,11 +202,10 @@ public class ProvidersController : ControllerBase
                 return BadRequest(new ErrorResponse { Error = "Invalid provider. Must be 'withings' or 'fitbit'" });
             }
 
-            // When Fitbit is disabled, cleared data could never be re-synced - refuse
-            // rather than permanently destroy the user's history
+            // A disabled provider cannot fulfill a queued refresh.
             if (provider == "fitbit" && !_fitbitConfig.Enabled)
             {
-                return StatusCode(503, new ErrorResponse { Error = "Fitbit syncing has ended, so cleared Fitbit data could not be re-synced. Resync is unavailable." });
+                return StatusCode(503, new ErrorResponse { Error = "Fitbit syncing has ended. Resync is unavailable." });
             }
 
             // Get user ID from authenticated user claim
@@ -224,22 +223,22 @@ public class ProvidersController : ControllerBase
                 return NotFound(new ErrorResponse { Error = $"No {provider} connection found" });
             }
 
-            // Clear the provider data
-            var result = await _measurementSyncService.ClearProviderDataAsync(userGuid, provider);
+            // The legacy URL is retained; resync queues a full fetch without clearing history.
+            var result = await _measurementSyncService.RequestFullSyncAsync(userGuid, provider);
 
             if (result.Success)
             {
-                return Ok(new ProviderOperationResponse { Message = $"{provider} data cleared successfully" });
+                return Ok(new ProviderOperationResponse { Message = $"{provider} full sync requested" });
             }
             else
             {
-                _logger.LogError("Failed to clear {Provider} data for user {UserId}: {Error}", provider, userId, result.Message);
-                return StatusCode(500, new ErrorResponse { Error = result.Message ?? $"Failed to clear {provider} data" });
+                _logger.LogError("Failed to request full sync for {Provider} for user {UserId}: {Error}", provider, userId, result.Message);
+                return StatusCode(500, new ErrorResponse { Error = result.Message ?? $"Failed to request full sync for {provider}" });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error clearing data for provider {Provider} for user", provider);
+            _logger.LogError(ex, "Error requesting full sync for provider {Provider} for user", provider);
             return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
         }
     }

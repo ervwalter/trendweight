@@ -115,7 +115,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
           <div className="flex items-center space-x-2 self-end @sm:self-auto">
             {isConnected ? (
               <>
-                {/* Resync clears data before re-syncing; with syncing shut off it would permanently destroy history */}
+                {/* A disabled provider cannot fulfill a queued refresh */}
                 {!isShutOff && (
                   <Button
                     type="button"
@@ -194,7 +194,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
             </p>
             {isConnected ? (
               <div className="flex flex-col gap-2 @sm:flex-row">
-                {/* Resync clears data before re-syncing; with syncing shut off it would permanently destroy history */}
+                {/* A disabled provider cannot fulfill a queued refresh */}
                 {!isShutOff && (
                   <Button
                     onClick={() => {

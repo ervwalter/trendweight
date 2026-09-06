@@ -1,3 +1,7 @@
+using Supabase.Interfaces;
+using Supabase.Realtime;
+using TrendWeight.Infrastructure.DataAccess;
+using TrendWeight.Infrastructure.DataAccess.Models;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
@@ -706,29 +710,79 @@ public class MeasurementSyncServiceTests : TestBase
 
     #endregion
 
-    #region ClearProviderDataAsync Tests
+    #region RequestFullSyncAsync Tests
 
     [Fact]
-    public async Task ClearProviderDataAsync_DeletesOnlyRequestedProviderData()
+    public async Task RequestFullSyncAsync_QueuesOnlyRequestedProvider()
     {
         var userId = Guid.NewGuid();
 
-        var result = await _sut.ClearProviderDataAsync(userId, "withings");
+        var result = await _sut.RequestFullSyncAsync(userId, "withings");
 
         result.Success.Should().BeTrue();
         result.Provider.Should().Be("withings");
-        _sourceDataServiceMock.Verify(x => x.ClearSourceDataAsync(userId, "withings"), Times.Once);
+        _sourceDataServiceMock.Verify(x => x.RequestFullSyncAsync(userId, "withings"), Times.Once);
         _providerIntegrationServiceMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task ClearProviderDataAsync_DatabaseFailureReturnsFailure()
+    public async Task RequestedResync_ThenFailedProviderFetch_RetainsReadingsAndLastSync()
     {
         var userId = Guid.NewGuid();
-        _sourceDataServiceMock.Setup(x => x.ClearSourceDataAsync(userId, "withings"))
+        var lastSync = DateTime.UtcNow.ToString("o");
+        var readings = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-01", 80m) };
+        var cachedRow = new DbSourceData
+        {
+            Uid = userId,
+            Provider = "withings",
+            LastSync = lastSync,
+            Measurements = readings
+        };
+        var storedRow = new DbSourceData
+        {
+            Uid = userId,
+            Provider = "withings",
+            LastSync = lastSync,
+            Measurements = readings
+        };
+        var database = new Mock<ISupabaseService>();
+        database.SetupSequence(x => x.QueryAsync<DbSourceData>(
+                It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
+            .ReturnsAsync(new List<DbSourceData> { cachedRow })
+            .ReturnsAsync(new List<DbSourceData> { storedRow })
+            .ReturnsAsync(new List<DbSourceData> { storedRow });
+        var sourceData = new SourceDataService(database.Object, Mock.Of<ILogger<SourceDataService>>());
+        var sync = new MeasurementSyncService(_providerIntegrationServiceMock.Object, sourceData,
+            _loggerMock.Object, _environmentMock.Object, Mock.Of<ISyncProgressReporter>());
+        var provider = new Mock<IProviderService>();
+        provider.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
+            .ReturnsAsync(new ProviderSyncResult { Provider = "withings", Success = false });
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings")).Returns(provider.Object);
+        await sourceData.GetLastSyncTimeAsync(userId, "withings"); // Prime the request-scoped cache.
+
+        var queued = await sync.RequestFullSyncAsync(userId, "withings");
+        var result = await sync.GetMeasurementsForUserAsync(userId, new() { "withings" }, true);
+
+        queued.Success.Should().BeTrue();
+        result.ProviderStatus["withings"].Success.Should().BeFalse();
+        result.Data.Single().Measurements.Should().BeEquivalentTo(readings);
+        storedRow.LastSync.Should().Be(lastSync);
+        storedRow.ForceFullSync.Should().BeTrue("failed refreshes must remain retryable");
+        database.Verify(x => x.UpdateAsync(It.Is<DbSourceData>(row =>
+            row.Measurements == readings && row.LastSync == lastSync && row.ForceFullSync)), Times.Once);
+        database.Verify(x => x.QueryAsync<DbSourceData>(
+            It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()), Times.Exactly(3));
+        provider.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once);
+    }
+
+    [Fact]
+    public async Task RequestFullSyncAsync_DatabaseFailureReturnsFailure()
+    {
+        var userId = Guid.NewGuid();
+        _sourceDataServiceMock.Setup(x => x.RequestFullSyncAsync(userId, "withings"))
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
-        var result = await _sut.ClearProviderDataAsync(userId, "withings");
+        var result = await _sut.RequestFullSyncAsync(userId, "withings");
 
         result.Success.Should().BeFalse();
         result.Error.Should().Be(ProviderSyncError.Unknown);

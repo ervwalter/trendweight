@@ -609,6 +609,20 @@ public class SourceDataServiceTests : TestBase
 
     #endregion
 
+    [Fact]
+    public async Task RequestFullSyncAsync_WithoutSourceRow_DoesNotCreateEmptyDocument()
+    {
+        var userId = Guid.NewGuid();
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(
+            It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
+            .ReturnsAsync(new List<DbSourceData>());
+
+        await _sut.RequestFullSyncAsync(userId, "withings");
+
+        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbSourceData>()), Times.Never);
+        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<DbSourceData>()), Times.Never);
+    }
+
     #region ClearSourceDataAsync Tests
 
     [Fact]

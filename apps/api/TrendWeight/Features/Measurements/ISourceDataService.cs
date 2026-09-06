@@ -52,6 +52,12 @@ public interface ISourceDataService
     Task ClearSourceDataAsync(Guid userId, string? provider = null);
 
     /// <summary>
+    /// Marks existing source data for a full refresh without clearing measurements.
+    /// An absent source row already triggers a full fetch on the next sync.
+    /// </summary>
+    Task RequestFullSyncAsync(Guid userId, string provider);
+
+    /// <summary>
     /// Deletes source data for a user
     /// </summary>
     /// <param name="userId">User's Supabase UID</param>
