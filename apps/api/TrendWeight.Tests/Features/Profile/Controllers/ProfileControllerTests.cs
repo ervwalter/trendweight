@@ -411,8 +411,30 @@ public class ProfileControllerTests
             It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
     }
 
+    [Fact]
+    public async Task UpdateProfile_WithZeroGoalWeight_StoresItAsUnset()
+    {
+        // Regression: accounts migrated before unset goals were kept as null carry a zero
+        // goal weight, and the settings form submits it unchanged with every save.
+        var userId = Guid.NewGuid();
+        var updatedProfile = CreateTestProfile(userId);
+        updatedProfile.Profile.GoalWeight = null;
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId, "test@example.com",
+                It.Is<UpdateProfileRequest>(r => r.GoalWeight == null && r.FirstName == "Renamed")))
+            .ReturnsAsync(updatedProfile);
+
+        var result = await _sut.UpdateProfile(new UpdateProfileRequest { FirstName = "Renamed", GoalWeight = 0 });
+
+        result.Result.Should().BeOfType<OkObjectResult>()
+            .Which.Value.Should().BeOfType<ProfileResponse>()
+            .Which.User.GoalWeight.Should().BeNull();
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(userId, "test@example.com",
+            It.Is<UpdateProfileRequest>(r => r.GoalWeight == null)), Times.Once);
+    }
+
     [Theory]
-    [InlineData(0)]
+    [InlineData(-0.5)]
     [InlineData(-70)]
     [InlineData(1500)]
     [InlineData(1_000_000)]

@@ -406,17 +406,17 @@ describe("Settings", () => {
     expect(mockNavigationGuard).toHaveBeenCalledWith(true);
   });
 
-  it("should not convert zero values when toggling units", async () => {
+  it("shows a zero goal weight as no goal and keeps a zero plan when toggling units", async () => {
     const user = userEvent.setup();
 
-    // Set goal weight to 0
+    // Older migrated profiles store 0 for "no goal"; 0 is a real "maintain" plan.
     mockProfileData.goalWeight = 0;
     mockProfileData.plannedPoundsPerWeek = 0;
 
     render(<Settings />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(0);
+      expect(screen.getByTestId("goal-weight")).toHaveValue(null);
       expect(screen.getByTestId("planned-rate")).toHaveValue(0);
     });
 
@@ -424,10 +424,16 @@ describe("Settings", () => {
     const metricCheckbox = screen.getByTestId("use-metric");
     await user.click(metricCheckbox);
 
-    // Values should remain 0
+    // The empty goal stays empty and the plan stays 0
     await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(0);
+      expect(screen.getByTestId("goal-weight")).toHaveValue(null);
       expect(screen.getByTestId("planned-rate")).toHaveValue(0);
+    });
+
+    // Saving submits the goal as unset rather than 0
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ goalWeight: undefined }));
     });
 
     // Reset for other tests

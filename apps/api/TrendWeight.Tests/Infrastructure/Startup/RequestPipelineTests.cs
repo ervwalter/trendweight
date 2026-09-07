@@ -143,6 +143,21 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
     }
 
     [Fact]
+    public async Task Settings_TreatsZeroGoalWeightAsUnset()
+    {
+        // Profiles migrated before unset goals were preserved as null store a zero goal weight.
+        using var factory = SettingsFactory(new ProfileData { GoalWeight = 0, PlannedPoundsPerWeek = 0 });
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", StartupTestFactory.ApiKey);
+        using var response = await client.GetAsync("/api/v1/settings", TestContext.Current.CancellationToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var document = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var settings = document.RootElement;
+        settings.TryGetProperty("goalWeight", out _).Should().BeFalse("a zero goal weight means no goal");
+        settings.GetProperty("plannedWeightChangePerWeek").GetDecimal().Should().Be(0, "zero weekly change is a real 'maintain' plan");
+    }
+
+    [Fact]
     public async Task Settings_ProfileRemovedAfterAuthentication_ReturnsNotFound()
     {
         using var factory = SettingsFactory(null);

@@ -23,10 +23,12 @@ import { SharingSection } from "./sharing-section";
 // react-hook-form's isDirty deep-compare doesn't see phantom differences: an empty date
 // input reads "" (never undefined), and an empty valueAsNumber input reads NaN. The
 // submit handler maps these back ("" / NaN -> undefined) before calling the API.
+// A zero goal weight means "no goal" (older migrated profiles store it that way), so
+// it is shown as an empty input rather than a literal 0.
 const toFormValues = (data: ProfileData): ProfileData => ({
   ...data,
   goalStart: data.goalStart ?? "",
-  goalWeight: data.goalWeight ?? NaN,
+  goalWeight: data.goalWeight || NaN,
 });
 
 export function Settings() {

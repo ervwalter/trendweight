@@ -34,7 +34,8 @@ public class V1SettingsController(IProfileService profileService) : BaseApiV1Con
         return Ok(new V1Settings
         {
             GoalStart = profile.GoalStart?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            GoalWeight = profile.GoalWeight,
+            // Profiles migrated before unset goals were preserved as null carry a zero; treat it as unset.
+            GoalWeight = profile.GoalWeight > 0 ? profile.GoalWeight : null,
             PlannedWeightChangePerWeek = profile.PlannedPoundsPerWeek,
             UseMetric = profile.UseMetric,
             DayStartOffset = profile.DayStartOffset ?? 0,

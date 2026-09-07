@@ -29,7 +29,8 @@ API-key hashes are stored in profile JSON and indexed by a database migration.
 `GET /api/v1/settings` returns only display and behavioral preferences for the key
 owner, without requiring sharing. Unlike measurement endpoints, its `goalWeight`
 and `plannedWeightChangePerWeek` use display units (`useMetric`: kilograms if true,
-pounds otherwise); negative weekly change means loss. Unset goals are omitted.
+pounds otherwise); negative weekly change means loss. Unset goals are omitted, and a
+zero goal weight is treated as unset (older migrated profiles store it that way).
 Settings are read-only through the public API and documented in the v1 OpenAPI schema.
 
 Sharing endpoints allow anonymous access only when the profile's sharing switch

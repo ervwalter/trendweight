@@ -113,6 +113,14 @@ public class ProfileController : BaseAuthController
             return BadRequest(new ErrorResponse { Error = validationError });
         }
 
+        // A zero goal weight means "no goal": the settings form submits whatever the
+        // profile holds, and accounts migrated before unset goals were kept as null
+        // still carry a zero. Store it as unset rather than rejecting the save.
+        if (request.GoalWeight == 0)
+        {
+            request.GoalWeight = null;
+        }
+
         var profile = await _profileService.UpdateOrCreateProfileAsync(userId, userEmail, request);
         return BuildProfileResponse(profile, isMe: true);
     }
@@ -218,7 +226,7 @@ public class ProfileController : BaseAuthController
             return false;
         }
 
-        if (request.GoalWeight is <= 0 or >= MaxGoalWeight)
+        if (request.GoalWeight is < 0 or >= MaxGoalWeight)
         {
             error = $"Goal weight must be between 0 and {MaxGoalWeight}";
             return false;
