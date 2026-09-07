@@ -251,6 +251,30 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
     }
 
     [Theory]
+    [InlineData("canonical.example", null)]
+    [InlineData("Canonical.EXAMPLE", null)]
+    [InlineData("canonical.example", 8080)]
+    [InlineData("other.example", 443)]
+    public async Task HostValidation_AcceptsListedHostsRegardlessOfCaseAndPort(string host, int? port)
+    {
+        // Set the host directly: HttpClient would lower-case it before it reaches the server.
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
+                new Dictionary<string, string?> { ["AllowedHosts"] = "canonical.example; other.example" })));
+
+        var response = await factory.Server.SendAsync(context =>
+        {
+            context.Request.Method = "GET";
+            context.Request.Scheme = "https";
+            context.Request.Host = port.HasValue ? new HostString(host, port.Value) : new HostString(host);
+            context.Request.Path = "/dashboard";
+        }, TestContext.Current.CancellationToken);
+
+        response.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
+        response.Response.ContentType.Should().Be("text/html");
+    }
+
+    [Theory]
     [InlineData("localhost")]
     [InlineData("10.0.0.7")]
     public async Task HealthCheck_IsExemptFromHostValidation(string probeHost)
@@ -419,6 +443,34 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         shell.StatusCode.Should().Be(HttpStatusCode.OK);
         using var health = await client.GetAsync("/api/health", ct);
         health.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task RejectedClerkTokens_AreChargedToTheAnonymousRateLimit()
+    {
+        // Internal endpoints use the default (Clerk) scheme, so UseAuthentication
+        // fails the token first and the policy evaluator re-challenges it; that
+        // path must still be charged by RateLimitedAuthorizationResultHandler.
+        using var factory = new StartupTestFactory();
+        using var client = factory.CreateHttpsClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "forged-clerk-jwt");
+        var ct = TestContext.Current.CancellationToken;
+        for (var i = 0; i < 60; i++)
+        {
+            using var rejected = await client.GetAsync("/api/measurements/manual", ct);
+            rejected.StatusCode.Should().Be(HttpStatusCode.Unauthorized, $"request {i} should be under the limit");
+        }
+
+        using var limited = await client.GetAsync("/api/measurements/manual", ct);
+
+        limited.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        limited.Headers.RetryAfter.Should().NotBeNull();
+        (await limited.Content.ReadAsStringAsync(ct)).Should().Contain("\"errorCode\":\"RATE_LIMITED\"");
+
+        // The forged tokens drained the same per-peer bucket anonymous sharing reads use.
+        using var anonymousClient = factory.CreateHttpsClient();
+        using var anonymousResponse = await anonymousClient.GetAsync("/api/profile/disabled-share", ct);
+        anonymousResponse.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
     }
 
     private static WebApplicationFactory<Program> IngressHeaderFactory(StartupTestFactory root) =>
@@ -641,6 +693,36 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
 
         response.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
         response.Response.Headers.Location.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("/u/12345/chart/weight.png")]
+    [InlineData("/U/legacy-user/CHART/trend.PNG")]
+    public async Task LegacyChartImages_RedirectPermanentlyToThePlaceholder(string path)
+    {
+        // Classic TrendWeight chart images were embedded on other sites.
+        using var client = _factory.CreateHttpsClient();
+
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.MovedPermanently);
+        response.Headers.Location!.OriginalString.Should().Be("/chart-not-available.png");
+    }
+
+    [Theory]
+    [InlineData("/u/12345", HttpStatusCode.OK)]
+    [InlineData("/u/12345/chart/weight.svg", HttpStatusCode.NotFound)]
+    [InlineData("/u/12345/profile/weight.png", HttpStatusCode.NotFound)]
+    public async Task OtherLegacyUserPaths_AreNotRedirected(string path, HttpStatusCode expected)
+    {
+        // Only chart PNGs are redirected; other file-like paths are unknown files
+        // (the fallback pattern excludes them) and extension-less ones get the shell.
+        using var client = _factory.CreateHttpsClient();
+
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(expected);
+        response.Headers.Location.Should().BeNull();
     }
 
     [Fact]
