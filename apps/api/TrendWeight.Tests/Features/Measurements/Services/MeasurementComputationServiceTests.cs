@@ -268,6 +268,39 @@ public class MeasurementComputationServiceTests
         result[1].Date.Should().Be("2024-01-03");
     }
 
+    [Fact]
+    public void ComputeMeasurements_WithHideDataBeforeStart_AppliesDayStartOffsetBeforeComparing()
+    {
+        // With a 4 AM day start, a 03:59 reading on the goal-start date still belongs to
+        // the previous day and must be hidden; 04:00 is the first reading of the new day
+        var goalStart = new DateTime(2024, 1, 2);
+        var profile = CreateTestProfile(dayStartOffset: 4, hideDataBeforeStart: true, goalStart: goalStart);
+        var sourceData = CreateTestSourceData(
+            ("2024-01-02", "03:59:00", 70.0m, null),
+            ("2024-01-02", "04:00:00", 71.0m, null),
+            ("2024-01-03", "08:00:00", 72.0m, null)
+        );
+
+        var result = _sut.ComputeMeasurements(sourceData, profile);
+
+        result.Select(m => m.Date).Should().Equal("2024-01-02", "2024-01-03");
+        result[0].ActualWeight.Should().Be(71.0m, "the 03:59 reading shifted to 2024-01-01 and was hidden");
+    }
+
+    [Fact]
+    public void ComputeMeasurements_WithHideDataBeforeStartButNoGoalStart_KeepsEverything()
+    {
+        var profile = CreateTestProfile(hideDataBeforeStart: true, goalStart: null);
+        var sourceData = CreateTestSourceData(
+            ("2024-01-01", "08:00:00", 70.0m, null),
+            ("2024-01-02", "08:00:00", 71.0m, null)
+        );
+
+        var result = _sut.ComputeMeasurements(sourceData, profile);
+
+        result.Select(m => m.Date).Should().Equal("2024-01-01", "2024-01-02");
+    }
+
     #endregion
 
     #region Grouping Tests

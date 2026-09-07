@@ -356,6 +356,38 @@ public class SourceDataServiceTests : TestBase
     }
 
     [Fact]
+    public async Task GetSourceDataAsync_SecondCallInSameRequest_IsServedFromCacheWithoutQuerying()
+    {
+        // The service is request-scoped; the sync service reads the same providers several
+        // times per request and only the first read may hit the database
+        var userId = Guid.NewGuid();
+        var lastSync = DateTime.UtcNow.AddHours(-1);
+        var dbData = new List<DbSourceData>
+        {
+            new()
+            {
+                Uid = userId,
+                Provider = "withings",
+                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-15", 70.5m) },
+                LastSync = lastSync.ToString("o"),
+                UpdatedAt = DateTime.UtcNow.ToString("o")
+            }
+        };
+        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
+            .ReturnsAsync(dbData);
+        var providers = new List<string> { "withings" };
+
+        var first = await _sut.GetSourceDataAsync(userId, providers);
+        var second = await _sut.GetSourceDataAsync(userId, providers);
+        var lastSyncTime = await _sut.GetLastSyncTimeAsync(userId, "withings");
+
+        _supabaseServiceMock.Verify(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()), Times.Once);
+        second.Should().BeEquivalentTo(first);
+        second![0].Measurements![0].Weight.Should().Be(70.5m);
+        lastSyncTime.Should().BeCloseTo(lastSync, TimeSpan.FromSeconds(1), "the last-sync lookup reuses the cached row");
+    }
+
+    [Fact]
     public async Task GetSourceDataAsync_WithNoData_ReturnsEmptyList()
     {
         // Arrange

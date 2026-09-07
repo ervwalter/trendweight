@@ -301,7 +301,11 @@ public class ProfileServiceTests : TestBase
         token.Should().NotBeNullOrEmpty();
         token.Should().HaveLength(25);
         token.Should().MatchRegex("^[0-9a-z]+$");
-        _supabaseServiceMock.Verify(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()), Times.AtLeastOnce);
+
+        // The collision forced exactly one retry: the first candidate was rejected and
+        // the second was accepted
+        callCount.Should().Be(2);
+        _supabaseServiceMock.Verify(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()), Times.Exactly(2));
     }
 
     [Fact]
