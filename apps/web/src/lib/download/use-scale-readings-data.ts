@@ -38,7 +38,7 @@ export function useScaleReadingsData(viewType: ViewType, sortNewestFirst: boolea
           date: LocalDate.parse(m.date),
           // Manual entries are date-only; their stored time is a placeholder
           time: viewType === "manual" ? undefined : m.time,
-          weight: m.weight ? m.weight * conversionFactor : undefined,
+          weight: m.weight != null ? m.weight * conversionFactor : undefined,
           fatRatio: m.fatRatio,
           provider: viewType,
         }));

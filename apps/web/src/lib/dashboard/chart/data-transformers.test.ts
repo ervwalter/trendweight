@@ -4,9 +4,11 @@ import { transformChartData } from "./data-transformers";
 import type { DataPoint } from "@/lib/core/interfaces";
 
 describe("data-transformers", () => {
+  // computeDataPoints leaves `actual` undefined for days without a reading despite the interface,
+  // so the fixture mirrors that instead of coercing null to 0 (which is a real reading)
   const createDataPoint = (date: LocalDate, actual: number | null, trend: number, isInterpolated = false, source = "test"): DataPoint => ({
     date,
-    actual: actual ?? 0, // Convert null to 0 for the interface
+    actual: (actual ?? undefined) as number,
     trend,
     isInterpolated,
     source,
@@ -69,6 +71,47 @@ describe("data-transformers", () => {
       expect(result.actualData).toEqual([
         [1704067200000, null],
         [1704153600000, 179.5],
+      ]);
+    });
+
+    it("should keep zero readings instead of treating them as missing", () => {
+      const dataWithZeros = [
+        createDataPoint(LocalDate.of(2024, 1, 1), 0, 0.01, false),
+        createDataPoint(LocalDate.of(2024, 1, 2), 0, 0.005, true), // interpolated zero
+      ];
+
+      const result = transformChartData(dataWithZeros, "fatpercent", 0);
+
+      expect(result.actualData).toEqual([
+        [1704067200000, 0],
+        [1704153600000, null],
+      ]);
+      expect(result.interpolatedData).toEqual([
+        [1704067200000, null],
+        [1704153600000, 0],
+      ]);
+      expect(result.actualSinkersData).toEqual([
+        [1704067200000, 0, 1, null],
+        [1704153600000, null, null, null],
+      ]);
+      expect(result.interpolatedSinkersData).toEqual([
+        [1704067200000, null, null, null],
+        [1704153600000, 0, 0.5, null],
+      ]);
+    });
+
+    it("should apply the multiplier to projections and sinkers in fatpercent mode", () => {
+      const fatPercentData = [createDataPoint(LocalDate.of(2024, 1, 1), 0.25, 0.26, false), createDataPoint(LocalDate.of(2024, 1, 2), 0.24, 0.255, false)];
+
+      const result = transformChartData(fatPercentData, "fatpercent", 0.001);
+
+      expect(result.projectionsData).toEqual([
+        [1704153600000, 25.5],
+        [1704672000000, expect.closeTo((0.255 + 0.006) * 100, 10)], // 6 days later, slope applied before scaling
+      ]);
+      expect(result.actualSinkersData).toEqual([
+        [1704067200000, 25, 26, null],
+        [1704153600000, 24, 25.5, null],
       ]);
     });
 

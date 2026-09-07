@@ -19,11 +19,14 @@ export function transformChartData(dataPoints: DashboardData["dataPoints"], mode
   // Convert to percentage for fat percent mode
   const multiplier = mode === "fatpercent" ? 100 : 1;
 
-  const actualData: [number, number | null][] = dataPoints.map((m) => [toEpoch(m.date), m.isInterpolated ? null : m.actual ? m.actual * multiplier : null]);
+  const actualData: [number, number | null][] = dataPoints.map((m) => [
+    toEpoch(m.date),
+    m.isInterpolated ? null : m.actual != null ? m.actual * multiplier : null,
+  ]);
 
   const interpolatedData: [number, number | null][] = dataPoints.map((m) => [
     toEpoch(m.date),
-    m.isInterpolated ? (m.actual ? m.actual * multiplier : null) : null,
+    m.isInterpolated ? (m.actual != null ? m.actual * multiplier : null) : null,
   ]);
 
   const trendData: [number, number][] = dataPoints.map((m) => [toEpoch(m.date), m.trend * multiplier]);
@@ -35,14 +38,14 @@ export function transformChartData(dataPoints: DashboardData["dataPoints"], mode
 
   const actualSinkersData: [number, number | null, number | null, null][] = dataPoints.map((m) => [
     toEpoch(m.date),
-    m.isInterpolated ? null : m.actual ? m.actual * multiplier : null,
+    m.isInterpolated ? null : m.actual != null ? m.actual * multiplier : null,
     m.isInterpolated ? null : m.trend * multiplier,
     null,
   ]);
 
   const interpolatedSinkersData: [number, number | null, number | null, null][] = dataPoints.map((m) => [
     toEpoch(m.date),
-    m.isInterpolated ? (m.actual ? m.actual * multiplier : null) : null,
+    m.isInterpolated ? (m.actual != null ? m.actual * multiplier : null) : null,
     m.isInterpolated ? m.trend * multiplier : null,
     null,
   ]);

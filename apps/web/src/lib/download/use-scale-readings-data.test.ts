@@ -262,6 +262,32 @@ describe("useScaleReadingsData", () => {
       expect(result.current.readings).toHaveLength(1);
       expect(result.current.readings[0].weight).toBeUndefined();
     });
+
+    it("should keep a zero weight instead of dropping it", () => {
+      const dataWithZeroWeight = {
+        sourceData: [
+          {
+            source: "withings",
+            lastUpdate: "2024-01-15T10:00:00Z",
+            measurements: [
+              {
+                date: "2024-01-15",
+                time: "08:30:00",
+                weight: 0,
+                fatRatio: 0,
+              },
+            ],
+          },
+        ],
+      };
+
+      vi.mocked(useDownloadData).mockReturnValue(dataWithZeroWeight as any);
+
+      const { result } = renderHook(() => useScaleReadingsData("withings", false));
+
+      expect(result.current.readings[0].weight).toBe(0);
+      expect(result.current.readings[0].fatRatio).toBe(0);
+    });
   });
 
   describe("sorting edge cases", () => {
