@@ -27,30 +27,46 @@ export async function runRelease(
   await (await load()).createPullRequests();
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
+const FAILURE_MESSAGE =
+  "Release Please failed. Check configuration and preceding Release Please diagnostics.";
+
+/**
+ * CLI entry. Returns the process exit code instead of setting it so the
+ * argument, environment and error handling can be exercised in tests.
+ */
+export async function main(
+  argv,
+  env,
+  {
+    createGitHub = GitHub.create,
+    run = runRelease,
+    stdout = console.log,
+    stderr = console.error,
+  } = {},
 ) {
   try {
-    const args = process.argv.slice(2);
-    if (args.some((arg) => arg !== "--dry-run"))
+    if (argv.some((arg) => arg !== "--dry-run"))
       throw new Error("Unsupported argument");
-    const token = process.env.RELEASE_PLEASE_TOKEN;
-    const repository = process.env.GITHUB_REPOSITORY;
+    const token = env.RELEASE_PLEASE_TOKEN;
+    const repository = env.GITHUB_REPOSITORY;
     if (!token?.trim() || !/^[\w.-]+\/[\w.-]+$/.test(repository ?? "")) {
       throw new Error("Missing release configuration");
     }
     const [owner, repo] = repository.split("/");
-    const github = await GitHub.create({ owner, repo, token });
-    const result = await runRelease(github, {
-      dryRun: args.includes("--dry-run"),
-    });
-    if (result) console.log(JSON.stringify(result, null, 2));
+    const github = await createGitHub({ owner, repo, token });
+    const result = await run(github, { dryRun: argv.includes("--dry-run") });
+    if (result) stdout(JSON.stringify(result, null, 2));
+    return 0;
   } catch {
     // Do not dump API request objects, which may contain authorization headers.
-    console.error(
-      "Release Please failed. Check configuration and preceding Release Please diagnostics.",
-    );
-    process.exitCode = 1;
+    stderr(FAILURE_MESSAGE);
+    return 1;
   }
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  process.exitCode = await main(process.argv.slice(2), process.env);
 }
