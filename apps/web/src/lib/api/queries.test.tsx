@@ -4,9 +4,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/mocks/server";
 import React from "react";
-import { useProfile, useDashboardQueries, useProviderLinks, useSharingSettings, useManualReadings, queryKeys, queryOptions } from "./queries";
+import { useProfile, useDashboardQueries, useProviderLinks, useSharingSettings, useManualReadings, useLatestReading, queryKeys, queryOptions } from "./queries";
 import type { ProfileResponse, MeasurementsResponse, ProviderLink } from "./types";
 import type { SharingData } from "@/lib/core/interfaces";
+import { SyncProgressContext, type SyncProgressContextValue } from "@/components/dashboard/sync-progress/context";
 
 // Mock useAuth hook
 vi.mock("@/lib/auth/use-auth", () => ({
@@ -422,6 +423,95 @@ describe("queries", () => {
       });
 
       expect(result.current.data).toEqual(mockReadings);
+    });
+  });
+
+  describe("useLatestReading", () => {
+    const history: MeasurementsResponse = {
+      computedMeasurements: [
+        { date: "2024-01-13", actualWeight: 76, trendWeight: 76, weightIsInterpolated: false, fatIsInterpolated: false, actualFatPercent: 0.2 },
+        { date: "2024-01-14", actualWeight: 75.5, trendWeight: 75.8, weightIsInterpolated: false, fatIsInterpolated: true, actualFatPercent: 0.19 },
+        { date: "2024-01-15", actualWeight: 75.4, trendWeight: 75.6, weightIsInterpolated: true, fatIsInterpolated: true, actualFatPercent: 0.18 },
+      ],
+      isMe: true,
+    };
+
+    it("walks back past interpolated points, taking weight and fat from different dates", async () => {
+      server.use(http.get("/api/data", () => HttpResponse.json(history)));
+
+      const { result } = renderHook(() => useLatestReading(), { wrapper: createWrapper() });
+
+      expect(result.current).toEqual({});
+      await waitFor(() => expect(result.current.weight).toBeDefined());
+      expect(result.current).toEqual({
+        weight: { date: "2024-01-14", weightKg: 75.5 },
+        fat: { date: "2024-01-13", fatRatio: 0.2 },
+      });
+    });
+
+    it("keeps a zero fat ratio and reports nothing when every point is interpolated", async () => {
+      server.use(
+        http.get("/api/data", () =>
+          HttpResponse.json({
+            computedMeasurements: [
+              { date: "2024-01-13", actualWeight: 76, trendWeight: 76, weightIsInterpolated: true, fatIsInterpolated: false, actualFatPercent: 0 },
+              { date: "2024-01-14", actualWeight: 75.5, trendWeight: 75.8, weightIsInterpolated: true, fatIsInterpolated: true },
+            ],
+            isMe: true,
+          } satisfies MeasurementsResponse),
+        ),
+      );
+
+      const { result } = renderHook(() => useLatestReading(), { wrapper: createWrapper() });
+
+      await waitFor(() => expect(result.current.fat).toBeDefined());
+      expect(result.current).toEqual({ fat: { date: "2024-01-13", fatRatio: 0 } });
+    });
+
+    it("uses the dashboard's progress options inside a SyncProgressProvider", async () => {
+      const requestedUrls: string[] = [];
+      server.use(
+        http.get("/api/data", ({ request }) => {
+          requestedUrls.push(new URL(request.url).search);
+          return HttpResponse.json(history);
+        }),
+      );
+      const syncProgress: SyncProgressContextValue = {
+        progressId: "ctx-progress-id",
+        progress: null,
+        startProgress: vi.fn(),
+        endProgress: vi.fn(),
+        setServerProgress: vi.fn(),
+      };
+      const Wrapper = createWrapper();
+
+      const { result } = renderHook(() => useLatestReading(), {
+        wrapper: ({ children }) => (
+          <Wrapper>
+            <SyncProgressContext.Provider value={syncProgress}>{children}</SyncProgressContext.Provider>
+          </Wrapper>
+        ),
+      });
+
+      await waitFor(() => expect(result.current.weight).toBeDefined());
+      expect(requestedUrls).toEqual(["?progressId=ctx-progress-id"]);
+      expect(syncProgress.startProgress).toHaveBeenCalledWith("Getting updated data...");
+      expect(syncProgress.endProgress).toHaveBeenCalled();
+    });
+
+    it("fetches without a progress id outside a SyncProgressProvider", async () => {
+      const requestedUrls: string[] = [];
+      server.use(
+        http.get("/api/data", ({ request }) => {
+          requestedUrls.push(new URL(request.url).search);
+          return HttpResponse.json(history);
+        }),
+      );
+
+      const { result } = renderHook(() => useLatestReading(), { wrapper: createWrapper() });
+
+      await waitFor(() => expect(result.current.weight).toBeDefined());
+      expect(requestedUrls).toEqual([""]);
     });
   });
 

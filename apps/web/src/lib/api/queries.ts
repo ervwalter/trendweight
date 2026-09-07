@@ -1,4 +1,6 @@
+import { useContext } from "react";
 import { useQuery, useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { SyncProgressContext } from "@/components/dashboard/sync-progress/context";
 import { useSyncProgress } from "@/components/dashboard/sync-progress/hooks";
 import { useAuth, type GetToken } from "@/lib/auth/use-auth";
 import type { ProfileData, SharingData } from "@/lib/core/interfaces";
@@ -73,13 +75,15 @@ const selectProfileData = (data: ProfileResponse | null): ProfileData | null => 
   };
 };
 
-// Custom hook to wrap query options with progress lifecycle
+// Custom hook to wrap query options with progress lifecycle. Outside a SyncProgressProvider
+// (routes without sync progress UI) the options are returned unchanged.
 function useWithProgress<T>(baseQueryOptions: T & { queryFn: () => Promise<unknown> }, progressMessage: string, shouldUseProgress: boolean = true): T {
-  const { startProgress, endProgress } = useSyncProgress();
+  const syncProgress = useContext(SyncProgressContext);
 
-  if (!shouldUseProgress) {
+  if (!shouldUseProgress || !syncProgress) {
     return baseQueryOptions;
   }
+  const { startProgress, endProgress } = syncProgress;
 
   return {
     ...baseQueryOptions,
@@ -300,7 +304,12 @@ export function useLatestReading(): {
   fat?: { date: string; fatRatio: number };
 } {
   const { getToken } = useAuth();
-  const { data } = useQuery(queryOptions.dashboardData(getToken));
+  // React Query keeps a single queryFn per key, taken from whichever observer set options last.
+  // On the dashboard this hook observes the same key as useDashboardQueries, so build the very
+  // same options (progressId + progress lifecycle) to guarantee refetches still report sync
+  // progress. Where there is no SyncProgressProvider (e.g. /log) this is a plain fetch.
+  const progressId = useContext(SyncProgressContext)?.progressId;
+  const { data } = useQuery(useWithProgress(queryOptions.dashboardData(getToken, { progressId }), "Getting updated data..."));
 
   let weight: { date: string; weightKg: number } | undefined;
   let fat: { date: string; fatRatio: number } | undefined;
