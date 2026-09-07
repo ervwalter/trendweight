@@ -90,38 +90,6 @@ public class SupabaseService : ISupabaseService
         }
     }
 
-    public async Task<T?> GetByIdAsync<T>(string id) where T : BaseModel, new()
-    {
-        try
-        {
-            var response = await SupabaseClient.From<T>()
-                .Filter("uid", Supabase.Postgrest.Constants.Operator.Equals, id)
-                .Get();
-
-            if (response.Models.Count == 0)
-            {
-                // Not found - this is an expected scenario, not an error
-                _logger.LogDebug("{Type} not found with ID {Id}", typeof(T).Name, id);
-                return null;
-            }
-
-            if (response.Models.Count > 1)
-            {
-                // Multiple records found - this is an error
-                _logger.LogError("Multiple {Type} records found with ID {Id}", typeof(T).Name, id);
-                return null;
-            }
-
-            return response.Models.First();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting {Type} by ID {Id}", typeof(T).Name, id);
-            throw;
-        }
-    }
-
-
     public async Task<T> InsertAsync<T>(T model) where T : BaseModel, new()
     {
         try

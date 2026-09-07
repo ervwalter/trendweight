@@ -7,7 +7,6 @@ namespace TrendWeight.Infrastructure.DataAccess;
 public interface ISupabaseService
 {
     Task<T?> GetByIdAsync<T>(Guid id) where T : BaseModel, new();
-    Task<T?> GetByIdAsync<T>(string id) where T : BaseModel, new();
     Task<T> InsertAsync<T>(T model) where T : BaseModel, new();
     Task<T> UpdateAsync<T>(T model) where T : BaseModel, new();
     Task DeleteAsync<T>(T model) where T : BaseModel, new();

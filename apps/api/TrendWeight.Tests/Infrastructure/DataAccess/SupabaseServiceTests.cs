@@ -48,7 +48,6 @@ public class SupabaseServiceTests
         var row = new DbProfile { Uid = id, Email = "test@example.com" };
 
         (await service.GetByIdAsync<DbProfile>(id))!.Uid.Should().Be(id);
-        (await service.GetByIdAsync<DbProfile>(id.ToString()))!.Uid.Should().Be(id);
         (await service.QueryAsync<DbProfile>(_ => { })).Should().ContainSingle();
         (await service.InsertAsync(row)).Uid.Should().Be(id);
         (await service.UpdateAsync(row)).Uid.Should().Be(id);
@@ -56,7 +55,7 @@ public class SupabaseServiceTests
         (await service.DeleteAuthUserAsync(id)).Should().BeTrue();
         (await service.BroadcastAsync("test-topic", "progress", new { status = "running" })).Should().BeTrue();
 
-        requests.Should().HaveCount(8);
+        requests.Should().HaveCount(7);
         requests.Should().OnlyContain(request => request.Key == key);
         requests.Where(request => request.Path != "/realtime/v1/api/broadcast")
             .Should().OnlyContain(request => request.Authorization == (legacy ? $"Bearer {key}" : ""));
