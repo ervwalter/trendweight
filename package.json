@@ -34,7 +34,7 @@
   },
   "version": "2.0.0-alpha.1",
   "dependencies": {
-    "@supabase/supabase-js": "2.112.4"
+    "@supabase/supabase-js": "2.113.0"
   },
   "engines": {
     "node": ">=26",
