@@ -1,6 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { LocalDate } from "@js-joda/core";
-import { buildWeekendPlotBands, build4WeekOptions, build3MonthOptions, buildLongTermOptions, buildExploreOptions, buildYAxisOptions } from "./option-builders";
+import {
+  buildWeekendPlotBands,
+  build4WeekOptions,
+  build3MonthOptions,
+  buildLongTermOptions,
+  buildExploreOptions,
+  buildYAxisOptions,
+  DYNAMIC_SERIES_IDS,
+} from "./option-builders";
 import type { Options } from "highcharts";
 
 describe("option-builders", () => {
@@ -257,6 +265,49 @@ describe("option-builders", () => {
 
       expect((options.xAxis as any)?.events?.afterSetExtremes).toBeDefined();
       expect(typeof (options.xAxis as any)?.events?.afterSetExtremes).toBe("function");
+    });
+
+    it("swaps only its own series on a navigator change and leaves the trend and navigator series alone", () => {
+      // Regression: the handler used to remove every series except the first, which
+      // included Highcharts' internal navigator series. The navigator kept a reference
+      // to the destroyed series and the next chart teardown (switching mode after a
+      // navigator drag) threw from inside Highcharts' destroy.
+      const options = createMockOptions();
+      buildExploreOptions(options, createBuilderOptions());
+      const handler = (options.xAxis as any).events.afterSetExtremes as (this: any, e: any) => void;
+
+      const makeSeries = (id: string, isInternal = false) => ({ options: { id, isInternal }, remove: vi.fn() });
+      const trend = makeSeries("trend");
+      const navigator = makeSeries("highcharts-navigator-series", true);
+      const dynamic = DYNAMIC_SERIES_IDS.map((id) => makeSeries(id));
+      const chart = {
+        series: [trend, ...dynamic, navigator],
+        get: (id: string) => chart.series.find((s) => s.options.id === id),
+        addSeries: vi.fn(),
+        redraw: vi.fn(),
+      };
+      const day = 86400000;
+
+      handler.call({ chart, min: 0, max: 30 * day }, { min: 0, max: 30 * day });
+
+      expect(trend.remove).not.toHaveBeenCalled();
+      expect(navigator.remove).not.toHaveBeenCalled();
+      for (const series of dynamic) {
+        expect(series.remove).toHaveBeenCalledWith(false);
+      }
+      // Diamonds view: two reading series, two sinker series, plus the projection
+      expect(chart.addSeries).toHaveBeenCalledTimes(5);
+      expect(chart.redraw).toHaveBeenCalledTimes(1);
+    });
+
+    it("tolerates a navigator change when its series were already removed", () => {
+      const options = createMockOptions();
+      buildExploreOptions(options, createBuilderOptions());
+      const handler = (options.xAxis as any).events.afterSetExtremes as (this: any, e: any) => void;
+      const chart = { series: [], get: () => undefined, addSeries: vi.fn(), redraw: vi.fn() };
+
+      expect(() => handler.call({ chart, min: 0, max: 200 * 86400000 }, {})).not.toThrow();
+      expect(chart.addSeries).toHaveBeenCalledTimes(2); // line view plus projection
     });
 
     it("should use line series for narrow displays", () => {

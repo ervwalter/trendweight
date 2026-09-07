@@ -4,6 +4,10 @@ import { Modes } from "@/lib/core/interfaces";
 import { createDiamondsSeries, createDotSeries, createLineSeries, createProjectionSeries, createSinkersSeries, createTrendSeries } from "./create-chart-series";
 import { toEpoch, type TransformedChartData } from "./data-transformers";
 
+// Series the explore-mode navigator handler swaps out as the visible range changes.
+// The trend series and Highcharts' internal navigator series are never touched.
+export const DYNAMIC_SERIES_IDS = ["actual", "estimated", "actual-sinkers", "estimated-sinkers", "projection"] as const;
+
 interface BuilderOptions {
   mode: keyof typeof Modes;
   modeText: string;
@@ -180,9 +184,12 @@ function createAfterSetExtremesHandler(dataArrays: TransformedChartData, mode: k
     const max = e.max !== undefined ? e.max : this.max;
     const rangeDays = (max - min) / 86400000;
 
-    // Clear all series except the trend line (series 0)
-    while (chart.series.length > 1) {
-      chart.series[chart.series.length - 1].remove(false);
+    // Replace only the series this handler owns. The chart also holds Highcharts'
+    // internal navigator series; removing that out from under the navigator leaves
+    // it with a dead reference that throws when the chart is later destroyed
+    // (switching mode or leaving the page after a navigator drag).
+    for (const id of DYNAMIC_SERIES_IDS) {
+      chart.get(id)?.remove(false);
     }
 
     // Add series based on range
