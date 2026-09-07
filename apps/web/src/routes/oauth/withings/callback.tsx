@@ -1,21 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { WithingsCallback } from "@/components/providers/withings-callback";
+import { OAuthCallback } from "@/components/providers/oauth-callback";
 import { Layout } from "@/components/layout";
+import { parseOAuthCallbackSearch } from "@/lib/routes/oauth-callback-search";
 
 export const Route = createFileRoute("/oauth/withings/callback")({
   component: WithingsCallbackPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      code: search.code ? String(search.code) : undefined,
-      state: search.state ? String(search.state) : undefined,
-    };
-  },
+  validateSearch: parseOAuthCallbackSearch,
 });
 
 function WithingsCallbackPage() {
+  const search = Route.useSearch();
   return (
     <Layout title="Withings Connection">
-      <WithingsCallback />
+      <OAuthCallback provider="withings" search={search} />
     </Layout>
   );
 }

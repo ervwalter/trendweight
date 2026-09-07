@@ -1,21 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FitbitCallback } from "@/components/providers/fitbit-callback";
+import { OAuthCallback } from "@/components/providers/oauth-callback";
 import { Layout } from "@/components/layout";
+import { parseOAuthCallbackSearch } from "@/lib/routes/oauth-callback-search";
 
 export const Route = createFileRoute("/oauth/fitbit/callback")({
   component: FitbitCallbackPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      code: search.code ? String(search.code) : undefined,
-      state: search.state ? String(search.state) : undefined,
-    };
-  },
+  validateSearch: parseOAuthCallbackSearch,
 });
 
 function FitbitCallbackPage() {
+  const search = Route.useSearch();
   return (
     <Layout title="Fitbit Connection">
-      <FitbitCallback />
+      <OAuthCallback provider="fitbit" search={search} />
     </Layout>
   );
 }

@@ -1,17 +1,32 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { Route } from "@/routes/oauth/fitbit/callback";
-import { useExchangeFitbitToken } from "@/lib/api/mutations";
+import { useExchangeFitbitToken, useExchangeWithingsToken } from "@/lib/api/mutations";
 import { ApiError } from "@/lib/api/client";
+import type { OAuthCallbackSearch } from "@/lib/routes/oauth-callback-search";
 import { OAuthCallbackUI } from "./oauth-callback-ui";
 
-export function FitbitCallback() {
+export type OAuthProvider = "fitbit" | "withings";
+
+const providerNames: Record<OAuthProvider, string> = { fitbit: "Fitbit", withings: "Withings" };
+const exchangeHooks: Record<OAuthProvider, typeof useExchangeFitbitToken> = {
+  fitbit: useExchangeFitbitToken,
+  withings: useExchangeWithingsToken,
+};
+
+interface OAuthCallbackProps {
+  provider: OAuthProvider;
+  /** The validated `code` and `state` search params from the provider's callback route */
+  search: OAuthCallbackSearch;
+}
+
+/** Exchanges the one-time OAuth code for the given provider and shows the outcome */
+export function OAuthCallback({ provider, search }: OAuthCallbackProps) {
   const navigate = useNavigate();
-  const search = Route.useSearch() as { code?: string; state?: string };
 
   const exchangedCode = useRef<string | null>(null);
-  const exchangeTokenMutation = useExchangeFitbitToken();
-  const { status, mutate, isSuccess, isPending, isError, error } = exchangeTokenMutation;
+  // A callback route renders a single provider for its whole life, so the hook choice is stable
+  const useExchangeToken = exchangeHooks[provider];
+  const { status, mutate, isSuccess, isPending, isError, error } = useExchangeToken();
 
   // Redirect on success
   useEffect(() => {
@@ -24,7 +39,7 @@ export function FitbitCallback() {
   }, [isSuccess, navigate]);
 
   useEffect(() => {
-    // Handle initial OAuth callback from Fitbit
+    // Handle the initial OAuth callback from the provider.
     // Only run if we have a code and the mutation hasn't been called yet
     if (search.code && search.state && status === "idle" && exchangedCode.current !== search.code) {
       exchangedCode.current = search.code;
@@ -50,5 +65,5 @@ export function FitbitCallback() {
   const errorMessage = error instanceof Error ? error.message : undefined;
   const errorCode = error instanceof ApiError ? error.errorCode : null;
 
-  return <OAuthCallbackUI providerName="Fitbit" state={uiState} error={errorMessage} errorCode={errorCode} />;
+  return <OAuthCallbackUI providerName={providerNames[provider]} state={uiState} error={errorMessage} errorCode={errorCode} />;
 }
