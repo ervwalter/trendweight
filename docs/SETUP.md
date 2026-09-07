@@ -31,10 +31,15 @@ For a hosted development project, apply the committed migrations through the
 Supabase CLI migration workflow after verifying the target project. Do not point
 new development environments at production or make ad hoc dashboard schema changes.
 
-Tables are accessed through the backend's service role. The browser uses the publishable
-key for Supabase Realtime progress messages; it does not read application tables
-directly. Check Realtime configuration if measurements work but progress messages
-are absent.
+Tables are accessed through the backend's service role; the committed migrations
+revoke the publishable key's (`anon`) privileges on public tables, sequences, and
+functions. The browser uses the publishable key only to subscribe to Supabase
+Realtime progress messages on a public `sync-progress:<id>` channel; it does not
+read application tables. Those messages are advisory status updates, not an
+authorization mechanism. The baseline's `realtime.messages` policy applies only to
+private channels, which the app does not open, so it does not restrict the
+publishable key. Check Realtime configuration if measurements work but progress
+messages are absent.
 
 ## Configuration
 

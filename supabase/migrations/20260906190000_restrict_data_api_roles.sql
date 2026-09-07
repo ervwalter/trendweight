@@ -1,6 +1,9 @@
--- The API reaches these tables only through the service role, and the browser's
--- publishable key is used solely for Realtime sync-progress broadcasts (see the
--- "Allow anonymous sync-progress subscriptions" policy on realtime.messages).
+-- The API reaches these tables only through the service role. The browser's
+-- publishable key is used solely to subscribe to Realtime sync-progress
+-- broadcasts, which are advisory status messages. Note that the frontend opens
+-- a public channel, so the baseline's "Allow anonymous sync-progress
+-- subscriptions" policy on realtime.messages (evaluated only for private
+-- channels) is not what limits the key; the revocation below is.
 -- The baseline dump still granted anon/authenticated every table privilege
 -- (including TRUNCATE, TRIGGER, and REFERENCES, which row-level security does
 -- not govern) and default privileges on any future table, sequence, or
