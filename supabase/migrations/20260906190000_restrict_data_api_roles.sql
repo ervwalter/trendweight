@@ -17,9 +17,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
     REVOKE ALL PRIVILEGES ON FUNCTIONS FROM anon, authenticated;
 
--- pg_net was enabled in the baseline but nothing in this project calls it.
-DROP EXTENSION IF EXISTS pg_net;
-
 -- The original comment described behaviour that never existed: the row is not
 -- deleted. MeasurementSyncService ignores the incremental window when the flag
 -- is set, and SourceDataService replaces the measurements and clears the flag
