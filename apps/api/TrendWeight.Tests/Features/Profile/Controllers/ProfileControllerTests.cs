@@ -397,6 +397,120 @@ public class ProfileControllerTests : TestBase
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-70)]
+    [InlineData(1500)]
+    [InlineData(1_000_000)]
+    public async Task UpdateProfile_WithOutOfRangeGoalWeight_RejectsBeforeSaving(decimal goalWeight)
+    {
+        SetupAuthenticatedUser(Guid.NewGuid().ToString(), "test@example.com");
+
+        var result = await _sut.UpdateProfile(new UpdateProfileRequest { GoalWeight = goalWeight });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>()
+            .Which.Value.Should().BeOfType<ErrorResponse>()
+            .Which.Error.Should().Contain("Goal weight");
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(-5.5)]
+    [InlineData(5.5)]
+    [InlineData(100)]
+    public async Task UpdateProfile_WithOutOfRangePlannedChange_RejectsBeforeSaving(decimal plan)
+    {
+        SetupAuthenticatedUser(Guid.NewGuid().ToString(), "test@example.com");
+
+        var result = await _sut.UpdateProfile(new UpdateProfileRequest { PlannedPoundsPerWeek = plan });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>()
+            .Which.Value.Should().BeOfType<ErrorResponse>()
+            .Which.Error.Should().Contain("Planned weekly change");
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateProfile_WithOverlongFirstName_RejectsBeforeSaving()
+    {
+        SetupAuthenticatedUser(Guid.NewGuid().ToString(), "test@example.com");
+
+        var result = await _sut.UpdateProfile(new UpdateProfileRequest { FirstName = new string('a', 101) });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>()
+            .Which.Value.Should().BeOfType<ErrorResponse>()
+            .Which.Error.Should().Contain("First name");
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+    }
+
+    public static TheoryData<DateTime> OutOfRangeGoalStarts => new()
+    {
+        new DateTime(1899, 12, 31),
+        DateTime.UtcNow.Date.AddDays(2),
+        new DateTime(2999, 1, 1)
+    };
+
+    [Theory]
+    [MemberData(nameof(OutOfRangeGoalStarts))]
+    public async Task UpdateProfile_WithOutOfRangeGoalStart_RejectsBeforeSaving(DateTime goalStart)
+    {
+        SetupAuthenticatedUser(Guid.NewGuid().ToString(), "test@example.com");
+
+        var result = await _sut.UpdateProfile(new UpdateProfileRequest { GoalStart = goalStart });
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>()
+            .Which.Value.Should().BeOfType<ErrorResponse>()
+            .Which.Error.Should().Contain("Start date");
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateProfile_WithBoundaryValues_PassesThroughToService()
+    {
+        // Unusual but legitimate values: a large goal in pounds, the steepest plan the UI
+        // offers, a 100-character name, tomorrow's date (timezones ahead of UTC), and 1900.
+        var userId = Guid.NewGuid();
+        var request = new UpdateProfileRequest
+        {
+            FirstName = new string('n', 100),
+            GoalWeight = 1499.9m,
+            PlannedPoundsPerWeek = -5m,
+            GoalStart = DateTime.UtcNow.Date.AddDays(1)
+        };
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request))
+            .ReturnsAsync(CreateTestProfile(userId));
+
+        var result = await _sut.UpdateProfile(request);
+
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request), Times.Once);
+
+        var oldest = new UpdateProfileRequest { GoalStart = new DateTime(1900, 1, 1), PlannedPoundsPerWeek = 5m, GoalWeight = 0.1m };
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", oldest))
+            .ReturnsAsync(CreateTestProfile(userId));
+        (await _sut.UpdateProfile(oldest)).Result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task UpdateProfile_WithNoGoalFields_PassesThroughToService()
+    {
+        // Clearing goals (all null) must stay valid
+        var userId = Guid.NewGuid();
+        var request = new UpdateProfileRequest { UseMetric = true };
+        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request))
+            .ReturnsAsync(CreateTestProfile(userId));
+
+        var result = await _sut.UpdateProfile(request);
+
+        result.Result.Should().BeOfType<OkObjectResult>();
+    }
+
     [Fact]
     public async Task UpdateProfile_WithInvalidTrendAlgorithm_ReturnsBadRequest()
     {

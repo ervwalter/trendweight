@@ -196,14 +196,9 @@ public class ProfileController : ControllerBase
                 return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
             }
 
-            if (request.DayStartOffset is < 0 or > 23)
+            if (!TryValidateUpdateRequest(request, out var validationError))
             {
-                return BadRequest(new ErrorResponse { Error = "Day start must be between 0 and 23 hours" });
-            }
-
-            if (!TrendAlgorithmPresets.IsValid(request.TrendAlgorithm))
-            {
-                return BadRequest(new ErrorResponse { Error = "Invalid trend algorithm" });
+                return BadRequest(new ErrorResponse { Error = validationError });
             }
 
             // Use the service to update or create the profile
@@ -217,6 +212,57 @@ public class ProfileController : ControllerBase
             _logger.LogError(ex, "Error updating profile for user");
             return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
         }
+    }
+
+    // Goal weight and weekly plan arrive in the user's display units (kg or lb), so the
+    // bounds are deliberately loose: they reject nonsense, not unusual-but-real values.
+    private const decimal MaxGoalWeight = 1500m;
+    private const decimal MaxPlannedChangePerWeek = 5m;
+    private const int MaxFirstNameLength = 100;
+    private static readonly DateTime MinGoalStart = new(1900, 1, 1);
+
+    private static bool TryValidateUpdateRequest(UpdateProfileRequest request, out string error)
+    {
+        if (request.DayStartOffset is < 0 or > 23)
+        {
+            error = "Day start must be between 0 and 23 hours";
+            return false;
+        }
+
+        if (!TrendAlgorithmPresets.IsValid(request.TrendAlgorithm))
+        {
+            error = "Invalid trend algorithm";
+            return false;
+        }
+
+        if (request.GoalWeight is <= 0 or >= MaxGoalWeight)
+        {
+            error = $"Goal weight must be between 0 and {MaxGoalWeight}";
+            return false;
+        }
+
+        if (request.PlannedPoundsPerWeek is < -MaxPlannedChangePerWeek or > MaxPlannedChangePerWeek)
+        {
+            error = $"Planned weekly change must be between -{MaxPlannedChangePerWeek} and {MaxPlannedChangePerWeek}";
+            return false;
+        }
+
+        if (request.FirstName?.Length > MaxFirstNameLength)
+        {
+            error = $"First name must be {MaxFirstNameLength} characters or fewer";
+            return false;
+        }
+
+        // Dates are user-local; allow one day of slack for timezones ahead of UTC
+        if (request.GoalStart.HasValue &&
+            (request.GoalStart.Value.Date < MinGoalStart || request.GoalStart.Value.Date > DateTime.UtcNow.Date.AddDays(1)))
+        {
+            error = "Start date must be between 1900-01-01 and today";
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
     }
 
     /// <summary>
