@@ -4,9 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { ApiKeySection } from "./api-key-section";
 import { useApiKey } from "@/lib/api/queries";
 import { useGenerateApiKey, useRevokeApiKey } from "@/lib/api/mutations";
+import { useToast } from "@/lib/hooks/use-toast";
 
 vi.mock("@/lib/api/queries");
 vi.mock("@/lib/api/mutations");
+vi.mock("@/lib/hooks/use-toast");
 
 // Mock ConfirmDialog like other component tests do
 vi.mock("@/components/ui/confirm-dialog", () => ({
@@ -23,9 +25,11 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 describe("ApiKeySection", () => {
   const mockGenerateMutateAsync = vi.fn();
   const mockRevokeMutateAsync = vi.fn();
+  const mockShowToast = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any);
     vi.mocked(useGenerateApiKey).mockReturnValue({
       mutateAsync: mockGenerateMutateAsync,
       isPending: false,
@@ -123,5 +127,49 @@ describe("ApiKeySection", () => {
     await user.click(confirmButton!);
 
     expect(mockRevokeMutateAsync).toHaveBeenCalledOnce();
+  });
+
+  it("should toast when generating a first key fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useApiKey).mockReturnValue({ data: { exists: false } } as any);
+    mockGenerateMutateAsync.mockRejectedValue(new Error("nope"));
+
+    render(<ApiKeySection />);
+    await user.click(screen.getByText("Generate API Key"));
+
+    expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error", description: expect.stringMatching(/could not be generated/i) }));
+    expect(screen.getByText("Generate API Key")).toBeInTheDocument();
+    expect(screen.queryByText(/won't be shown again/i)).not.toBeInTheDocument();
+  });
+
+  it("should toast and close the dialog when regenerating fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useApiKey).mockReturnValue({
+      data: { exists: true, suffix: "wxyz", createdAt: "2026-08-01T12:00:00Z" },
+    } as any);
+    mockGenerateMutateAsync.mockRejectedValue(new Error("nope"));
+
+    render(<ApiKeySection />);
+    await user.click(screen.getByText("Regenerate"));
+    await user.click(screen.getByTestId("confirm-dialog").querySelector("button")!);
+
+    expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
+    expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("sk-…wxyz")).toBeInTheDocument();
+  });
+
+  it("should toast and close the dialog when revoking fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useApiKey).mockReturnValue({
+      data: { exists: true, suffix: "wxyz", createdAt: "2026-08-01T12:00:00Z" },
+    } as any);
+    mockRevokeMutateAsync.mockRejectedValue(new Error("nope"));
+
+    render(<ApiKeySection />);
+    await user.click(screen.getByText("Revoke"));
+    await user.click(screen.getByTestId("confirm-dialog").querySelector("button")!);
+
+    expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error", description: expect.stringMatching(/could not be revoked/i) }));
+    expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument();
   });
 });

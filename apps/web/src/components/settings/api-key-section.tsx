@@ -7,6 +7,7 @@ import { ExternalLink } from "@/components/common/external-link";
 import { Input } from "@/components/ui/input";
 import { useApiKey } from "@/lib/api/queries";
 import { useGenerateApiKey, useRevokeApiKey } from "@/lib/api/mutations";
+import { useToast } from "@/lib/hooks/use-toast";
 
 const createdDateFormatter = new Intl.DateTimeFormat([], {
   year: "numeric",
@@ -22,14 +23,16 @@ function ApiKeySectionContent() {
   const { data: apiKey } = useApiKey();
   const generateApiKey = useGenerateApiKey();
   const revokeApiKey = useRevokeApiKey();
+  const { showToast } = useToast();
 
   const handleGenerate = async () => {
     try {
       const generated = await generateApiKey.mutateAsync();
       setNewKey(generated.apiKey);
+    } catch {
+      showToast({ title: "Something went wrong", description: "Your API key could not be generated. Please try again.", variant: "error" });
+    } finally {
       setShowRegenerateConfirm(false);
-    } catch (error) {
-      console.error("Failed to generate API key:", error);
     }
   };
 
@@ -37,9 +40,10 @@ function ApiKeySectionContent() {
     try {
       await revokeApiKey.mutateAsync();
       setNewKey(null);
+    } catch {
+      showToast({ title: "Something went wrong", description: "Your API key could not be revoked. Please try again.", variant: "error" });
+    } finally {
       setShowRevokeConfirm(false);
-    } catch (error) {
-      console.error("Failed to revoke API key:", error);
     }
   };
 

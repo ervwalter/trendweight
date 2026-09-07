@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ConfirmDialog } from "./confirm-dialog";
 
 describe("ConfirmDialog", () => {
@@ -50,6 +50,47 @@ describe("ConfirmDialog", () => {
     fireEvent.click(confirmButton);
 
     expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("should close after a synchronous onConfirm", () => {
+    render(<ConfirmDialog {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("should stay open with both buttons disabled while an async onConfirm is pending", async () => {
+    let resolveConfirm!: () => void;
+    const onConfirm = vi.fn(() => new Promise<void>((resolve) => (resolveConfirm = resolve)));
+    render(<ConfirmDialog {...defaultProps} onConfirm={onConfirm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled());
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    expect(defaultProps.onOpenChange).not.toHaveBeenCalled();
+
+    // Escape must not dismiss the dialog mid-flight either
+    fireEvent.keyDown(screen.getByRole("alertdialog"), { key: "Escape" });
+    expect(defaultProps.onOpenChange).not.toHaveBeenCalled();
+
+    resolveConfirm();
+
+    await waitFor(() => expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false));
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeEnabled();
+  });
+
+  it("should stay open when an async onConfirm rejects", async () => {
+    const onConfirm = vi.fn().mockRejectedValue(new Error("boom"));
+    render(<ConfirmDialog {...defaultProps} onConfirm={onConfirm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Confirm" })).toBeEnabled());
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(defaultProps.onOpenChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
   });
 
   it("should call onOpenChange when cancel button is clicked", () => {

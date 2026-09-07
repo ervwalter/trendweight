@@ -7,12 +7,14 @@ import { useSharingSettings } from "@/lib/api/queries";
 import { useToggleSharing, useGenerateShareToken } from "@/lib/api/mutations";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/lib/hooks/use-toast";
 
 function SharingSectionContent() {
   const [showNewUrlConfirm, setShowNewUrlConfirm] = useState(false);
   const { data: sharingData } = useSharingSettings();
   const toggleSharing = useToggleSharing();
   const generateToken = useGenerateShareToken();
+  const { showToast } = useToast();
 
   const shareUrl = sharingData?.sharingToken ? `${window.location.origin}/u/${sharingData.sharingToken}` : null;
 
@@ -23,9 +25,10 @@ function SharingSectionContent() {
   const handleGenerateNewUrl = async () => {
     try {
       await generateToken.mutateAsync();
+    } catch {
+      showToast({ title: "Something went wrong", description: "A new sharing URL could not be generated. Please try again.", variant: "error" });
+    } finally {
       setShowNewUrlConfirm(false);
-    } catch (error) {
-      console.error("Failed to generate new URL:", error);
     }
   };
 

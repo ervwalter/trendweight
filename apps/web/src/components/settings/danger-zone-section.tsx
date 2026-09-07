@@ -10,16 +10,17 @@ export function DangerZoneSection() {
   const { signOut } = useAuth();
   const deleteAccountMutation = useDeleteAccount();
 
+  // Rejections propagate to ConfirmDialog, which keeps the dialog open so the error below stays visible
   const handleDeleteAccount = async () => {
-    try {
-      await deleteAccountMutation.mutateAsync();
+    await deleteAccountMutation.mutateAsync();
 
-      // Sign out the user and redirect to account-deleted page
-      await signOut("/account-deleted");
-    } catch (error) {
-      console.error("Failed to delete account:", error);
-      // Keep the dialog open to show error state
-    }
+    // Sign out the user and redirect to account-deleted page
+    await signOut("/account-deleted");
+  };
+
+  const openDeleteConfirm = () => {
+    deleteAccountMutation.reset();
+    setShowDeleteConfirm(true);
   };
 
   return (
@@ -33,18 +34,14 @@ export function DangerZoneSection() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button type="button" onClick={() => setShowDeleteConfirm(true)} variant="destructive" size="sm" disabled={deleteAccountMutation.isPending}>
+        <Button type="button" onClick={openDeleteConfirm} variant="destructive" size="sm" disabled={deleteAccountMutation.isPending}>
           {deleteAccountMutation.isPending ? "Deleting..." : "Delete Account"}
         </Button>
       </CardContent>
 
       <ConfirmDialog
         open={showDeleteConfirm}
-        onOpenChange={(open) => {
-          if (!deleteAccountMutation.isPending) {
-            setShowDeleteConfirm(open);
-          }
-        }}
+        onOpenChange={setShowDeleteConfirm}
         title="Delete Your Account?"
         description={
           <div className="space-y-2">
@@ -57,7 +54,7 @@ export function DangerZoneSection() {
             <p className="font-semibold">This action cannot be undone.</p>
             <p>If you recreate your account later, you'll need to reconnect your scale to re-download any weight data.</p>
             {deleteAccountMutation.error && (
-              <p className="text-destructive text-sm">
+              <p role="alert" className="text-destructive text-sm">
                 Error: {deleteAccountMutation.error instanceof Error ? deleteAccountMutation.error.message : "Failed to delete account"}
               </p>
             )}
