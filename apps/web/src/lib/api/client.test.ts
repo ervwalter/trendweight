@@ -132,18 +132,13 @@ describe("api/client with MSW", () => {
         }),
       );
 
-      await expect(apiRequest("/test")).rejects.toThrow(ApiError);
-
-      try {
-        await apiRequest("/test");
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiError);
-        const apiError = error as ApiError;
-        expect(apiError.status).toBe(400);
-        expect(apiError.message).toBe("Invalid input data");
-        expect(apiError.errorCode).toBe("VALIDATION_ERROR");
-        expect(apiError.isRetryable).toBe(false);
-      }
+      await expect(apiRequest("/test")).rejects.toMatchObject({
+        name: "ApiError",
+        status: 400,
+        message: "Invalid input data",
+        errorCode: "VALIDATION_ERROR",
+        isRetryable: false,
+      });
     });
 
     it("should handle non-JSON error response", async () => {
@@ -158,54 +153,46 @@ describe("api/client with MSW", () => {
         }),
       );
 
-      try {
-        await apiRequest("/test");
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiError);
-        const apiError = error as ApiError;
-        expect(apiError.status).toBe(500);
-        expect(apiError.message).toBe("API request failed: Internal Server Error");
-        expect(apiError.errorCode).toBeUndefined();
-        expect(apiError.isRetryable).toBeUndefined();
-      }
+      await expect(apiRequest("/test")).rejects.toMatchObject({
+        name: "ApiError",
+        status: 500,
+        message: "API request failed: Internal Server Error",
+        errorCode: undefined,
+        isRetryable: undefined,
+      });
     });
 
     it("should handle 401 unauthorized errors", async () => {
       server.use(apiHandlers.unauthorized("/api/protected"));
 
-      try {
-        await apiRequest("/protected");
-      } catch (error) {
-        const apiError = error as ApiError;
-        expect(apiError.status).toBe(401);
-        expect(apiError.message).toBe("Authentication required");
-        expect(apiError.errorCode).toBe("AUTH_REQUIRED");
-      }
+      await expect(apiRequest("/protected")).rejects.toMatchObject({
+        name: "ApiError",
+        status: 401,
+        message: "Authentication required",
+        errorCode: "AUTH_REQUIRED",
+      });
     });
 
     it("should handle 403 forbidden errors", async () => {
       server.use(apiHandlers.forbidden("/api/admin"));
 
-      try {
-        await apiRequest("/admin");
-      } catch (error) {
-        const apiError = error as ApiError;
-        expect(apiError.status).toBe(403);
-        expect(apiError.message).toBe("Insufficient permissions");
-      }
+      await expect(apiRequest("/admin")).rejects.toMatchObject({
+        name: "ApiError",
+        status: 403,
+        message: "Insufficient permissions",
+        errorCode: "FORBIDDEN",
+      });
     });
 
     it("should handle 404 not found errors", async () => {
       server.use(apiHandlers.notFound("/api/missing"));
 
-      try {
-        await apiRequest("/missing");
-      } catch (error) {
-        const apiError = error as ApiError;
-        expect(apiError.status).toBe(404);
-        expect(apiError.message).toBe("Resource not found");
-        expect(apiError.errorCode).toBe("NOT_FOUND");
-      }
+      await expect(apiRequest("/missing")).rejects.toMatchObject({
+        name: "ApiError",
+        status: 404,
+        message: "Resource not found",
+        errorCode: "NOT_FOUND",
+      });
     });
 
     it("should handle 500 server errors with retry flag", async () => {
@@ -222,15 +209,13 @@ describe("api/client with MSW", () => {
         }),
       );
 
-      try {
-        await apiRequest("/test");
-      } catch (error) {
-        const apiError = error as ApiError;
-        expect(apiError.status).toBe(500);
-        expect(apiError.message).toBe("Database connection failed");
-        expect(apiError.errorCode).toBe("DB_ERROR");
-        expect(apiError.isRetryable).toBe(true);
-      }
+      await expect(apiRequest("/test")).rejects.toMatchObject({
+        name: "ApiError",
+        status: 500,
+        message: "Database connection failed",
+        errorCode: "DB_ERROR",
+        isRetryable: true,
+      });
     });
 
     it("should handle network errors", async () => {

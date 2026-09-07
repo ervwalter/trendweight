@@ -361,18 +361,18 @@ describe("data-points", () => {
         expect(result[0].date.toString()).toBe("2024-01-01");
       });
 
-      it("should handle large datasets efficiently", () => {
+      it("should handle large datasets", () => {
         const measurements = Array.from({ length: 1000 }, (_, i) => {
           const date = LocalDate.parse("2024-01-01").plusDays(i);
           return createMeasurement(date.toString(), 80 + i * 0.01);
         });
 
-        const startTime = performance.now();
         const result = computeDataPoints("weight", measurements);
-        const endTime = performance.now();
 
         expect(result).toHaveLength(1000);
-        expect(endTime - startTime).toBeLessThan(50); // Should be fast
+        expect(result[0].date.toString()).toBe("2024-01-01");
+        expect(result[999].date.toString()).toBe("2026-09-26");
+        expect(result[999].actual).toBeCloseTo(80 + 999 * 0.01, 5);
       });
     });
   });

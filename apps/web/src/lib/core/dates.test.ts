@@ -1,8 +1,52 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { LocalDate, LocalDateTime } from "@js-joda/core";
-import { shortDate, recentDate } from "./dates";
+import { shortDate, recentDate, formatGoalDate } from "./dates";
 
 describe("dates", () => {
+  describe("formatGoalDate", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2024-01-15T12:00:00"));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("uses a full date with on/around for goals up to 180 days away", () => {
+      const soon = formatGoalDate(LocalDate.of(2024, 2, 20));
+      expect(soon.preposition).toBe("on/around");
+      expect(soon.date).toBe(shortDate(LocalDate.of(2024, 2, 20)));
+
+      const boundary = formatGoalDate(LocalDate.of(2024, 1, 15).plusDays(180));
+      expect(boundary.preposition).toBe("on/around");
+    });
+
+    it("switches to month and year with in/around beyond 180 days", () => {
+      const result = formatGoalDate(LocalDate.of(2024, 1, 15).plusDays(181));
+
+      expect(result.preposition).toBe("in/around");
+      expect(result.date).toMatch(/jul/i);
+      expect(result.date).toMatch(/2024/);
+      expect(result.date).not.toMatch(/14|15/);
+    });
+
+    it("treats a past goal date as near", () => {
+      const result = formatGoalDate(LocalDate.of(2023, 12, 1));
+
+      expect(result.preposition).toBe("on/around");
+      expect(result.date).toBe(shortDate(LocalDate.of(2023, 12, 1)));
+    });
+
+    it("accepts a LocalDateTime", () => {
+      const result = formatGoalDate(LocalDateTime.of(2025, 3, 1, 8, 30));
+
+      expect(result.preposition).toBe("in/around");
+      expect(result.date).toMatch(/mar/i);
+      expect(result.date).toMatch(/2025/);
+    });
+  });
+
   describe("shortDate", () => {
     it("should format LocalDate with medium date style", () => {
       const date = LocalDate.of(2024, 1, 15);

@@ -571,18 +571,15 @@ describe("mutations", () => {
         sharingToken: "old-token",
       });
 
+      // Hold the response until the test has inspected the optimistic state
+      let releaseResponse!: () => void;
+      const responseReleased = new Promise<void>((resolve) => (releaseResponse = resolve));
       server.use(
-        http.post("/api/sharing/toggle", () => {
-          // Add a small delay to ensure we can check the optimistic update
-          return new Promise((resolve) => {
-            setTimeout(() => {
-              resolve(
-                HttpResponse.json({
-                  sharingEnabled: true,
-                  sharingToken: "old-token",
-                }),
-              );
-            }, 50);
+        http.post("/api/sharing/toggle", async () => {
+          await responseReleased;
+          return HttpResponse.json({
+            sharingEnabled: true,
+            sharingToken: "old-token",
           });
         }),
       );
@@ -595,12 +592,15 @@ describe("mutations", () => {
         result.current.mutate(true);
       });
 
-      // Check optimistic update immediately after mutation
+      // The optimistic update is visible while the request is still in flight
       await waitFor(() => {
         const optimisticData = queryClient.getQueryData<SharingData>(queryKeys.sharing);
         expect(optimisticData?.sharingEnabled).toBe(true);
         expect(optimisticData?.sharingToken).toBe("old-token");
       });
+      expect(result.current.isPending).toBe(true);
+
+      releaseResponse();
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);

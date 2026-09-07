@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LocalDate } from "@js-joda/core";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ManualReading } from "@/lib/api/types";
 import { ManualReadingForm } from "./manual-reading-form";
 
@@ -28,8 +28,13 @@ vi.mock("@/lib/hooks/use-toast", () => ({
   useToast: () => ({ showToast: mockShowToast }),
 }));
 
+// The form and its fixtures both derive "today" from the clock, so freeze it for the whole file
+const today = LocalDate.of(2026, 3, 10);
+
 describe("ManualReadingForm", () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-03-10T12:00:00"));
     vi.clearAllMocks();
     mockUseMetric = false;
     mockReadings = [];
@@ -38,10 +43,14 @@ describe("ManualReadingForm", () => {
     mockDeleteMutateAsync.mockResolvedValue({});
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("defaults the date to today", () => {
     render(<ManualReadingForm />);
 
-    expect(screen.getByLabelText("Date")).toHaveValue(LocalDate.now().toString());
+    expect(screen.getByLabelText("Date")).toHaveValue(today.toString());
   });
 
   it("shows the weight unit from the profile", () => {
@@ -59,6 +68,30 @@ describe("ManualReadingForm", () => {
 
     expect(await screen.findByText("Weight is required")).toBeInTheDocument();
     expect(mockSaveMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("rejects a date in the future", async () => {
+    const user = userEvent.setup();
+    render(<ManualReadingForm />);
+
+    // The picker's max only guides the UI; a typed or pasted date must hit the rule
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: today.plusDays(1).toString() } });
+    await user.type(screen.getByLabelText(/Weight/), "180");
+    await user.click(screen.getByRole("button", { name: "Log Weight" }));
+
+    expect(await screen.findByText("Date cannot be in the future")).toBeInTheDocument();
+    expect(mockSaveMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("accepts today as the reading date", async () => {
+    const user = userEvent.setup();
+    render(<ManualReadingForm />);
+
+    await user.type(screen.getByLabelText(/Weight/), "180");
+    await user.click(screen.getByRole("button", { name: "Log Weight" }));
+
+    await waitFor(() => expect(mockSaveMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ date: today.toString() })));
+    expect(screen.queryByText("Date cannot be in the future")).not.toBeInTheDocument();
   });
 
   it.each(["180oops", "180.5.2", "180,5,2"])("rejects malformed weight %s without silently truncating it", async (weight) => {
@@ -190,7 +223,7 @@ describe("ManualReadingForm", () => {
   });
 
   it("shows the most recent entry as a reference below the field, never as a placeholder", () => {
-    mockReadings = [{ date: LocalDate.now().minusDays(1).toString(), weight: 84.0, fatRatio: 0.225 }];
+    mockReadings = [{ date: today.minusDays(1).toString(), weight: 84.0, fatRatio: 0.225 }];
     render(<ManualReadingForm />);
 
     expect(screen.getByText(/Last weight:/)).toHaveTextContent(/185\.2.*yesterday/);
@@ -201,22 +234,22 @@ describe("ManualReadingForm", () => {
   });
 
   it("uses a scale reading as the reference when it is newer than the manual log", () => {
-    mockReadings = [{ date: LocalDate.now().minusDays(10).toString(), weight: 84.0 }];
-    mockLatestReading = { weight: { date: LocalDate.now().minusDays(1).toString(), weightKg: 82.0 } };
+    mockReadings = [{ date: today.minusDays(10).toString(), weight: 84.0 }];
+    mockLatestReading = { weight: { date: today.minusDays(1).toString(), weightKg: 82.0 } };
     render(<ManualReadingForm />);
 
     expect(screen.getByText(/Last weight:/)).toHaveTextContent(/180\.8.*yesterday/);
   });
 
   it("uses a scale reading as the reference when the manual log is empty", () => {
-    mockLatestReading = { weight: { date: LocalDate.now().minusDays(2).toString(), weightKg: 82.0 } };
+    mockLatestReading = { weight: { date: today.minusDays(2).toString(), weightKg: 82.0 } };
     render(<ManualReadingForm />);
 
     expect(screen.getByText(/Last weight:/)).toHaveTextContent(/180\.8.*2 days ago/);
   });
 
   it("prefers the manual log when the dates tie, since it refreshes first after a save", () => {
-    const date = LocalDate.now().minusDays(1).toString();
+    const date = today.minusDays(1).toString();
     mockReadings = [{ date, weight: 84.0, fatRatio: 0.225 }];
     mockLatestReading = { weight: { date, weightKg: 82.0 }, fat: { date, fatRatio: 0.31 } };
     render(<ManualReadingForm />);
@@ -226,8 +259,8 @@ describe("ManualReadingForm", () => {
   });
 
   it("prefers the manual log when it is newer than the latest scale reading", () => {
-    mockReadings = [{ date: LocalDate.now().minusDays(1).toString(), weight: 84.0 }];
-    mockLatestReading = { weight: { date: LocalDate.now().minusDays(5).toString(), weightKg: 82.0 } };
+    mockReadings = [{ date: today.minusDays(1).toString(), weight: 84.0 }];
+    mockLatestReading = { weight: { date: today.minusDays(5).toString(), weightKg: 82.0 } };
     render(<ManualReadingForm />);
 
     expect(screen.getByText(/Last weight:/)).toHaveTextContent(/185\.2/);
@@ -235,10 +268,10 @@ describe("ManualReadingForm", () => {
 
   it("uses the most recent body fat from any source as the reference, independent of the weight", () => {
     // Newest weight is a manual entry without fat; the fat reference comes from an older scale reading
-    mockReadings = [{ date: LocalDate.now().minusDays(1).toString(), weight: 84.0 }];
+    mockReadings = [{ date: today.minusDays(1).toString(), weight: 84.0 }];
     mockLatestReading = {
-      weight: { date: LocalDate.now().minusDays(3).toString(), weightKg: 82.0 },
-      fat: { date: LocalDate.now().minusDays(3).toString(), fatRatio: 0.31 },
+      weight: { date: today.minusDays(3).toString(), weightKg: 82.0 },
+      fat: { date: today.minusDays(3).toString(), fatRatio: 0.31 },
     };
     render(<ManualReadingForm />);
 
@@ -247,15 +280,15 @@ describe("ManualReadingForm", () => {
   });
 
   it("prefers the manual log's body fat when it is newer", () => {
-    mockReadings = [{ date: LocalDate.now().minusDays(1).toString(), weight: 84.0, fatRatio: 0.225 }];
-    mockLatestReading = { fat: { date: LocalDate.now().minusDays(5).toString(), fatRatio: 0.31 } };
+    mockReadings = [{ date: today.minusDays(1).toString(), weight: 84.0, fatRatio: 0.225 }];
+    mockLatestReading = { fat: { date: today.minusDays(5).toString(), fatRatio: 0.31 } };
     render(<ManualReadingForm />);
 
     expect(screen.getByText(/Last body fat:/)).toHaveTextContent(/22\.5%/);
   });
 
   it("describes how long ago the last entry was", () => {
-    mockReadings = [{ date: LocalDate.now().minusDays(21).toString(), weight: 84.0 }];
+    mockReadings = [{ date: today.minusDays(21).toString(), weight: 84.0 }];
     render(<ManualReadingForm />);
 
     expect(screen.getByText(/Last weight:/)).toHaveTextContent(/3 weeks ago/);
@@ -272,7 +305,7 @@ describe("ManualReadingForm", () => {
   });
 
   it("shows a replace hint and Replace label when the date already has an entry", async () => {
-    mockReadings = [{ date: LocalDate.now().toString(), weight: 84.0, fatRatio: 0.225 }];
+    mockReadings = [{ date: today.toString(), weight: 84.0, fatRatio: 0.225 }];
     render(<ManualReadingForm />);
 
     expect(await screen.findByText(/Replaces today's entry/)).toBeInTheDocument();

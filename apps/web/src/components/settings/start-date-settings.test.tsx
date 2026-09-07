@@ -1,7 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { LocalDate } from "@js-joda/core";
 import { useForm } from "react-hook-form";
 import { StartDateSettings } from "./start-date-settings";
 import type { ProfileData } from "@/lib/core/interfaces";
@@ -26,7 +25,17 @@ function TestWrapper({ defaultValues = {}, onSubmit = () => {} }: { defaultValue
 }
 
 describe("StartDateSettings", () => {
-  const today = LocalDate.now().toString();
+  // Freeze the clock so "today" cannot roll over mid-run
+  const today = "2024-03-10";
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2024-03-10T12:00:00"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it("should render start date input and toggle", () => {
     render(<TestWrapper />);
@@ -81,7 +90,6 @@ describe("StartDateSettings", () => {
 
   it("uses the local calendar date for the limit, even when UTC has already rolled over", () => {
     vi.stubEnv("TZ", "America/New_York");
-    vi.useFakeTimers();
     // 23:30 on March 10 in New York is already March 11 in UTC
     vi.setSystemTime(new Date("2024-03-11T03:30:00Z"));
 
@@ -90,53 +98,35 @@ describe("StartDateSettings", () => {
 
       expect(screen.getByLabelText("Start Date")).toHaveAttribute("max", "2024-03-10");
     } finally {
-      vi.useRealTimers();
       vi.unstubAllEnvs();
     }
   });
 
   describe("future dates", () => {
-    // Freeze the clock so "today" cannot roll over mid-test
-    const withFrozenClock = (fn: () => Promise<void>) => async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      vi.setSystemTime(new Date("2024-03-10T12:00:00"));
-      try {
-        await fn();
-      } finally {
-        vi.useRealTimers();
-      }
-    };
+    it("rejects a typed future date on submit", async () => {
+      const onSubmit = vi.fn();
+      render(<TestWrapper defaultValues={{ goalStart: "2024-03-11" }} onSubmit={onSubmit} />);
 
-    it(
-      "rejects a typed future date on submit",
-      withFrozenClock(async () => {
-        const onSubmit = vi.fn();
-        render(<TestWrapper defaultValues={{ goalStart: "2024-03-11" }} onSubmit={onSubmit} />);
+      fireEvent.submit(screen.getByRole("button", { name: "Save" }));
 
-        fireEvent.submit(screen.getByRole("button", { name: "Save" }));
+      expect(await screen.findByText("Start date cannot be in the future")).toBeInTheDocument();
+      expect(screen.getByLabelText("Start Date")).toHaveAttribute("aria-invalid", "true");
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
 
-        expect(await screen.findByText("Start date cannot be in the future")).toBeInTheDocument();
-        expect(screen.getByLabelText("Start Date")).toHaveAttribute("aria-invalid", "true");
-        expect(onSubmit).not.toHaveBeenCalled();
-      }),
-    );
+    it("accepts today and an empty start date", async () => {
+      const onSubmit = vi.fn();
+      const { unmount } = render(<TestWrapper defaultValues={{ goalStart: today }} onSubmit={onSubmit} />);
 
-    it(
-      "accepts today and an empty start date",
-      withFrozenClock(async () => {
-        const onSubmit = vi.fn();
-        const { unmount } = render(<TestWrapper defaultValues={{ goalStart: "2024-03-10" }} onSubmit={onSubmit} />);
+      fireEvent.submit(screen.getByRole("button", { name: "Save" }));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(screen.queryByText("Start date cannot be in the future")).not.toBeInTheDocument();
+      unmount();
 
-        fireEvent.submit(screen.getByRole("button", { name: "Save" }));
-        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-        expect(screen.queryByText("Start date cannot be in the future")).not.toBeInTheDocument();
-        unmount();
-
-        render(<TestWrapper defaultValues={{ goalStart: "" }} onSubmit={onSubmit} />);
-        fireEvent.submit(screen.getByRole("button", { name: "Save" }));
-        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
-      }),
-    );
+      render(<TestWrapper defaultValues={{ goalStart: "" }} onSubmit={onSubmit} />);
+      fireEvent.submit(screen.getByRole("button", { name: "Save" }));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
+    });
   });
 
   it("should display existing start date", () => {
