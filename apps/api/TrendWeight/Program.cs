@@ -424,8 +424,10 @@ app.UseStaticFiles(new StaticFileOptions
             headers.Pragma = "no-cache";
             headers.Expires = "0";
         }
-        // Check if this is a hashed asset (contains hash pattern like -aBc123De)
-        else if (System.Text.RegularExpressions.Regex.IsMatch(path, @"-[a-zA-Z0-9_]{8,}\.(js|css)$"))
+        // Vite content-hashes everything it emits under /assets (scripts, styles,
+        // fonts, images), so the whole directory is immutable. Matching on the
+        // directory rather than the file name covers hashes that contain '-' too.
+        else if (ctx.Context.Request.Path.StartsWithSegments("/assets", StringComparison.OrdinalIgnoreCase))
         {
             // Long-term immutable caching for hashed assets
             headers.CacheControl = "public,max-age=31536000,immutable";

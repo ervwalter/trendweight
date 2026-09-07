@@ -562,15 +562,32 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         }
     }
 
-    [Fact]
-    public async Task HashedAssets_KeepImmutableCaching()
+    [Theory]
+    [InlineData("/assets/app-abcdefgh.js")]
+    [InlineData("/assets/index-CGpSZy-r.css")]
+    [InlineData("/assets/inter-latin-wght-normal-D-QHGJNG.woff2")]
+    public async Task HashedAssets_KeepImmutableCaching(string path)
     {
+        // Vite's base64url hashes can contain '-', and fonts and images are hashed too.
         using var client = _factory.CreateHttpsClient();
 
-        using var response = await client.GetAsync("/assets/app-abcdefgh.js", TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl!.MaxAge.Should().Be(TimeSpan.FromDays(365));
+        response.Headers.CacheControl.ToString().Should().Contain("immutable");
+    }
+
+    [Fact]
+    public async Task UnhashedStaticFiles_KeepShortCaching()
+    {
+        using var client = _factory.CreateHttpsClient();
+
+        using var response = await client.GetAsync("/robots.txt", TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl!.MaxAge.Should().Be(TimeSpan.FromHours(1));
+        response.Headers.CacheControl.ToString().Should().NotContain("immutable");
     }
 
     [Theory]
@@ -645,7 +662,10 @@ public sealed class StartupTestFactory : WebApplicationFactory<Program>
     {
         Directory.CreateDirectory(Path.Combine(_webRoot, "assets"));
         File.WriteAllText(Path.Combine(_webRoot, "index.html"), Shell);
+        File.WriteAllText(Path.Combine(_webRoot, "robots.txt"), "User-agent: *");
         File.WriteAllText(Path.Combine(_webRoot, "assets", "app-abcdefgh.js"), "/* test asset */");
+        File.WriteAllText(Path.Combine(_webRoot, "assets", "index-CGpSZy-r.css"), "/* test asset */");
+        File.WriteAllBytes(Path.Combine(_webRoot, "assets", "inter-latin-wght-normal-D-QHGJNG.woff2"), [0x77, 0x4F, 0x46, 0x32]);
     }
 
     public HttpClient CreateHttpsClient() => CreateClient(new WebApplicationFactoryClientOptions
