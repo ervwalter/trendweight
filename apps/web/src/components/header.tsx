@@ -29,7 +29,7 @@ export function Header() {
     <header className="bg-primary text-primary-foreground dark:bg-primary/10 print:hidden">
       <Container>
         {/* Desktop Navigation */}
-        <nav className="hidden items-stretch justify-between md:flex">
+        <nav aria-label="Main" className="hidden items-stretch justify-between md:flex">
           <div className="flex items-center gap-2 py-3">
             <Link to={isLoggedIn ? "/dashboard" : "/"} className="font-logo dark:text-link text-3xl leading-tight font-bold">
               TrendWeight
@@ -62,12 +62,14 @@ export function Header() {
         </nav>
 
         {/* Mobile Navigation */}
-        <nav className="flex items-center justify-between py-3 md:hidden">
+        <nav aria-label="Mobile" className="flex items-center justify-between py-3 md:hidden">
           {/* Hamburger Menu - Left */}
           <button
             ref={buttonRef}
             className="text-primary-foreground -ml-2 flex items-center p-2"
-            aria-label="Open menu"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -87,7 +89,7 @@ export function Header() {
           </div>
         </nav>
         {/* Mobile menu */}
-        <div ref={menuRef} className={`md:hidden ${mobileMenuOpen ? "block" : "hidden"} bg-primary/90 dark:bg-primary/10 -mx-4 px-4 py-4`}>
+        <div id="mobile-menu" ref={menuRef} className={`md:hidden ${mobileMenuOpen ? "block" : "hidden"} bg-primary/90 dark:bg-primary/10 -mx-4 px-4 py-4`}>
           <div className="flex flex-col space-y-3">
             <MobileNavLink to="/" onClick={() => setMobileMenuOpen(false)}>
               Home
@@ -112,13 +114,7 @@ export function Header() {
             ) : (
               <button
                 className={`hover:bg-primary/80 text-primary-foreground block w-full rounded px-3 py-2 text-left dark:hover:bg-white/10`}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  await signOut();
-                  setMobileMenuOpen(false);
-                }}
-                onTouchEnd={async (e) => {
-                  e.preventDefault();
+                onClick={async () => {
                   await signOut();
                   setMobileMenuOpen(false);
                 }}
