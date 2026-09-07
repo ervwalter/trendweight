@@ -40,7 +40,8 @@ export function getDebugInfo(options?: DebugInfoOptions): string {
   const buildInfo = getBuildInfo();
   const systemInfo = getBrowserInfo();
 
-  const sections: string[] = [];
+  // Empty strings are blank-line separators; `undefined` marks a conditional line to omit
+  const sections: (string | undefined)[] = [];
 
   // Add error-specific information if provided
   if (options?.error || options?.componentStack) {
@@ -48,14 +49,15 @@ export function getDebugInfo(options?: DebugInfoOptions): string {
       "=== Error Details ===",
       "",
       `- Occurred at: ${new Date().toISOString()}`,
-      options.error?.name ? `- Error Type: ${options.error.name}` : "",
-      options.error?.message ? `- Error Message: ${options.error.message}` : "",
+      options.error?.name ? `- Error Type: ${options.error.name}` : undefined,
+      options.error?.message ? `- Error Message: ${options.error.message}` : undefined,
       "",
       "Error Stack:",
       options.error?.stack ? options.error.stack.split("\n").slice(0, 10).join("\n") : "No stack trace available",
       "",
-      options.componentStack ? "Component Stack:" : "",
-      options.componentStack || "",
+      options.componentStack ? "Component Stack:" : undefined,
+      options.componentStack ? options.componentStack.trim() : undefined,
+      options.componentStack ? "" : undefined,
       "Page Information:",
       `- Current URL: ${window.location.href}`,
       `- Referrer: ${document.referrer || "Direct navigation"}`,
@@ -72,7 +74,7 @@ export function getDebugInfo(options?: DebugInfoOptions): string {
     `- Branch: ${buildInfo.buildBranch}`,
     `- Commit: ${buildInfo.buildCommit}`,
     `- Build Time: ${buildInfo.buildTime}`,
-    buildInfo.buildTimeInfo && typeof buildInfo.buildTimeInfo === "object" ? `- Build Age: ${buildInfo.buildTimeInfo.ageText}` : "",
+    buildInfo.buildTimeInfo ? `- Build Age: ${buildInfo.buildTimeInfo.ageText}` : undefined,
     "",
     "=== System Information ===",
     "",
@@ -90,5 +92,5 @@ export function getDebugInfo(options?: DebugInfoOptions): string {
     `Generated at: ${new Date().toISOString()}`,
   );
 
-  return sections.filter(Boolean).join("\n");
+  return sections.filter((line) => line !== undefined).join("\n");
 }

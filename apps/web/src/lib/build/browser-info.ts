@@ -16,18 +16,19 @@ export function getBrowserInfo(): SystemInfo {
     version: "Unknown",
   };
 
-  if (ua.includes("Chrome")) {
+  // Chromium Edge identifies as "Edg/" and also carries a "Chrome/" token, so it must be checked first
+  if (ua.includes("Edg/")) {
+    browser.name = "Edge";
+    browser.version = ua.match(/Edg\/(\d+)/)?.[1] || "Unknown";
+  } else if (ua.includes("Chrome")) {
     browser.name = "Chrome";
     browser.version = ua.match(/Chrome\/(\d+)/)?.[1] || "Unknown";
   } else if (ua.includes("Firefox")) {
     browser.name = "Firefox";
     browser.version = ua.match(/Firefox\/(\d+)/)?.[1] || "Unknown";
-  } else if (ua.includes("Safari") && !ua.includes("Chrome")) {
+  } else if (ua.includes("Safari")) {
     browser.name = "Safari";
     browser.version = ua.match(/Version\/(\d+)/)?.[1] || "Unknown";
-  } else if (ua.includes("Edge")) {
-    browser.name = "Edge";
-    browser.version = ua.match(/Edge\/(\d+)/)?.[1] || "Unknown";
   }
 
   return {
