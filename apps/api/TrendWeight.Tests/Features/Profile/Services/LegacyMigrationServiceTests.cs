@@ -7,12 +7,11 @@ using TrendWeight.Features.Profile.Models;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Infrastructure.DataAccess.Models;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Profile.Services;
 
-public class LegacyMigrationServiceTests : TestBase
+public class LegacyMigrationServiceTests
 {
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILegacyDbService> _legacyDbServiceMock;

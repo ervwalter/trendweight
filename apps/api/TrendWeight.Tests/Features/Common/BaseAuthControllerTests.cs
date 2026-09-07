@@ -3,12 +3,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TrendWeight.Features.Common;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Common;
 
-public class BaseAuthControllerTests : TestBase
+public class BaseAuthControllerTests
 {
     private readonly TestAuthController _sut;
 

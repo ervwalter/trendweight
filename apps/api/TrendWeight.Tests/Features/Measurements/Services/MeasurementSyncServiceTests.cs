@@ -12,12 +12,11 @@ using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Providers;
 using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.SyncProgress;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Measurements.Services;
 
-public class MeasurementSyncServiceTests : TestBase
+public class MeasurementSyncServiceTests
 {
     private readonly Mock<IProviderIntegrationService> _providerIntegrationServiceMock;
     private readonly Mock<ISourceDataService> _sourceDataServiceMock;

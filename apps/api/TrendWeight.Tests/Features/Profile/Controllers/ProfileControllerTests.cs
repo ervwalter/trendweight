@@ -9,12 +9,11 @@ using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Infrastructure.DataAccess.Models;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Profile.Controllers;
 
-public class ProfileControllerTests : TestBase
+public class ProfileControllerTests
 {
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILegacyMigrationService> _migrationServiceMock;

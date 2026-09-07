@@ -15,12 +15,11 @@ using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.SyncProgress;
 using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.DataAccess.Models;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Providers.Fitbit;
 
-public class FitbitServiceProgressTests : TestBase
+public class FitbitServiceProgressTests
 {
     private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
     private readonly HttpClient _httpClient;

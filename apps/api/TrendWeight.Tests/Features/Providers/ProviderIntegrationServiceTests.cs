@@ -2,12 +2,11 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TrendWeight.Features.Providers;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Providers;
 
-public class ProviderIntegrationServiceTests : TestBase
+public class ProviderIntegrationServiceTests
 {
     private readonly Mock<IProviderService> _withingsServiceMock;
     private readonly Mock<IProviderService> _fitbitServiceMock;

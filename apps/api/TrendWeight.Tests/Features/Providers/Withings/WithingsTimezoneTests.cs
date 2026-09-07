@@ -14,12 +14,11 @@ using TrendWeight.Features.Providers.Withings.Models;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.DataAccess.Models;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Providers.Withings;
 
-public class WithingsTimezoneTests : TestBase
+public class WithingsTimezoneTests
 {
     private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
     private readonly HttpClient _httpClient;

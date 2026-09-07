@@ -12,11 +12,10 @@ using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Infrastructure.Auth;
 using TrendWeight.Infrastructure.Services;
-using TrendWeight.Tests.Fixtures;
 
 namespace TrendWeight.Tests.Features.Profile.Services;
 
-public class ProfileServiceTests : TestBase
+public class ProfileServiceTests
 {
     private readonly Mock<ISupabaseService> _supabaseServiceMock;
     private readonly Mock<ILogger<ProfileService>> _loggerMock;

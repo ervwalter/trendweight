@@ -12,12 +12,11 @@ using TrendWeight.Features.Common.Models;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Fitbit;
 using TrendWeight.Infrastructure.Configuration;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Providers.Fitbit;
 
-public class FitbitLinkControllerTests : TestBase
+public class FitbitLinkControllerTests
 {
     private readonly Mock<IFitbitService> _fitbitServiceMock;
     private readonly Mock<IOptions<AppOptions>> _appOptionsMock;

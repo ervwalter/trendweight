@@ -8,12 +8,11 @@ using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Measurements.Services;
 
-public class SourceDataServiceTests : TestBase
+public class SourceDataServiceTests
 {
     private readonly Mock<ISupabaseService> _supabaseServiceMock;
     private readonly Mock<ILogger<SourceDataService>> _loggerMock;

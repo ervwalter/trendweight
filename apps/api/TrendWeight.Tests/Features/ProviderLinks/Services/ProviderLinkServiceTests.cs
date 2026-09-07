@@ -6,11 +6,10 @@ using Supabase.Realtime;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
-using TrendWeight.Tests.Fixtures;
 
 namespace TrendWeight.Tests.Features.ProviderLinks.Services;
 
-public class ProviderLinkServiceTests : TestBase
+public class ProviderLinkServiceTests
 {
     private readonly Mock<ISupabaseService> _supabaseServiceMock;
     private readonly Mock<ILogger<ProviderLinkService>> _loggerMock;

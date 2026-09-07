@@ -11,12 +11,11 @@ using System.Security.Claims;
 using TrendWeight.Features.Common.Models;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Withings;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Providers.Withings;
 
-public class WithingsLinkControllerTests : TestBase
+public class WithingsLinkControllerTests
 {
     private readonly Mock<IWithingsService> _withingsServiceMock;
     private const string SigningKey = "test-signing-key-that-is-long-enough-for-hmac-sha256-algorithm";

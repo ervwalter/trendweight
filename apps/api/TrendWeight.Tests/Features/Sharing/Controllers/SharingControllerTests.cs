@@ -9,12 +9,11 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.Sharing;
 using TrendWeight.Features.Sharing.Models;
 using TrendWeight.Infrastructure.DataAccess.Models;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Sharing.Controllers;
 
-public class SharingControllerTests : TestBase
+public class SharingControllerTests
 {
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILogger<SharingController>> _loggerMock;

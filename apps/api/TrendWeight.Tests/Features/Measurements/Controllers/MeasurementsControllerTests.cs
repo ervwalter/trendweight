@@ -10,13 +10,12 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 using TrendWeight.Features.Common;
 
 namespace TrendWeight.Tests.Features.Measurements.Controllers;
 
-public class MeasurementsControllerTests : TestBase
+public class MeasurementsControllerTests
 {
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<IMeasurementOrchestrationService> _orchestrationServiceMock;

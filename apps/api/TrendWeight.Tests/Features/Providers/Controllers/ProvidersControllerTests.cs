@@ -16,12 +16,11 @@ using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
 using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.DataAccess.Models;
-using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Providers.Controllers;
 
-public class ProvidersControllerTests : TestBase
+public class ProvidersControllerTests
 {
     private readonly Mock<IProviderLinkService> _providerLinkServiceMock;
     private readonly Mock<ISourceDataService> _sourceDataServiceMock;
