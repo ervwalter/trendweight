@@ -109,8 +109,6 @@ public class ClerkAuthenticationHandlerTests
     {
         // Arrange
         _context.Request.Headers["Authorization"] = "Bearer invalid-token";
-        _context.Request.Scheme = "https";
-        _context.Request.Host = new HostString("example.com");
 
         _clerkTokenServiceMock
             .Setup(x => x.ValidateTokenAsync("invalid-token", "https://example.com"))
@@ -129,8 +127,6 @@ public class ClerkAuthenticationHandlerTests
     {
         // Arrange
         _context.Request.Headers["Authorization"] = "Bearer valid-token";
-        _context.Request.Scheme = "https";
-        _context.Request.Host = new HostString("example.com");
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
@@ -158,8 +154,6 @@ public class ClerkAuthenticationHandlerTests
     {
         // Arrange
         _context.Request.Headers["Authorization"] = "Bearer valid-token";
-        _context.Request.Scheme = "https";
-        _context.Request.Host = new HostString("example.com");
 
         var clerkPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
@@ -252,8 +246,6 @@ public class ClerkAuthenticationHandlerTests
     {
         // Arrange
         _context.Request.Headers["Authorization"] = "Bearer valid-token";
-        _context.Request.Scheme = "https";
-        _context.Request.Host = new HostString("example.com");
 
         _clerkTokenServiceMock
             .Setup(x => x.ValidateTokenAsync(It.IsAny<string>(), It.IsAny<string>()))
