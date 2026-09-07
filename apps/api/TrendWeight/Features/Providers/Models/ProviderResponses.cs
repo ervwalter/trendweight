@@ -6,8 +6,13 @@ namespace TrendWeight.Features.Providers.Models;
 public class ProviderLinkResponse
 {
     public required string Provider { get; set; }
-    public required string ConnectedAt { get; set; }
-    public string? UpdateReason { get; set; }
+
+    /// <summary>
+    /// When the link was established. Only returned to the account owner; the
+    /// anonymous sharing endpoint leaves it null so it is omitted from the payload.
+    /// </summary>
+    public string? ConnectedAt { get; set; }
+
     public required bool HasToken { get; set; }
     public bool IsDisabled { get; set; }
 }

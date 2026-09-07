@@ -51,7 +51,6 @@ export interface ApiSourceData {
 export interface ProviderLink {
   provider: string;
   connectedAt: string;
-  updateReason?: string;
   hasToken: boolean;
   isDisabled?: boolean;
 }

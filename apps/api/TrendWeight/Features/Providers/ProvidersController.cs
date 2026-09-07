@@ -75,7 +75,7 @@ public class ProvidersController : ControllerBase
                 return Unauthorized(new ErrorResponse { Error = "User ID not found" });
             }
 
-            return Ok(await BuildLinkResponsesAsync(userGuid));
+            return Ok(await BuildLinkResponsesAsync(userGuid, includeConnectedAt: true));
         }
         catch (Exception ex)
         {
@@ -263,9 +263,10 @@ public class ProvidersController : ControllerBase
     /// <summary>
     /// Builds the provider link list for a user: every provider_links row plus a
     /// synthetic "manual" link whenever the user has manual readings (manual data has
-    /// no provider_links row). Used by both the authenticated and the shared endpoint.
+    /// no provider_links row). Used by both the authenticated and the shared endpoint;
+    /// the shared endpoint omits ConnectedAt.
     /// </summary>
-    private async Task<List<ProviderLinkResponse>> BuildLinkResponsesAsync(Guid uid)
+    private async Task<List<ProviderLinkResponse>> BuildLinkResponsesAsync(Guid uid, bool includeConnectedAt)
     {
         var providerLinks = await _providerLinkService.GetAllForUserAsync(uid);
 
@@ -273,8 +274,7 @@ public class ProvidersController : ControllerBase
             .Select(link => new ProviderLinkResponse
             {
                 Provider = link.Provider,
-                ConnectedAt = ConnectedAtFor(link),
-                UpdateReason = link.UpdateReason,
+                ConnectedAt = includeConnectedAt ? ConnectedAtFor(link) : null,
                 HasToken = link.Token != null && link.Token.Count > 0,
                 IsDisabled = link.Provider == "legacy" && link.Token?.GetValueOrDefault("disabled") as bool? == true
             }).ToList();
@@ -285,8 +285,7 @@ public class ProvidersController : ControllerBase
             response.Add(new ProviderLinkResponse
             {
                 Provider = "manual",
-                ConnectedAt = (lastUpdate ?? DateTime.UtcNow).ToString("o"),
-                UpdateReason = null,
+                ConnectedAt = includeConnectedAt ? (lastUpdate ?? DateTime.UtcNow).ToString("o") : null,
                 HasToken = true,
                 IsDisabled = false
             });
@@ -324,8 +323,9 @@ public class ProvidersController : ControllerBase
             }
 
             // The shared dashboard gates on the same link list the owner sees, so the
-            // synthetic manual link must be present here too for manual-only users
-            return Ok(await BuildLinkResponsesAsync(user.Uid));
+            // synthetic manual link must be present here too for manual-only users.
+            // Anonymous viewers only need provider/hasToken/isDisabled.
+            return Ok(await BuildLinkResponsesAsync(user.Uid, includeConnectedAt: false));
         }
         catch (Exception ex)
         {

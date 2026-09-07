@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Profile.Services;
@@ -865,6 +867,74 @@ public class ProvidersControllerTests : TestBase
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
         response.Should().ContainSingle().Which.Provider.Should().Be("withings");
+    }
+
+    [Fact]
+    public async Task GetProviderLinksBySharingCode_OmitsConnectedAtAndOnlyExposesLinkState()
+    {
+        // Anonymous viewers only need provider/hasToken/isDisabled; connection dates and
+        // provider status strings stay out of the shared payload
+        var userId = Guid.NewGuid();
+        var sharingCode = "test-sharing-code";
+        var user = CreateTestProfile(userId);
+        user.Profile.SharingEnabled = true;
+        user.Profile.SharingToken = sharingCode;
+
+        var withings = CreateTestProviderLink(userId, "withings");
+        withings.CreatedAt = DateTime.UtcNow.AddDays(-30).ToString("o");
+        withings.UpdateReason = "Token refresh";
+
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode))
+            .ReturnsAsync(user);
+        _providerLinkServiceMock.Setup(x => x.GetAllForUserAsync(userId))
+            .ReturnsAsync(new List<DbProviderLink> { withings });
+        _sourceDataServiceMock.Setup(x => x.HasMeasurementsAsync(userId, "manual"))
+            .ReturnsAsync(true);
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "manual"))
+            .ReturnsAsync(DateTime.UtcNow.AddHours(-1));
+
+        var result = await _sut.GetProviderLinksBySharingCode(sharingCode);
+
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
+        response.Should().HaveCount(2);
+        response.Should().OnlyContain(r => r.ConnectedAt == null);
+
+        // Serialize the way the API does (camelCase, nulls omitted) and pin the wire shape
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(response, options));
+        foreach (var element in json.RootElement.EnumerateArray())
+        {
+            element.EnumerateObject().Select(prop => prop.Name)
+                .Should().BeEquivalentTo(new[] { "provider", "hasToken", "isDisabled" });
+        }
+    }
+
+    [Fact]
+    public async Task GetProviderLinks_ForOwner_StillIncludesConnectedAt()
+    {
+        var userId = Guid.NewGuid();
+        var withings = CreateTestProviderLink(userId, "withings");
+        withings.CreatedAt = DateTime.UtcNow.AddDays(-30).ToString("o");
+
+        SetupAuthenticatedUser(userId.ToString());
+        _providerLinkServiceMock.Setup(x => x.GetAllForUserAsync(userId))
+            .ReturnsAsync(new List<DbProviderLink> { withings });
+        _sourceDataServiceMock.Setup(x => x.HasMeasurementsAsync(userId, "manual"))
+            .ReturnsAsync(true);
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "manual"))
+            .ReturnsAsync(DateTime.UtcNow.AddHours(-1));
+
+        var result = await _sut.GetProviderLinks();
+
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
+        response.Should().HaveCount(2);
+        response.Should().OnlyContain(r => !string.IsNullOrEmpty(r.ConnectedAt));
     }
 
     [Fact]
