@@ -9,7 +9,7 @@ export interface SharingSearch {
 }
 
 // Explore mode has no place on a shared or embedded dashboard
-const SHARED_RANGES: TimeRange[] = (Object.keys(TimeRanges) as TimeRange[]).filter((range) => range !== "explore");
+export const SHARED_RANGES: TimeRange[] = (Object.keys(TimeRanges) as TimeRange[]).filter((range) => range !== "explore");
 const MODES = Object.keys(Modes) as Mode[];
 
 /**

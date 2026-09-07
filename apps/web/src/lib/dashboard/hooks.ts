@@ -6,12 +6,15 @@ import { TimeRanges, type Mode, type TimeRange } from "@/lib/core/interfaces";
 import { usePersistedState } from "@/lib/hooks/use-persisted-state";
 import { useSharingCode } from "@/lib/hooks/use-sharing-code";
 import { useSharingSearchParams } from "@/lib/hooks/use-sharing-search-params";
+import { SHARED_RANGES } from "@/lib/routes/sharing-search";
 import { computeDataPoints } from "./computations/data-points";
 import { computeActiveSlope, computeDeltas, computeWeightSlope } from "./computations/stats";
 import { convertMeasurements } from "./computations/conversion";
 
 // A stale or hand-edited localStorage value would otherwise render a chart with no series
 const isTimeRange = (value: unknown): value is TimeRange => typeof value === "string" && value in TimeRanges;
+// Shared and embedded dashboards additionally have no controls to leave explore mode
+const isSharedTimeRange = (value: unknown): value is TimeRange => isTimeRange(value) && SHARED_RANGES.includes(value);
 
 export const useDashboardData = (): DashboardData => {
   const data = useContext(dashboardContext);
@@ -25,14 +28,15 @@ export const useComputeDashboardData = (): DashboardData => {
   const sharingCode = useSharingCode();
   const searchParams = useSharingSearchParams();
 
-  // Use search params for initial values, otherwise use defaults/persisted
-  // Don't persist to localStorage when search params are present
+  // Use search params for initial values, otherwise use defaults/persisted.
+  // The persisted range is the viewer's own preference: it is neither read nor written when a
+  // range param is present or when viewing someone else's (shared/embedded/demo) dashboard.
   const [mode, setMode] = useState<Mode>(searchParams.mode || "weight");
   const [timeRange, setTimeRange] = usePersistedState<TimeRange>(
     "timeRange",
     searchParams.range || "4w",
-    !searchParams.range, // Only persist if no range param
-    isTimeRange,
+    !searchParams.range && !sharingCode,
+    sharingCode ? isSharedTimeRange : isTimeRange,
   );
 
   // Get profile and measurement data in parallel
