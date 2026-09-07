@@ -77,7 +77,7 @@ public class LegacyService : IProviderService
     /// <summary>
     /// Enables the legacy provider by clearing the disabled flag
     /// </summary>
-    public virtual async Task<bool> EnableProviderLinkAsync(Guid userId)
+    public async Task<bool> EnableProviderLinkAsync(Guid userId)
     {
         var link = await _providerLinkService.GetProviderLinkAsync(userId, ProviderName);
         if (link == null)
