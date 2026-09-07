@@ -62,6 +62,10 @@ const Dashboard: FC = () => {
     );
   }
 
+  // Weight mode always has points once measurements exist; the body-fat modes may not
+  const mode = dashboardData.mode[0];
+  const hasModeData = dashboardData.dataPoints.length > 0;
+
   // Normal mode: full dashboard
   return (
     <DashboardProvider data={dashboardData}>
@@ -77,7 +81,7 @@ const Dashboard: FC = () => {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-12">
           <div className="w-full md:w-[475px] lg:w-[650px] xl:w-[840px]">
             <Heading level={2} className="mb-4">
-              {Modes[dashboardData.mode[0]]},{" "}
+              {Modes[mode]},{" "}
               {dashboardData.timeRange[0] === "all"
                 ? "All Time"
                 : dashboardData.timeRange[0] === "explore"
@@ -85,20 +89,28 @@ const Dashboard: FC = () => {
                   : `Past ${TimeRanges[dashboardData.timeRange[0]]}`}
               {!dashboardData.isMe && ` for ${dashboardData.profile.firstName}`}
             </Heading>
-            <div className="relative">
-              <Chart />
+            {hasModeData ? (
+              <div className="relative">
+                <Chart />
+              </div>
+            ) : (
+              <p className="text-muted-foreground" role="status">
+                No body fat readings yet. None of the measurements so far include body fat, so there is nothing to show for {Modes[mode]}.
+              </p>
+            )}
+          </div>
+          {hasModeData && <Currently />}
+        </div>
+        {hasModeData && (
+          <div className="flex flex-col-reverse gap-4 md:flex-row md:gap-12 lg:gap-20">
+            <RecentReadings />
+            <div className="flex flex-col gap-4">
+              <Deltas />
+              <Stats />
+              <HelpLink />
             </div>
           </div>
-          <Currently />
-        </div>
-        <div className="flex flex-col-reverse gap-4 md:flex-row md:gap-12 lg:gap-20">
-          <RecentReadings />
-          <div className="flex flex-col gap-4">
-            <Deltas />
-            <Stats />
-            <HelpLink />
-          </div>
-        </div>
+        )}
       </div>
     </DashboardProvider>
   );
