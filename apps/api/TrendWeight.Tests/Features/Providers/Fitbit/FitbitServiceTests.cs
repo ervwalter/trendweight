@@ -11,6 +11,7 @@ using System.Text.Json;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Services;
+using TrendWeight.Features.Providers;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Fitbit;
 using TrendWeight.Features.Providers.Fitbit.Models;
@@ -1188,6 +1189,9 @@ public class FitbitServiceTests : TestBase
         // Act & Assert
         await _sut.Invoking(x => x.GetMeasurementsAsync(userId, true))
             .Should().ThrowAsync<ProviderAuthException>();
+
+        // The per-link refresh lock must not outlive the refresh, even when it fails
+        ProviderServiceBase.HasRefreshLock(userId, "fitbit").Should().BeFalse();
     }
 
     [Fact]
@@ -1229,6 +1233,7 @@ public class FitbitServiceTests : TestBase
             ItExpr.IsAny<CancellationToken>());
         _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(),
             It.IsAny<Dictionary<string, object>>(), It.IsAny<string?>()), Times.Never);
+        ProviderServiceBase.HasRefreshLock(userId, "fitbit").Should().BeFalse("the refresh lock entry is released after the refresh completes");
     }
 
     private Dictionary<string, object> CreateExpiredToken()

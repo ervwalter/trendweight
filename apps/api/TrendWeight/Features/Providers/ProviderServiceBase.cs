@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Web;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.ProviderLinks.Services;
@@ -223,7 +222,11 @@ public abstract class ProviderServiceBase : IProviderService
     // same refresh token leave the loser with invalid_grant and a spurious "please reconnect"
     // even though the winner just stored a valid token. Refreshes for a given link are
     // serialized within this process and re-read the stored link before spending the token.
-    private static readonly ConcurrentDictionary<(Guid UserId, string Provider), SemaphoreSlim> RefreshLocks = new();
+    // The lock map only holds keys with an in-flight refresh, so it does not grow over time.
+    private static readonly KeyedAsyncLock<(Guid UserId, string Provider)> RefreshLocks = new();
+
+    /// <summary>Test hook: whether a refresh lock entry is currently retained for the link</summary>
+    internal static bool HasRefreshLock(Guid userId, string provider) => RefreshLocks.Contains((userId, provider));
 
     /// <summary>
     /// Gets the active provider link, automatically refreshing token if needed
@@ -241,9 +244,7 @@ public abstract class ProviderServiceBase : IProviderService
             return providerLink;
         }
 
-        var refreshLock = RefreshLocks.GetOrAdd((userId, ProviderName), _ => new SemaphoreSlim(1, 1));
-        await refreshLock.WaitAsync();
-        try
+        using (await RefreshLocks.AcquireAsync((userId, ProviderName)))
         {
             // A concurrent request may have refreshed while this one waited for the lock
             providerLink = await ProviderLinkService.GetProviderLinkAsync(userId, ProviderName);
@@ -285,10 +286,6 @@ public abstract class ProviderServiceBase : IProviderService
                 Logger.LogError(ex, "Failed to refresh token for {Provider} user {UserId}", ProviderName, userId);
                 throw;
             }
-        }
-        finally
-        {
-            refreshLock.Release();
         }
 
         return providerLink;
