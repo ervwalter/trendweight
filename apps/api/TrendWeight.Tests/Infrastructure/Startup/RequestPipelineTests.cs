@@ -342,6 +342,7 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         using var rejected = await client.GetAsync("/api/v1/measurements/manual", TestContext.Current.CancellationToken);
 
         rejected.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        rejected.Headers.RetryAfter!.Delta.Should().BeGreaterThan(TimeSpan.Zero).And.BeLessThanOrEqualTo(TimeSpan.FromMinutes(1));
         using var body = System.Text.Json.JsonDocument.Parse(await rejected.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         body.RootElement.GetProperty("error").GetString().Should().Be("Too many requests. Please try again later.");
         body.RootElement.GetProperty("errorCode").GetString().Should().Be("RATE_LIMITED");
@@ -369,11 +370,15 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
 
         using var anonymous = await client.GetAsync("/api/profile/disabled-share", ct);
         anonymous.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        anonymous.Headers.RetryAfter!.Delta.Should().BeGreaterThan(TimeSpan.Zero).And.BeLessThanOrEqualTo(TimeSpan.FromMinutes(1));
 
+        // Rejected credentials are answered by the authorization handler rather than
+        // the limiter middleware; both 429 paths carry the same body and Retry-After.
         using var guess = new HttpRequestMessage(HttpMethod.Get, "/api/v1/settings");
         guess.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "sk-guessed-key");
         using var rejectedGuess = await client.SendAsync(guess, ct);
         rejectedGuess.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        rejectedGuess.Headers.RetryAfter!.Delta.Should().BeGreaterThan(TimeSpan.Zero).And.BeLessThanOrEqualTo(TimeSpan.FromMinutes(1));
         (await rejectedGuess.Content.ReadAsStringAsync(ct)).Should().Contain("\"errorCode\":\"RATE_LIMITED\"");
 
         // Valid credentials, the application shell, and the health check keep their own budget.

@@ -34,11 +34,7 @@ public sealed class RateLimitedAuthorizationResultHandler : IAuthorizationMiddle
             using var lease = await limiter.AcquireAsync(context, 1, context.RequestAborted);
             if (!lease.IsAcquired)
             {
-                context.Response.StatusCode = options.RejectionStatusCode;
-                if (options.OnRejected != null)
-                {
-                    await options.OnRejected(new OnRejectedContext { HttpContext = context, Lease = lease }, context.RequestAborted);
-                }
+                await RateLimitRejection.WriteAsync(context, lease, context.RequestAborted);
                 return;
             }
         }

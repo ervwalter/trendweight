@@ -9,17 +9,9 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using TrendWeight.Features.ApiV1;
-using TrendWeight.Features.Common.Models;
 using TrendWeight.Features.Measurements.Manual;
 using TrendWeight.Infrastructure.Extensions;
 using TrendWeight.Infrastructure.Middleware;
-
-// Create a singleton JsonSerializerOptions for rate limiting responses
-var rateLimitJsonOptions = new JsonSerializerOptions
-{
-    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-};
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -176,25 +168,8 @@ builder.Services.AddRateLimiter(options =>
         PartitionedRateLimiter.Create<HttpContext, string>(context => RateLimitPartitionResolver.Resolve(context, rateLimitingConfig)),
         PartitionedRateLimiter.Create<HttpContext, string>(RateLimitPartitionResolver.ResolveAnonymousCeiling));
 
-    // Return 429 Too Many Requests when rate limit is exceeded
-    options.OnRejected = async (context, token) =>
-    {
-        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        context.HttpContext.Response.ContentType = "application/json";
-
-        var response = new ApiErrorResponse
-        {
-            Error = "Too many requests. Please try again later.",
-            ErrorCode = ErrorCodes.RateLimited,
-            IsRetryable = true
-        };
-
-        await context.HttpContext.Response.WriteAsync(
-            JsonSerializer.Serialize(response, rateLimitJsonOptions),
-            cancellationToken: token);
-    };
-
-    // Set standard rate limit headers
+    // Return 429 Too Many Requests, with Retry-After, when rate limit is exceeded
+    options.OnRejected = (context, token) => new ValueTask(RateLimitRejection.WriteAsync(context.HttpContext, context.Lease, token));
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
