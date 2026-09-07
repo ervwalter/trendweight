@@ -365,7 +365,7 @@ public class WithingsServiceTests
     #region Resilience: failures
 
     [Fact]
-    public async Task SyncMeasurementsAsync_WithSuccessStatusButNullBody_ReportsUnknownAfterSwallowingNullReference()
+    public async Task SyncMeasurementsAsync_WithSuccessStatusButNullBody_ReportsUnknownWithoutCrashing()
     {
         var userId = LinkUser();
         // Not a shape the docs describe, so WithingsPayloads has no builder for it
@@ -376,8 +376,8 @@ public class WithingsServiceTests
         result.Success.Should().BeFalse();
         result.Error.Should().Be(ProviderSyncError.Unknown);
         result.Measurements.Should().BeNull();
-        // Current behaviour: body! dereferences null and the base class catch-all turns it into null
-        _logs.Entries.Should().Contain(e => e.Level == LogLevel.Error && e.Exception is NullReferenceException);
+        _logs.ShouldHaveLogged(LogLevel.Error, "without a body");
+        _logs.Entries.Should().NotContain(e => e.Exception is NullReferenceException);
         VerifyNothingStored();
     }
 

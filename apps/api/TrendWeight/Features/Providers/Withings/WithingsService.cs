@@ -318,7 +318,14 @@ public class WithingsService : ProviderServiceBase, IWithingsService
             throw ApiError(withingsResponse);
         }
 
-        var body = withingsResponse.Body!;
+        if (withingsResponse.Body is not { } body)
+        {
+            // Not a documented shape: a success status must carry the measures body.
+            // Treat it like any other malformed response rather than dereferencing null.
+            Logger.LogError("Withings returned status 0 without a body");
+            throw new ProviderException("Withings returned a success status without a body", HttpStatusCode.OK, "WITHINGS_EMPTY_RESPONSE", isRetryable: false);
+        }
+
         var timezone = body.Timezone;
 
         // Get timezone info for conversion with robust IANA/Windows ID support
