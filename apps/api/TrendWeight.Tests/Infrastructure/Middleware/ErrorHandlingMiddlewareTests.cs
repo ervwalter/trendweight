@@ -44,6 +44,49 @@ public class ErrorHandlingMiddlewareTests
         root.TryGetProperty("details", out _).Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData(typeof(ArgumentOutOfRangeException))]
+    [InlineData(typeof(ArgumentNullException))]
+    [InlineData(typeof(ArgumentException))]
+    [InlineData(typeof(KeyNotFoundException))]
+    public async Task BclExceptionsFromInternalBugs_AreServerErrorsWithoutTheirMessage(Type exceptionType)
+    {
+        // A bad Substring or a Dictionary miss is a bug, not a client error; the
+        // response must not turn it into a 400/404 or echo the parameter name.
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+        var exception = (Exception)Activator.CreateInstance(exceptionType, "internal parameter name")!;
+        var middleware = Create(_ => throw exception);
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(500);
+        using var document = JsonDocument.Parse(await ReadBody(context));
+        var root = document.RootElement;
+        root.GetProperty("errorCode").GetString().Should().Be("INTERNAL_ERROR");
+        root.GetProperty("error").GetString().Should().Be("An error occurred while processing your request");
+        root.GetProperty("correlationId").GetString().Should().NotBeNullOrEmpty();
+        root.TryGetProperty("details", out _).Should().BeFalse();
+        (await ReadBody(context)).Should().NotContain("internal parameter name");
+    }
+
+    [Fact]
+    public async Task DevelopmentError_IncludesExceptionDetails()
+    {
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+        var middleware = Create(_ => throw new InvalidOperationException("dev-only detail"), Environments.Development);
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(500);
+        using var document = JsonDocument.Parse(await ReadBody(context));
+        var root = document.RootElement;
+        root.GetProperty("errorCode").GetString().Should().Be("INTERNAL_ERROR");
+        root.GetProperty("error").GetString().Should().Be("An error occurred while processing your request");
+        root.GetProperty("details").GetString().Should().Contain("InvalidOperationException").And.Contain("dev-only detail");
+    }
+
     [Fact]
     public async Task MissingIdentity_IsUnauthorizedNotForbidden()
     {
@@ -93,10 +136,10 @@ public class ErrorHandlingMiddlewareTests
         return await new StreamReader(context.Response.Body).ReadToEndAsync(TestContext.Current.CancellationToken);
     }
 
-    private static ErrorHandlingMiddleware Create(RequestDelegate next)
+    private static ErrorHandlingMiddleware Create(RequestDelegate next, string environmentName = "Production")
     {
         var environment = new Mock<IHostEnvironment>();
-        environment.SetupGet(x => x.EnvironmentName).Returns(Environments.Production);
+        environment.SetupGet(x => x.EnvironmentName).Returns(environmentName);
         return new ErrorHandlingMiddleware(next, NullLogger<ErrorHandlingMiddleware>.Instance, environment.Object);
     }
 }

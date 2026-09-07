@@ -48,23 +48,12 @@ public class ErrorHandlingMiddleware
         };
         int statusCode;
 
+        // Controllers translate expected failures into responses themselves, so
+        // anything reaching here is an internal error. Exception messages are never
+        // echoed: BCL exceptions (argument, key lookups, ...) carry implementation
+        // details and only surface here as bugs.
         switch (exception)
         {
-            case ArgumentNullException:
-            case ArgumentException:
-                // Note: ArgumentExceptions are not thrown in this codebase, but keeping for safety
-                // Only expose the message for these validation exceptions after audit
-                response.Error = exception.Message;
-                statusCode = (int)HttpStatusCode.BadRequest;
-                response.ErrorCode = "VALIDATION_ERROR";
-                break;
-
-            case KeyNotFoundException:
-                response.Error = "Resource not found";
-                statusCode = (int)HttpStatusCode.NotFound;
-                response.ErrorCode = "RESOURCE_NOT_FOUND";
-                break;
-
             case UnauthorizedAccessException:
                 // Thrown by the base controllers when the principal carries no identity
                 // claim: the caller is not authenticated, not authenticated-but-refused.
