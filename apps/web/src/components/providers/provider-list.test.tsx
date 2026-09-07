@@ -90,8 +90,8 @@ describe("ProviderList", () => {
   });
 
   describe("link variant", () => {
-    it("should render header when showHeader is true", () => {
-      render(<ProviderList variant="link" showHeader={true} />);
+    it("should render the page header", () => {
+      render(<ProviderList variant="link" />);
 
       expect(screen.getByText("Connect Your Scale")).toBeInTheDocument();
       expect(screen.getByText(/Connect your Withings account/)).toBeInTheDocument();
@@ -103,12 +103,6 @@ describe("ProviderList", () => {
       expect(screen.getByText("Log It Yourself")).toBeInTheDocument();
       expect(screen.getByText(/Type in your weight/)).toBeInTheDocument();
       expect(screen.getByRole("link", { name: "Log Your Weight" })).toHaveAttribute("href", "/log");
-    });
-
-    it("should not render header when showHeader is false", () => {
-      render(<ProviderList variant="link" showHeader={false} />);
-
-      expect(screen.queryByText("Connect Your Scale")).not.toBeInTheDocument();
     });
 
     it("should render provider cards with full layout", () => {

@@ -1,4 +1,4 @@
-import type { Control, FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
+import type { Control, FieldErrors, UseFormRegister } from "react-hook-form";
 import type { ProfileData } from "@/lib/core/interfaces";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BasicProfileSettings } from "./basic-profile-settings";
@@ -6,8 +6,6 @@ import { BasicProfileSettings } from "./basic-profile-settings";
 interface ProfileSectionProps {
   register: UseFormRegister<ProfileData>;
   errors: FieldErrors<ProfileData>;
-  watch: UseFormWatch<ProfileData>;
-  setValue: UseFormSetValue<ProfileData>;
   control: Control<ProfileData>;
   onUnitChange?: (isMetric: boolean) => void;
 }

@@ -40,7 +40,5 @@ export function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-// Tailwind breakpoint helpers
+// Tailwind breakpoint helper
 export const useIsMobile = () => useMediaQuery("(max-width: 767px)"); // Below md
-export const useIsTablet = () => useMediaQuery("(min-width: 768px) and (max-width: 1023px)"); // md to lg
-export const useIsDesktop = () => useMediaQuery("(min-width: 1024px)"); // lg and above

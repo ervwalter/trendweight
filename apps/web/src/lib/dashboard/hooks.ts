@@ -67,7 +67,6 @@ export const useComputeDashboardData = (): DashboardData => {
       plannedPoundsPerWeek: 0,
       dayStartOffset: 0,
       showCalories: false,
-      sharingToken: undefined,
     },
     profileError,
     mode: [mode, setMode],

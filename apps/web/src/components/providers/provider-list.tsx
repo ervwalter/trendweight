@@ -22,14 +22,13 @@ const connectionDateFormatter = new Intl.DateTimeFormat([], {
 
 interface ProviderListProps {
   variant?: "link" | "settings"; // Different layouts for different pages
-  showHeader?: boolean;
 }
 
 // Shown for a still-connected provider after its integration has been shut off for good
 const fitbitEndedNote =
   "Fitbit syncing has ended — Google retired the Fitbit API that TrendWeight used. Your Fitbit history is preserved and keeps appearing in your charts.";
 
-export function ProviderList({ variant = "link", showHeader = true }: ProviderListProps) {
+export function ProviderList({ variant = "link" }: ProviderListProps) {
   const { data: providerLinks } = useProviderLinks();
   const { data: providersConfig } = useProvidersConfig();
   const { getToken } = useAuth();
@@ -249,7 +248,7 @@ export function ProviderList({ variant = "link", showHeader = true }: ProviderLi
 
   return (
     <>
-      {showHeader && variant === "link" && (
+      {variant === "link" && (
         <>
           <Heading level={1} display>
             Connect Your Scale

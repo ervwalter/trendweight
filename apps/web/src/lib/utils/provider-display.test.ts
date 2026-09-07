@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getProviderDisplayName, getProviderDescription, getProviderNote, getProviderMetadata, getOAuthProviders } from "./provider-display";
+import { getProviderDisplayName, getOAuthProviders } from "./provider-display";
 
 describe("getProviderDisplayName", () => {
   it("returns correct display names for known providers", () => {
@@ -11,52 +11,6 @@ describe("getProviderDisplayName", () => {
   it("capitalizes unknown providers", () => {
     expect(getProviderDisplayName("unknown")).toBe("Unknown");
     expect(getProviderDisplayName("test")).toBe("Test");
-  });
-});
-
-describe("getProviderDescription", () => {
-  it("returns correct descriptions for known providers", () => {
-    expect(getProviderDescription("withings")).toContain("Withings creates beautifully designed");
-    expect(getProviderDescription("fitbit")).toContain("Fitbit syncing is expected to stop in September 2026");
-    expect(getProviderDescription("legacy")).toContain("Historical weight data imported from classic TrendWeight");
-  });
-
-  it("returns empty string for unknown providers", () => {
-    expect(getProviderDescription("unknown")).toBe("");
-  });
-});
-
-describe("getProviderNote", () => {
-  it("returns correct notes for known providers", () => {
-    expect(getProviderNote("withings")).toContain("TrendWeight will automatically import");
-    expect(getProviderNote("fitbit")).toContain("stays put and keeps appearing in your charts");
-    expect(getProviderNote("legacy")).toContain("This data cannot be synced or updated");
-  });
-
-  it("returns empty string for unknown providers", () => {
-    expect(getProviderNote("unknown")).toBe("");
-  });
-});
-
-describe("getProviderMetadata", () => {
-  it("returns full metadata for known providers", () => {
-    const withings = getProviderMetadata("withings");
-    expect(withings).toBeTruthy();
-    expect(withings?.id).toBe("withings");
-    expect(withings?.supportsOAuth).toBe(true);
-    expect(withings?.supportsSync).toBe(true);
-    expect(withings?.logo).toBe("/withings-app.png");
-
-    const legacy = getProviderMetadata("legacy");
-    expect(legacy).toBeTruthy();
-    expect(legacy?.id).toBe("legacy");
-    expect(legacy?.supportsOAuth).toBe(false);
-    expect(legacy?.supportsSync).toBe(false);
-    expect(legacy?.logo).toBe("/legacy-logo.png");
-  });
-
-  it("returns null for unknown providers", () => {
-    expect(getProviderMetadata("unknown")).toBeNull();
   });
 });
 

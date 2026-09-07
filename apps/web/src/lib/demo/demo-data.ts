@@ -11,7 +11,6 @@ export const demoProfile: ProfileData = {
   dayStartOffset: 3, // 3 AM
   useMetric: false,
   showCalories: true,
-  sharingToken: undefined,
 };
 
 const preComputedDemoMeasurements: ApiComputedMeasurement[] = [

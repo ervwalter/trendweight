@@ -17,7 +17,6 @@ const profile = {
   plannedPoundsPerWeek: -1,
   dayStartOffset: 0,
   showCalories: false,
-  sharingToken: undefined,
 };
 
 const measurement = { date: "2026-09-01", source: "manual", actualWeight: 80, trendWeight: 80, weightIsInterpolated: false, fatIsInterpolated: false };

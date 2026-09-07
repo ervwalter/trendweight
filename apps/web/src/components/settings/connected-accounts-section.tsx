@@ -8,7 +8,7 @@ export function ConnectedAccountsSection() {
         <CardTitle>Connected Accounts</CardTitle>
       </CardHeader>
       <CardContent>
-        <ProviderList variant="settings" showHeader={false} />
+        <ProviderList variant="settings" />
       </CardContent>
     </>
   );

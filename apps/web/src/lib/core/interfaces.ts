@@ -1,21 +1,4 @@
-import type { LocalDate, LocalDateTime } from "@js-joda/core";
-
-export interface RawMeasurement {
-  date: string; // "2024-01-15"
-  time: string; // "06:30:00"
-  weight: number; // kg
-  fatRatio?: number; // 0-1 ratio
-}
-
-export interface SourceMeasurement {
-  date: LocalDate;
-  timestamp: LocalDateTime;
-  source: string;
-  weight: number;
-  fatRatio?: number;
-  weightIsInterpolated?: boolean;
-  fatRatioIsInterpolated?: boolean;
-}
+import type { LocalDate } from "@js-joda/core";
 
 export interface ProfileData {
   firstName: string;
@@ -25,9 +8,6 @@ export interface ProfileData {
   dayStartOffset?: number;
   useMetric: boolean;
   showCalories?: boolean;
-  sharingToken?: string;
-  sharingEnabled?: boolean;
-  isMigrated?: boolean;
   isNewlyMigrated?: boolean;
   hideDataBeforeStart?: boolean;
   trendAlgorithm?: string;

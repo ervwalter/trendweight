@@ -27,20 +27,6 @@ describe("OAuthCallbackUI", () => {
 
       expect(screen.getByText("Connecting to Withings...")).toBeInTheDocument();
     });
-
-    it("should show retry count when provided", () => {
-      render(<OAuthCallbackUI providerName="Fitbit" state="loading" retryCount={1} maxRetries={3} />);
-
-      expect(screen.getByText("Connecting to Fitbit...")).toBeInTheDocument();
-      expect(screen.getByText("(Retry 1/3)")).toBeInTheDocument();
-    });
-
-    it("should not show retry count when retryCount is 0", () => {
-      render(<OAuthCallbackUI providerName="Fitbit" state="loading" retryCount={0} maxRetries={3} />);
-
-      expect(screen.getByText("Connecting to Fitbit...")).toBeInTheDocument();
-      expect(screen.queryByText(/Retry/)).not.toBeInTheDocument();
-    });
   });
 
   describe("success state", () => {

@@ -1,4 +1,4 @@
-import type { Control, FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from "react-hook-form";
+import type { Control, UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import { Link } from "@tanstack/react-router";
 import type { ProfileData } from "@/lib/core/interfaces";
@@ -8,8 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 
 interface AdvancedSectionProps {
-  register: UseFormRegister<ProfileData>;
-  errors: FieldErrors<ProfileData>;
   watch: UseFormWatch<ProfileData>;
   setValue: UseFormSetValue<ProfileData>;
   control: Control<ProfileData>;

@@ -19,13 +19,12 @@ function TestWrapper({ defaultValues = {} }: { defaultValues?: Partial<ProfileDa
   const {
     register,
     control,
-    watch,
     formState: { errors },
   } = useForm<ProfileData>({
     defaultValues,
   });
 
-  return <ProgressTrackingSection register={register} errors={errors} watch={watch} control={control} />;
+  return <ProgressTrackingSection register={register} errors={errors} control={control} />;
 }
 
 describe("ProgressTrackingSection", () => {

@@ -21,7 +21,6 @@ export function InitialSetup() {
     control,
     setValue,
     getValues,
-    watch,
     formState: { errors, isSubmitting, touchedFields },
   } = useForm<ProfileData>({
     defaultValues: {
@@ -64,7 +63,7 @@ export function InitialSetup() {
 
             <div>
               <h2 className="text-foreground mb-4 text-lg font-medium">Progress Tracking (Optional)</h2>
-              <StartDateSettings register={register} errors={errors} control={control} watch={watch} />
+              <StartDateSettings register={register} errors={errors} control={control} />
             </div>
 
             <div className="flex items-center justify-between">

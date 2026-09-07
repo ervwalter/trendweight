@@ -11,7 +11,6 @@ export function SortToggle({ sortNewestFirst, onSortChange }: SortToggleProps) {
       type="single"
       value={sortNewestFirst ? "newest" : "oldest"}
       onValueChange={(value) => onSortChange(value === "newest")}
-      defaultValue="newest"
       aria-label="Sort Order"
     >
       <ToggleGroupItem value="newest">Newest First</ToggleGroupItem>

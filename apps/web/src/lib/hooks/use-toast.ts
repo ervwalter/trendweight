@@ -29,11 +29,5 @@ export function useToast() {
     }
   }, []);
 
-  return {
-    showToast,
-    toast: showToast, // Alias for consistency
-  };
+  return { showToast };
 }
-
-// Export the sonner toast directly for advanced usage
-export { toast } from "sonner";

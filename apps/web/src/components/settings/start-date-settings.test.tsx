@@ -11,7 +11,6 @@ function TestWrapper({ defaultValues = {}, onSubmit = () => {} }: { defaultValue
   const {
     register,
     control,
-    watch,
     handleSubmit,
     formState: { errors },
   } = useForm<ProfileData>({
@@ -20,7 +19,7 @@ function TestWrapper({ defaultValues = {}, onSubmit = () => {} }: { defaultValue
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <StartDateSettings register={register} errors={errors} control={control} watch={watch} />
+      <StartDateSettings register={register} errors={errors} control={control} />
       <button type="submit">Save</button>
     </form>
   );

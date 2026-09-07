@@ -15,7 +15,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 // Test wrapper component
 function TestWrapper({ defaultValues = {} }: { defaultValues?: Partial<ProfileData> }) {
-  const { register, control, watch, setValue, formState } = useForm<ProfileData>({
+  const { control, watch, setValue, formState } = useForm<ProfileData>({
     defaultValues,
   });
 
@@ -23,7 +23,7 @@ function TestWrapper({ defaultValues = {} }: { defaultValues?: Partial<ProfileDa
 
   return (
     <>
-      <AdvancedSection register={register} errors={formState.errors} watch={watch} setValue={setValue} control={control} />
+      <AdvancedSection watch={watch} setValue={setValue} control={control} />
       <div data-testid="form-value">{trendAlgorithm ?? ""}</div>
       <div data-testid="form-dirty">{formState.isDirty ? "dirty" : "clean"}</div>
     </>

@@ -74,8 +74,6 @@ describe("mutations", () => {
           dayStartOffset: 4,
           useMetric: false,
           showCalories: false,
-          sharingToken: "test-token",
-          sharingEnabled: true,
         },
         timestamp: new Date().toISOString(),
         isMe: true,

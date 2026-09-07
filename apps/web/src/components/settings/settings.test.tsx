@@ -19,8 +19,6 @@ let mockProfileData = {
   dayStartOffset: 0,
   showCalories: false,
   hideDataBeforeStart: false,
-  sharingEnabled: true,
-  sharingToken: "abc123",
 };
 
 const mockMutateAsync = vi.fn();
@@ -52,13 +50,22 @@ vi.mock("./account-security-section", () => ({
   AccountSecuritySection: () => <div data-testid="account-security">Account Security</div>,
 }));
 
-vi.mock("./advanced-section", () => ({
-  AdvancedSection: ({ register }: any) => (
-    <div data-testid="advanced-section">
-      <input {...register("showCalories")} type="checkbox" data-testid="show-calories" />
-    </div>
-  ),
-}));
+vi.mock("./advanced-section", async () => {
+  const { Controller } = await import("react-hook-form");
+  return {
+    AdvancedSection: ({ control }: any) => (
+      <div data-testid="advanced-section">
+        <Controller
+          name="showCalories"
+          control={control}
+          render={({ field }) => (
+            <input type="checkbox" checked={field.value ?? false} onChange={(event) => field.onChange(event.target.checked)} data-testid="show-calories" />
+          )}
+        />
+      </div>
+    ),
+  };
+});
 
 vi.mock("./connected-accounts-section", () => ({
   ConnectedAccountsSection: () => <div data-testid="connected-accounts">Connected Accounts</div>,

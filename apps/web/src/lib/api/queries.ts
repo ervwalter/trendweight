@@ -68,9 +68,6 @@ const selectProfileData = (data: ProfileResponse | null): ProfileData | null => 
     showCalories: data.user.showCalories,
     hideDataBeforeStart: data.user.hideDataBeforeStart,
     trendAlgorithm: data.user.trendAlgorithm,
-    sharingToken: data.user.sharingToken,
-    sharingEnabled: data.user.sharingEnabled,
-    isMigrated: data.user.isMigrated,
     isNewlyMigrated: data.user.isNewlyMigrated,
   };
 };

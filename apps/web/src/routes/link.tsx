@@ -12,13 +12,6 @@ export const Route = createFileRoute("/link")({
     return null;
   },
   component: LinkPage,
-  validateSearch: (search: Record<string, unknown>): { provider?: string; success?: string; error?: string } => {
-    return {
-      provider: search.provider as string | undefined,
-      success: search.success as string | undefined,
-      error: search.error as string | undefined,
-    };
-  },
 });
 
 function LinkPage() {

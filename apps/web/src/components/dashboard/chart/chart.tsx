@@ -13,7 +13,6 @@ const Chart = () => {
   const { embed } = useEmbedParams();
   const options = useChartOptions(data, embed ? "60%" : undefined);
   const chartRef = useRef<HighchartsReact.RefObject>(null);
-  const printImageRef = useRef<HTMLImageElement>(null);
   const [printImageUrl, setPrintImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -167,7 +166,7 @@ const Chart = () => {
       </div>
 
       {/* Print image - only visible during print */}
-      {printImageUrl && <img ref={printImageRef} src={printImageUrl} alt="Chart for printing" className="hidden h-auto w-full print:block print:w-auto" />}
+      {printImageUrl && <img src={printImageUrl} alt="Chart for printing" className="hidden h-auto w-full print:block print:w-auto" />}
     </div>
   );
 };

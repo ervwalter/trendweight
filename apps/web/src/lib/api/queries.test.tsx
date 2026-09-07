@@ -75,8 +75,6 @@ const mockProfileResponse: ProfileResponse = {
     dayStartOffset: 4,
     useMetric: true,
     showCalories: false,
-    sharingToken: "test-token",
-    sharingEnabled: true,
   },
   timestamp: new Date().toISOString(),
   isMe: true,
@@ -181,8 +179,6 @@ describe("queries", () => {
         dayStartOffset: 4,
         useMetric: true,
         showCalories: false,
-        sharingToken: "test-token",
-        sharingEnabled: true,
       });
     });
 

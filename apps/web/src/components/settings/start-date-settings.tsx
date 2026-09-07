@@ -1,5 +1,5 @@
 import { LocalDate } from "@js-joda/core";
-import type { Control, FieldErrors, UseFormRegister, UseFormWatch } from "react-hook-form";
+import type { Control, FieldErrors, UseFormRegister } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import type { ProfileData } from "@/lib/core/interfaces";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -9,7 +9,6 @@ interface StartDateSettingsProps {
   register: UseFormRegister<ProfileData>;
   errors: FieldErrors<ProfileData>;
   control: Control<ProfileData>;
-  watch: UseFormWatch<ProfileData>;
 }
 
 export function StartDateSettings({ register, errors, control }: StartDateSettingsProps) {

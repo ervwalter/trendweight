@@ -7,26 +7,16 @@ interface OAuthCallbackUIProps {
   state: "loading" | "success" | "error" | "invalid";
   error?: string;
   errorCode?: string | null;
-  retryCount?: number;
-  maxRetries?: number;
 }
 
-export function OAuthCallbackUI({ providerName, state, error, errorCode, retryCount = 0, maxRetries = 2 }: OAuthCallbackUIProps) {
+export function OAuthCallbackUI({ providerName, state, error, errorCode }: OAuthCallbackUIProps) {
   const navigate = useNavigate();
 
   // Show loading state
   if (state === "loading") {
     return (
       <div className="mt-12 text-center">
-        <p className="text-muted-foreground text-lg">
-          Connecting to {providerName}...
-          {retryCount > 0 && (
-            <span className="text-sm">
-              {" "}
-              (Retry {retryCount}/{maxRetries})
-            </span>
-          )}
-        </p>
+        <p className="text-muted-foreground text-lg">Connecting to {providerName}...</p>
       </div>
     );
   }

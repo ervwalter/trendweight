@@ -65,11 +65,6 @@ const providerMetadata: Record<string, ProviderMetadata> = {
   },
 };
 
-// Get full provider metadata
-export function getProviderMetadata(providerId: string): ProviderMetadata | null {
-  return providerMetadata[providerId] || null;
-}
-
 // Get all OAuth-enabled providers
 export function getOAuthProviders(): ProviderMetadata[] {
   return Object.values(providerMetadata).filter((p) => p.supportsOAuth);
@@ -79,16 +74,4 @@ export function getOAuthProviders(): ProviderMetadata[] {
 export function getProviderDisplayName(providerId: string): string {
   const metadata = providerMetadata[providerId];
   return metadata?.name || providerId.charAt(0).toUpperCase() + providerId.slice(1);
-}
-
-// Map provider IDs to descriptions
-export function getProviderDescription(providerId: string): string {
-  const metadata = providerMetadata[providerId];
-  return metadata?.description || "";
-}
-
-// Map provider IDs to notes
-export function getProviderNote(providerId: string): string {
-  const metadata = providerMetadata[providerId];
-  return metadata?.note || "";
 }
