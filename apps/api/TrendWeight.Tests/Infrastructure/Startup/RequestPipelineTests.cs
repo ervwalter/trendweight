@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using TrendWeight.Features.ApiKeys;
 using TrendWeight.Features.Measurements.Manual;
@@ -18,6 +19,7 @@ using TrendWeight.Infrastructure.Auth;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Infrastructure.Services;
+using TrendWeight.Tests.Fixtures;
 
 namespace TrendWeight.Tests.Infrastructure.Startup;
 
@@ -459,6 +461,30 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Theory]
+    [InlineData("/api/profile/disabled-share", "/api/profile/{sharing-token}")]
+    [InlineData("/api/data/disabled-share", "/api/data/{sharing-token}")]
+    [InlineData("/api/providers/links/disabled-share", "/api/providers/links/{sharing-token}")]
+    public async Task SharingTokens_AreRedactedFromHttpRequestLogs(string path, string loggedPath)
+    {
+        // Production raises the HTTP logging middleware to Information, so every
+        // shared-dashboard hit is logged; the token segment must not be.
+        var logs = new CapturingLoggerProvider();
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureLogging(logging => logging.AddProvider(logs)));
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var httpLogs = logs.Entries
+            .Where(e => e.Category == "Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware")
+            .Select(e => e.Message)
+            .ToList();
+        httpLogs.Should().Contain(m => m.Contains($"Path: {loggedPath}"));
+        httpLogs.Should().NotContain(m => m.Contains("disabled-share"));
     }
 
     [Theory]

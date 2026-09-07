@@ -24,13 +24,13 @@ public class RequestTimingMiddleware
             if (stopwatch.ElapsedMilliseconds > 1000)
             {
                 _logger.LogWarning("Slow request: {Method} {Path} took {ElapsedMs}ms",
-                    context.Request.Method, context.Request.Path, stopwatch.ElapsedMilliseconds);
+                    context.Request.Method, LogSafePath.Redact(context.Request.Path), stopwatch.ElapsedMilliseconds);
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Request failed: {Method} {Path} after {ElapsedMs}ms",
-                context.Request.Method, context.Request.Path, stopwatch.ElapsedMilliseconds);
+                context.Request.Method, LogSafePath.Redact(context.Request.Path), stopwatch.ElapsedMilliseconds);
             throw;
         }
     }

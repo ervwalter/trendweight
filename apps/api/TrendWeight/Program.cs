@@ -198,7 +198,8 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
-// Add HTTP logging
+// Add HTTP logging. Sharing tokens travel in the request path, so the logged
+// path is redacted by the interceptor.
 builder.Services.AddHttpLogging(options =>
 {
     options.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestPath |
@@ -206,6 +207,7 @@ builder.Services.AddHttpLogging(options =>
                           Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.ResponseStatusCode |
                           Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.Duration;
 });
+builder.Services.AddHttpLoggingInterceptor<SharingTokenLoggingInterceptor>();
 
 // Resolve after building so all configuration sources participate in startup validation.
 builder.Services.AddSingleton(services => new PublicUrl(
