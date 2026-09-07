@@ -75,13 +75,13 @@ because current users authenticate with Clerk and may lack a legacy Auth account
 
 The canonical schema is `supabase/migrations`; there is no other schema copy.
 
-| Table             | Purpose and boundaries                                               |
-| ----------------- | -------------------------------------------------------------------- |
-| `profiles`        | Internal UUID, email and profile JSON; API-key hash expression index |
-| `provider_links`  | Provider OAuth token JSON; composite user/provider primary key       |
-| `source_data`     | Raw measurement arrays, last sync and forced-full-sync flag          |
-| `user_accounts`   | Unique external-provider identity mapped to internal UUID            |
-| `legacy_profiles` | Legacy profile and measurement import data                           |
+| Table             | Purpose and boundaries                                                                   |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| `profiles`        | Internal UUID, email and profile JSON; API-key hash and sharing-token expression indexes |
+| `provider_links`  | Provider OAuth token JSON, first-connected timestamp; composite user/provider primary key |
+| `source_data`     | Raw measurement arrays, last sync and forced-full-sync flag                              |
+| `user_accounts`   | Unique external-provider identity mapped to internal UUID                                |
+| `legacy_profiles` | Legacy profile and measurement import data                                               |
 
 Profile deletion cascades to provider links and source data. The committed schema
 enables row-level security and revokes anon/authenticated privileges on tables,
