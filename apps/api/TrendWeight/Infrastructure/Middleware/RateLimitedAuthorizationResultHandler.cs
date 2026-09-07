@@ -28,8 +28,10 @@ public sealed class RateLimitedAuthorizationResultHandler : IAuthorizationMiddle
         var options = _options.Value;
         var limiter = options.GlobalLimiter;
 
-        if (authorizeResult.Challenged && limiter != null
-            && context.GetEndpoint()?.Metadata.GetMetadata<DisableRateLimitingAttribute>() == null)
+        // Every endpoint carrying an authorization policy is rate limited; the
+        // unlimited endpoints (health, analytics proxy) are anonymous and never
+        // reach this handler with a challenge.
+        if (authorizeResult.Challenged && limiter != null)
         {
             using var lease = await limiter.AcquireAsync(context, 1, context.RequestAborted);
             if (!lease.IsAcquired)
