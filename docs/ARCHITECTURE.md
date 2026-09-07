@@ -102,8 +102,10 @@ remote tables/policies through ad hoc SQL or the dashboard.
 ## HTTP and deployment boundaries
 
 One container serves the API and Vite assets on port 8080. YARP proxies analytics
-requests to Plausible. Non-API GET/HEAD routes fall back to the SPA shell; unknown
-API routes return 404. The shell is uncached and hashed assets are immutable.
+requests to Plausible. Whenever the built shell exists in `wwwroot` (always true in
+the container image, in any environment), non-API GET/HEAD routes fall back to it;
+unknown API routes return 404. In local development there is no `wwwroot` and the
+Vite dev server hosts the SPA. The shell is uncached and hashed assets are immutable.
 
 Callback destinations and OpenAPI server URLs come from `PublicBaseUrl`, not
 request headers. Hosting ingress enforces HTTPS; the application accepts internal

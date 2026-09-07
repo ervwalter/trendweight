@@ -86,9 +86,12 @@ npm run docker:build
 ASPNETCORE_ENVIRONMENT=Development PublicBaseUrl=http://localhost:8080 npm run docker:run
 ```
 
-The image is tagged `trendweight:local`. Open `http://localhost:8080`. Values in
-`.env` override existing shell values, so remove conflicting overrides first.
-Development mode permits an HTTP public origin; do not use it for a public deployment.
+The image is tagged `trendweight:local`. Open `http://localhost:8080`; the
+container serves the SPA shell and deep links in Development just as it does in
+Production, because the fallback depends on the built shell being present, not on
+the environment. Values in `.env` override existing shell values, so remove
+conflicting overrides first. Development mode permits an HTTP public origin; do
+not use it for a public deployment.
 
 ## Verify a release
 

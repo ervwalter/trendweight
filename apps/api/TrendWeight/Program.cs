@@ -457,8 +457,12 @@ app.MapControllers();
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "TrendWeight API", timestamp = DateTime.UtcNow }))
     .DisableRateLimiting();
 
-// For production, serve the SPA for any non-API routes
-if (!app.Environment.IsDevelopment())
+// Serve the SPA for any non-API route whenever the built shell is present. The
+// container image always has one (in any environment, including the documented
+// local Development container); in local development the Vite dev server hosts
+// the SPA instead and there is no wwwroot.
+var indexPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html");
+if (File.Exists(indexPath))
 {
     // Custom fallback handler that redirects trailing slashes and serves SPA
     app.MapFallback(async context =>
@@ -498,7 +502,6 @@ if (!app.Environment.IsDevelopment())
         context.Response.Headers.Pragma = "no-cache";
         context.Response.Headers.Expires = "0";
 
-        var indexPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html");
         if (!HttpMethods.IsHead(context.Request.Method))
         {
             await context.Response.SendFileAsync(indexPath);

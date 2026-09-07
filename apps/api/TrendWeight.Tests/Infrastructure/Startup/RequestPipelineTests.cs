@@ -519,6 +519,49 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         (await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).Should().Be(StartupTestFactory.Shell);
     }
 
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/dashboard")]
+    public async Task DevelopmentHostWithBuiltShell_ServesTheApplicationShell(string path)
+    {
+        // The documented local container runs with ASPNETCORE_ENVIRONMENT=Development
+        // (the only way PublicBaseUrl accepts http) and must still serve the SPA.
+        using var factory = _factory.WithWebHostBuilder(builder => builder.UseEnvironment("Development"));
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
+        (await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).Should().Be(StartupTestFactory.Shell);
+    }
+
+    [Fact]
+    public async Task HostWithoutBuiltShell_DoesNotServeTheApplicationShell()
+    {
+        // Local development has no wwwroot: the Vite dev server hosts the SPA and
+        // the API must not claim non-API routes.
+        var emptyWebRoot = Path.Combine(Path.GetTempPath(), $"trendweight-noshell-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(emptyWebRoot);
+        try
+        {
+            using var factory = _factory.WithWebHostBuilder(builder =>
+            {
+                builder.UseEnvironment("Development");
+                builder.UseWebRoot(emptyWebRoot);
+            });
+            using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+
+            using var response = await client.GetAsync("/dashboard", TestContext.Current.CancellationToken);
+
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        finally
+        {
+            Directory.Delete(emptyWebRoot, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task HashedAssets_KeepImmutableCaching()
     {
