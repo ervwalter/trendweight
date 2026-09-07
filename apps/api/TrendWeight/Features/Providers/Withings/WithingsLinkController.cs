@@ -73,6 +73,9 @@ public class WithingsLinkController : BaseAuthController
     [HttpPost("exchange-token")]
     public async Task<IActionResult> ExchangeToken([FromBody] ExchangeTokenRequest request)
     {
+        // Outside the try: a non-UUID identity claim is unauthenticated (401), not a 500
+        var userGuid = UserGuid;
+
         try
         {
             if (string.IsNullOrEmpty(request.Code))
@@ -90,7 +93,7 @@ public class WithingsLinkController : BaseAuthController
 
             _logger.LogDebug("Exchanging Withings code for token with redirect URI: {RedirectUri}", redirectUri);
 
-            var success = await _withingsService.ExchangeAuthorizationCodeAsync(request.Code, redirectUri, Guid.Parse(UserId));
+            var success = await _withingsService.ExchangeAuthorizationCodeAsync(request.Code, redirectUri, userGuid);
 
             if (success)
             {

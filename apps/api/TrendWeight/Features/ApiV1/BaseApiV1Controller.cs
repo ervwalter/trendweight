@@ -18,6 +18,10 @@ public abstract class BaseApiV1Controller : ControllerBase
     /// <summary>
     /// The authenticated user's internal id
     /// </summary>
-    protected Guid UserId => Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-        ?? throw new UnauthorizedAccessException("User ID not found"));
+    protected Guid UserId => Guid.TryParse(
+        User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException("User ID not found"),
+        out var id)
+        ? id
+        : throw new UnauthorizedAccessException("Invalid user ID");
 }

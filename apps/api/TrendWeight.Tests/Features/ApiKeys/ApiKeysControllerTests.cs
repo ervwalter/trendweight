@@ -96,4 +96,18 @@ public class ApiKeysControllerTests
 
         result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
+
+    // The error middleware maps UnauthorizedAccessException to 401; a FormatException would be a 500
+    [Fact]
+    public async Task Actions_WithNonGuidIdentityClaim_ThrowUnauthorizedWithoutCallingService()
+    {
+        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, "not-a-guid") };
+        _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+
+        await FluentActions.Awaiting(() => _sut.GetMetadata()).Should().ThrowAsync<UnauthorizedAccessException>();
+        await FluentActions.Awaiting(() => _sut.Generate()).Should().ThrowAsync<UnauthorizedAccessException>();
+        await FluentActions.Awaiting(() => _sut.Revoke()).Should().ThrowAsync<UnauthorizedAccessException>();
+
+        _apiKeyServiceMock.VerifyNoOtherCalls();
+    }
 }

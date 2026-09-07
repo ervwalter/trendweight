@@ -45,6 +45,37 @@ public class BaseAuthControllerTests
     }
 
     [Fact]
+    public void UserGuid_WithGuidClaim_ReturnsParsedGuid()
+    {
+        var expected = Guid.NewGuid();
+        SetupAuthenticatedUser(expected.ToString());
+
+        _sut.GetUserGuid().Should().Be(expected);
+    }
+
+    [Fact]
+    public void UserGuid_WithNonGuidClaim_ThrowsUnauthorizedAccessException()
+    {
+        SetupAuthenticatedUser("not-a-guid");
+
+        var act = () => _sut.GetUserGuid();
+
+        act.Should().Throw<UnauthorizedAccessException>()
+            .WithMessage("Invalid user ID");
+    }
+
+    [Fact]
+    public void UserGuid_WithNoNameIdentifierClaim_ThrowsUnauthorizedAccessException()
+    {
+        SetupAuthenticatedUserWithNoClaims();
+
+        var act = () => _sut.GetUserGuid();
+
+        act.Should().Throw<UnauthorizedAccessException>()
+            .WithMessage("User ID not found");
+    }
+
+    [Fact]
     public void AuthorizeAttribute_IsAppliedToBaseClass()
     {
         // Assert
@@ -101,5 +132,6 @@ public class BaseAuthControllerTests
     private class TestAuthController : BaseAuthController
     {
         public string GetUserId() => UserId;
+        public Guid GetUserGuid() => UserGuid;
     }
 }

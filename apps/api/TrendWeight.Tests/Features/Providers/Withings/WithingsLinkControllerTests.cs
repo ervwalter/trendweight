@@ -54,6 +54,20 @@ public class WithingsLinkControllerTests
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>()), Times.Never);
     }
 
+    // The error middleware maps UnauthorizedAccessException to 401; a FormatException would be a 500
+    [Fact]
+    public async Task ExchangeToken_WithNonGuidIdentityClaim_ThrowsUnauthorizedBeforeValidatingState()
+    {
+        SetupAuthenticatedUser("not-a-guid");
+        var request = new WithingsLinkController.ExchangeTokenRequest { Code = "test-code", State = "irrelevant" };
+
+        var act = () => _sut.ExchangeToken(request);
+
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        _withingsServiceMock.Verify(x => x.ExchangeAuthorizationCodeAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>()), Times.Never);
+    }
+
     #region GetAuthorizationUrl Tests
 
     [Fact]

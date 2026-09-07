@@ -26,7 +26,7 @@ public class ApiKeysController : BaseAuthController
     [HttpGet]
     public async Task<ActionResult<ApiKeyMetadata>> GetMetadata()
     {
-        var metadata = await _apiKeyService.GetMetadataAsync(Guid.Parse(UserId));
+        var metadata = await _apiKeyService.GetMetadataAsync(UserGuid);
         if (metadata == null)
         {
             return NotFound(new ErrorResponse { Error = "Profile not found" });
@@ -42,7 +42,7 @@ public class ApiKeysController : BaseAuthController
     [HttpPost]
     public async Task<ActionResult<GeneratedApiKey>> Generate()
     {
-        var generated = await _apiKeyService.GenerateAsync(Guid.Parse(UserId));
+        var generated = await _apiKeyService.GenerateAsync(UserGuid);
         if (generated == null)
         {
             return NotFound(new ErrorResponse { Error = "Profile not found" });
@@ -57,7 +57,7 @@ public class ApiKeysController : BaseAuthController
     [HttpDelete]
     public async Task<ActionResult<MessageResponse>> Revoke()
     {
-        var revoked = await _apiKeyService.RevokeAsync(Guid.Parse(UserId));
+        var revoked = await _apiKeyService.RevokeAsync(UserGuid);
         if (!revoked)
         {
             return NotFound(new ErrorResponse { Error = "Profile not found" });

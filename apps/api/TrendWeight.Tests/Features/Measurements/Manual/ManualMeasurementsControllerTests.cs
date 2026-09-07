@@ -195,4 +195,19 @@ public class ManualMeasurementsControllerTests
             .Which.Value.Should().BeOfType<MessageResponse>();
         _manualDataServiceMock.Verify(x => x.DeleteAllReadingsAsync(_userId), Times.Once);
     }
+
+    // The error middleware maps UnauthorizedAccessException to 401; a FormatException would be a 500
+    [Fact]
+    public async Task Actions_WithNonGuidIdentityClaim_ThrowUnauthorizedWithoutCallingService()
+    {
+        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, "not-a-guid") };
+        _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+
+        await FluentActions.Awaiting(() => _sut.GetReadings()).Should().ThrowAsync<UnauthorizedAccessException>();
+        await FluentActions.Awaiting(() => _sut.UpsertReading("2024-05-01", ValidRequest())).Should().ThrowAsync<UnauthorizedAccessException>();
+        await FluentActions.Awaiting(() => _sut.DeleteReading("2024-05-01")).Should().ThrowAsync<UnauthorizedAccessException>();
+        await FluentActions.Awaiting(() => _sut.DeleteAllReadings()).Should().ThrowAsync<UnauthorizedAccessException>();
+
+        _manualDataServiceMock.VerifyNoOtherCalls();
+    }
 }

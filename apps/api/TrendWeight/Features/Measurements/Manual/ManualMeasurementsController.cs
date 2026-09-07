@@ -27,7 +27,7 @@ public class ManualMeasurementsController : BaseAuthController
     [HttpGet]
     public async Task<ActionResult<List<ManualMeasurementResponse>>> GetReadings()
     {
-        var userGuid = Guid.Parse(UserId);
+        var userGuid = UserGuid;
         var readings = await _manualDataService.GetReadingsAsync(userGuid);
         return Ok(readings.Select(ToResponse).ToList());
     }
@@ -50,7 +50,7 @@ public class ManualMeasurementsController : BaseAuthController
             return BadRequest(new ErrorResponse { Error = error });
         }
 
-        var userGuid = Guid.Parse(UserId);
+        var userGuid = UserGuid;
         var reading = new RawMeasurement
         {
             Date = date,
@@ -75,7 +75,7 @@ public class ManualMeasurementsController : BaseAuthController
             return BadRequest(new ErrorResponse { Error = error });
         }
 
-        var userGuid = Guid.Parse(UserId);
+        var userGuid = UserGuid;
         var deleted = await _manualDataService.DeleteReadingAsync(userGuid, date);
         if (!deleted)
         {
@@ -91,7 +91,7 @@ public class ManualMeasurementsController : BaseAuthController
     [HttpDelete]
     public async Task<ActionResult<MessageResponse>> DeleteAllReadings()
     {
-        var userGuid = Guid.Parse(UserId);
+        var userGuid = UserGuid;
         await _manualDataService.DeleteAllReadingsAsync(userGuid);
         return Ok(new MessageResponse { Message = "Deleted all manual readings" });
     }

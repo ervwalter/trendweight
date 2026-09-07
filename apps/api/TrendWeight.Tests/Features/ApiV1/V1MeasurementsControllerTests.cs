@@ -276,4 +276,17 @@ public class V1MeasurementsControllerTests
     }
 
     #endregion
+
+    // The error middleware maps UnauthorizedAccessException to 401; a FormatException would be a 500
+    [Fact]
+    public async Task Actions_WithNonGuidIdentityClaim_ThrowUnauthorizedWithoutCallingService()
+    {
+        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, "not-a-guid") };
+        _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "ApiKey"));
+
+        await FluentActions.Awaiting(() => _sut.GetMeasurements()).Should().ThrowAsync<UnauthorizedAccessException>();
+        await FluentActions.Awaiting(() => _sut.GetSourceReadings()).Should().ThrowAsync<UnauthorizedAccessException>();
+
+        _orchestrationServiceMock.VerifyNoOtherCalls();
+    }
 }
