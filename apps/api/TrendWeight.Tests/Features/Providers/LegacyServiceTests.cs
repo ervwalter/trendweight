@@ -63,18 +63,13 @@ public class LegacyServiceTests
     }
 
     [Fact]
-    public async Task SyncMeasurementsAsync_Always_ReturnsSuccess()
+    public async Task SyncMeasurementsAsync_Always_Throws_NotSupportedException()
     {
-        // Arrange
+        // Legacy data is imported once; the sync service never schedules it
         var userId = Guid.NewGuid();
 
-        // Act
-        var result = await _service.SyncMeasurementsAsync(userId, true);
-
-        // Assert
-        Assert.True(result.Success);
-        Assert.Equal("Legacy data does not require sync", result.Message);
-        Assert.Equal("legacy", result.Provider);
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            _service.SyncMeasurementsAsync(userId, true));
     }
 
     [Fact]

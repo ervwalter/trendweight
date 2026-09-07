@@ -18,7 +18,8 @@ public class MeasurementSyncService : IMeasurementSyncService
     private readonly ISyncProgressReporter _progressReporter;
     private readonly int _cacheDurationSeconds;
 
-    // Providers that never talk to an external API; sync is a no-op and progress is not reported
+    // Providers that never talk to an external API; their stored data is always current,
+    // so they are never scheduled for refresh and never produce progress messages
     private static readonly HashSet<string> NonSyncingProviders = new() { "legacy", "manual" };
 
     // Data is considered fresh for 5 minutes in production
@@ -60,6 +61,12 @@ public class MeasurementSyncService : IMeasurementSyncService
             // Check each provider's last sync time and resync flag
             foreach (var provider in activeProviders)
             {
+                if (NonSyncingProviders.Contains(provider))
+                {
+                    providerStatus[provider] = new ProviderSyncStatus { Success = true };
+                    continue;
+                }
+
                 // A full refresh must retain the last good data until the provider
                 // succeeds. The flag is cleared with the replacement document write.
                 var forceFullSync = await _sourceDataService.GetForceFullSyncAsync(userId, provider);
@@ -175,15 +182,10 @@ public class MeasurementSyncService : IMeasurementSyncService
             // If sync was successful and we have measurements, merge and store them
             if (result.Success && result.Measurements != null)
             {
-
-                // Don't report progress for non-syncing providers
-                if (!NonSyncingProviders.Contains(provider))
-                {
-                    await _progressReporter.ReportProviderProgressAsync(
-                        provider,
-                        stage: "merging",
-                        message: "Finishing up...");
-                }
+                await _progressReporter.ReportProviderProgressAsync(
+                    provider,
+                    stage: "merging",
+                    message: "Finishing up...");
 
                 // Get existing data to merge with - only need data for this specific provider
                 var existingSourceData = await _sourceDataService.GetSourceDataAsync(userId, new List<string> { provider });
@@ -235,14 +237,10 @@ public class MeasurementSyncService : IMeasurementSyncService
                     mergedMeasurements.Count, provider);
             }
 
-            // Don't report progress for non-syncing providers
-            if (!NonSyncingProviders.Contains(provider))
-            {
-                await _progressReporter.ReportProviderProgressAsync(
-                    provider,
-                    stage: "done",
-                    message: "Complete");
-            }
+            await _progressReporter.ReportProviderProgressAsync(
+                provider,
+                stage: "done",
+                message: "Complete");
 
             return result;
         }

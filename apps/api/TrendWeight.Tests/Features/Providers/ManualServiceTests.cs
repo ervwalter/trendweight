@@ -61,18 +61,13 @@ public class ManualServiceTests
     }
 
     [Fact]
-    public async Task SyncMeasurementsAsync_Always_ReturnsSuccessWithNoMeasurements()
+    public async Task SyncMeasurementsAsync_Always_Throws_NotSupportedException()
     {
-        // Arrange
+        // Manual data is entered by the user; the sync service never schedules it
         var userId = Guid.NewGuid();
 
-        // Act
-        var result = await _service.SyncMeasurementsAsync(userId, true);
-
-        // Assert
-        Assert.True(result.Success);
-        Assert.Equal("manual", result.Provider);
-        Assert.Null(result.Measurements);
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            _service.SyncMeasurementsAsync(userId, true));
     }
 
     [Fact]

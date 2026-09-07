@@ -38,14 +38,8 @@ public class LegacyService : IProviderService
 
     public Task<ProviderSyncResult> SyncMeasurementsAsync(Guid userId, bool metric, DateTime? startDate = null)
     {
-        // Legacy data doesn't sync - it's imported once
-        _logger.LogInformation("Sync requested for legacy provider (user {UserId}) - no-op", userId);
-        return Task.FromResult(new ProviderSyncResult
-        {
-            Provider = ProviderName,
-            Success = true,
-            Message = "Legacy data does not require sync"
-        });
+        // Legacy data is imported once; MeasurementSyncService never schedules it for refresh
+        throw new NotSupportedException("Legacy provider does not support syncing measurements");
     }
 
     public async Task<bool> HasActiveProviderLinkAsync(Guid userId)

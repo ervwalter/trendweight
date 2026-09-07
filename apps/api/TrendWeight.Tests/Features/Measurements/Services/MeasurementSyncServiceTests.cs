@@ -267,50 +267,52 @@ public class MeasurementSyncServiceTests : TestBase
     }
 
     [Fact]
-    public async Task GetMeasurementsForUserAsync_WithLegacyProvider_RefreshesButReturnsNoOp()
+    public async Task GetMeasurementsForUserAsync_WithStaleLegacyProvider_SkipsRefreshAndReportsSuccess()
     {
-        // Arrange
+        // Legacy data is imported once and its last_sync is never rewritten, so it would
+        // look stale forever; it must never be scheduled as a refresh or trigger the
+        // "Downloading data from providers..." broadcast
         var userId = Guid.NewGuid();
         var activeProviders = new List<string> { "legacy" };
-        var lastSync = DateTime.UtcNow.AddMinutes(-60); // Old data, triggers refresh
         var existingData = new List<SourceData>
         {
             CreateTestSourceData("legacy")
         };
 
-        // Mock legacy service to return no-op success
-        var mockLegacyService = new Mock<IProviderService>();
-        mockLegacyService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
-            .ReturnsAsync(new ProviderSyncResult
-            {
-                Provider = "legacy",
-                Success = true,
-                Message = "Legacy data does not require sync"
-            });
-
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "legacy"))
-            .ReturnsAsync(lastSync);
+            .ReturnsAsync(DateTime.UtcNow.AddDays(-400));
         _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
-            .Returns(mockLegacyService.Object);
 
-        // Act
-        var result = await _sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+        var progressReporterMock = new Mock<ISyncProgressReporter>();
+        var sut = new MeasurementSyncService(
+            _providerIntegrationServiceMock.Object,
+            _sourceDataServiceMock.Object,
+            _loggerMock.Object,
+            _environmentMock.Object,
+            progressReporterMock.Object);
 
-        // Assert
-        result.Should().NotBeNull();
+        var result = await sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+
         result.Data.Should().HaveCount(1);
         result.ProviderStatus.Should().ContainKey("legacy");
         result.ProviderStatus["legacy"].Success.Should().BeTrue();
+        result.ProviderStatus["legacy"].Error.Should().BeNull();
 
-        // Verify refresh was attempted through standard flow
-        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("legacy"), Times.Once);
-        mockLegacyService.Verify(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()), Times.Once);
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService(It.IsAny<string>()), Times.Never);
+        _sourceDataServiceMock.Verify(x => x.GetLastSyncTimeAsync(userId, "legacy"), Times.Never);
+        _sourceDataServiceMock.Verify(x => x.GetForceFullSyncAsync(userId, "legacy"), Times.Never);
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()), Times.Never);
+        progressReporterMock.Verify(
+            x => x.ReportSyncProgressAsync(It.IsAny<string>(), It.Is<string>(m => m.Contains("Downloading"))),
+            Times.Never);
+        progressReporterMock.Verify(
+            x => x.ReportProviderProgressAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task GetMeasurementsForUserAsync_WithMixedProviders_RefreshesLegacyAndOthers()
+    public async Task GetMeasurementsForUserAsync_WithMixedProviders_RefreshesOnlySyncingProviders()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -327,27 +329,23 @@ public class MeasurementSyncServiceTests : TestBase
                 Measurements = new List<RawMeasurement> { CreateTestRawMeasurement() }
             });
 
-        // Mock legacy service
-        var mockLegacyService = new Mock<IProviderService>();
-        mockLegacyService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
-            .ReturnsAsync(new ProviderSyncResult
-            {
-                Provider = "legacy",
-                Success = true,
-                Message = "Legacy data does not require sync"
-            });
-
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, It.IsAny<string>()))
             .ReturnsAsync(lastSync);
         _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
             .Returns(mockProviderService.Object);
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
-            .Returns(mockLegacyService.Object);
+
+        var progressReporterMock = new Mock<ISyncProgressReporter>();
+        var sut = new MeasurementSyncService(
+            _providerIntegrationServiceMock.Object,
+            _sourceDataServiceMock.Object,
+            _loggerMock.Object,
+            _environmentMock.Object,
+            progressReporterMock.Object);
 
         // Act
-        var result = await _sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+        var result = await sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
 
         // Assert
         result.Should().NotBeNull();
@@ -355,44 +353,35 @@ public class MeasurementSyncServiceTests : TestBase
         result.ProviderStatus["withings"].Success.Should().BeTrue();
         result.ProviderStatus["legacy"].Success.Should().BeTrue();
 
-        // Verify both providers were refreshed through standard flow
+        // Only withings goes through the refresh flow; the download broadcast is for it alone
         _providerIntegrationServiceMock.Verify(x => x.GetProviderService("withings"), Times.Once);
-        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("legacy"), Times.Once);
-
-        // Verify legacy service returned no-op success
-        mockLegacyService.Verify(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()), Times.Once);
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService("legacy"), Times.Never);
+        mockProviderService.Verify(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()), Times.Once);
+        progressReporterMock.Verify(
+            x => x.ReportSyncProgressAsync("running", It.Is<string>(m => m.Contains("Downloading"))),
+            Times.Once);
+        progressReporterMock.Verify(
+            x => x.ReportProviderProgressAsync("legacy", It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task GetMeasurementsForUserAsync_WithStaleManualProvider_NoOpRefreshWithoutStoreOrProgress()
+    public async Task GetMeasurementsForUserAsync_WithStaleManualProvider_SkipsRefreshWithoutStoreOrProgress()
     {
-        // Arrange
+        // Manual readings are stale whenever the user has not edited the log recently;
+        // they are already stored, so no refresh, store, or progress message is warranted
         var userId = Guid.NewGuid();
         var activeProviders = new List<string> { "manual" };
-        var lastSync = DateTime.UtcNow.AddMinutes(-60); // Old data, triggers refresh
         var existingData = new List<SourceData>
         {
             CreateTestSourceData("manual")
         };
 
-        // Mock manual service to return no-op success (no measurements)
-        var mockManualService = new Mock<IProviderService>();
-        mockManualService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
-            .ReturnsAsync(new ProviderSyncResult
-            {
-                Provider = "manual",
-                Success = true,
-                Message = "Manual data does not require sync"
-            });
-
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "manual"))
-            .ReturnsAsync(lastSync);
+            .ReturnsAsync(DateTime.UtcNow.AddMinutes(-60));
         _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ReturnsAsync(existingData);
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("manual"))
-            .Returns(mockManualService.Object);
 
-        // Use a local service instance with a verifiable progress reporter
         var progressReporterMock = new Mock<ISyncProgressReporter>();
         var sut = new MeasurementSyncService(
             _providerIntegrationServiceMock.Object,
@@ -410,10 +399,11 @@ public class MeasurementSyncServiceTests : TestBase
         result.ProviderStatus.Should().ContainKey("manual");
         result.ProviderStatus["manual"].Success.Should().BeTrue();
 
-        // No store should occur (no measurements returned by sync)
+        _providerIntegrationServiceMock.Verify(x => x.GetProviderService(It.IsAny<string>()), Times.Never);
         _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()), Times.Never);
-
-        // No per-provider progress should be reported for manual
+        progressReporterMock.Verify(
+            x => x.ReportSyncProgressAsync(It.IsAny<string>(), It.Is<string>(m => m.Contains("Downloading"))),
+            Times.Never);
         progressReporterMock.Verify(
             x => x.ReportProviderProgressAsync("manual", It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<int?>()),
             Times.Never);

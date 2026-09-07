@@ -44,14 +44,8 @@ public class ManualService : IProviderService
 
     public Task<ProviderSyncResult> SyncMeasurementsAsync(Guid userId, bool metric, DateTime? startDate = null)
     {
-        // Manual data doesn't sync - it's entered by the user
-        _logger.LogInformation("Sync requested for manual provider (user {UserId}) - no-op", userId);
-        return Task.FromResult(new ProviderSyncResult
-        {
-            Provider = ProviderName,
-            Success = true,
-            Message = "Manual data does not require sync"
-        });
+        // Manual data is entered by the user; MeasurementSyncService never schedules it for refresh
+        throw new NotSupportedException("Manual provider does not support syncing measurements");
     }
 
     public Task<bool> HasActiveProviderLinkAsync(Guid userId)
