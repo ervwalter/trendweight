@@ -33,6 +33,9 @@ ENV_VARS=(
     "Fitbit__ClientId"
     "Fitbit__ClientSecret"
     "Fitbit__Enabled"
+
+    # Rate limiting
+    "RateLimiting__ClientAddressHeaders"
     
     # Security configuration
     "AllowedHosts"

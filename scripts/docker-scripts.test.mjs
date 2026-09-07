@@ -131,6 +131,14 @@ test("docker run forwards provider state signing and the Fitbit enable flag", (t
   );
 });
 
+test("docker run forwards the rate limiting client address headers", (t) => {
+  const result = fixture(t).run("docker-run.sh", {
+    RateLimiting__ClientAddressHeaders: "do-connecting-ip;cf-connecting-ip",
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.args.includes("RateLimiting__ClientAddressHeaders"));
+});
+
 test("docker build defaults the version to local and honors an override", (t) => {
   const setup = fixture(t);
   const variables = {
