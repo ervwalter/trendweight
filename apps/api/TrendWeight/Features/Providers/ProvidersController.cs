@@ -75,36 +75,7 @@ public class ProvidersController : ControllerBase
                 return Unauthorized(new ErrorResponse { Error = "User ID not found" });
             }
 
-            // Get all provider links for the user
-            var providerLinks = await _providerLinkService.GetAllForUserAsync(userGuid);
-
-            // Transform to response format
-            var response = providerLinks
-                .Select(link => new ProviderLinkResponse
-                {
-                    Provider = link.Provider,
-                    ConnectedAt = ConnectedAtFor(link),
-                    UpdateReason = link.UpdateReason,
-                    HasToken = link.Token != null && link.Token.Count > 0,
-                    IsDisabled = link.Provider == "legacy" && link.Token?.GetValueOrDefault("disabled") as bool? == true
-                }).ToList();
-
-            // Manual data has no provider_links row; surface a synthetic link whenever
-            // the user has manual readings so the frontend treats it like a connected source
-            if (await _sourceDataService.HasMeasurementsAsync(userGuid, "manual"))
-            {
-                var lastUpdate = await _sourceDataService.GetLastSyncTimeAsync(userGuid, "manual");
-                response.Add(new ProviderLinkResponse
-                {
-                    Provider = "manual",
-                    ConnectedAt = (lastUpdate ?? DateTime.UtcNow).ToString("o"),
-                    UpdateReason = null,
-                    HasToken = true,
-                    IsDisabled = false
-                });
-            }
-
-            return Ok(response);
+            return Ok(await BuildLinkResponsesAsync(userGuid));
         }
         catch (Exception ex)
         {
@@ -290,6 +261,41 @@ public class ProvidersController : ControllerBase
     }
 
     /// <summary>
+    /// Builds the provider link list for a user: every provider_links row plus a
+    /// synthetic "manual" link whenever the user has manual readings (manual data has
+    /// no provider_links row). Used by both the authenticated and the shared endpoint.
+    /// </summary>
+    private async Task<List<ProviderLinkResponse>> BuildLinkResponsesAsync(Guid uid)
+    {
+        var providerLinks = await _providerLinkService.GetAllForUserAsync(uid);
+
+        var response = providerLinks
+            .Select(link => new ProviderLinkResponse
+            {
+                Provider = link.Provider,
+                ConnectedAt = ConnectedAtFor(link),
+                UpdateReason = link.UpdateReason,
+                HasToken = link.Token != null && link.Token.Count > 0,
+                IsDisabled = link.Provider == "legacy" && link.Token?.GetValueOrDefault("disabled") as bool? == true
+            }).ToList();
+
+        if (await _sourceDataService.HasMeasurementsAsync(uid, "manual"))
+        {
+            var lastUpdate = await _sourceDataService.GetLastSyncTimeAsync(uid, "manual");
+            response.Add(new ProviderLinkResponse
+            {
+                Provider = "manual",
+                ConnectedAt = (lastUpdate ?? DateTime.UtcNow).ToString("o"),
+                UpdateReason = null,
+                HasToken = true,
+                IsDisabled = false
+            });
+        }
+
+        return response;
+    }
+
+    /// <summary>
     /// The date a link was established. updated_at is rewritten on every token
     /// refresh, so it only serves as a fallback for rows that predate created_at.
     /// </summary>
@@ -317,21 +323,9 @@ public class ProvidersController : ControllerBase
                 return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
-            // Get all provider links for the user
-            var providerLinks = await _providerLinkService.GetAllForUserAsync(user.Uid);
-
-            // Transform to response format
-            var response = providerLinks
-                .Select(link => new ProviderLinkResponse
-                {
-                    Provider = link.Provider,
-                    ConnectedAt = ConnectedAtFor(link),
-                    UpdateReason = link.UpdateReason,
-                    HasToken = link.Token != null && link.Token.Count > 0,
-                    IsDisabled = link.Provider == "legacy" && link.Token?.GetValueOrDefault("disabled") as bool? == true
-                }).ToList();
-
-            return Ok(response);
+            // The shared dashboard gates on the same link list the owner sees, so the
+            // synthetic manual link must be present here too for manual-only users
+            return Ok(await BuildLinkResponsesAsync(user.Uid));
         }
         catch (Exception ex)
         {

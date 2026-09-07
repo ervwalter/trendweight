@@ -814,6 +814,60 @@ public class ProvidersControllerTests : TestBase
     }
 
     [Fact]
+    public async Task GetProviderLinksBySharingCode_WithManualData_IncludesManualLink()
+    {
+        // A manual-only user has no provider_links rows; the shared dashboard loader
+        // still needs a connected, non-legacy link to render the share page
+        var userId = Guid.NewGuid();
+        var sharingCode = "test-sharing-code";
+        var user = CreateTestProfile(userId);
+        user.Profile.SharingEnabled = true;
+        user.Profile.SharingToken = sharingCode;
+        var lastUpdate = DateTime.UtcNow.AddHours(-1);
+
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode))
+            .ReturnsAsync(user);
+        _providerLinkServiceMock.Setup(x => x.GetAllForUserAsync(userId))
+            .ReturnsAsync(new List<DbProviderLink>());
+        _sourceDataServiceMock.Setup(x => x.HasMeasurementsAsync(userId, "manual"))
+            .ReturnsAsync(true);
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "manual"))
+            .ReturnsAsync(lastUpdate);
+
+        var result = await _sut.GetProviderLinksBySharingCode(sharingCode);
+
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
+        var manualLink = response.Should().ContainSingle().Subject;
+        manualLink.Provider.Should().Be("manual");
+        manualLink.HasToken.Should().BeTrue();
+        manualLink.IsDisabled.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetProviderLinksBySharingCode_WithoutManualData_DoesNotIncludeManualLink()
+    {
+        var userId = Guid.NewGuid();
+        var sharingCode = "test-sharing-code";
+        var user = CreateTestProfile(userId);
+        user.Profile.SharingEnabled = true;
+        user.Profile.SharingToken = sharingCode;
+
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode))
+            .ReturnsAsync(user);
+        _providerLinkServiceMock.Setup(x => x.GetAllForUserAsync(userId))
+            .ReturnsAsync(new List<DbProviderLink> { CreateTestProviderLink(userId, "withings") });
+        _sourceDataServiceMock.Setup(x => x.HasMeasurementsAsync(userId, "manual"))
+            .ReturnsAsync(false);
+
+        var result = await _sut.GetProviderLinksBySharingCode(sharingCode);
+
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<List<ProviderLinkResponse>>().Subject;
+        response.Should().ContainSingle().Which.Provider.Should().Be("withings");
+    }
+
+    [Fact]
     public async Task GetProviderLinksBySharingCode_WhenUserNotFound_ReturnsNotFound()
     {
         // Arrange
