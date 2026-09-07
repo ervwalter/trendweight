@@ -27,7 +27,9 @@ public class RequestTimingMiddleware
                     context.Request.Method, LogSafePath.Redact(context.Request.Path), stopwatch.ElapsedMilliseconds);
             }
         }
-        catch (Exception ex)
+        // A client going away mid-request is not a server failure; the inner error
+        // middleware rethrows those deliberately, so they must not be logged as errors.
+        catch (Exception ex) when (!(ex is OperationCanceledException && context.RequestAborted.IsCancellationRequested))
         {
             _logger.LogError(ex, "Request failed: {Method} {Path} after {ElapsedMs}ms",
                 context.Request.Method, LogSafePath.Redact(context.Request.Path), stopwatch.ElapsedMilliseconds);

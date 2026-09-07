@@ -36,6 +36,31 @@ public class RequestTimingMiddlewareTests
     }
 
     [Fact]
+    public async Task ClientAbort_PropagatesWithoutAnErrorLog()
+    {
+        var context = SharedDashboardRequest("/api/data/secret-sharing-token");
+        context.RequestAborted = new CancellationToken(canceled: true);
+        var middleware = Create(ctx => throw new OperationCanceledException(ctx.RequestAborted));
+
+        var act = () => middleware.InvokeAsync(context);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        _logs.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CancellationWithoutAClientAbort_IsStillLoggedAsAFailure()
+    {
+        var context = SharedDashboardRequest("/api/data/secret-sharing-token");
+        var middleware = Create(_ => throw new OperationCanceledException("upstream timeout"));
+
+        var act = () => middleware.InvokeAsync(context);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        _logs.Entries.Should().ContainSingle(e => e.Level == LogLevel.Error);
+    }
+
+    [Fact]
     public async Task FastSuccessfulRequest_LogsNothing()
     {
         var context = SharedDashboardRequest("/api/profile/secret-sharing-token");
