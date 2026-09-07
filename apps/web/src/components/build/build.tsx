@@ -1,6 +1,6 @@
 import { Container } from "@/components/container";
 import { Heading } from "@/components/common/heading";
-import { useState } from "react";
+import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard";
 import { ChangelogSection } from "./changelog-section";
 import { BuildDetailsSection } from "./build-details-section";
 import { BrowserInfoSection } from "./browser-info-section";
@@ -10,7 +10,7 @@ import { getDebugInfo, getBuildInfo } from "@/lib/utils/debug-info";
 import { useChangelog } from "@/lib/build/use-changelog";
 
 export function Build() {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   const buildInfo = getBuildInfo();
   const buildRepo = import.meta.env.VITE_BUILD_REPO || "";
@@ -35,16 +35,6 @@ export function Build() {
   const body = encodeURIComponent("Please describe your issue here:\n\n\n\n" + "--- System Information (Please keep this) ---\n" + debugInfo);
   const mailtoLink = `mailto:erv@ewal.net?subject=${subject}&body=${body}`;
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(debugInfo);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
-
   return (
     <Container>
       <div className="mx-auto max-w-4xl">
@@ -59,7 +49,7 @@ export function Build() {
 
         <ChangelogSection changelog={changelog} loadingChangelog={loadingChangelog} buildVersion={buildInfo.buildVersion} />
 
-        <QuickActionsSection onCopyClick={copyToClipboard} copied={copied} mailtoLink={mailtoLink} />
+        <QuickActionsSection onCopyClick={() => copy(debugInfo)} copied={copied} mailtoLink={mailtoLink} />
 
         <BuildDetailsSection
           environment={buildInfo.environment}

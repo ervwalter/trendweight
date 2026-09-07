@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Build } from "./build";
 
 // Mock environment variables
@@ -187,6 +187,30 @@ describe("Build", () => {
     // Should have GitHub links with repo
     expect(screen.getByText("Version Link")).toBeInTheDocument();
     expect(screen.getByText("Commit Link")).toBeInTheDocument();
+  });
+
+  it("copies the debug info and shows a confirmation that reverts after two seconds", async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    try {
+      render(<Build />);
+
+      await act(async () => {
+        fireEvent.click(screen.getByText("Copy Debug Info"));
+      });
+
+      expect(writeText).toHaveBeenCalledWith("Debug Information:\nVersion: v2.0.0\nBrowser: Chrome 120.0");
+      expect(screen.getByTestId("quick-actions")).toHaveTextContent("Copied: true");
+
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+
+      expect(screen.getByTestId("quick-actions")).toHaveTextContent("Copied: false");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("should display email support link", () => {

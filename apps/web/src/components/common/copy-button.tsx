@@ -1,6 +1,6 @@
 import { Check, Copy } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard";
 import { cn } from "@/lib/utils";
 
 interface CopyButtonProps {
@@ -12,31 +12,12 @@ interface CopyButtonProps {
 
 /** Icon button that copies `value` and shows a check mark for two seconds afterwards */
 export function CopyButton({ value, disabled, className }: CopyButtonProps) {
-  const [copied, setCopied] = useState(false);
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Don't flip state on an unmounted component if the user navigates away mid-timer
-  useEffect(() => {
-    return () => {
-      if (resetTimer.current) clearTimeout(resetTimer.current);
-    };
-  }, []);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      if (resetTimer.current) clearTimeout(resetTimer.current);
-      resetTimer.current = setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
+  const { copied, copy } = useCopyToClipboard();
 
   return (
     <Button
       type="button"
-      onClick={handleCopy}
+      onClick={() => copy(value)}
       variant="ghost"
       size="sm"
       className={cn("absolute top-1/2 right-2 -translate-y-1/2 p-1", className)}
