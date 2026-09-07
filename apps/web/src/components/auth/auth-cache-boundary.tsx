@@ -1,5 +1,5 @@
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createQueryClient } from "@/lib/query-client";
 
 interface AuthCacheBoundaryProps {
@@ -9,7 +9,22 @@ interface AuthCacheBoundaryProps {
 
 function AccountQueryProvider({ children }: Pick<AuthCacheBoundaryProps, "children">) {
   const [queryClient] = useState(createQueryClient);
-  useEffect(() => () => queryClient.clear(), [queryClient]);
+  const mountGeneration = useRef(0);
+  useEffect(() => {
+    // StrictMode runs this cleanup and then the effect again on the same client during
+    // the initial mount. Clearing synchronously there cancels route loaders that are
+    // already fetching (they reject with CancelledError), so defer the clear and skip
+    // it when the effect has re-run in the meantime.
+    mountGeneration.current += 1;
+    const generation = mountGeneration.current;
+    return () => {
+      queueMicrotask(() => {
+        if (mountGeneration.current === generation) {
+          queryClient.clear();
+        }
+      });
+    };
+  }, [queryClient]);
   return <QueryClientProvider client={queryClient}>{children(queryClient)}</QueryClientProvider>;
 }
 

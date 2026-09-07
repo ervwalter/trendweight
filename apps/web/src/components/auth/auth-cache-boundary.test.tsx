@@ -39,6 +39,8 @@ describe("AuthCacheBoundary", () => {
     const aliceClient = currentClient!;
     rerender(app("bob"));
     await screen.findByText("bob");
+    // The discarded account's cache is cleared once its boundary really unmounts.
+    await waitFor(() => expect(aliceClient.getQueryCache().getAll()).toHaveLength(0));
     // A late mutation from the previous account cannot repopulate Bob's cache.
     aliceClient.setQueryData(["profile"], "alice");
     expect(currentClient!.getQueryData(["profile"])).toBe("bob");
@@ -75,6 +77,28 @@ describe("AuthCacheBoundary", () => {
     });
     expect(screen.queryByText("Alice's private reading")).not.toBeInTheDocument();
     expect(signedOutClient?.getQueryData(["data"])).toBeUndefined();
+  });
+
+  it("keeps a route loader's in-flight fetch alive across a StrictMode mount", async () => {
+    // Regression: StrictMode re-runs the boundary's effect on mount. A synchronous
+    // clear() in its cleanup cancelled the dashboard loader's fetchQuery on the
+    // still-live client, which surfaced as a CancelledError page on direct loads.
+    let loaderResult: Promise<string> | undefined;
+    render(
+      <StrictMode>
+        <AuthCacheBoundary identity="alice">
+          {(client) => {
+            loaderResult ??= client.fetchQuery({
+              queryKey: ["profile"],
+              queryFn: () => new Promise<string>((resolve) => setTimeout(() => resolve("profile"), 20)),
+            });
+            return <p>Dashboard</p>;
+          }}
+        </AuthCacheBoundary>
+      </StrictMode>,
+    );
+
+    await expect(loaderResult).resolves.toBe("profile");
   });
 
   it("renders public pages when starting signed out", () => {
