@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using TrendWeight.Infrastructure.Auth;
 using TrendWeight.Infrastructure.Middleware;
 using TrendWeight.Features.Providers;
@@ -26,9 +27,10 @@ public static class ServiceCollectionExtensions
     {
         // AppOptions (Clerk authority etc.) is bound once, in AddTrendWeightServices.
 
-        // Add Clerk services. The token service is a singleton that creates its own
-        // client from IHttpClientFactory.
+        // Add Clerk services. The token service is a singleton that creates a
+        // client from IHttpClientFactory for each JWKS fetch.
         services.AddHttpClient();
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IClerkTokenService, ClerkTokenService>();
         services.AddScoped<IUserAccountMappingService, UserAccountMappingService>();
 

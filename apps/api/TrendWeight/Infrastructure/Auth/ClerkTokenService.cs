@@ -8,23 +8,27 @@ namespace TrendWeight.Infrastructure.Auth;
 
 public class ClerkTokenService : IClerkTokenService, IDisposable
 {
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ClerkTokenService> _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly string _authority;
     private readonly string _jwksUrl;
     private JsonWebKeySet? _cachedKeySet;
-    private DateTime _cacheExpiry = DateTime.MinValue;
-    private const int CacheDurationMinutes = 60;
+    private DateTimeOffset _cacheExpiry = DateTimeOffset.MinValue;
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(60);
+    private static readonly TimeSpan RefreshRetryInterval = TimeSpan.FromSeconds(30);
     private readonly SemaphoreSlim _keySetLock = new(1, 1);
-    private DateTime _lastKeyRefreshAttempt = DateTime.MinValue;
+    private DateTimeOffset _lastKeyRefreshAttempt = DateTimeOffset.MinValue;
 
     public ClerkTokenService(
         IHttpClientFactory httpClientFactory,
         ILogger<ClerkTokenService> logger,
-        IOptions<AppOptions> options)
+        IOptions<AppOptions> options,
+        TimeProvider timeProvider)
     {
-        _httpClient = httpClientFactory.CreateClient();
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _timeProvider = timeProvider;
         _authority = options.Value.Clerk.Authority;
         _jwksUrl = $"{_authority}/.well-known/jwks.json";
     }
@@ -95,35 +99,53 @@ public class ClerkTokenService : IClerkTokenService, IDisposable
             ?? principal.FindFirst("email")?.Value;
     }
 
+    /// <summary>
+    /// Returns the cached key set while it is fresh, refreshing it once it expires or
+    /// when <paramref name="previousKeySet"/> (the set a caller already tried) is the
+    /// cached one. Refreshes are attempted at most once per
+    /// <see cref="RefreshRetryInterval"/>; when a refresh fails, the previously
+    /// cached keys keep serving so a Clerk outage does not become a sign-in outage.
+    /// </summary>
     private async Task<JsonWebKeySet> GetJsonWebKeySetAsync(JsonWebKeySet? previousKeySet = null)
     {
         await _keySetLock.WaitAsync();
         try
         {
-            var now = DateTime.UtcNow;
-            if (_cachedKeySet != null && now < _cacheExpiry)
+            var now = _timeProvider.GetUtcNow();
+            var cached = _cachedKeySet;
+            if (cached != null)
             {
-                if (previousKeySet == null || !ReferenceEquals(previousKeySet, _cachedKeySet)
-                    || now - _lastKeyRefreshAttempt < TimeSpan.FromSeconds(30))
+                var callerAlreadyTriedCached = previousKeySet != null && ReferenceEquals(previousKeySet, cached);
+                if (now < _cacheExpiry && !callerAlreadyTriedCached)
                 {
-                    return _cachedKeySet;
+                    return cached;
+                }
+
+                if (now - _lastKeyRefreshAttempt < RefreshRetryInterval)
+                {
+                    return cached;
                 }
             }
 
-            if (previousKeySet != null)
+            _lastKeyRefreshAttempt = now;
+            try
             {
-                _lastKeyRefreshAttempt = now;
+                var client = _httpClientFactory.CreateClient();
+                var response = await client.GetStringAsync(_jwksUrl);
+                _cachedKeySet = JsonWebKeySet.Create(response);
+                _cacheExpiry = _timeProvider.GetUtcNow() + CacheDuration;
+                return _cachedKeySet;
             }
-
-            var response = await _httpClient.GetStringAsync(_jwksUrl);
-            _cachedKeySet = JsonWebKeySet.Create(response);
-            _cacheExpiry = DateTime.UtcNow.AddMinutes(CacheDurationMinutes);
-            return _cachedKeySet;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to fetch Clerk JWKS from {Url}", _jwksUrl);
-            throw;
+            catch (Exception ex) when (cached != null)
+            {
+                _logger.LogWarning(ex, "Failed to refresh Clerk JWKS from {Url}; continuing with the cached key set", _jwksUrl);
+                return cached;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch Clerk JWKS from {Url}", _jwksUrl);
+                throw;
+            }
         }
         finally
         {
@@ -134,7 +156,6 @@ public class ClerkTokenService : IClerkTokenService, IDisposable
     public void Dispose()
     {
         _keySetLock.Dispose();
-        _httpClient.Dispose();
         GC.SuppressFinalize(this);
     }
 }
