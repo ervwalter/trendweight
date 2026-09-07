@@ -8,6 +8,8 @@ export function formatBuildTime(timestamp: string): BuildTimeInfo | string {
   if (timestamp === "Not available") return timestamp;
   try {
     const date = new Date(timestamp);
+    // new Date("garbage") does not throw; it yields an Invalid Date whose math is NaN
+    if (Number.isNaN(date.getTime())) return timestamp;
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
