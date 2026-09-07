@@ -26,10 +26,6 @@ public class FitbitService : ProviderServiceBase, IFitbitService
     private int _remainingApiCalls = int.MaxValue;
     private DateTimeOffset _rateLimitResetTime = DateTimeOffset.UtcNow;
 
-    // Fitbit's quota resets hourly. Never hold a request open for that long: short waits
-    // are absorbed, anything longer fails the sync as retryable so the next load retries.
-    private static readonly TimeSpan MaxRateLimitWait = TimeSpan.FromSeconds(30);
-
     /// <summary>
     /// Constructor
     /// </summary>
@@ -296,20 +292,16 @@ public class FitbitService : ProviderServiceBase, IFitbitService
     /// </summary>
     private async Task<HttpResponseMessage> SendRateLimitedRequestAsync(HttpRequestMessage request)
     {
-        // Check if we need to wait before making the request
+        // Wait out the quota rather than failing. A full sync starts at 2009 and needs
+        // more requests than Fitbit's 150-per-hour allowance, so it can only finish by
+        // pausing until the reset (up to an hour). Nothing cancels the sync when the
+        // browser gives up, so the fetch completes server-side and the next dashboard
+        // load shows the data. Failing fast instead would restart from 2009 every time
+        // and never complete; with Fitbit support ending, the long wait is the accepted
+        // trade-off.
         if (_remainingApiCalls < 5 && DateTimeOffset.UtcNow < _rateLimitResetTime)
         {
             var waitTime = _rateLimitResetTime - DateTimeOffset.UtcNow;
-            if (waitTime > MaxRateLimitWait)
-            {
-                Logger.LogWarning("Fitbit rate limit exhausted; quota resets in {WaitTime} seconds. Failing sync as retryable", waitTime.TotalSeconds);
-                throw new ProviderException(
-                    "Fitbit's request limit has been reached. Please try again in a few minutes.",
-                    HttpStatusCode.TooManyRequests,
-                    "RATE_LIMITED",
-                    isRetryable: true);
-            }
-
             Logger.LogWarning("Rate limit nearly exhausted. Waiting {WaitTime} seconds before next request", waitTime.TotalSeconds);
 
             // Only report to user if wait is significant (10+ seconds)

@@ -95,34 +95,37 @@ public class FitbitServiceTests
     }
 
     [Fact]
-    public async Task SyncMeasurementsAsync_WhenQuotaResetIsFarAway_FailsAsRetryableInsteadOfWaiting()
+    public async Task SyncMeasurementsAsync_WhenQuotaIsExhausted_WaitsForTheResetAndContinues()
     {
         var userId = Guid.NewGuid();
         _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "fitbit"))
             .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "fitbit", Token = CreateValidToken("fitbit-user") });
 
-        // First chunk succeeds but reports the hourly quota as exhausted for the next 50 minutes
-        var firstChunk = new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent("{\"weight\":[]}", Encoding.UTF8, "application/json")
-        };
-        firstChunk.Headers.Add("fitbit-rate-limit-limit", "150");
-        firstChunk.Headers.Add("fitbit-rate-limit-remaining", "2");
-        firstChunk.Headers.Add("fitbit-rate-limit-reset", "3000");
-
+        // Every chunk reports the quota as exhausted with the reset one second away. A full
+        // sync needs more requests than one quota window allows, so the sync must pause for
+        // the reset and carry on rather than fail (see SendRateLimitedRequestAsync).
         _httpMessageHandlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(firstChunk);
+            .ReturnsAsync(() =>
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"weight\":[]}", Encoding.UTF8, "application/json")
+                };
+                response.Headers.Add("fitbit-rate-limit-limit", "150");
+                response.Headers.Add("fitbit-rate-limit-remaining", "2");
+                response.Headers.Add("fitbit-rate-limit-reset", "1");
+                return response;
+            });
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var result = await _sut.SyncMeasurementsAsync(userId, true, DateTime.UtcNow.AddDays(-40));
         stopwatch.Stop();
 
-        result.Success.Should().BeFalse();
-        result.Error.Should().Be(ProviderSyncError.NetworkError);
-        result.Measurements.Should().BeNull();
-        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10), "the sync must not block until the quota resets");
-        _httpMessageHandlerMock.Protected().Verify("SendAsync", Times.Once(),
+        result.Success.Should().BeTrue();
+        result.Measurements.Should().NotBeNull();
+        stopwatch.Elapsed.Should().BeGreaterThanOrEqualTo(TimeSpan.FromMilliseconds(900), "the second chunk must wait for the quota reset");
+        _httpMessageHandlerMock.Protected().Verify("SendAsync", Times.Exactly(2),
             ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
     }
 
