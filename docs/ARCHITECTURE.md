@@ -37,6 +37,13 @@ is enabled and the supplied sharing token resolves. Computed and raw shared data
 must honor hidden-history settings. Provider error/status information stays out
 of shared responses.
 
+Rate limiting partitions authenticated requests per user (API keys on a stricter
+tier, writes tighter than reads). Anonymous API requests, including rejected
+credentials, are partitioned per client address taken from the configured
+`RateLimiting:ClientAddressHeaders` (falling back to the peer address) and are
+also capped by one shared ceiling, so the limiter stays effective even if a
+client address header were spoofable. Non-API anonymous requests are not limited.
+
 Each resolved browser account gets its own query client, router, and component
 subtree. Route loaders use the client supplied by router context. This isolates
 cached health data and local form/key state, including late requests after logout.

@@ -45,6 +45,17 @@ The application does not process forwarded headers or redirect internal HTTP.
 Ingress must redirect or reject public HTTP while allowing private HTTP to port 8080. Do not expose that listener directly to the Internet. Do not enable
 `ASPNETCORE_FORWARDEDHEADERS_ENABLED`; no proxy-IP allowlist is needed.
 
+Anonymous API traffic (shared dashboards, rejected credentials) is rate limited per
+client address and capped by one shared ceiling. Behind an ingress the peer
+address is the ingress itself, so `RateLimiting__ClientAddressHeaders` names the
+headers, in preference order, that carry the real client address. The Production
+default is `do-connecting-ip;cf-connecting-ip`: App Platform sets
+`do-connecting-ip` to the connecting client and its Cloudflare front sets
+`cf-connecting-ip`, while `x-forwarded-for` there holds the ingress address and is
+not used. Only list headers the ingress overwrites on every request; the shared
+ceiling still bounds total anonymous work if a listed header is ever spoofable.
+Set the value to an empty string when the API is reached directly.
+
 ## DigitalOcean App Platform
 
 Configure each web service's runtime variables in **Settings → component →

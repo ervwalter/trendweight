@@ -167,10 +167,14 @@ builder.Services.AddTrendWeightServices(builder.Configuration);
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
-// Add rate limiting
+// Add rate limiting. Anonymous API traffic is limited per client address and, in
+// case that address is ever spoofable, capped by one shared ceiling as well.
+var rateLimitingConfig = builder.Configuration.GetSection("RateLimiting").Get<RateLimitingConfig>() ?? new RateLimitingConfig();
 builder.Services.AddRateLimiter(options =>
 {
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(RateLimitPartitionResolver.Resolve);
+    options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+        PartitionedRateLimiter.Create<HttpContext, string>(context => RateLimitPartitionResolver.Resolve(context, rateLimitingConfig)),
+        PartitionedRateLimiter.Create<HttpContext, string>(RateLimitPartitionResolver.ResolveAnonymousCeiling));
 
     // Return 429 Too Many Requests when rate limit is exceeded
     options.OnRejected = async (context, token) =>

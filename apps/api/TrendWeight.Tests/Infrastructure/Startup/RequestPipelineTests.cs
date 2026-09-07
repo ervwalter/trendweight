@@ -353,7 +353,7 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         using var factory = new StartupTestFactory();
         using var client = factory.CreateHttpsClient();
         var ct = TestContext.Current.CancellationToken;
-        for (var i = 0; i < 300; i++)
+        for (var i = 0; i < 60; i++)
         {
             var guessing = i % 2 == 1;
             using var request = new HttpRequestMessage(HttpMethod.Get, guessing ? "/api/v1/settings" : "/api/profile/disabled-share");
@@ -383,6 +383,69 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         shell.StatusCode.Should().Be(HttpStatusCode.OK);
         using var health = await client.GetAsync("/api/health", ct);
         health.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    private static WebApplicationFactory<Program> IngressHeaderFactory(StartupTestFactory root) =>
+        root.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
+                new Dictionary<string, string?> { ["RateLimiting:ClientAddressHeaders"] = "do-connecting-ip;cf-connecting-ip" })));
+
+    private static HttpRequestMessage AnonymousRequest(string clientAddress)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/profile/disabled-share");
+        request.Headers.Add("do-connecting-ip", clientAddress);
+        return request;
+    }
+
+    [Fact]
+    public async Task AnonymousApiRequests_ArePartitionedByTheConfiguredClientAddressHeader()
+    {
+        using var root = new StartupTestFactory();
+        using var factory = IngressHeaderFactory(root);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        var ct = TestContext.Current.CancellationToken;
+
+        for (var i = 0; i < 60; i++)
+        {
+            using var allowed = await client.SendAsync(AnonymousRequest("203.0.113.10"), ct);
+            allowed.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        using var exhausted = await client.SendAsync(AnonymousRequest("203.0.113.10"), ct);
+        exhausted.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+
+        // A different client address, and a request without the header (peer fallback), keep their own budget.
+        using var otherClient = await client.SendAsync(AnonymousRequest("203.0.113.11"), ct);
+        otherClient.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        using var noHeader = await client.GetAsync("/api/profile/disabled-share", ct);
+        noHeader.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task AnonymousApiRequests_AreCappedByOneCeilingAcrossClientAddresses()
+    {
+        using var root = new StartupTestFactory();
+        using var factory = IngressHeaderFactory(root);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        var ct = TestContext.Current.CancellationToken;
+
+        // Rotating the client address on every request never exhausts a per-client
+        // budget, so only the shared ceiling can stop this burst.
+        for (var i = 0; i < 300; i++)
+        {
+            using var allowed = await client.SendAsync(AnonymousRequest($"198.51.100.{i % 250 + 1}"), ct);
+            allowed.StatusCode.Should().Be(HttpStatusCode.NotFound, $"request {i} should be under the ceiling");
+        }
+
+        using var rejected = await client.SendAsync(AnonymousRequest("192.0.2.99"), ct);
+        rejected.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        (await rejected.Content.ReadAsStringAsync(ct)).Should().Contain("\"errorCode\":\"RATE_LIMITED\"");
+
+        // Authenticated traffic does not share the ceiling.
+        using var authenticated = new HttpRequestMessage(HttpMethod.Get, "/api/v1/measurements/manual");
+        authenticated.Headers.Add("X-Api-Key", StartupTestFactory.ApiKey);
+        using var authenticatedResponse = await client.SendAsync(authenticated, ct);
+        authenticatedResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Theory]
