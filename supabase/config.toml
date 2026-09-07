@@ -18,10 +18,9 @@ extra_search_path = ["public", "extensions"]
 max_rows = 1000
 # Controls whether new tables, views, sequences and functions created in the `public` schema by
 # `postgres` are reachable through the Data API roles (`anon`, `authenticated`, `service_role`)
-# without explicit GRANTs. Leave unset today to preserve local behaviour. The implicit default
-# flips to `false` on 2026-05-30 to match the new cloud default, and the field is removed in
-# 2026-10-30 once the always-revoked behaviour is permanent. The committed migrations already
-# revoke anon/authenticated privileges; keep local behaviour aligned with that.
+# without explicit GRANTs. Set to false to match the committed REVOKE migration
+# (20260906190000_restrict_data_api_roles.sql) and the cloud default. The field is scheduled for
+# removal on 2026-10-30 once the always-revoked behaviour is permanent.
 auto_expose_new_tables = false
 
 [api.tls]
