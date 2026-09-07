@@ -172,6 +172,35 @@ public class SyncProgressServiceTests
     }
 
     [Fact]
+    public async Task ReportProviderProgressAsync_WithoutCounts_KeepsPreviousCounts()
+    {
+        // Arrange - capture every broadcast payload in order
+        var payloads = new List<SyncProgressMessage>();
+        _supabaseServiceMock.Setup(x => x.BroadcastAsync(It.IsAny<string>(), "progress_update", It.IsAny<object>()))
+            .Callback<string, string, object>((_, _, payload) => payloads.Add((SyncProgressMessage)payload))
+            .ReturnsAsync(true);
+
+        // Act - a follow-up report that carries only a message, then one that carries only "current"
+        await _sut.ReportProviderProgressAsync("withings", "fetching", "a", 3, 10);
+        await _sut.ReportProviderProgressAsync("withings", "fetching", "b");
+        var afterMessageOnly = payloads.Last().Providers.Should().ContainSingle().Which;
+        await _sut.ReportProviderProgressAsync("withings", "done", "c", current: 10);
+
+        // Assert - omitted counts keep their previous values; stage and message always update
+        payloads.Should().HaveCount(3);
+        afterMessageOnly.Stage.Should().Be("fetching");
+        afterMessageOnly.Message.Should().Be("b");
+        afterMessageOnly.Current.Should().Be(3);
+        afterMessageOnly.Total.Should().Be(10);
+
+        var afterCurrentOnly = payloads.Last().Providers.Should().ContainSingle().Which;
+        afterCurrentOnly.Stage.Should().Be("done");
+        afterCurrentOnly.Message.Should().Be("c");
+        afterCurrentOnly.Current.Should().Be(10);
+        afterCurrentOnly.Total.Should().Be(10);
+    }
+
+    [Fact]
     public async Task Broadcasts_ReceiveSnapshotsThatLaterReportsDoNotMutate()
     {
         // Arrange - capture the payload objects handed to Realtime

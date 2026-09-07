@@ -1,23 +1,27 @@
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import { SyncProgressToast } from "./sync-progress-toast";
 import type { SyncProgress } from "./types";
 
-describe("SyncProgressToast", () => {
-  it("should render main message when provided", () => {
-    const progress: SyncProgress = {
-      id: "test-1",
-      status: "running",
-      message: "Syncing your weight data...",
-      providers: null,
-    };
+// Wraps the toast so its complete text can be asserted exactly
+const renderToast = (progress: SyncProgress) => {
+  render(
+    <div data-testid="toast">
+      <SyncProgressToast progress={progress} />
+    </div>,
+  );
+  return screen.getByTestId("toast");
+};
 
-    render(<SyncProgressToast progress={progress} />);
-    expect(screen.getByText("Syncing your weight data...")).toBeInTheDocument();
+describe("SyncProgressToast", () => {
+  it("shows only the main message when there is no provider detail", () => {
+    const toast = renderToast({ id: "test-1", status: "running", message: "Syncing your weight data...", providers: null });
+
+    expect(toast).toHaveTextContent(/^Syncing your weight data\.\.\.$/);
   });
 
-  it("should render provider-specific progress", () => {
-    const progress: SyncProgress = {
+  it("lists each provider's own message under the main message", () => {
+    const toast = renderToast({
       id: "test-2",
       status: "running",
       message: "Fetching data from providers...",
@@ -25,60 +29,52 @@ describe("SyncProgressToast", () => {
         { provider: "fitbit", stage: "fetching", message: "Processing chunk 3 of 8", current: 3, total: 8 },
         { provider: "withings", stage: "merging", message: null, current: null, total: null },
       ],
-    };
+    });
 
-    render(<SyncProgressToast progress={progress} />);
-
-    expect(screen.getByText("Fetching data from providers...")).toBeInTheDocument();
-    expect(screen.getByText("Fitbit: Processing chunk 3 of 8")).toBeInTheDocument();
-    expect(screen.getByText("Withings: Processing data...")).toBeInTheDocument();
+    expect(toast).toHaveTextContent(/^Fetching data from providers\.\.\.Fitbit: Processing chunk 3 of 8Withings: Processing data\.\.\.$/);
   });
 
-  it("should handle provider stages correctly", () => {
-    const progress: SyncProgress = {
+  it("describes each stage when a provider has no message", () => {
+    const toast = renderToast({
       id: "test-3",
       status: "running",
       message: "Syncing...",
       providers: [
         { provider: "fitbit", stage: "init", message: null, current: null, total: null },
-        { provider: "withings", stage: "done", message: null, current: null, total: null },
+        { provider: "withings", stage: "fetching", message: null, current: null, total: null },
+        { provider: "manual", stage: "merging", message: null, current: null, total: null },
+        { provider: "legacy", stage: "done", message: null, current: null, total: null },
       ],
-    };
+    });
 
-    render(<SyncProgressToast progress={progress} />);
-
-    expect(screen.getByText("Fitbit: Starting...")).toBeInTheDocument();
-    expect(screen.getByText("Withings: Complete")).toBeInTheDocument();
+    expect(toast).toHaveTextContent(/^Syncing\.\.\.Fitbit: Starting\.\.\.Withings: Fetching data\.\.\.Weight Log: Processing data\.\.\.Legacy Data: Complete$/);
   });
 
-  it("should not render providers section when providers is empty array", () => {
-    const progress: SyncProgress = {
+  it("falls back to the raw stage name for a stage without a description", () => {
+    const toast = renderToast({
       id: "test-4",
       status: "running",
-      message: "Loading...",
-      providers: [],
-    };
+      message: null,
+      providers: [{ provider: "fitbit", stage: "error", message: null, current: null, total: null }],
+    });
 
-    render(<SyncProgressToast progress={progress} />);
-
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
-    expect(screen.queryByText("Fitbit:")).not.toBeInTheDocument();
-    expect(screen.queryByText("Withings:")).not.toBeInTheDocument();
+    expect(toast).toHaveTextContent(/^Fitbit: error$/);
   });
 
-  it("should not render main message when not provided", () => {
-    const progress: SyncProgress = {
-      id: "test-5",
+  it("renders no provider lines for an empty provider list", () => {
+    const toast = renderToast({ id: "test-5", status: "running", message: "Loading...", providers: [] });
+
+    expect(toast).toHaveTextContent(/^Loading\.\.\.$/);
+  });
+
+  it("renders only the provider lines without a main message", () => {
+    const toast = renderToast({
+      id: "test-6",
       status: "running",
       message: null,
       providers: [{ provider: "fitbit", stage: "fetching", message: null, current: 1, total: 5 }],
-    };
+    });
 
-    render(<SyncProgressToast progress={progress} />);
-
-    expect(screen.getByText("Fitbit: Fetching data...")).toBeInTheDocument();
-    // Should not have any other text content
-    const container = screen.getByText("Fitbit: Fetching data...").closest("div");
-    expect(container).toBeInTheDocument();
+    expect(toast).toHaveTextContent(/^Fitbit: Fetching data\.\.\.$/);
   });
 });

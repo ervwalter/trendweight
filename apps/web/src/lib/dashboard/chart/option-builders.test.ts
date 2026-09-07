@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { LocalDate } from "@js-joda/core";
+import type { Options, SeriesHlcOptions, SeriesLineOptions, XAxisOptions, YAxisOptions } from "highcharts";
 import {
   buildWeekendPlotBands,
   build4WeekOptions,
@@ -9,395 +10,431 @@ import {
   buildYAxisOptions,
   DYNAMIC_SERIES_IDS,
 } from "./option-builders";
-import type { Options } from "highcharts";
+import type { TransformedChartData } from "./data-transformers";
+
+const DAY = 86400000;
+const WEEK = 7 * DAY;
+
+// Every builder guards on a non-array xAxis/yAxis, so the tests read them back through these
+const xAxis = (options: Options) => options.xAxis as XAxisOptions;
+const yAxis = (options: Options) => options.yAxis as YAxisOptions;
+const seriesIds = (options: Options) => options.series?.map((s) => s.id);
+const seriesTypes = (options: Options) => options.series?.map((s) => (s as AnySeries).type);
+
+type AnySeries = SeriesLineOptions | SeriesHlcOptions;
+type ExtremesHandler = (this: { chart: FakeChart; min: number; max: number }, e: { min?: number; max?: number }) => void;
+
+interface FakeSeries {
+  options: { id: string };
+  remove: ReturnType<typeof vi.fn>;
+}
+
+interface FakeChart {
+  series: FakeSeries[];
+  get: (id: string) => FakeSeries | undefined;
+  addSeries: ReturnType<typeof vi.fn<(series: AnySeries, redraw: boolean) => void>>;
+  redraw: ReturnType<typeof vi.fn>;
+}
+
+function createFakeChart(ids: string[]): FakeChart {
+  const chart: FakeChart = {
+    series: ids.map((id) => ({ options: { id }, remove: vi.fn() })),
+    get: (id) => chart.series.find((s) => s.options.id === id),
+    addSeries: vi.fn(),
+    redraw: vi.fn(),
+  };
+  return chart;
+}
+
+const addedSeries = (chart: FakeChart): AnySeries[] => chart.addSeries.mock.calls.map(([series]) => series);
 
 describe("option-builders", () => {
-  const createMockOptions = (): Options => ({
+  const createOptions = (): Options => ({
     series: [],
-    xAxis: {
-      tickInterval: 0,
-      range: 0,
-      plotBands: [],
-    },
+    xAxis: { tickInterval: 0, range: 0, plotBands: [] },
     yAxis: {},
-    chart: {
-      spacingBottom: 20,
-    },
-    legend: {
-      enabled: true,
-    },
+    chart: { spacingBottom: 20 },
+    legend: { enabled: true },
   });
 
-  const createBuilderOptions = () => ({
+  const dataArrays: TransformedChartData = {
+    actualData: [
+      [1704067200000, 180.5],
+      [1704153600000, 179.8],
+    ],
+    interpolatedData: [
+      [1704067200000, null],
+      [1704153600000, 180.0],
+    ],
+    trendData: [
+      [1704067200000, 181.0],
+      [1704153600000, 180.8],
+    ],
+    projectionsData: [
+      [1704240000000, 180.6],
+      [1704758400000, 180.3],
+    ],
+    actualSinkersData: [[1704067200000, 180.5, 181.0, null]],
+    interpolatedSinkersData: [[1704153600000, 180.0, 180.8, null]],
+  };
+
+  const createBuilderOptions = (overrides: { isNarrow?: boolean } = {}) => ({
     mode: "weight" as const,
     modeText: "Weight",
     trendLabel: "Trend",
     isNarrow: false,
-    lastMeasurement: {
-      date: LocalDate.of(2024, 1, 15),
-      trend: 180.5,
-    },
-    dataArrays: {
-      actualData: [
-        [1704067200000, 180.5],
-        [1704153600000, 179.8],
-      ] as [number, number | null][],
-      interpolatedData: [
-        [1704067200000, null],
-        [1704153600000, 180.0],
-      ] as [number, number | null][],
-      trendData: [
-        [1704067200000, 181.0],
-        [1704153600000, 180.8],
-      ] as [number, number][],
-      projectionsData: [
-        [1704240000000, 180.6],
-        [1704758400000, 180.3],
-      ] as [number, number][],
-      actualSinkersData: [[1704067200000, 180.5, 181.0, null]] as [number, number | null, number | null, null][],
-      interpolatedSinkersData: [[1704153600000, 180.0, 180.8, null]] as [number, number | null, number | null, null][],
-    },
+    lastMeasurement: { date: LocalDate.of(2024, 1, 15), trend: 180.5 },
+    dataArrays,
+    ...overrides,
   });
 
   describe("buildWeekendPlotBands", () => {
-    it("should generate weekend plot bands", () => {
-      const date = LocalDate.of(2024, 1, 15); // Monday
-      const plotBands = buildWeekendPlotBands(date);
+    // Bands run from Friday noon to Sunday noon (UTC) around each Saturday, starting 8 weeks
+    // before the last Saturday on or before (lastDate + 1 week) and ending before that date.
 
-      expect(plotBands).toBeDefined();
-      expect(Array.isArray(plotBands)).toBe(true);
-      expect(plotBands!.length).toBeGreaterThan(0);
-    });
+    it("builds 9 bands for a Monday, starting on Friday 2023-11-24 at noon", () => {
+      const bands = buildWeekendPlotBands(LocalDate.of(2024, 1, 15));
 
-    it("should create plot bands with correct properties", () => {
-      const date = LocalDate.of(2024, 1, 15);
-      const plotBands = buildWeekendPlotBands(date);
-      const firstBand = plotBands![0];
-
-      expect(firstBand).toMatchObject({
+      expect(bands).toHaveLength(9);
+      expect(bands?.[0]).toEqual({
+        from: 1700827200000, // 2023-11-24T12:00:00Z
+        to: 1701000000000, // 2023-11-26T12:00:00Z
         color: "var(--chart-weekend-band)",
         zIndex: 1,
       });
-      expect(typeof firstBand.from).toBe("number");
-      expect(typeof firstBand.to).toBe("number");
-      expect(firstBand.to).toBeGreaterThan(firstBand.from as number);
+      expect(bands?.[8].from).toBe(1705665600000); // 2024-01-19T12:00:00Z
     });
 
-    it("should handle different starting days of week", () => {
-      const saturday = LocalDate.of(2024, 1, 13); // Saturday
-      const plotBands = buildWeekendPlotBands(saturday);
-      expect(plotBands).toBeDefined();
-      expect(plotBands!.length).toBeGreaterThan(0);
+    it("makes every band 48 hours wide and one week apart", () => {
+      const bands = buildWeekendPlotBands(LocalDate.of(2024, 1, 15)) ?? [];
+
+      for (const band of bands) {
+        expect((band.to as number) - (band.from as number)).toBe(2 * DAY);
+      }
+      for (let i = 1; i < bands.length; i++) {
+        expect((bands[i].from as number) - (bands[i - 1].from as number)).toBe(WEEK);
+      }
+    });
+
+    it("builds 8 bands for a Saturday because the end date is itself a Saturday", () => {
+      const bands = buildWeekendPlotBands(LocalDate.of(2024, 1, 20));
+
+      expect(bands).toHaveLength(8);
+      expect(bands?.[0].from).toBe(1701432000000); // 2023-12-01T12:00:00Z
+      expect(bands?.[7].from).toBe(1705665600000); // 2024-01-19T12:00:00Z
     });
   });
 
   describe("build4WeekOptions", () => {
-    it("should configure options for 4-week view", () => {
-      const options = createMockOptions();
-      const builderOptions = createBuilderOptions();
+    it("adds trend, diamonds, sinkers and projection series in order", () => {
+      const options = createOptions();
 
-      build4WeekOptions(options, builderOptions);
+      build4WeekOptions(options, createBuilderOptions());
 
-      expect(options.series).toHaveLength(6); // trend, 2x diamonds, 2x sinkers, projection
-      expect((options.xAxis as any)?.tickInterval).toBe(86400000 * 7); // 7 days
-      expect((options.xAxis as any)?.range).toBe(86400000 * (28 - 1 + 6)); // 4 weeks + projection
-      expect((options.xAxis as any)?.plotBands).toBeDefined();
+      expect(seriesIds(options)).toEqual(["trend", "actual", "estimated", "actual-sinkers", "estimated-sinkers", "projection"]);
+      expect(seriesTypes(options)).toEqual(["line", "line", "line", "hlc", "hlc", "line"]);
+      expect((options.series?.[1] as SeriesLineOptions).marker?.symbol).toBe("diamond");
+      expect((options.series?.[2] as SeriesLineOptions).marker?.symbol).toBe("diamond");
     });
 
-    it("should not modify options if series or xAxis is missing", () => {
+    it("sets weekly ticks, a 33-day range and the weekend bands for the last measurement", () => {
+      const options = createOptions();
+
+      build4WeekOptions(options, createBuilderOptions());
+
+      expect(xAxis(options).tickInterval).toBe(WEEK);
+      expect(xAxis(options).range).toBe(33 * DAY);
+      expect(xAxis(options).plotBands).toEqual(buildWeekendPlotBands(LocalDate.of(2024, 1, 15)));
+      expect(xAxis(options).plotBands).toHaveLength(9);
+    });
+
+    it("keeps the same six series on narrow displays with smaller diamonds", () => {
+      const options = createOptions();
+
+      build4WeekOptions(options, createBuilderOptions({ isNarrow: true }));
+
+      expect(seriesIds(options)).toEqual(["trend", "actual", "estimated", "actual-sinkers", "estimated-sinkers", "projection"]);
+      expect((options.series?.[1] as SeriesLineOptions).marker?.radius).toBe(3);
+      expect((options.series?.[0] as SeriesLineOptions).lineWidth).toBe(1.5);
+    });
+
+    it("leaves options alone when series or xAxis is missing", () => {
       const options: Options = {};
-      const builderOptions = createBuilderOptions();
 
-      build4WeekOptions(options, builderOptions);
+      build4WeekOptions(options, createBuilderOptions());
 
-      expect(options.series).toBeUndefined();
+      expect(options).toEqual({});
     });
 
-    it("should not modify options if xAxis is an array", () => {
-      const options: Options = {
-        series: [],
-        xAxis: [{}], // array instead of single object
-      };
-      const builderOptions = createBuilderOptions();
+    it("leaves options alone when xAxis is an array", () => {
+      const options: Options = { series: [], xAxis: [{}] };
 
-      build4WeekOptions(options, builderOptions);
+      build4WeekOptions(options, createBuilderOptions());
 
-      expect(options.series).toHaveLength(0);
-    });
-
-    it("should adjust for narrow displays", () => {
-      const options = createMockOptions();
-      const builderOptions = { ...createBuilderOptions(), isNarrow: true };
-
-      build4WeekOptions(options, builderOptions);
-
-      expect(options.series).toHaveLength(6);
-      // Check that series are created with isNarrow: true
-      // (We can't easily test the internal properties without more complex setup)
+      expect(options.series).toEqual([]);
+      expect(options.xAxis).toEqual([{}]);
     });
   });
 
   describe("build3MonthOptions", () => {
-    it("should configure options for 3-month view", () => {
-      const options = createMockOptions();
-      const builderOptions = createBuilderOptions();
+    it("adds trend, dots, sinkers and projection series on wide displays", () => {
+      const options = createOptions();
 
-      build3MonthOptions(options, builderOptions);
+      build3MonthOptions(options, createBuilderOptions());
 
-      expect(options.series!.length).toBeGreaterThan(3); // trend, dots/sinkers, projection
-      expect((options.xAxis as any)?.tickInterval).toBe(86400000 * 7);
-      expect((options.xAxis as any)?.range).toBe(86400000 * (90 - 1 + 6));
-      expect((options.xAxis as any)?.plotBands).toEqual([]);
+      expect(seriesIds(options)).toEqual(["trend", "actual", "estimated", "actual-sinkers", "estimated-sinkers", "projection"]);
+      expect(seriesTypes(options)).toEqual(["line", "line", "line", "hlc", "hlc", "line"]);
+      expect((options.series?.[1] as SeriesLineOptions).marker?.symbol).toBe("circle");
     });
 
-    it("should use line series for narrow displays", () => {
-      const options = createMockOptions();
-      const builderOptions = { ...createBuilderOptions(), isNarrow: true };
+    it("adds only trend, line and projection series on narrow displays", () => {
+      const options = createOptions();
 
-      build3MonthOptions(options, builderOptions);
+      build3MonthOptions(options, createBuilderOptions({ isNarrow: true }));
 
-      expect(options.series).toHaveLength(3); // trend, line, projection
+      expect(seriesIds(options)).toEqual(["trend", "actual", "projection"]);
+      expect((options.series?.[1] as SeriesLineOptions).marker?.enabled).toBe(false);
     });
 
-    it("should use dots and sinkers for wide displays", () => {
-      const options = createMockOptions();
-      const builderOptions = { ...createBuilderOptions(), isNarrow: false };
+    it("sets weekly ticks, a 95-day range and no weekend bands", () => {
+      const options = createOptions();
 
-      build3MonthOptions(options, builderOptions);
+      build3MonthOptions(options, createBuilderOptions());
 
-      expect(options.series!.length).toBeGreaterThan(3); // trend, dots, sinkers, projection
+      expect(xAxis(options).tickInterval).toBe(WEEK);
+      expect(xAxis(options).range).toBe(95 * DAY);
+      expect(xAxis(options).plotBands).toEqual([]);
     });
   });
 
   describe("buildLongTermOptions", () => {
-    it("should configure options for 6-month view", () => {
-      const options = createMockOptions();
-      const builderOptions = createBuilderOptions();
+    it("replaces any existing series with trend, line and projection", () => {
+      const options = createOptions();
+      options.series = [{ type: "line", id: "stale", data: [] }];
 
-      buildLongTermOptions(options, builderOptions, "6m");
+      buildLongTermOptions(options, createBuilderOptions(), "6m");
 
-      expect(options.series).toHaveLength(3); // trend, line, projection
-      expect((options.xAxis as any)?.range).toBe(86400000 * (180 - 1 + 6));
-      expect((options.xAxis as any)?.plotBands).toEqual([]);
+      expect(seriesIds(options)).toEqual(["trend", "actual", "projection"]);
+      expect(seriesTypes(options)).toEqual(["line", "line", "line"]);
+      expect(xAxis(options).plotBands).toEqual([]);
     });
 
-    it("should configure options for 1-year view", () => {
-      const options = createMockOptions();
-      const builderOptions = createBuilderOptions();
+    it.each([
+      ["6m", 185 * DAY],
+      ["1y", 370 * DAY],
+    ] as const)("sets the %s range to %i ms", (timeRange, range) => {
+      const options = createOptions();
 
-      buildLongTermOptions(options, builderOptions, "1y");
+      buildLongTermOptions(options, createBuilderOptions(), timeRange);
 
-      expect(options.series).toHaveLength(3);
-      expect((options.xAxis as any)?.range).toBe(86400000 * (365 - 1 + 6));
+      expect(xAxis(options).range).toBe(range);
     });
 
-    it("should configure options for all-time view", () => {
-      const options = createMockOptions();
-      const builderOptions = createBuilderOptions();
+    it("sizes the all-time range to the number of trend points plus the projection", () => {
+      const options = createOptions();
 
-      buildLongTermOptions(options, builderOptions, "all");
+      buildLongTermOptions(options, createBuilderOptions(), "all");
 
-      expect(options.series).toHaveLength(3);
-      expect((options.xAxis as any)?.range).toBe(86400000 * (builderOptions.dataArrays.trendData.length - 1 + 6));
-    });
-
-    it("should reset series array", () => {
-      const options = createMockOptions();
-      options.series = [{ type: "line", data: [] }]; // pre-existing series
-      const builderOptions = createBuilderOptions();
-
-      buildLongTermOptions(options, builderOptions, "6m");
-
-      expect(options.series).toHaveLength(3); // should be replaced, not appended
+      // 2 trend points: (2 - 1 + 6) days
+      expect(xAxis(options).range).toBe(7 * DAY);
     });
   });
 
   describe("buildExploreOptions", () => {
-    it("should configure options for explore view", () => {
-      const options = createMockOptions();
-      const builderOptions = createBuilderOptions();
+    it("adds the 3-month series set and enables the navigator", () => {
+      const options = createOptions();
 
-      buildExploreOptions(options, builderOptions);
+      buildExploreOptions(options, createBuilderOptions());
 
-      expect(options.series!.length).toBeGreaterThan(0);
+      expect(seriesIds(options)).toEqual(["trend", "actual", "estimated", "actual-sinkers", "estimated-sinkers", "projection"]);
+      expect(options.navigator).toMatchObject({ enabled: true, height: 30, margin: 10 });
+      expect(options.scrollbar).toEqual({ liveRedraw: true });
       expect(options.chart?.spacingBottom).toBe(10);
       expect(options.legend?.enabled).toBe(false);
-      expect((options.xAxis as any)?.min).toBeDefined();
-      expect((options.xAxis as any)?.max).toBeDefined();
-      expect((options.xAxis as any)?.range).toBeUndefined();
-      expect(options.navigator).toBeDefined();
-      expect(options.scrollbar).toBeDefined();
     });
 
-    it("should set correct initial date range", () => {
-      const options = createMockOptions();
-      const builderOptions = createBuilderOptions();
-      const lastDate = builderOptions.lastMeasurement.date;
-      const expectedMin = lastDate.minusMonths(6).toEpochDay() * 86400000;
-      const expectedMax = lastDate.plusDays(6).toEpochDay() * 86400000;
+    it("uses the narrow series set on narrow displays", () => {
+      const options = createOptions();
 
-      buildExploreOptions(options, builderOptions);
+      buildExploreOptions(options, createBuilderOptions({ isNarrow: true }));
 
-      expect((options.xAxis as any)?.min).toBe(expectedMin);
-      expect((options.xAxis as any)?.max).toBe(expectedMax);
+      expect(seriesIds(options)).toEqual(["trend", "actual", "projection"]);
     });
 
-    it("should configure navigator properties", () => {
-      const options = createMockOptions();
-      const builderOptions = createBuilderOptions();
+    it("shows the last six months initially and clears the fixed range", () => {
+      const options = createOptions();
 
-      buildExploreOptions(options, builderOptions);
-
-      expect(options.navigator).toMatchObject({
-        enabled: true,
-        height: 30,
-        margin: 10,
-      });
-      expect(options.navigator?.series).toBeDefined();
-      expect(options.navigator?.xAxis).toBeDefined();
-    });
-
-    it("should add afterSetExtremes event handler", () => {
-      const options = createMockOptions();
-      const builderOptions = createBuilderOptions();
-
-      buildExploreOptions(options, builderOptions);
-
-      expect((options.xAxis as any)?.events?.afterSetExtremes).toBeDefined();
-      expect(typeof (options.xAxis as any)?.events?.afterSetExtremes).toBe("function");
-    });
-
-    it("swaps only its own series on a navigator change and leaves the trend and navigator series alone", () => {
-      // Regression: the handler used to remove every series except the first, which
-      // included Highcharts' internal navigator series. The navigator kept a reference
-      // to the destroyed series and the next chart teardown (switching mode after a
-      // navigator drag) threw from inside Highcharts' destroy.
-      const options = createMockOptions();
       buildExploreOptions(options, createBuilderOptions());
-      const handler = (options.xAxis as any).events.afterSetExtremes as (this: any, e: any) => void;
 
-      const makeSeries = (id: string, isInternal = false) => ({ options: { id, isInternal }, remove: vi.fn() });
-      const trend = makeSeries("trend");
-      const navigator = makeSeries("highcharts-navigator-series", true);
-      const dynamic = DYNAMIC_SERIES_IDS.map((id) => makeSeries(id));
-      const chart = {
-        series: [trend, ...dynamic, navigator],
-        get: (id: string) => chart.series.find((s) => s.options.id === id),
-        addSeries: vi.fn(),
-        redraw: vi.fn(),
+      expect(xAxis(options).min).toBe(1689379200000); // 2023-07-15
+      expect(xAxis(options).max).toBe(1705795200000); // 2024-01-21
+      expect(xAxis(options).range).toBeUndefined();
+      expect(xAxis(options).plotBands).toEqual([]);
+    });
+
+    describe("afterSetExtremes handler", () => {
+      const handlerFor = (overrides: { isNarrow?: boolean } = {}): ExtremesHandler => {
+        const options = createOptions();
+        buildExploreOptions(options, createBuilderOptions(overrides));
+        return xAxis(options).events?.afterSetExtremes as unknown as ExtremesHandler;
       };
-      const day = 86400000;
 
-      handler.call({ chart, min: 0, max: 30 * day }, { min: 0, max: 30 * day });
+      const invoke = (handler: ExtremesHandler, chart: FakeChart, rangeDays: number) =>
+        handler.call({ chart, min: 0, max: rangeDays * DAY }, { min: 0, max: rangeDays * DAY });
 
-      expect(trend.remove).not.toHaveBeenCalled();
-      expect(navigator.remove).not.toHaveBeenCalled();
-      for (const series of dynamic) {
-        expect(series.remove).toHaveBeenCalledWith(false);
-      }
-      // Diamonds view: two reading series, two sinker series, plus the projection
-      expect(chart.addSeries).toHaveBeenCalledTimes(5);
-      expect(chart.redraw).toHaveBeenCalledTimes(1);
-    });
+      it("removes only the dynamic series, leaving the trend and Highcharts' navigator series alone", () => {
+        // Regression (6152d245): the handler used to remove every series except the first, which
+        // included Highcharts' internal navigator series; the next teardown then threw.
+        const chart = createFakeChart(["trend", ...DYNAMIC_SERIES_IDS, "highcharts-navigator-series"]);
 
-    it("tolerates a navigator change when its series were already removed", () => {
-      const options = createMockOptions();
-      buildExploreOptions(options, createBuilderOptions());
-      const handler = (options.xAxis as any).events.afterSetExtremes as (this: any, e: any) => void;
-      const chart = { series: [], get: () => undefined, addSeries: vi.fn(), redraw: vi.fn() };
+        invoke(handlerFor(), chart, 30);
 
-      expect(() => handler.call({ chart, min: 0, max: 200 * 86400000 }, {})).not.toThrow();
-      expect(chart.addSeries).toHaveBeenCalledTimes(2); // line view plus projection
-    });
+        const removed = chart.series.filter((s) => s.remove.mock.calls.length > 0).map((s) => s.options.id);
+        expect(removed).toEqual([...DYNAMIC_SERIES_IDS]);
+        for (const id of DYNAMIC_SERIES_IDS) {
+          expect(chart.get(id)?.remove).toHaveBeenCalledWith(false);
+        }
+      });
 
-    it("should use line series for narrow displays", () => {
-      const options = createMockOptions();
-      const builderOptions = { ...createBuilderOptions(), isNarrow: true };
+      it("adds diamonds, sinkers and the projection for ranges up to 90 days", () => {
+        const chart = createFakeChart(["trend", ...DYNAMIC_SERIES_IDS]);
 
-      buildExploreOptions(options, builderOptions);
+        invoke(handlerFor(), chart, 90);
 
-      // Should have fewer series for narrow displays
-      expect(options.series!.length).toBeLessThan(6);
+        const added = addedSeries(chart);
+        expect(added.map((s) => s.id)).toEqual(["actual", "estimated", "actual-sinkers", "estimated-sinkers", "projection"]);
+        expect(added.map((s) => s.type)).toEqual(["line", "line", "hlc", "hlc", "line"]);
+        expect((added[0] as SeriesLineOptions).marker?.symbol).toBe("diamond");
+        expect((added[1] as SeriesLineOptions).marker?.symbol).toBe("diamond");
+        expect(chart.addSeries.mock.calls.every(([, redraw]) => redraw === false)).toBe(true);
+        expect(chart.redraw).toHaveBeenCalledTimes(1);
+      });
+
+      it("adds dots, sinkers and the projection for ranges between 91 and 190 days", () => {
+        const chart = createFakeChart(["trend", ...DYNAMIC_SERIES_IDS]);
+
+        invoke(handlerFor(), chart, 190);
+
+        const added = addedSeries(chart);
+        expect(added.map((s) => s.id)).toEqual(["actual", "estimated", "actual-sinkers", "estimated-sinkers", "projection"]);
+        expect((added[0] as SeriesLineOptions).marker?.symbol).toBe("circle");
+        expect((added[1] as SeriesLineOptions).marker?.symbol).toBe("circle");
+        expect(chart.redraw).toHaveBeenCalledTimes(1);
+      });
+
+      it("adds a single line and the projection for medium ranges on narrow displays", () => {
+        const chart = createFakeChart(["trend", ...DYNAMIC_SERIES_IDS]);
+
+        invoke(handlerFor({ isNarrow: true }), chart, 120);
+
+        const added = addedSeries(chart);
+        expect(added.map((s) => s.id)).toEqual(["actual", "projection"]);
+        expect((added[0] as SeriesLineOptions).marker?.enabled).toBe(false);
+        expect((added[0] as SeriesLineOptions).lineWidth).toBe(1);
+      });
+
+      it("adds a single line and the projection for ranges over 190 days", () => {
+        const chart = createFakeChart(["trend", ...DYNAMIC_SERIES_IDS]);
+
+        invoke(handlerFor(), chart, 191);
+
+        const added = addedSeries(chart);
+        expect(added.map((s) => s.id)).toEqual(["actual", "projection"]);
+        expect((added[0] as SeriesLineOptions).marker?.enabled).toBe(false);
+        expect((added[1] as SeriesLineOptions).dashStyle).toBe("ShortDot");
+      });
+
+      it("falls back to the axis extremes when the event carries none", () => {
+        const chart = createFakeChart(["trend"]);
+
+        handlerFor().call({ chart, min: 0, max: 400 * DAY }, {});
+
+        expect(addedSeries(chart).map((s) => s.id)).toEqual(["actual", "projection"]);
+      });
+
+      it("tolerates a navigator change when its series were already removed", () => {
+        const chart = createFakeChart([]);
+
+        expect(() => invoke(handlerFor(), chart, 30)).not.toThrow();
+        expect(addedSeries(chart)).toHaveLength(5);
+        expect(chart.redraw).toHaveBeenCalledTimes(1);
+      });
     });
   });
 
   describe("buildYAxisOptions", () => {
-    it("should set minRange for fatpercent mode", () => {
-      const options = createMockOptions();
+    it.each([
+      ["weight", true, 3],
+      ["weight", false, 5],
+      ["fatpercent", true, 5],
+      ["fatpercent", false, 5],
+    ] as const)("sets minRange for %s mode (metric: %s) to %i", (mode, useMetric, minRange) => {
+      const options = createOptions();
 
-      buildYAxisOptions(options, "fatpercent", false);
+      buildYAxisOptions(options, mode, useMetric);
 
-      expect((options.yAxis as any)?.minRange).toBe(5);
+      expect(yAxis(options).minRange).toBe(minRange);
     });
 
-    it("should set minRange for weight mode with imperial units", () => {
-      const options = createMockOptions();
+    it.each(["fatmass", "leanmass"] as const)("does not set minRange for %s mode", (mode) => {
+      const options = createOptions();
+
+      buildYAxisOptions(options, mode, false, 175);
+
+      expect(yAxis(options).minRange).toBeUndefined();
+      expect(yAxis(options).plotBands).toBeUndefined();
+      expect(yAxis(options).plotLines).toBeUndefined();
+    });
+
+    it("adds a 5 lb goal band and its edge lines for an imperial goal", () => {
+      const options = createOptions();
+
+      buildYAxisOptions(options, "weight", false, 175);
+
+      expect(yAxis(options).plotBands).toEqual([
+        expect.objectContaining({ from: 172.5, to: 177.5, color: "var(--chart-goal-band)", zIndex: 0, label: expect.objectContaining({ text: "Goal Range" }) }),
+      ]);
+      expect(yAxis(options).plotLines?.map((line) => line.value)).toEqual([172.5, 177.5]);
+      expect(yAxis(options).plotLines?.[0]).toMatchObject({ color: "var(--chart-goal-line)", dashStyle: "ShortDash", zIndex: 1, width: 1 });
+    });
+
+    it("adds a 1.134 kg goal band for a metric goal", () => {
+      const options = createOptions();
+
+      buildYAxisOptions(options, "weight", true, 80);
+
+      expect(yAxis(options).plotBands?.[0]).toMatchObject({ from: 80 - 1.134, to: 80 + 1.134 });
+      expect(yAxis(options).plotLines?.map((line) => line.value)).toEqual([80 - 1.134, 80 + 1.134]);
+    });
+
+    it("adds no goal band without a goal weight", () => {
+      const options = createOptions();
 
       buildYAxisOptions(options, "weight", false);
 
-      expect((options.yAxis as any)?.minRange).toBe(5);
+      expect(yAxis(options).minRange).toBe(5);
+      expect(yAxis(options).plotBands).toBeUndefined();
+      expect(yAxis(options).plotLines).toBeUndefined();
     });
 
-    it("should set minRange for weight mode with metric units", () => {
-      const options = createMockOptions();
-
-      buildYAxisOptions(options, "weight", true);
-
-      expect((options.yAxis as any)?.minRange).toBe(3);
-    });
-
-    it("should not set minRange for other modes", () => {
-      const options = createMockOptions();
-
-      buildYAxisOptions(options, "fatmass", false);
-
-      expect((options.yAxis as any)?.minRange).toBeUndefined();
-    });
-
-    it("should add goal bands for weight mode with goal", () => {
-      const options = createMockOptions();
-      const goalWeight = 175;
-
-      buildYAxisOptions(options, "weight", false, goalWeight);
-
-      expect((options.yAxis as any)?.plotBands).toHaveLength(1);
-      expect((options.yAxis as any)?.plotLines).toHaveLength(2);
-
-      const plotBand = (options.yAxis as any)?.plotBands![0];
-      expect(plotBand?.from).toBe(goalWeight - 2.5);
-      expect(plotBand?.to).toBe(goalWeight + 2.5);
-      expect(plotBand?.color).toBe("var(--chart-goal-band)");
-    });
-
-    it("should use metric goal width for metric units", () => {
-      const options = createMockOptions();
-      const goalWeight = 80;
-
-      buildYAxisOptions(options, "weight", true, goalWeight);
-
-      const plotBand = (options.yAxis as any)?.plotBands![0];
-      expect(plotBand?.from).toBe(goalWeight - 1.134);
-      expect(plotBand?.to).toBe(goalWeight + 1.134);
-    });
-
-    it("should not add goal bands for non-weight modes", () => {
-      const options = createMockOptions();
+    it("adds no goal band for fat percentage even with a goal weight", () => {
+      const options = createOptions();
 
       buildYAxisOptions(options, "fatpercent", false, 25);
 
-      expect((options.yAxis as any)?.plotBands).toBeUndefined();
-      expect((options.yAxis as any)?.plotLines).toBeUndefined();
+      expect(yAxis(options).plotBands).toBeUndefined();
+      expect(yAxis(options).plotLines).toBeUndefined();
     });
 
-    it("should not modify options if yAxis is missing or array", () => {
-      const optionsWithoutYAxis: Options = {};
-      const optionsWithArrayYAxis: Options = { yAxis: [{}] };
+    it("leaves options alone when yAxis is missing or an array", () => {
+      const withoutYAxis: Options = {};
+      const withArrayYAxis: Options = { yAxis: [{}] };
 
-      buildYAxisOptions(optionsWithoutYAxis, "weight", false, 175);
-      buildYAxisOptions(optionsWithArrayYAxis, "weight", false, 175);
+      buildYAxisOptions(withoutYAxis, "weight", false, 175);
+      buildYAxisOptions(withArrayYAxis, "weight", false, 175);
 
-      expect(optionsWithoutYAxis.yAxis).toBeUndefined();
-      expect(Array.isArray(optionsWithArrayYAxis.yAxis)).toBe(true);
+      expect(withoutYAxis).toEqual({});
+      expect(withArrayYAxis.yAxis).toEqual([{}]);
     });
   });
 });

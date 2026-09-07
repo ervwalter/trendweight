@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ToggleGroup, ToggleGroupItem } from "./toggle-group";
 
 describe("ToggleGroup", () => {
-  it("renders children correctly", () => {
+  it("renders its items as radio buttons", () => {
     render(
       <ToggleGroup>
         <ToggleGroupItem value="a">Option A</ToggleGroupItem>
@@ -12,15 +12,14 @@ describe("ToggleGroup", () => {
       </ToggleGroup>,
     );
 
-    // Always operates in single mode, buttons have role="radio"
-    expect(screen.getByRole("radio", { name: "Option A" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "Option B" })).toBeInTheDocument();
+    // Always operates in single mode, so the items behave like radio buttons
+    expect(screen.getByRole("radio", { name: "Option A" })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: "Option B" })).not.toBeChecked();
   });
 
-  it("handles selection", async () => {
+  it("reports the selected value and checks that item", async () => {
     const handleValueChange = vi.fn();
     const user = userEvent.setup();
-
     render(
       <ToggleGroup onValueChange={handleValueChange}>
         <ToggleGroupItem value="a">Option A</ToggleGroupItem>
@@ -28,35 +27,34 @@ describe("ToggleGroup", () => {
       </ToggleGroup>,
     );
 
-    const optionA = screen.getByRole("radio", { name: "Option A" });
-    const optionB = screen.getByRole("radio", { name: "Option B" });
+    await user.click(screen.getByRole("radio", { name: "Option A" }));
+    expect(handleValueChange).toHaveBeenLastCalledWith("a");
+    expect(screen.getByRole("radio", { name: "Option A" })).toBeChecked();
 
-    await user.click(optionA);
-    expect(handleValueChange).toHaveBeenCalledWith("a");
-
-    await user.click(optionB);
-    expect(handleValueChange).toHaveBeenCalledWith("b");
+    await user.click(screen.getByRole("radio", { name: "Option B" }));
+    expect(handleValueChange).toHaveBeenLastCalledWith("b");
+    expect(screen.getByRole("radio", { name: "Option B" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Option A" })).not.toBeChecked();
   });
 
-  it("prevents deselection (radio button behavior)", async () => {
+  it("does not report a deselection when the selected item is clicked again", async () => {
     const handleValueChange = vi.fn();
     const user = userEvent.setup();
-
+    // Controlled, as the app uses it: without a value change the item stays checked
     render(
-      <ToggleGroup onValueChange={handleValueChange} defaultValue="a">
+      <ToggleGroup onValueChange={handleValueChange} value="a">
         <ToggleGroupItem value="a">Option A</ToggleGroupItem>
         <ToggleGroupItem value="b">Option B</ToggleGroupItem>
       </ToggleGroup>,
     );
 
-    const optionA = screen.getByRole("radio", { name: "Option A" });
+    await user.click(screen.getByRole("radio", { name: "Option A" }));
 
-    // Click the already selected option - should not trigger onValueChange
-    await user.click(optionA);
     expect(handleValueChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("radio", { name: "Option A" })).toBeChecked();
   });
 
-  it("applies correct styling to items", () => {
+  it("checks the defaultValue item", () => {
     render(
       <ToggleGroup defaultValue="a">
         <ToggleGroupItem value="a">Selected</ToggleGroupItem>
@@ -64,66 +62,24 @@ describe("ToggleGroup", () => {
       </ToggleGroup>,
     );
 
-    const selected = screen.getByRole("radio", { name: "Selected" });
-    const notSelected = screen.getByRole("radio", { name: "Not Selected" });
-
-    expect(selected).toHaveAttribute("data-state", "on");
-    expect(notSelected).toHaveAttribute("data-state", "off");
+    expect(screen.getByRole("radio", { name: "Selected" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Not Selected" })).not.toBeChecked();
   });
 
-  it("applies rounded corners correctly", () => {
+  it("disables every item when the group is disabled", async () => {
+    const handleValueChange = vi.fn();
+    const user = userEvent.setup();
     render(
-      <ToggleGroup>
-        <ToggleGroupItem value="a">First</ToggleGroupItem>
-        <ToggleGroupItem value="b">Middle</ToggleGroupItem>
-        <ToggleGroupItem value="c">Last</ToggleGroupItem>
-      </ToggleGroup>,
-    );
-
-    const first = screen.getByRole("radio", { name: "First" });
-    const middle = screen.getByRole("radio", { name: "Middle" });
-    const last = screen.getByRole("radio", { name: "Last" });
-
-    expect(first).toHaveClass("first:rounded-l-md");
-    expect(last).toHaveClass("last:rounded-r-md");
-    expect(middle).toHaveClass("rounded-none");
-  });
-
-  it("removes duplicate borders between items", () => {
-    render(
-      <ToggleGroup>
-        <ToggleGroupItem value="a">First</ToggleGroupItem>
-        <ToggleGroupItem value="b">Second</ToggleGroupItem>
-      </ToggleGroup>,
-    );
-
-    const second = screen.getByRole("radio", { name: "Second" });
-    expect(second).toHaveClass("[&:not(:first-child)]:-ml-px");
-  });
-
-  it("can be disabled", () => {
-    render(
-      <ToggleGroup disabled>
+      <ToggleGroup disabled onValueChange={handleValueChange}>
         <ToggleGroupItem value="a">Option A</ToggleGroupItem>
         <ToggleGroupItem value="b">Option B</ToggleGroupItem>
       </ToggleGroup>,
     );
 
-    const buttons = screen.getAllByRole("radio");
-    buttons.forEach((button) => {
-      expect(button).toBeDisabled();
-    });
-  });
-
-  it("inherits variant and size from context", () => {
-    render(
-      <ToggleGroup variant="outline" size="sm">
-        <ToggleGroupItem value="a">Option A</ToggleGroupItem>
-      </ToggleGroup>,
-    );
-
-    const button = screen.getByRole("radio");
-    expect(button).toHaveClass("border"); // outline variant
-    expect(button).toHaveClass("h-8"); // sm size
+    for (const item of screen.getAllByRole("radio")) {
+      expect(item).toBeDisabled();
+    }
+    await user.click(screen.getByRole("radio", { name: "Option A" }));
+    expect(handleValueChange).not.toHaveBeenCalled();
   });
 });

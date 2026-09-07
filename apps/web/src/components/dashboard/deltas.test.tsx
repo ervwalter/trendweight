@@ -1,252 +1,185 @@
-import type { DashboardData } from "@/lib/dashboard/dashboard-context";
-import { LocalDate } from "@js-joda/core";
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { screen, within } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import type { Delta, Mode, ProfileData } from "@/lib/core/interfaces";
+import { buildDataPoint, buildProfileData } from "@/test/fixtures";
+import { renderWithDashboardData } from "@/test/render";
 import Deltas from "./deltas";
 
-vi.mock("@/lib/dashboard/hooks", () => ({
-  useDashboardData: vi.fn(),
-}));
+// The two deltas computeDeltas produces for a 28-day history
+const weekAndMonth = (week: number, month: number): Delta[] => [
+  { period: 7, description: "last week", delta: week },
+  { period: 28, description: "a month ago", delta: month },
+];
 
-import { useDashboardData } from "@/lib/dashboard/hooks";
+const imperial = (overrides: Partial<ProfileData> = {}) =>
+  buildProfileData({ useMetric: false, plannedPoundsPerWeek: undefined, goalWeight: undefined, firstName: "Sam", ...overrides });
 
-const mockUseDashboardData = vi.mocked(useDashboardData);
+// The only data point Deltas reads is the last one (its trend feeds the goal direction)
+const endingAt = (trend: number) => [buildDataPoint("2024-01-15", trend)];
+
+const row = (description: string) => screen.getByText(new RegExp(`^Since ${description}:`));
+
+const modeOf = (mode: Mode): [Mode, (mode: Mode) => void] => [mode, () => {}];
 
 describe("Deltas", () => {
-  const defaultMockData: Partial<DashboardData> = {
-    deltas: [],
-    mode: ["weight", () => {}],
-    dataPoints: [
-      {
-        date: LocalDate.parse("2024-01-01"),
-        source: "test",
-        actual: 180,
-        trend: 180,
-        isInterpolated: false,
-      },
-    ],
-    profile: {
-      useMetric: false,
-      plannedPoundsPerWeek: -1,
-      goalWeight: 170,
-    } as any,
-  };
+  describe("weight rows", () => {
+    it("renders each delta with its signed value and marks losing as positive under a losing plan", () => {
+      renderWithDashboardData(<Deltas />, {
+        deltas: weekAndMonth(-0.7, -2.1),
+        dataPoints: endingAt(180),
+        profile: imperial({ plannedPoundsPerWeek: -1 }),
+      });
 
-  const withDeltas = (overrides: Partial<DashboardData> = {}) =>
-    ({
-      ...defaultMockData,
-      deltas: [
-        { period: "week", description: "1 week ago", delta: -2 },
-        { period: "month", description: "1 month ago", delta: -5 },
-      ],
-      activeSlope: -0.1,
-      ...overrides,
-    }) as any;
+      expect(row("last week")).toHaveTextContent("Since last week: ↓ -0.7 lb");
+      expect(row("a month ago")).toHaveTextContent("Since a month ago: ↓ -2.1 lb");
+      expect(screen.getAllByLabelText("Positive change")).toHaveLength(2);
+      expect(screen.queryByLabelText("Negative change")).not.toBeInTheDocument();
+    });
 
-  beforeEach(() => {
-    vi.clearAllMocks();
+    it("marks gaining as positive when there is no plan and the goal is above the trend", () => {
+      renderWithDashboardData(<Deltas />, {
+        deltas: weekAndMonth(0.7, 2.1),
+        dataPoints: endingAt(180),
+        profile: imperial({ goalWeight: 190 }),
+      });
+
+      expect(row("last week")).toHaveTextContent("Since last week: ↑ +0.7 lb");
+      expect(screen.getAllByLabelText("Positive change")).toHaveLength(2);
+    });
+
+    it("marks gaining as negative when there is no plan and the goal is below the trend", () => {
+      renderWithDashboardData(<Deltas />, {
+        deltas: weekAndMonth(0.7, -2.1),
+        dataPoints: endingAt(180),
+        profile: imperial({ goalWeight: 170 }),
+      });
+
+      expect(within(row("last week")).getByLabelText("Negative change")).toHaveTextContent("↑");
+      expect(within(row("a month ago")).getByLabelText("Positive change")).toHaveTextContent("↓");
+    });
+
+    it("assumes losing is the goal without a plan or goal weight", () => {
+      renderWithDashboardData(<Deltas />, {
+        deltas: weekAndMonth(-0.7, 2.1),
+        dataPoints: endingAt(180),
+        profile: imperial(),
+      });
+
+      expect(within(row("last week")).getByLabelText("Positive change")).toBeInTheDocument();
+      expect(within(row("a month ago")).getByLabelText("Negative change")).toBeInTheDocument();
+    });
+
+    it("formats deltas in kilograms for metric profiles", () => {
+      renderWithDashboardData(<Deltas />, {
+        deltas: weekAndMonth(-0.9, -2.4),
+        dataPoints: endingAt(80),
+        profile: imperial({ useMetric: true, plannedPoundsPerWeek: -0.5 }),
+      });
+
+      expect(row("last week")).toHaveTextContent("Since last week: ↓ -0.9 kg");
+      expect(row("a month ago")).toHaveTextContent("Since a month ago: ↓ -2.4 kg");
+    });
+
+    it("renders no arrow for a zero delta", () => {
+      renderWithDashboardData(<Deltas />, {
+        deltas: weekAndMonth(0, -2.1),
+        dataPoints: endingAt(180),
+        profile: imperial({ plannedPoundsPerWeek: -1 }),
+      });
+
+      expect(row("last week")).toHaveTextContent(/^Since last week: 0\.0 lb$/);
+      expect(within(row("last week")).queryByLabelText(/change/)).not.toBeInTheDocument();
+      expect(screen.getAllByLabelText(/change/)).toHaveLength(1);
+    });
+
+    it("renders no rows when there are no deltas", () => {
+      renderWithDashboardData(<Deltas />, { deltas: [], dataPoints: endingAt(180), profile: imperial() });
+
+      expect(screen.queryByText(/^Since /)).not.toBeInTheDocument();
+    });
   });
 
-  it("shows weekly rate but no deltas when no deltas", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      activeSlope: -0.1,
-      isMe: true,
-    } as any);
-    render(<Deltas />);
-    expect(screen.getByText("Weight Changes Over Time")).toBeInTheDocument();
-    expect(screen.getByText(/You are losing/)).toBeInTheDocument();
-    expect(screen.getByText(/per week/)).toBeInTheDocument();
-    expect(screen.queryByText(/Since .* ago:/)).not.toBeInTheDocument();
+  describe("other modes", () => {
+    it("treats a lean mass loss as a negative change", () => {
+      renderWithDashboardData(<Deltas />, {
+        mode: modeOf("leanmass"),
+        deltas: weekAndMonth(-0.5, 0.3),
+        dataPoints: endingAt(135),
+        profile: imperial({ plannedPoundsPerWeek: -1 }),
+      });
+
+      expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Lean Mass Changes Over Time");
+      expect(row("last week")).toHaveTextContent("Since last week: ↓ -0.5 lb");
+      expect(within(row("last week")).getByLabelText("Negative change")).toBeInTheDocument();
+      expect(within(row("a month ago")).getByLabelText("Positive change")).toBeInTheDocument();
+    });
+
+    it("formats fat percent deltas as percentages and treats a drop as positive", () => {
+      renderWithDashboardData(<Deltas />, {
+        mode: modeOf("fatpercent"),
+        deltas: weekAndMonth(-0.01, 0.005),
+        dataPoints: endingAt(0.25),
+        profile: imperial(),
+      });
+
+      expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Fat % Changes Over Time");
+      expect(row("last week")).toHaveTextContent("Since last week: ↓ -1.0%");
+      expect(row("a month ago")).toHaveTextContent("Since a month ago: ↑ +0.5%");
+      expect(within(row("last week")).getByLabelText("Positive change")).toBeInTheDocument();
+      expect(within(row("a month ago")).getByLabelText("Negative change")).toBeInTheDocument();
+    });
+
+    it("treats a fat mass drop as positive", () => {
+      renderWithDashboardData(<Deltas />, {
+        mode: modeOf("fatmass"),
+        deltas: weekAndMonth(-2.5, -4),
+        dataPoints: endingAt(45),
+        profile: imperial(),
+      });
+
+      expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Fat Mass Changes Over Time");
+      expect(row("last week")).toHaveTextContent("Since last week: ↓ -2.5 lb");
+      expect(screen.getAllByLabelText("Positive change")).toHaveLength(2);
+    });
   });
 
-  it("renders weight deltas with correct intended direction", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      deltas: [
-        { period: "week", description: "1 week ago", delta: -2 },
-        { period: "month", description: "1 month ago", delta: -5 },
-      ],
-    } as any);
-    render(<Deltas />);
-    expect(screen.getByText("Weight Changes Over Time")).toBeInTheDocument();
-    expect(screen.getByText(/Since 1 week ago:/)).toBeInTheDocument();
-    expect(screen.getByText(/Since 1 month ago:/)).toBeInTheDocument();
-  });
+  describe("weekly rate sentence", () => {
+    // activeSlope is per day; the sentence shows the absolute weekly rate
+    const sentence = () => screen.getByText(/per week$/);
 
-  it("renders fat percent deltas with negative intended direction", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      mode: ["fatpercent", () => {}],
-      deltas: [
-        { period: "week", description: "1 week ago", delta: -0.5 },
-        { period: "month", description: "1 month ago", delta: -1.2 },
-      ],
-    } as any);
-    render(<Deltas />);
-    expect(screen.getByText("Fat % Changes Over Time")).toBeInTheDocument();
-  });
+    it("describes a losing rate in pounds", () => {
+      renderWithDashboardData(<Deltas />, { activeSlope: -0.1, dataPoints: endingAt(180), profile: imperial() });
 
-  it("renders fat mass deltas with negative intended direction", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      mode: ["fatmass", () => {}],
-      deltas: [{ period: "week", description: "1 week ago", delta: -2.5 }],
-    } as any);
-    render(<Deltas />);
-    expect(screen.getByText("Fat Mass Changes Over Time")).toBeInTheDocument();
-  });
+      expect(sentence()).toHaveTextContent(/^You are losing 0\.7 lb per week$/);
+    });
 
-  it("renders lean mass deltas with positive intended direction", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      mode: ["leanmass", () => {}],
-      deltas: [{ period: "week", description: "1 week ago", delta: 1.5 }],
-    } as any);
-    render(<Deltas />);
-    expect(screen.getByText("Lean Mass Changes Over Time")).toBeInTheDocument();
-  });
+    it("describes a gaining rate", () => {
+      renderWithDashboardData(<Deltas />, { activeSlope: 0.1, dataPoints: endingAt(180), profile: imperial() });
 
-  it("uses goal weight for intended direction when no planned rate", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      profile: {
-        useMetric: false,
-        plannedPoundsPerWeek: null,
-        goalWeight: 160,
-      } as any,
-      dataPoints: [
-        {
-          date: LocalDate.parse("2024-01-01"),
-          source: "test",
-          actual: 180,
-          trend: 180,
-          isInterpolated: false,
-        },
-      ],
-      deltas: [{ period: "week", description: "1 week ago", delta: -2 }],
-    } as any);
-    render(<Deltas />);
-    expect(screen.getByText(/Since 1 week ago:/)).toBeInTheDocument();
-  });
+      expect(sentence()).toHaveTextContent(/^You are gaining 0\.7 lb per week$/);
+    });
 
-  it("uses default negative direction when no planned rate or goal", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      profile: {
-        useMetric: false,
-        plannedPoundsPerWeek: null,
-        goalWeight: null,
-      } as any,
-      deltas: [{ period: "week", description: "1 week ago", delta: -2 }],
-    } as any);
-    render(<Deltas />);
-    expect(screen.getByText(/Since 1 week ago:/)).toBeInTheDocument();
-  });
+    it("describes the rate in kilograms for metric profiles", () => {
+      renderWithDashboardData(<Deltas />, { activeSlope: -0.1, dataPoints: endingAt(80), profile: imperial({ useMetric: true }) });
 
-  it("formats deltas with metric units when enabled", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      profile: {
-        useMetric: true,
-        plannedPoundsPerWeek: -0.5,
-        goalWeight: null,
-      } as any,
-      deltas: [{ period: "week", description: "1 week ago", delta: -0.9 }],
-    } as any);
-    render(<Deltas />);
-    expect(screen.getByText(/Since 1 week ago:/)).toBeInTheDocument();
-  });
+      expect(sentence()).toHaveTextContent(/^You are losing 0\.7 kg per week$/);
+    });
 
-  it("renders multiple deltas in order", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      deltas: [
-        { period: "week", description: "1 week ago", delta: -2 },
-        { period: "month", description: "1 month ago", delta: -5 },
-        { period: "quarter", description: "3 months ago", delta: -12 },
-        { period: "year", description: "1 year ago", delta: -30 },
-      ],
-    } as any);
-    render(<Deltas />);
-    const deltas = screen.getAllByText(/Since .* ago:/);
-    expect(deltas).toHaveLength(4);
-    expect(deltas[0]).toHaveTextContent("Since 1 week ago:");
-    expect(deltas[1]).toHaveTextContent("Since 1 month ago:");
-    expect(deltas[2]).toHaveTextContent("Since 3 months ago:");
-    expect(deltas[3]).toHaveTextContent("Since 1 year ago:");
-  });
+    it("names the body composition measure for non-weight modes", () => {
+      renderWithDashboardData(<Deltas />, {
+        mode: modeOf("fatpercent"),
+        activeSlope: 0.001,
+        dataPoints: endingAt(0.25),
+        profile: imperial(),
+      });
 
-  it("shows weekly rate sentence for weight", () => {
-    mockUseDashboardData.mockReturnValue(
-      withDeltas({
-        mode: ["weight", () => {}],
-        isMe: true,
-        activeSlope: -0.1,
-        profile: { ...(defaultMockData.profile as any), useMetric: false } as any,
-      }) as any,
-    );
-    render(<Deltas />);
-    expect(screen.getByText(/You are losing/)).toBeInTheDocument();
-    expect(screen.getByText("0.7 lb")).toBeInTheDocument();
-    expect(screen.getAllByText((content) => content.includes("per week")).length).toBeGreaterThan(0);
-  });
+      expect(sentence()).toHaveTextContent(/^You are gaining 0\.7% of body fat per week$/);
+    });
 
-  it("shows weekly rate sentence for fat percent", () => {
-    mockUseDashboardData.mockReturnValue(
-      withDeltas({
-        mode: ["fatpercent", () => {}],
-        isMe: true,
-        activeSlope: 0.02,
-        profile: { ...(defaultMockData.profile as any), useMetric: false } as any,
-      }) as any,
-    );
-    render(<Deltas />);
-    expect(screen.getByText(/You are gaining/)).toBeInTheDocument();
-    expect(screen.getByText((_, node) => !!node && node.tagName === "STRONG" && /%$/.test(node.textContent || ""))).toBeInTheDocument();
-    expect(screen.getAllByText((content) => content.includes("per week")).length).toBeGreaterThan(0);
-    expect(screen.getByText(/of body fat/)).toBeInTheDocument();
-  });
+    it("uses the owner's first name when viewing someone else's dashboard", () => {
+      renderWithDashboardData(<Deltas />, { activeSlope: -0.1, dataPoints: endingAt(180), profile: imperial(), isMe: false });
 
-  it("shows weekly rate sentence for fat mass (metric)", () => {
-    mockUseDashboardData.mockReturnValue(
-      withDeltas({
-        mode: ["fatmass", () => {}],
-        isMe: true,
-        activeSlope: -0.05,
-        profile: { ...(defaultMockData.profile as any), useMetric: true } as any,
-      }) as any,
-    );
-    render(<Deltas />);
-    expect(screen.getByText(/You are losing/)).toBeInTheDocument();
-    expect(screen.getByText((_, node) => !!node && node.tagName === "STRONG" && /kg$/.test(node.textContent || ""))).toBeInTheDocument();
-    expect(screen.getAllByText((content) => content.includes("per week")).length).toBeGreaterThan(0);
-    expect(screen.getByText(/of fat mass/)).toBeInTheDocument();
-  });
-
-  it("shows weekly rate sentence for lean mass (metric)", () => {
-    mockUseDashboardData.mockReturnValue(
-      withDeltas({
-        mode: ["leanmass", () => {}],
-        isMe: true,
-        activeSlope: 0.03,
-        profile: { ...(defaultMockData.profile as any), useMetric: true } as any,
-      }) as any,
-    );
-    render(<Deltas />);
-    expect(screen.getByText(/You are gaining/)).toBeInTheDocument();
-    expect(screen.getByText(/of lean mass/)).toBeInTheDocument();
-  });
-
-  it("uses third-person wording when not viewing own profile", () => {
-    mockUseDashboardData.mockReturnValue(
-      withDeltas({
-        isMe: false,
-        activeSlope: -0.1,
-        profile: { ...(defaultMockData.profile as any), firstName: "Test", useMetric: false } as any,
-      }) as any,
-    );
-    render(<Deltas />);
-    expect(screen.getByText(/Test is losing/)).toBeInTheDocument();
+      expect(sentence()).toHaveTextContent(/^Sam is losing 0\.7 lb per week$/);
+    });
   });
 });

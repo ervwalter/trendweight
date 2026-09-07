@@ -1,14 +1,20 @@
 import { Manifest, setLogger } from "release-please";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+import {
+  buildChangelogNotes,
+  registerChangelogNotes,
+} from "release-please/build/src/factories/changelog-notes-factory.js";
 import { Simple } from "release-please/build/src/strategies/simple.js";
 import { parseConventionalCommits } from "release-please/build/src/commit.js";
 import { Version } from "release-please/build/src/version.js";
 import { TagName } from "release-please/build/src/util/tag-name.js";
 import { DefaultChangelogNotes } from "release-please/build/src/changelog-notes/default.js";
 import { CompactDependencyNotes } from "./release-notes.mjs";
-import { runRelease } from "./release-please.mjs";
+import { main, runRelease } from "./release-please.mjs";
 
 // Upstream's checkpoint logger writes directly to stdout; keep test IPC intact.
 setLogger({ info() {}, debug() {}, warn() {}, error() {}, trace() {} });
@@ -224,3 +230,129 @@ for (const addedCommit of [
     assert.equal(writes[0].pr, updated);
   });
 }
+
+// Resolve the changelog renderer the way Manifest does when it builds a
+// strategy (factory.js), so the test observes the registration itself.
+const resolveDefaultRenderer = () =>
+  buildChangelogNotes({
+    type: "default",
+    github,
+    changelogSections: config["changelog-sections"],
+  });
+
+test("running a release replaces the registered default changelog renderer", async (t) => {
+  // Reset to upstream first: an earlier runRelease in this file may already
+  // have registered the compact renderer, which would mask a missing call.
+  const restoreUpstream = () =>
+    registerChangelogNotes(
+      "default",
+      (options) => new DefaultChangelogNotes(options),
+    );
+  restoreUpstream();
+  t.after(restoreUpstream);
+  assert.ok(resolveDefaultRenderer() instanceof DefaultChangelogNotes);
+  const loadManifest = async () => ({
+    buildReleases: async () => [],
+    buildPullRequests: async () => [],
+  });
+  await runRelease(github, { dryRun: true, loadManifest });
+  assert.ok(resolveDefaultRenderer() instanceof CompactDependencyNotes);
+});
+
+const FAILURE_MESSAGE =
+  "Release Please failed. Check configuration and preceding Release Please diagnostics.";
+
+function cli({ run = async () => undefined } = {}) {
+  const calls = { createGitHub: [], run: [], stdout: [], stderr: [] };
+  const githubClient = { fake: "github" };
+  const fakes = {
+    createGitHub: async (options) => {
+      calls.createGitHub.push(options);
+      return githubClient;
+    },
+    run: async (...args) => {
+      calls.run.push(args);
+      return run(...args);
+    },
+    stdout: (text) => calls.stdout.push(text),
+    stderr: (text) => calls.stderr.push(text),
+  };
+  return { calls, githubClient, fakes };
+}
+
+const validEnv = {
+  RELEASE_PLEASE_TOKEN: "synthetic-token",
+  GITHUB_REPOSITORY: "example/trendweight",
+};
+
+test("main rejects unsupported arguments before touching GitHub", async () => {
+  const { calls, fakes } = cli();
+  assert.equal(await main(["--bogus"], validEnv, fakes), 1);
+  assert.deepEqual(calls.createGitHub, []);
+  assert.deepEqual(calls.run, []);
+  assert.deepEqual(calls.stderr, [FAILURE_MESSAGE]);
+});
+
+test("main rejects a blank token before touching GitHub", async () => {
+  const { calls, fakes } = cli();
+  const env = { ...validEnv, RELEASE_PLEASE_TOKEN: "  " };
+  assert.equal(await main([], env, fakes), 1);
+  assert.deepEqual(calls.createGitHub, []);
+  assert.deepEqual(calls.stderr, [FAILURE_MESSAGE]);
+});
+
+for (const repository of ["owner", "a/b/c", "a b/c"]) {
+  test(`main rejects GITHUB_REPOSITORY ${JSON.stringify(repository)} before touching GitHub`, async () => {
+    const { calls, fakes } = cli();
+    const env = { ...validEnv, GITHUB_REPOSITORY: repository };
+    assert.equal(await main([], env, fakes), 1);
+    assert.deepEqual(calls.createGitHub, []);
+    assert.deepEqual(calls.run, []);
+    assert.deepEqual(calls.stderr, [FAILURE_MESSAGE]);
+  });
+}
+
+test("main connects to the configured repository and runs a real release", async () => {
+  const { calls, fakes, githubClient } = cli();
+  assert.equal(await main([], validEnv, fakes), 0);
+  assert.deepEqual(calls.createGitHub, [
+    { owner: "example", repo: "trendweight", token: "synthetic-token" },
+  ]);
+  assert.deepEqual(calls.run, [[githubClient, { dryRun: false }]]);
+  assert.deepEqual(calls.stdout, [], "nothing to print without a result");
+  assert.deepEqual(calls.stderr, []);
+});
+
+test("main --dry-run prints the preview as formatted JSON", async () => {
+  const result = { releases: [{ tag: "v2.11.1" }], pullRequests: [] };
+  const { calls, fakes, githubClient } = cli({ run: async () => result });
+  assert.equal(await main(["--dry-run"], validEnv, fakes), 0);
+  assert.deepEqual(calls.run, [[githubClient, { dryRun: true }]]);
+  assert.deepEqual(calls.stdout, [JSON.stringify(result, null, 2)]);
+  assert.deepEqual(calls.stderr, []);
+});
+
+test("main reports a failed release without echoing the error", async () => {
+  const { calls, fakes } = cli({
+    run: async () => {
+      throw new Error("Authorization: token secret");
+    },
+  });
+  assert.equal(await main([], validEnv, fakes), 1);
+  assert.deepEqual(calls.stderr, [FAILURE_MESSAGE]);
+  assert.equal(calls.stderr.join("\n").includes("secret"), false);
+  assert.deepEqual(calls.stdout, []);
+});
+
+test("the script's entry point wires main to the process exit code", () => {
+  const scriptPath = fileURLToPath(
+    new URL("./release-please.mjs", import.meta.url),
+  );
+  const result = spawnSync(process.execPath, [scriptPath, "--bogus"], {
+    encoding: "utf8",
+    env: { ...process.env, RELEASE_PLEASE_TOKEN: "", GITHUB_REPOSITORY: "" },
+  });
+  assert.equal(result.status, 1);
+  assert.ok(result.stderr.includes(FAILURE_MESSAGE), result.stderr);
+  assert.equal(result.stdout, "");
+});

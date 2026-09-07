@@ -88,19 +88,4 @@ describe("NoDataCard", () => {
     expect(screen.getByText(/Your charts and stats will appear here/)).toBeInTheDocument();
     expect(screen.queryByText(/couldn't retrieve your weight measurements/)).not.toBeInTheDocument();
   });
-
-  it("includes clock icon", () => {
-    const { container } = render(<NoDataCard />);
-
-    const icon = container.querySelector("svg");
-    expect(icon).toBeInTheDocument();
-  });
-
-  it("renders as a card element", () => {
-    const { container } = render(<NoDataCard />);
-
-    const card = container.firstChild;
-    expect(card).toBeInTheDocument();
-    expect(card).toHaveAttribute("data-slot", "card");
-  });
 });

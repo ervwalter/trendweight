@@ -1,291 +1,235 @@
+using System.Globalization;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Moq;
-using Supabase.Interfaces;
-using Supabase.Realtime;
 using TrendWeight.Features.ProviderLinks.Services;
-using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Tests.Fixtures;
 
 namespace TrendWeight.Tests.Features.ProviderLinks.Services;
 
 public class ProviderLinkServiceTests
 {
-    private readonly Mock<ISupabaseService> _supabaseServiceMock;
-    private readonly Mock<ILogger<ProviderLinkService>> _loggerMock;
+    private static readonly Guid Me = Guid.NewGuid();
+    private static readonly Guid Other = Guid.NewGuid();
+
+    private readonly FakeSupabaseService _supabase = new();
+    private readonly CapturingLoggerProvider _logs = new();
     private readonly ProviderLinkService _sut;
 
     public ProviderLinkServiceTests()
     {
-        _supabaseServiceMock = new Mock<ISupabaseService>();
-        _loggerMock = new Mock<ILogger<ProviderLinkService>>();
-        _sut = new ProviderLinkService(_supabaseServiceMock.Object, _loggerMock.Object);
+        _sut = new ProviderLinkService(_supabase, _logs.CreateLogger<ProviderLinkService>());
     }
 
     [Fact]
     public async Task StoreProviderLinkAsync_WhenReadFails_DoesNotInsertDuplicateLink()
     {
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ThrowsAsync(new HttpRequestException("Database unavailable"));
+        _supabase.Seed(CreateTestProviderLink(Me, "withings"));
+        _supabase.ThrowOnQuery = new HttpRequestException("Database unavailable");
 
-        var act = () => _sut.StoreProviderLinkAsync(Guid.NewGuid(), "withings", new Dictionary<string, object>());
+        var act = () => _sut.StoreProviderLinkAsync(Me, "withings", new Dictionary<string, object>());
 
         await act.Should().ThrowAsync<HttpRequestException>();
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbProviderLink>()), Times.Never);
+        _supabase.Rows<DbProviderLink>().Should().ContainSingle();
     }
 
     [Fact]
-    public async Task GetProviderLinkAsync_ReturnsProviderLink_WhenExists()
+    public async Task GetProviderLinkAsync_ReturnsOnlyTheRowForThatUserAndProvider()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var provider = "fitbit";
-        var expectedLink = CreateTestProviderLink(uid, provider);
+        var mine = CreateTestProviderLink(Me, "withings");
+        _supabase.Seed(CreateTestProviderLink(Me, "legacy"), CreateTestProviderLink(Other, "withings"), mine);
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProviderLink> { expectedLink });
+        var result = await _sut.GetProviderLinkAsync(Me, "withings");
 
-        // Act
-        var result = await _sut.GetProviderLinkAsync(uid, provider);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Uid.Should().Be(uid);
-        result.Provider.Should().Be(provider);
+        result.Should().BeSameAs(mine);
     }
 
     [Fact]
-    public async Task GetProviderLinkAsync_ReturnsNull_WhenNotExists()
+    public async Task GetProviderLinkAsync_ReturnsNull_WhenOnlyDecoysExist()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var provider = "fitbit";
+        _supabase.Seed(CreateTestProviderLink(Me, "legacy"), CreateTestProviderLink(Other, "withings"));
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProviderLink>());
+        var result = await _sut.GetProviderLinkAsync(Me, "withings");
 
-        // Act
-        var result = await _sut.GetProviderLinkAsync(uid, provider);
-
-        // Assert
         result.Should().BeNull();
     }
 
     [Fact]
     public async Task GetProviderLinkAsync_PropagatesDatabaseFailure()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var provider = "fitbit";
+        var failure = new Exception("Database error");
+        _supabase.ThrowOnQuery = failure;
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ThrowsAsync(new Exception("Database error"));
+        var act = () => _sut.GetProviderLinkAsync(Me, "withings");
 
-        // Act
-        var act = () => _sut.GetProviderLinkAsync(uid, provider);
-
-        // Assert
         await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Error getting provider link")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+        _logs.Entries.Should().ContainSingle(e => e.Level == LogLevel.Error)
+            .Which.Should().Match<CapturingLoggerProvider.LogEntry>(e =>
+                e.Exception == failure && e.Message.Contains("Error getting provider link"));
     }
 
     [Fact]
-    public async Task GetAllForUserAsync_ReturnsAllUserLinks()
+    public async Task GetAllForUserAsync_ReturnsOnlyThatUsersLinks()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var links = new List<DbProviderLink>
-        {
-            CreateTestProviderLink(uid, "fitbit"),
-            CreateTestProviderLink(uid, "withings")
-        };
+        var withings = CreateTestProviderLink(Me, "withings");
+        var legacy = CreateTestProviderLink(Me, "legacy");
+        _supabase.Seed(withings, CreateTestProviderLink(Other, "withings"), legacy);
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ReturnsAsync(links);
+        var result = await _sut.GetAllForUserAsync(Me);
 
-        // Act
-        var result = await _sut.GetAllForUserAsync(uid);
-
-        // Assert
         result.Should().HaveCount(2);
-        result.Should().OnlyContain(x => x.Uid == uid);
+        result.Should().Contain(withings).And.Contain(legacy);
+        result.Should().OnlyContain(x => x.Uid == Me);
     }
 
     [Fact]
-    public async Task CreateAsync_SetsUpdatedAt()
+    public async Task GetAllForUserAsync_PropagatesDatabaseFailure()
     {
-        // Arrange
-        var link = CreateTestProviderLink(Guid.NewGuid(), "fitbit");
+        var failure = new Exception("Database error");
+        _supabase.ThrowOnQuery = failure;
+
+        var act = () => _sut.GetAllForUserAsync(Me);
+
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
+        _logs.Entries.Should().ContainSingle(e => e.Level == LogLevel.Error)
+            .Which.Should().Match<CapturingLoggerProvider.LogEntry>(e =>
+                e.Exception == failure && e.Message.Contains("Error getting provider links"));
+    }
+
+    [Fact]
+    public async Task CreateAsync_StampsUpdatedAtAndPersistsTheRow()
+    {
+        var link = CreateTestProviderLink(Me, "withings");
         link.UpdatedAt = null!;
 
-        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbProviderLink>()))
-            .ReturnsAsync((DbProviderLink l) => l);
-
-        // Act
         var result = await _sut.CreateAsync(link);
 
-        // Assert
-        result.UpdatedAt.Should().NotBeNullOrEmpty();
-        DateTime.Parse(result.UpdatedAt!, null, System.Globalization.DateTimeStyles.RoundtripKind)
-            .ToUniversalTime()
-            .Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        result.Should().BeSameAs(link);
+        _supabase.Rows<DbProviderLink>().Should().ContainSingle().Which.Should().BeSameAs(link);
+        Parse(result.UpdatedAt).Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]
-    public async Task CreateAsync_SetsCreatedAtOnce()
+    public async Task CreateAsync_SetsCreatedAt_WhenMissing()
     {
-        // Arrange
-        var link = CreateTestProviderLink(Guid.NewGuid(), "withings");
+        var link = CreateTestProviderLink(Me, "withings");
         link.CreatedAt = null;
 
-        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbProviderLink>()))
-            .ReturnsAsync((DbProviderLink l) => l);
-
-        // Act
         var result = await _sut.CreateAsync(link);
 
-        // Assert
-        result.CreatedAt.Should().NotBeNullOrEmpty();
-        DateTime.Parse(result.CreatedAt!, null, System.Globalization.DateTimeStyles.RoundtripKind)
-            .ToUniversalTime()
-            .Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        Parse(result.CreatedAt!).Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
     [Fact]
-    public async Task StoreProviderLinkAsync_OnTokenRefresh_PreservesCreatedAt()
+    public async Task CreateAsync_KeepsAnExistingCreatedAt()
     {
-        // Arrange - an existing link whose token is being replaced by a refresh
-        var uid = Guid.NewGuid();
+        var link = CreateTestProviderLink(Me, "withings");
         var connectedAt = DateTime.UtcNow.AddDays(-30).ToString("o");
-        var existing = CreateTestProviderLink(uid, "withings");
-        existing.CreatedAt = connectedAt;
-        existing.UpdatedAt = DateTime.UtcNow.AddHours(-3).ToString("o");
+        link.CreatedAt = connectedAt;
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProviderLink> { existing });
-        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProviderLink>()))
-            .ReturnsAsync((DbProviderLink l) => l);
+        var result = await _sut.CreateAsync(link);
 
-        // Act
-        await _sut.StoreProviderLinkAsync(uid, "withings", new Dictionary<string, object> { { "access_token", "rotated" } });
-
-        // Assert - updated_at moves, created_at does not
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbProviderLink>(l =>
-            l.CreatedAt == connectedAt &&
-            l.UpdatedAt != existing.CreatedAt)), Times.Once);
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbProviderLink>()), Times.Never);
+        result.CreatedAt.Should().Be(connectedAt);
     }
 
     [Fact]
-    public async Task UpdateAsync_SetsUpdatedAt()
+    public async Task StoreProviderLinkAsync_OnTokenRefresh_AdvancesUpdatedAtAndPreservesCreatedAt()
     {
-        // Arrange
-        var link = CreateTestProviderLink(Guid.NewGuid(), "fitbit");
-        var oldUpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o");
-        link.UpdatedAt = oldUpdatedAt;
+        // An existing link whose token is being replaced by a refresh
+        var connectedAt = DateTime.UtcNow.AddDays(-30).ToString("o");
+        var previousUpdatedAt = DateTime.UtcNow.AddHours(-3).ToString("o");
+        var existing = CreateTestProviderLink(Me, "withings");
+        existing.CreatedAt = connectedAt;
+        existing.UpdatedAt = previousUpdatedAt;
+        _supabase.Seed(existing, CreateTestProviderLink(Other, "withings"));
 
-        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProviderLink>()))
-            .ReturnsAsync((DbProviderLink l) => l);
+        await _sut.StoreProviderLinkAsync(Me, "withings", new Dictionary<string, object> { { "access_token", "rotated" } });
 
-        // Act
+        existing.CreatedAt.Should().Be(connectedAt);
+        Parse(existing.UpdatedAt).Should().BeAfter(Parse(previousUpdatedAt));
+        Parse(existing.UpdatedAt).Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        _supabase.Rows<DbProviderLink>().Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AdvancesUpdatedAtAndReplacesTheStoredRow()
+    {
+        var link = CreateTestProviderLink(Me, "withings");
+        var previousUpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o");
+        link.UpdatedAt = previousUpdatedAt;
+        _supabase.Seed(link);
+
         var result = await _sut.UpdateAsync(link);
 
-        // Assert
-        result.UpdatedAt.Should().NotBe(oldUpdatedAt);
-        DateTime.Parse(result.UpdatedAt!, null, System.Globalization.DateTimeStyles.RoundtripKind)
-            .ToUniversalTime()
-            .Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        Parse(result.UpdatedAt).Should().BeAfter(Parse(previousUpdatedAt));
+        Parse(result.UpdatedAt).Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        _supabase.Rows<DbProviderLink>().Should().ContainSingle().Which.Should().BeSameAs(link);
     }
 
     [Fact]
-    public async Task RemoveProviderLinkAsync_DeletesLink_WhenExists()
+    public async Task RemoveProviderLinkAsync_DeletesOnlyThatRow()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var provider = "fitbit";
-        var link = CreateTestProviderLink(uid, provider);
+        var myLegacy = CreateTestProviderLink(Me, "legacy");
+        var otherWithings = CreateTestProviderLink(Other, "withings");
+        _supabase.Seed(CreateTestProviderLink(Me, "withings"), myLegacy, otherWithings);
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProviderLink> { link });
+        await _sut.RemoveProviderLinkAsync(Me, "withings");
 
-        // Act
-        await _sut.RemoveProviderLinkAsync(uid, provider);
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(link), Times.Once);
+        _supabase.Rows<DbProviderLink>().Should().BeEquivalentTo(new[] { myLegacy, otherWithings });
     }
 
     [Fact]
-    public async Task RemoveProviderLinkAsync_DoesNothing_WhenNotExists()
+    public async Task RemoveProviderLinkAsync_DoesNothing_WhenNoRowMatches()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var provider = "fitbit";
+        var myLegacy = CreateTestProviderLink(Me, "legacy");
+        var otherWithings = CreateTestProviderLink(Other, "withings");
+        _supabase.Seed(myLegacy, otherWithings);
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProviderLink>());
+        await _sut.RemoveProviderLinkAsync(Me, "withings");
 
-        // Act
-        await _sut.RemoveProviderLinkAsync(uid, provider);
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<DbProviderLink>()), Times.Never);
+        _supabase.Rows<DbProviderLink>().Should().BeEquivalentTo(new[] { myLegacy, otherWithings });
     }
 
     [Fact]
-    public async Task StoreProviderLinkAsync_UpdatesExistingLink()
+    public async Task StoreProviderLinkAsync_UpdatesTheExistingRowInPlace()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var provider = "fitbit";
-        var existingLink = CreateTestProviderLink(uid, provider);
+        var existing = CreateTestProviderLink(Me, "withings");
+        var myLegacy = CreateTestProviderLink(Me, "legacy");
+        var otherWithings = CreateTestProviderLink(Other, "withings");
+        _supabase.Seed(existing, myLegacy, otherWithings);
         var newToken = new Dictionary<string, object> { { "access_token", "new_token" } };
-        var updateReason = "Token refresh";
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProviderLink> { existingLink });
-        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProviderLink>()))
-            .ReturnsAsync((DbProviderLink l) => l);
+        await _sut.StoreProviderLinkAsync(Me, "withings", newToken, "Token refresh");
 
-        // Act
-        await _sut.StoreProviderLinkAsync(uid, provider, newToken, updateReason);
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbProviderLink>(l =>
-            l.Token == newToken &&
-            l.UpdateReason == updateReason)), Times.Once);
+        var rows = _supabase.Rows<DbProviderLink>();
+        rows.Should().HaveCount(3);
+        rows.Should().Contain(existing);
+        existing.Token.Should().BeSameAs(newToken);
+        existing.UpdateReason.Should().Be("Token refresh");
+        myLegacy.Token.Should().ContainKey("refresh_token");
+        otherWithings.Token.Should().ContainKey("refresh_token");
     }
 
     [Fact]
-    public async Task StoreProviderLinkAsync_CreatesNewLink_WhenNotExists()
+    public async Task StoreProviderLinkAsync_InsertsANewRow_WhenNoneExists()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var provider = "fitbit";
+        _supabase.Seed(CreateTestProviderLink(Me, "legacy"), CreateTestProviderLink(Other, "withings"));
         var token = new Dictionary<string, object> { { "access_token", "new_token" } };
-        var updateReason = "Initial auth";
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProviderLink>());
-        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbProviderLink>()))
-            .ReturnsAsync((DbProviderLink l) => l);
+        await _sut.StoreProviderLinkAsync(Me, "withings", token, "Initial auth");
 
-        // Act
-        await _sut.StoreProviderLinkAsync(uid, provider, token, updateReason);
+        var rows = _supabase.Rows<DbProviderLink>();
+        rows.Should().HaveCount(3);
+        var created = rows.Should().ContainSingle(r => r.Uid == Me && r.Provider == "withings").Which;
+        created.Token.Should().BeSameAs(token);
+        created.UpdateReason.Should().Be("Initial auth");
+        Parse(created.CreatedAt!).Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        Parse(created.UpdatedAt).Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+    }
 
-        // Assert
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbProviderLink>(l =>
-            l.Uid == uid &&
-            l.Provider == provider &&
-            l.Token == token &&
-            l.UpdateReason == updateReason)), Times.Once);
+    private static DateTime Parse(string timestamp)
+    {
+        return DateTime.Parse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).ToUniversalTime();
     }
 
     private static DbProviderLink CreateTestProviderLink(Guid uid, string provider)

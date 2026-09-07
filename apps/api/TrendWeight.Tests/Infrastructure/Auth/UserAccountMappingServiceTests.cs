@@ -1,312 +1,253 @@
+using System.Globalization;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Moq;
-using Supabase.Interfaces;
 using Supabase.Postgrest.Exceptions;
-using Supabase.Realtime;
 using TrendWeight.Infrastructure.Auth;
-using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Tests.Fixtures;
 
 namespace TrendWeight.Tests.Infrastructure.Auth;
 
 public class UserAccountMappingServiceTests
 {
-    private readonly Mock<ISupabaseService> _supabaseServiceMock = new();
-    private readonly Mock<ILogger<UserAccountMappingService>> _loggerMock = new();
+    private readonly FakeSupabaseService _supabase = new();
+    private readonly CapturingLoggerProvider _logs = new();
     private readonly UserAccountMappingService _sut;
 
     public UserAccountMappingServiceTests()
     {
-        _sut = new UserAccountMappingService(_supabaseServiceMock.Object, _loggerMock.Object);
+        _sut = new UserAccountMappingService(_supabase, _logs.CreateLogger<UserAccountMappingService>());
     }
 
     [Fact]
-    public async Task GetByExternalIdAsync_ReturnsUserAccount_WhenFound()
+    public async Task GetByExternalIdAsync_ReturnsOnlyTheRowMatchingBothExternalIdAndProvider()
     {
-        // Arrange
-        var expectedAccount = new DbUserAccount
-        {
-            Uid = Guid.NewGuid(),
-            ExternalId = "clerk_123",
-            Provider = "clerk"
-        };
+        var mine = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "clerk" };
+        // Decoys come first so a missing filter cannot be hidden by Limit(1).
+        _supabase.Seed(
+            new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "google" },
+            new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_999", Provider = "clerk" },
+            mine);
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbUserAccount>(It.IsAny<Action<ISupabaseTable<DbUserAccount, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbUserAccount> { expectedAccount });
-
-        // Act
         var result = await _sut.GetByExternalIdAsync("clerk_123", "clerk");
 
-        // Assert
-        result.Should().NotBeNull();
-        result!.ExternalId.Should().Be("clerk_123");
-        result.Provider.Should().Be("clerk");
+        result.Should().BeSameAs(mine);
     }
 
     [Fact]
-    public async Task GetByExternalIdAsync_ReturnsNull_WhenNotFound()
+    public async Task GetByExternalIdAsync_ReturnsNull_WhenOnlyOtherProvidersOrIdsMatch()
     {
-        // Arrange
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbUserAccount>(It.IsAny<Action<ISupabaseTable<DbUserAccount, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbUserAccount>());
+        _supabase.Seed(
+            new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "google" },
+            new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_999", Provider = "clerk" });
 
-        // Act
         var result = await _sut.GetByExternalIdAsync("clerk_123", "clerk");
 
-        // Assert
         result.Should().BeNull();
     }
 
     [Fact]
-    public async Task CreateMappingAsync_CreatesNewUser_WhenNoExistingProfileFound()
+    public async Task GetByInternalIdAsync_ReturnsTheRowWithThatUid()
     {
-        // Arrange
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<ISupabaseTable<DbProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProfile>());
+        var mine = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "clerk" };
+        _supabase.Seed(mine, new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_999", Provider = "clerk" });
 
-        var createdAccount = new DbUserAccount();
-        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbUserAccount>()))
-            .ReturnsAsync((DbUserAccount account) =>
-            {
-                createdAccount = account;
-                return account;
-            });
+        var result = await _sut.GetByInternalIdAsync(mine.Uid);
 
-        // Act
-        var result = await _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
-
-        // Assert
-        result.Should().NotBeNull();
-        createdAccount.ExternalId.Should().Be("clerk_123");
-        createdAccount.Provider.Should().Be("clerk");
-        createdAccount.Uid.Should().NotBeEmpty();
+        result.Should().BeSameAs(mine);
     }
 
     [Fact]
-    public async Task CreateMappingAsync_UsesExistingProfileUid_WhenProfileExistsButNoUserAccount()
+    public async Task CreateMappingAsync_CreatesAFreshUid_WhenNoProfileHasThatEmail()
     {
-        // Arrange
-        var existingProfileUid = Guid.NewGuid();
-        var existingProfile = new DbProfile
-        {
-            Uid = existingProfileUid,
-            Email = "test@example.com"
-        };
+        var otherProfile = new DbProfile { Uid = Guid.NewGuid(), Email = "someone-else@example.com" };
+        _supabase.Seed(otherProfile);
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<ISupabaseTable<DbProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProfile> { existingProfile });
-
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbUserAccount>(existingProfileUid))
-            .ReturnsAsync((DbUserAccount?)null);
-
-        var createdAccount = new DbUserAccount();
-        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbUserAccount>()))
-            .ReturnsAsync((DbUserAccount account) =>
-            {
-                createdAccount = account;
-                return account;
-            });
-
-        // Act
         var result = await _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
 
-        // Assert
-        result.Should().NotBeNull();
-        createdAccount.Uid.Should().Be(existingProfileUid);
-        createdAccount.ExternalId.Should().Be("clerk_123");
-        createdAccount.Provider.Should().Be("clerk");
+        var stored = _supabase.Rows<DbUserAccount>().Should().ContainSingle().Which;
+        stored.Should().BeSameAs(result);
+        stored.ExternalId.Should().Be("clerk_123");
+        stored.Provider.Should().Be("clerk");
+        stored.Uid.Should().NotBeEmpty();
+        stored.Uid.Should().NotBe(otherProfile.Uid);
+        stored.CreatedAt.Should().MatchRegex(@"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$");
+        stored.UpdatedAt.Should().Be(stored.CreatedAt);
+        DateTime.Parse(stored.CreatedAt, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal)
+            .Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        _logs.ShouldHaveLogged(LogLevel.Information, "Created user account mapping");
     }
 
     [Fact]
-    public async Task CreateMappingAsync_CreatesNewUid_WhenProfileExistsWithDifferentUserAccount()
+    public async Task CreateMappingAsync_AdoptsTheUidOfTheProfileWhoseEmailMatches()
     {
-        // Arrange
-        var existingProfileUid = Guid.NewGuid();
-        var existingProfile = new DbProfile
-        {
-            Uid = existingProfileUid,
-            Email = "test@example.com"
-        };
+        var matching = new DbProfile { Uid = Guid.NewGuid(), Email = "test@example.com" };
+        var other = new DbProfile { Uid = Guid.NewGuid(), Email = "other@example.com" };
+        _supabase.Seed(other, matching);
 
-        var existingUserAccount = new DbUserAccount
-        {
-            Uid = existingProfileUid,
-            ExternalId = "different_clerk_456",
-            Provider = "clerk"
-        };
-
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<ISupabaseTable<DbProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProfile> { existingProfile });
-
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbUserAccount>(existingProfileUid))
-            .ReturnsAsync(existingUserAccount);
-
-        var createdAccount = new DbUserAccount();
-        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbUserAccount>()))
-            .ReturnsAsync((DbUserAccount account) =>
-            {
-                createdAccount = account;
-                return account;
-            });
-
-        // Act
         var result = await _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
 
-        // Assert
-        result.Should().NotBeNull();
-        createdAccount.Uid.Should().NotBe(existingProfileUid); // Should have generated a new UID
-        createdAccount.ExternalId.Should().Be("clerk_123");
-        createdAccount.Provider.Should().Be("clerk");
-
-        // Verify warning was logged
-        _loggerMock.Verify(x => x.Log(
-            LogLevel.Warning,
-            It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Email") && v.ToString()!.Contains("already associated")),
-            It.IsAny<Exception>(),
-            It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+        result.Uid.Should().Be(matching.Uid);
+        result.ExternalId.Should().Be("clerk_123");
+        result.Provider.Should().Be("clerk");
+        _supabase.Rows<DbUserAccount>().Should().ContainSingle().Which.Should().BeSameAs(result);
     }
 
     [Fact]
-    public async Task CreateMappingAsync_ReturnsSameUserAccount_WhenExactMatchExists()
+    public async Task CreateMappingAsync_CreatesNewUid_WhenTheProfileBelongsToADifferentExternalUser()
     {
-        // Arrange
-        var existingProfileUid = Guid.NewGuid();
-        var existingProfile = new DbProfile
-        {
-            Uid = existingProfileUid,
-            Email = "test@example.com"
-        };
+        var existingProfile = new DbProfile { Uid = Guid.NewGuid(), Email = "test@example.com" };
+        var existingAccount = new DbUserAccount { Uid = existingProfile.Uid, ExternalId = "different_clerk_456", Provider = "clerk" };
+        _supabase.Seed(existingProfile);
+        _supabase.Seed(existingAccount);
 
-        var existingUserAccount = new DbUserAccount
-        {
-            Uid = existingProfileUid,
-            ExternalId = "clerk_123",
-            Provider = "clerk"
-        };
-
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<ISupabaseTable<DbProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProfile> { existingProfile });
-
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbUserAccount>(existingProfileUid))
-            .ReturnsAsync(existingUserAccount);
-
-        // Act
         var result = await _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
 
-        // Assert
-        result.Should().Be(existingUserAccount);
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbUserAccount>()), Times.Never);
+        result.Uid.Should().NotBe(existingProfile.Uid);
+        result.ExternalId.Should().Be("clerk_123");
+        result.Provider.Should().Be("clerk");
+
+        // The other user's mapping must not be hijacked.
+        var rows = _supabase.Rows<DbUserAccount>();
+        rows.Should().HaveCount(2);
+        rows.Should().Contain(existingAccount);
+        existingAccount.ExternalId.Should().Be("different_clerk_456");
+
+        _logs.ShouldHaveLogged(LogLevel.Warning, "already associated with a different user account");
+    }
+
+    [Fact]
+    public async Task CreateMappingAsync_CreatesNewUid_WhenTheProfileIsMappedThroughAnotherProvider()
+    {
+        var existingProfile = new DbProfile { Uid = Guid.NewGuid(), Email = "test@example.com" };
+        _supabase.Seed(existingProfile);
+        _supabase.Seed(new DbUserAccount { Uid = existingProfile.Uid, ExternalId = "clerk_123", Provider = "google" });
+
+        var result = await _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
+
+        result.Uid.Should().NotBe(existingProfile.Uid);
+        _supabase.Rows<DbUserAccount>().Should().HaveCount(2);
+        _logs.ShouldHaveLogged(LogLevel.Warning, "already associated with a different user account");
+    }
+
+    [Fact]
+    public async Task CreateMappingAsync_ReturnsTheExistingMapping_WhenItAlreadyBelongsToThisUser()
+    {
+        var existingProfile = new DbProfile { Uid = Guid.NewGuid(), Email = "test@example.com" };
+        var existingAccount = new DbUserAccount { Uid = existingProfile.Uid, ExternalId = "clerk_123", Provider = "clerk" };
+        _supabase.Seed(existingProfile);
+        _supabase.Seed(existingAccount);
+
+        var result = await _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
+
+        result.Should().BeSameAs(existingAccount);
+        _supabase.Rows<DbUserAccount>().Should().ContainSingle();
+        _logs.ShouldNotHaveLogged(LogLevel.Warning);
     }
 
     [Fact]
     public async Task CreateMappingAsync_AdoptsTheWinningRow_WhenAConcurrentSignInInsertedFirst()
     {
-        // Arrange - no profile yet; the insert loses the race to a parallel first request
+        // A parallel first request won the (external_id, provider) unique constraint;
+        // by the time this insert fails, its row is already in the table.
         var winner = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "clerk" };
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<ISupabaseTable<DbProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProfile>());
-        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbUserAccount>()))
-            .ThrowsAsync(UniqueViolation());
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbUserAccount>(It.IsAny<Action<ISupabaseTable<DbUserAccount, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbUserAccount> { winner });
+        _supabase.Seed(new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "google" }, winner);
+        _supabase.ThrowOnInsert = FakeSupabaseService.UniqueViolation();
 
-        // Act
         var result = await _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
 
-        // Assert
         result.Should().BeSameAs(winner);
+        _supabase.Rows<DbUserAccount>().Should().HaveCount(2);
+        _logs.ShouldHaveLogged(LogLevel.Information, "Concurrent sign-in already created the user account mapping");
     }
 
     [Fact]
     public async Task CreateMappingAsync_Rethrows_WhenAUniqueViolationHasNoMatchingMapping()
     {
-        // Arrange
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<ISupabaseTable<DbProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProfile>());
-        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbUserAccount>()))
-            .ThrowsAsync(UniqueViolation());
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbUserAccount>(It.IsAny<Action<ISupabaseTable<DbUserAccount, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbUserAccount>());
+        // Only a different provider's row exists, so there is nothing to adopt.
+        _supabase.Seed(new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "google" });
+        _supabase.ThrowOnInsert = FakeSupabaseService.UniqueViolation();
 
-        // Act
         var act = () => _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
 
-        // Assert
         await act.Should().ThrowAsync<PostgrestException>();
     }
 
     [Fact]
-    public async Task GetOrCreateMappingAsync_ReturnsExisting_WhenUserAccountExists()
+    public async Task CreateMappingAsync_Rethrows_WhenTheInsertFailsForAnotherReason()
     {
-        // Arrange
-        var existingAccount = new DbUserAccount
-        {
-            Uid = Guid.NewGuid(),
-            ExternalId = "clerk_123",
-            Provider = "clerk"
-        };
+        _supabase.Seed(new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "clerk" });
+        _supabase.ThrowOnInsert = new HttpRequestException("Database unavailable");
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbUserAccount>(It.IsAny<Action<ISupabaseTable<DbUserAccount, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbUserAccount> { existingAccount });
+        var act = () => _sut.CreateMappingAsync("clerk_123", "test@example.com", "clerk");
 
-        // Act
-        var result = await _sut.GetOrCreateMappingAsync("clerk_123", "test@example.com", "clerk");
-
-        // Assert
-        result.Should().Be(existingAccount);
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbUserAccount>()), Times.Never);
+        await act.Should().ThrowAsync<HttpRequestException>();
     }
 
     [Fact]
-    public async Task DeleteByInternalIdAsync_DeletesUserAccount_WhenFound()
+    public async Task GetOrCreateMappingAsync_ReturnsExisting_WithoutInserting()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var userAccount = new DbUserAccount
-        {
-            Uid = uid,
-            ExternalId = "clerk_123",
-            Provider = "clerk"
-        };
+        var existing = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "clerk" };
+        _supabase.Seed(new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "google" }, existing);
 
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbUserAccount>(uid))
-            .ReturnsAsync(userAccount);
+        var result = await _sut.GetOrCreateMappingAsync("clerk_123", "test@example.com", "clerk");
 
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(userAccount))
-            .Returns(Task.CompletedTask);
+        result.Should().BeSameAs(existing);
+        _supabase.Rows<DbUserAccount>().Should().HaveCount(2);
+    }
 
-        // Act
-        var result = await _sut.DeleteByInternalIdAsync(uid);
+    [Fact]
+    public async Task GetOrCreateMappingAsync_Creates_WhenOnlyAnotherProviderHasThatExternalId()
+    {
+        var google = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "google" };
+        _supabase.Seed(google);
 
-        // Assert
+        var result = await _sut.GetOrCreateMappingAsync("clerk_123", "test@example.com", "clerk");
+
+        result.Should().NotBeSameAs(google);
+        result.Provider.Should().Be("clerk");
+        _supabase.Rows<DbUserAccount>().Should().HaveCount(2).And.Contain(result);
+    }
+
+    [Fact]
+    public async Task DeleteByInternalIdAsync_DeletesOnlyThatUserAccount()
+    {
+        var mine = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "clerk" };
+        var other = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_999", Provider = "clerk" };
+        _supabase.Seed(mine, other);
+
+        var result = await _sut.DeleteByInternalIdAsync(mine.Uid);
+
         result.Should().BeTrue();
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(userAccount), Times.Once);
+        _supabase.Rows<DbUserAccount>().Should().ContainSingle().Which.Should().BeSameAs(other);
+        _logs.ShouldHaveLogged(LogLevel.Information, "Deleted user account");
     }
 
     [Fact]
     public async Task DeleteByInternalIdAsync_ReturnsFalse_WhenNotFound()
     {
-        // Arrange
-        var uid = Guid.NewGuid();
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbUserAccount>(uid))
-            .ReturnsAsync((DbUserAccount?)null);
+        var other = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_999", Provider = "clerk" };
+        _supabase.Seed(other);
 
-        // Act
-        var result = await _sut.DeleteByInternalIdAsync(uid);
+        var result = await _sut.DeleteByInternalIdAsync(Guid.NewGuid());
 
-        // Assert
         result.Should().BeFalse();
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<DbUserAccount>()), Times.Never);
+        _supabase.Rows<DbUserAccount>().Should().ContainSingle().Which.Should().BeSameAs(other);
+        _logs.ShouldHaveLogged(LogLevel.Warning, "No user account found to delete");
     }
 
-    private static PostgrestException UniqueViolation()
+    [Fact]
+    public async Task DeleteByInternalIdAsync_LogsAndRethrows_WhenTheDeleteFails()
     {
-        // PostgREST answers a unique violation with 409; the client only sets StatusCode internally.
-        var exception = new PostgrestException("duplicate key value violates unique constraint");
-        typeof(PostgrestException).GetProperty(nameof(PostgrestException.StatusCode))!.SetValue(exception, 409);
-        return exception;
+        var mine = new DbUserAccount { Uid = Guid.NewGuid(), ExternalId = "clerk_123", Provider = "clerk" };
+        _supabase.Seed(mine);
+        var failure = new HttpRequestException("Database unavailable");
+        _supabase.ThrowOnDelete = failure;
+
+        var act = () => _sut.DeleteByInternalIdAsync(mine.Uid);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+        _supabase.Rows<DbUserAccount>().Should().ContainSingle();
+        _logs.Entries.Should().Contain(e => e.Level == LogLevel.Error && e.Exception == failure && e.Message.Contains("Error deleting user account"));
     }
 }

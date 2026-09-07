@@ -1,175 +1,176 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ApiKeySection } from "./api-key-section";
-import { useApiKey } from "@/lib/api/queries";
-import { useGenerateApiKey, useRevokeApiKey } from "@/lib/api/mutations";
+import { http } from "msw";
+import type { ApiKeyMetadata } from "@/lib/api/types";
+import { queryKeys } from "@/lib/api/queries";
 import { useToast } from "@/lib/hooks/use-toast";
+import { mockAuth, TEST_TOKEN } from "@/test/auth";
+import { buildApiKeyMetadata, buildGeneratedApiKey } from "@/test/fixtures";
+import { server } from "@/test/mocks/server";
+import { json, noContent, recordRequests } from "@/test/msw";
+import { renderWithProviders } from "@/test/render";
+import { ApiKeySection } from "./api-key-section";
 
-vi.mock("@/lib/api/queries");
-vi.mock("@/lib/api/mutations");
+vi.mock("@/lib/auth/use-auth");
 vi.mock("@/lib/hooks/use-toast");
 
-// Mock ConfirmDialog like other component tests do
-vi.mock("@/components/ui/confirm-dialog", () => ({
-  ConfirmDialog: ({ open, onConfirm, title, description, confirmText }: any) =>
-    open ? (
-      <div data-testid="confirm-dialog">
-        <div>{title}</div>
-        <div>{description}</div>
-        <button onClick={onConfirm}>{confirmText}</button>
-      </div>
-    ) : null,
-}));
+const API_KEY_PATH = "/api/profile/api-key";
+const NO_KEY: ApiKeyMetadata = { exists: false };
+
+// A tiny in-memory key store so the refetch after a revoke sees the key gone
+function givenApiKey(initial: ApiKeyMetadata) {
+  let current = initial;
+  server.use(
+    http.get(API_KEY_PATH, () => json(200, current)),
+    http.post(API_KEY_PATH, () => {
+      const generated = buildGeneratedApiKey();
+      current = { exists: true, suffix: generated.suffix, createdAt: generated.createdAt };
+      return json(200, generated);
+    }),
+    http.delete(API_KEY_PATH, () => {
+      current = NO_KEY;
+      return noContent();
+    }),
+  );
+}
+
+function confirmDialog() {
+  return within(screen.getByRole("alertdialog"));
+}
 
 describe("ApiKeySection", () => {
-  const mockGenerateMutateAsync = vi.fn();
-  const mockRevokeMutateAsync = vi.fn();
-  const mockShowToast = vi.fn();
+  const showToast = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any);
-    vi.mocked(useGenerateApiKey).mockReturnValue({
-      mutateAsync: mockGenerateMutateAsync,
-      isPending: false,
-    } as any);
-    vi.mocked(useRevokeApiKey).mockReturnValue({
-      mutateAsync: mockRevokeMutateAsync,
-      isPending: false,
-    } as any);
+    mockAuth();
+    vi.mocked(useToast).mockReturnValue({ showToast });
   });
 
-  it("should offer to generate a key when none exists", () => {
-    vi.mocked(useApiKey).mockReturnValue({ data: { exists: false } } as any);
+  it("offers to generate a key when none exists and links to the API reference", async () => {
+    givenApiKey(NO_KEY);
+    renderWithProviders(<ApiKeySection />);
 
-    render(<ApiKeySection />);
-
-    expect(screen.getByText("Generate API Key")).toBeInTheDocument();
-    expect(screen.queryByText("Regenerate")).not.toBeInTheDocument();
-  });
-
-  it("should link to the API reference docs", () => {
-    vi.mocked(useApiKey).mockReturnValue({ data: { exists: false } } as any);
-
-    render(<ApiKeySection />);
-
+    expect(await screen.findByRole("button", { name: "Generate API Key" })).toBeEnabled();
     expect(screen.getByRole("link", { name: /API reference/i })).toHaveAttribute("href", "/api-docs/v1");
+    expect(screen.queryByRole("button", { name: "Regenerate" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Revoke" })).not.toBeInTheDocument();
   });
 
-  it("should show the plaintext key once after generating", async () => {
+  it("shows the plaintext key once after generating and never caches it", async () => {
     const user = userEvent.setup();
-    vi.mocked(useApiKey).mockReturnValue({ data: { exists: false } } as any);
-    mockGenerateMutateAsync.mockResolvedValue({
-      apiKey: "sk-0123456789abcdefghijklmno",
-      suffix: "lmno",
-      createdAt: "2026-08-23T00:00:00Z",
-    });
+    givenApiKey(NO_KEY);
+    const recorder = recordRequests();
+    const { queryClient } = renderWithProviders(<ApiKeySection />);
+    const generated = buildGeneratedApiKey();
 
-    render(<ApiKeySection />);
-    await user.click(screen.getByText("Generate API Key"));
+    await user.click(await screen.findByRole("button", { name: "Generate API Key" }));
 
-    expect(screen.getByDisplayValue("sk-0123456789abcdefghijklmno")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(generated.apiKey)).toBeInTheDocument();
     expect(screen.getByText(/it won't be shown again/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Generate API Key" })).not.toBeInTheDocument();
+
+    const [post] = recorder.byPath(API_KEY_PATH).filter((call) => call.method === "POST");
+    expect(post.headers.authorization).toBe(`Bearer ${TEST_TOKEN}`);
+
+    const cached = queryClient.getQueryData<ApiKeyMetadata>(queryKeys.apiKey());
+    expect(cached).toEqual({ exists: true, suffix: generated.suffix, createdAt: generated.createdAt });
+    expect(JSON.stringify(cached)).not.toContain(generated.apiKey);
   });
 
-  it("should show suffix and created date for an existing key", () => {
-    vi.mocked(useApiKey).mockReturnValue({
-      data: { exists: true, suffix: "wxyz", createdAt: "2026-08-01T12:00:00Z" },
-    } as any);
+  it("shows the suffix and creation date of an existing key", async () => {
+    givenApiKey(buildApiKeyMetadata({ suffix: "wxyz", createdAt: "2024-01-10T08:00:00Z" }));
+    renderWithProviders(<ApiKeySection />);
 
-    render(<ApiKeySection />);
-
-    expect(screen.getByText("sk-…wxyz")).toBeInTheDocument();
-    expect(screen.getByText(/Created/)).toBeInTheDocument();
-    expect(screen.getByText("Regenerate")).toBeInTheDocument();
-    expect(screen.getByText("Revoke")).toBeInTheDocument();
+    expect(await screen.findByText("sk-…wxyz")).toBeInTheDocument();
+    expect(screen.getByText(/^Created /)).toHaveTextContent(/January 10, 2024/);
+    expect(screen.getByRole("button", { name: "Regenerate" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Revoke" })).toBeEnabled();
   });
 
-  it("should regenerate only after confirmation", async () => {
+  it("regenerates only after confirmation", async () => {
     const user = userEvent.setup();
-    vi.mocked(useApiKey).mockReturnValue({
-      data: { exists: true, suffix: "wxyz", createdAt: "2026-08-01T12:00:00Z" },
-    } as any);
-    mockGenerateMutateAsync.mockResolvedValue({
-      apiKey: "sk-newkey",
-      suffix: "wkey",
-      createdAt: "2026-08-23T00:00:00Z",
-    });
+    givenApiKey(buildApiKeyMetadata());
+    const recorder = recordRequests();
+    const { queryClient } = renderWithProviders(<ApiKeySection />);
+    const generated = buildGeneratedApiKey();
 
-    render(<ApiKeySection />);
-    await user.click(screen.getByText("Regenerate"));
+    await user.click(await screen.findByRole("button", { name: "Regenerate" }));
 
-    expect(mockGenerateMutateAsync).not.toHaveBeenCalled();
-    expect(screen.getByTestId("confirm-dialog")).toBeInTheDocument();
-    expect(screen.getByText(/invalidate your current API key/i)).toBeInTheDocument();
+    expect(confirmDialog().getByText(/invalidate your current API key/i)).toBeInTheDocument();
+    expect(recorder.byPath(API_KEY_PATH).filter((call) => call.method === "POST")).toHaveLength(0);
 
-    const confirmButton = screen.getByTestId("confirm-dialog").querySelector("button");
-    await user.click(confirmButton!);
+    await user.click(confirmDialog().getByRole("button", { name: "Regenerate" }));
 
-    expect(mockGenerateMutateAsync).toHaveBeenCalledOnce();
-    expect(screen.getByDisplayValue("sk-newkey")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(generated.apiKey)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(recorder.byPath(API_KEY_PATH).filter((call) => call.method === "POST")).toHaveLength(1);
+    expect(JSON.stringify(queryClient.getQueryData(queryKeys.apiKey()))).not.toContain(generated.apiKey);
   });
 
-  it("should revoke only after confirmation", async () => {
+  it("revokes only after confirmation", async () => {
     const user = userEvent.setup();
-    vi.mocked(useApiKey).mockReturnValue({
-      data: { exists: true, suffix: "wxyz", createdAt: "2026-08-01T12:00:00Z" },
-    } as any);
-    mockRevokeMutateAsync.mockResolvedValue(null);
+    givenApiKey(buildApiKeyMetadata());
+    const recorder = recordRequests();
+    renderWithProviders(<ApiKeySection />);
 
-    render(<ApiKeySection />);
-    await user.click(screen.getByText("Revoke"));
+    await user.click(await screen.findByRole("button", { name: "Revoke" }));
 
-    expect(mockRevokeMutateAsync).not.toHaveBeenCalled();
+    expect(confirmDialog().getByText(/permanently invalidate your API key/i)).toBeInTheDocument();
+    expect(recorder.byPath(API_KEY_PATH).filter((call) => call.method === "DELETE")).toHaveLength(0);
 
-    const confirmButton = screen.getByTestId("confirm-dialog").querySelector("button");
-    await user.click(confirmButton!);
+    await user.click(confirmDialog().getByRole("button", { name: "Revoke" }));
 
-    expect(mockRevokeMutateAsync).toHaveBeenCalledOnce();
+    expect(await screen.findByRole("button", { name: "Generate API Key" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(screen.queryByText("sk-…wxyz")).not.toBeInTheDocument();
+    const [del] = recorder.byPath(API_KEY_PATH).filter((call) => call.method === "DELETE");
+    expect(del.headers.authorization).toBe(`Bearer ${TEST_TOKEN}`);
   });
 
-  it("should toast when generating a first key fails", async () => {
+  it("toasts when generating a first key fails", async () => {
     const user = userEvent.setup();
-    vi.mocked(useApiKey).mockReturnValue({ data: { exists: false } } as any);
-    mockGenerateMutateAsync.mockRejectedValue(new Error("nope"));
+    givenApiKey(NO_KEY);
+    server.use(http.post(API_KEY_PATH, () => json(500, { error: "nope" })));
+    renderWithProviders(<ApiKeySection />);
 
-    render(<ApiKeySection />);
-    await user.click(screen.getByText("Generate API Key"));
+    await user.click(await screen.findByRole("button", { name: "Generate API Key" }));
 
-    expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error", description: expect.stringMatching(/could not be generated/i) }));
-    expect(screen.getByText("Generate API Key")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error", description: expect.stringMatching(/could not be generated/i) })),
+    );
+    expect(screen.getByRole("button", { name: "Generate API Key" })).toBeEnabled();
     expect(screen.queryByText(/won't be shown again/i)).not.toBeInTheDocument();
   });
 
-  it("should toast and close the dialog when regenerating fails", async () => {
+  it("toasts and closes the dialog when regenerating fails", async () => {
     const user = userEvent.setup();
-    vi.mocked(useApiKey).mockReturnValue({
-      data: { exists: true, suffix: "wxyz", createdAt: "2026-08-01T12:00:00Z" },
-    } as any);
-    mockGenerateMutateAsync.mockRejectedValue(new Error("nope"));
+    givenApiKey(buildApiKeyMetadata());
+    server.use(http.post(API_KEY_PATH, () => json(500, { error: "nope" })));
+    renderWithProviders(<ApiKeySection />);
 
-    render(<ApiKeySection />);
-    await user.click(screen.getByText("Regenerate"));
-    await user.click(screen.getByTestId("confirm-dialog").querySelector("button")!);
+    await user.click(await screen.findByRole("button", { name: "Regenerate" }));
+    await user.click(confirmDialog().getByRole("button", { name: "Regenerate" }));
 
-    expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" }));
-    expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument();
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error" })));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     expect(screen.getByText("sk-…wxyz")).toBeInTheDocument();
   });
 
-  it("should toast and close the dialog when revoking fails", async () => {
+  it("toasts and closes the dialog when revoking fails", async () => {
     const user = userEvent.setup();
-    vi.mocked(useApiKey).mockReturnValue({
-      data: { exists: true, suffix: "wxyz", createdAt: "2026-08-01T12:00:00Z" },
-    } as any);
-    mockRevokeMutateAsync.mockRejectedValue(new Error("nope"));
+    givenApiKey(buildApiKeyMetadata());
+    server.use(http.delete(API_KEY_PATH, () => json(500, { error: "nope" })));
+    renderWithProviders(<ApiKeySection />);
 
-    render(<ApiKeySection />);
-    await user.click(screen.getByText("Revoke"));
-    await user.click(screen.getByTestId("confirm-dialog").querySelector("button")!);
+    await user.click(await screen.findByRole("button", { name: "Revoke" }));
+    await user.click(confirmDialog().getByRole("button", { name: "Revoke" }));
 
-    expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error", description: expect.stringMatching(/could not be revoked/i) }));
-    expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ variant: "error", description: expect.stringMatching(/could not be revoked/i) })),
+    );
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(screen.getByText("sk-…wxyz")).toBeInTheDocument();
   });
 });

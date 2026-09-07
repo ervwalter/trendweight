@@ -1,171 +1,89 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { LocalDate } from "@js-joda/core";
+import { screen, within } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import type { Mode } from "@/lib/core/interfaces";
+import { buildDataPoint, buildProfileData, dailyDataPoints } from "@/test/fixtures";
+import { renderWithDashboardData } from "@/test/render";
 import RecentReadings from "./recent-readings";
-import { useDashboardData } from "@/lib/dashboard/hooks";
-import { recentDate } from "@/lib/core/dates";
-import { formatMeasurement } from "@/lib/core/numbers";
 
-// Mock the dependencies
-vi.mock("@/lib/dashboard/hooks", () => ({
-  useDashboardData: vi.fn(),
-}));
+// Three consecutive days, Mon Jan 1 to Wed Jan 3 2024, as buildDataPoint(date, trend, actual)
+const threeDays = [buildDataPoint("2024-01-01", 181.0, 180.5), buildDataPoint("2024-01-02", 180.8, 180.2), buildDataPoint("2024-01-03", 180.6, 179.8)];
 
-vi.mock("@/lib/core/dates", () => ({
-  recentDate: vi.fn(),
-}));
+const imperial = buildProfileData({ useMetric: false, trendAlgorithm: undefined });
 
-vi.mock("@/lib/core/numbers", () => ({
-  formatMeasurement: vi.fn(),
-}));
+const modeOf = (mode: Mode): [Mode, (mode: Mode) => void] => [mode, () => {}];
 
-const mockUseDashboardData = vi.mocked(useDashboardData);
-const mockRecentDate = vi.mocked(recentDate);
-const mockFormatMeasurement = vi.mocked(formatMeasurement);
+const headerTexts = () => screen.getAllByRole("columnheader").map((cell) => cell.textContent);
+
+// Each body row's cell texts, in column order
+const bodyRows = () => {
+  const [, body] = within(screen.getByRole("table")).getAllByRole("rowgroup");
+  return within(body)
+    .queryAllByRole("row")
+    .map((row) =>
+      within(row)
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent),
+    );
+};
 
 describe("RecentReadings", () => {
-  const mockDataPoints = [
-    {
-      date: LocalDate.of(2024, 1, 1),
-      actual: 180.5,
-      trend: 181.0,
-    },
-    {
-      date: LocalDate.of(2024, 1, 2),
-      actual: 180.2,
-      trend: 180.8,
-    },
-    {
-      date: LocalDate.of(2024, 1, 3),
-      actual: 179.8,
-      trend: 180.6,
-    },
-  ];
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseDashboardData.mockReturnValue({
-      dataPoints: mockDataPoints,
-      mode: ["weight", vi.fn()],
-      profile: { useMetric: false },
-    } as any);
-    mockRecentDate.mockImplementation((date) => date.toString());
-    mockFormatMeasurement.mockImplementation((value) => value.toString());
-  });
-
-  it("should render the heading with correct mode", () => {
-    render(<RecentReadings />);
+  it("lists the readings newest first with the actual and trend values under their headers", () => {
+    renderWithDashboardData(<RecentReadings />, { dataPoints: threeDays, profile: imperial });
 
     expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Recent Weight Readings");
+    expect(headerTexts()).toEqual(["Date", "Actual", "Trend"]);
+    expect(bodyRows()).toEqual([
+      ["Wed, Jan 3", "179.8", "180.6"],
+      ["Tue, Jan 2", "180.2", "180.8"],
+      ["Mon, Jan 1", "180.5", "181.0"],
+    ]);
   });
 
-  it("should render table headers", () => {
-    render(<RecentReadings />);
+  it("labels the trend column for an alternate trend algorithm", () => {
+    renderWithDashboardData(<RecentReadings />, { dataPoints: threeDays, profile: buildProfileData({ useMetric: false, trendAlgorithm: "holt" }) });
 
-    expect(screen.getByRole("columnheader", { name: "Date" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Actual" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Trend" })).toBeInTheDocument();
+    expect(headerTexts()).toEqual(["Date", "Actual", "Trend (Holt)"]);
   });
 
-  it("should label the trend column for an alternate trend algorithm", () => {
-    mockUseDashboardData.mockReturnValue({
-      dataPoints: mockDataPoints,
-      mode: ["weight", vi.fn()],
-      profile: { useMetric: false, trendAlgorithm: "holt" },
-    } as any);
-
-    render(<RecentReadings />);
-
-    expect(screen.getByRole("columnheader", { name: "Trend (Holt)" })).toBeInTheDocument();
-    expect(screen.queryByRole("columnheader", { name: "Trend" })).not.toBeInTheDocument();
-  });
-
-  it("should render all data points", () => {
-    render(<RecentReadings />);
-
-    // Check that all dates are rendered
-    expect(mockRecentDate).toHaveBeenCalledTimes(3);
-    expect(mockRecentDate).toHaveBeenCalledWith(LocalDate.of(2024, 1, 1));
-    expect(mockRecentDate).toHaveBeenCalledWith(LocalDate.of(2024, 1, 2));
-    expect(mockRecentDate).toHaveBeenCalledWith(LocalDate.of(2024, 1, 3));
-  });
-
-  it("should format measurements correctly", () => {
-    render(<RecentReadings />);
-
-    // Check actual values formatting
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(180.5, { type: "weight", metric: false, units: false });
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(180.2, { type: "weight", metric: false, units: false });
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(179.8, { type: "weight", metric: false, units: false });
-
-    // Check trend values formatting
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(181.0, { type: "weight", metric: false, units: false });
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(180.8, { type: "weight", metric: false, units: false });
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(180.6, { type: "weight", metric: false, units: false });
-  });
-
-  it("should handle metric units", () => {
-    mockUseDashboardData.mockReturnValue({
-      dataPoints: mockDataPoints.slice(0, 1),
-      mode: ["weight", vi.fn()],
-      profile: { useMetric: true },
-    } as any);
-
-    render(<RecentReadings />);
-
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(180.5, { type: "weight", metric: true, units: false });
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(181.0, { type: "weight", metric: true, units: false });
-  });
-
-  it("should handle different modes", () => {
-    mockUseDashboardData.mockReturnValue({
-      dataPoints: mockDataPoints.slice(0, 1),
-      mode: ["fatpercent", vi.fn()],
-      profile: { useMetric: false },
-    } as any);
-
-    render(<RecentReadings />);
+  it("shows fat percent readings as unitless percentages", () => {
+    renderWithDashboardData(<RecentReadings />, {
+      mode: modeOf("fatpercent"),
+      dataPoints: [buildDataPoint("2024-01-01", 0.251, 0.255)],
+      profile: imperial,
+    });
 
     expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Recent Fat % Readings");
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(180.5, { type: "fatpercent", metric: false, units: false });
-    expect(mockFormatMeasurement).toHaveBeenCalledWith(181.0, { type: "fatpercent", metric: false, units: false });
+    expect(bodyRows()).toEqual([["Mon, Jan 1", "25.5", "25.1"]]);
   });
 
-  it("should show last 14 readings in reverse order", () => {
-    const manyDataPoints = Array.from({ length: 20 }, (_, i) => ({
-      date: LocalDate.of(2024, 1, i + 1),
-      actual: 180 + i,
-      trend: 181 + i,
-    }));
+  it("shows metric readings to one decimal place without units", () => {
+    renderWithDashboardData(<RecentReadings />, {
+      dataPoints: [buildDataPoint("2024-01-01", 82.04, 81.96)],
+      profile: buildProfileData({ useMetric: true }),
+    });
 
-    mockUseDashboardData.mockReturnValue({
-      dataPoints: manyDataPoints,
-      mode: ["weight", vi.fn()],
-      profile: { useMetric: false },
-    } as any);
-
-    render(<RecentReadings />);
-
-    // Should call recentDate for the last 14 items in reverse order
-    expect(mockRecentDate).toHaveBeenCalledTimes(14);
-
-    // First call should be for the most recent date (day 20)
-    expect(mockRecentDate).toHaveBeenNthCalledWith(1, LocalDate.of(2024, 1, 20));
-    // Last call should be for day 7 (20 - 14 + 1)
-    expect(mockRecentDate).toHaveBeenNthCalledWith(14, LocalDate.of(2024, 1, 7));
+    expect(bodyRows()).toEqual([["Mon, Jan 1", "82.0", "82.0"]]);
   });
 
-  it("should handle empty data points", () => {
-    mockUseDashboardData.mockReturnValue({
-      dataPoints: [],
-      mode: ["weight", vi.fn()],
-      profile: { useMetric: false },
-    } as any);
+  it("shows only the last 14 readings", () => {
+    // Trends 180..199 from Jan 1 to Jan 20; the table keeps Jan 7..Jan 20
+    const twentyDays = dailyDataPoints(
+      "2024-01-01",
+      Array.from({ length: 20 }, (_, i) => 180 + i),
+    );
 
-    render(<RecentReadings />);
+    renderWithDashboardData(<RecentReadings />, { dataPoints: twentyDays, profile: imperial });
 
-    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Recent Weight Readings");
-    expect(mockRecentDate).not.toHaveBeenCalled();
-    expect(mockFormatMeasurement).not.toHaveBeenCalled();
+    const rows = bodyRows();
+    expect(rows).toHaveLength(14);
+    expect(rows[0]).toEqual(["Sat, Jan 20", "199.0", "199.0"]);
+    expect(rows[13]).toEqual(["Sun, Jan 7", "186.0", "186.0"]);
+  });
+
+  it("renders only the header row without data points", () => {
+    renderWithDashboardData(<RecentReadings />, { dataPoints: [], profile: imperial });
+
+    expect(headerTexts()).toEqual(["Date", "Actual", "Trend"]);
+    expect(bodyRows()).toEqual([]);
   });
 });

@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -7,6 +8,7 @@ using TrendWeight.Features.Profile.Models;
 using TrendWeight.Features.Profile.Services;
 using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Profile.Services;
@@ -17,7 +19,7 @@ public class LegacyMigrationServiceTests
     private readonly Mock<ILegacyDbService> _legacyDbServiceMock;
     private readonly Mock<IProviderLinkService> _providerLinkServiceMock;
     private readonly Mock<ISourceDataService> _sourceDataServiceMock;
-    private readonly Mock<ILogger<LegacyMigrationService>> _loggerMock;
+    private readonly CapturingLoggerProvider _logs = new();
     private readonly LegacyMigrationService _sut;
 
     public LegacyMigrationServiceTests()
@@ -26,14 +28,13 @@ public class LegacyMigrationServiceTests
         _legacyDbServiceMock = new Mock<ILegacyDbService>();
         _providerLinkServiceMock = new Mock<IProviderLinkService>();
         _sourceDataServiceMock = new Mock<ISourceDataService>();
-        _loggerMock = new Mock<ILogger<LegacyMigrationService>>();
 
         _sut = new LegacyMigrationService(
             _profileServiceMock.Object,
             _legacyDbServiceMock.Object,
             _providerLinkServiceMock.Object,
             _sourceDataServiceMock.Object,
-            _loggerMock.Object);
+            _logs.CreateLogger<LegacyMigrationService>());
     }
 
     #region CheckAndMigrateIfNeededAsync Tests
@@ -78,41 +79,133 @@ public class LegacyMigrationServiceTests
         var userId = Guid.NewGuid();
         var email = "test@example.com";
         var legacyProfile = CreateTestLegacyProfileWithMeasurements(email);
-        var expectedProfile = CreateTestDbProfile(userId, email);
 
         _legacyDbServiceMock.Setup(x => x.FindProfileByEmailAsync(email))
             .ReturnsAsync(legacyProfile);
-        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync(expectedProfile);
+        var created = CaptureCreatedProfile();
+        var stored = CaptureStoredSourceData();
 
         // Act
         var result = await _sut.CheckAndMigrateIfNeededAsync(userId, email);
 
         // Assert
         result.Should().NotBeNull();
-        result!.Profile.Should().BeEquivalentTo(expectedProfile.Profile);
+        result.Should().BeSameAs(created.Value);
+        created.Value!.Uid.Should().Be(userId);
+        created.Value.Email.Should().Be(email);
+        created.Value.Profile.FirstName.Should().Be("Test User");
+        created.Value.Profile.SharingToken.Should().Be("test-private-key");
+        created.Value.Profile.IsMigrated.Should().BeTrue();
 
         // Should only call FindProfileByEmailAsync once (performance optimization)
         _legacyDbServiceMock.Verify(x => x.FindProfileByEmailAsync(email), Times.Once);
         _profileServiceMock.Verify(x => x.CreateAsync(It.IsAny<DbProfile>()), Times.Once);
 
-        // Should migrate measurements
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
-            It.Is<Guid>(g => g == userId),
-            It.Is<List<SourceData>>(sd =>
-                sd != null &&
-                sd.Count == 1 &&
-                sd[0].Source == "legacy" &&
-                sd[0].Measurements != null &&
-                sd[0].Measurements.Count == 2)),
-            Times.Once);
-#pragma warning restore CS8602
+        // Should migrate measurements as-is under the legacy source
+        stored.UserId.Should().Be(userId);
+        var sourceData = stored.Value.Should().ContainSingle().Subject;
+        sourceData.Source.Should().Be("legacy");
+        sourceData.Measurements.Should().Equal(legacyProfile.Measurements);
     }
 
     #endregion
 
     #region MigrateLegacyProfileAsync Tests
+
+    [Fact]
+    public async Task MigrateLegacyProfileAsync_MapsEveryProfileField()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var legacyProfile = new LegacyProfile
+        {
+            Email = "old-address@example.com",
+            Username = "olduser",
+            FirstName = "Erin",
+            UseMetric = true,
+            StartDate = new DateTime(2023, 6, 15),
+            GoalWeight = 68.5m,
+            PlannedPoundsPerWeek = 0.5m,
+            DayStartOffset = -4,
+            PrivateUrlKey = "legacy-key",
+            DeviceType = null,
+            RefreshToken = null,
+            Measurements = new List<RawMeasurement>()
+        };
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync("legacy-key")).ReturnsAsync((DbProfile?)null);
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
+        var before = DateTime.UtcNow.AddSeconds(-1);
+
+        // Act
+        var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
+
+        // Assert
+        result.Uid.Should().Be(userId);
+        result.Email.Should().Be(email, "the new account's email wins over the legacy record");
+        result.Profile.FirstName.Should().Be("Erin");
+        result.Profile.UseMetric.Should().BeTrue();
+        result.Profile.GoalStart.Should().Be(new DateTime(2023, 6, 15));
+        result.Profile.GoalWeight.Should().Be(68.5m);
+        result.Profile.PlannedPoundsPerWeek.Should().Be(0.5m);
+        result.Profile.DayStartOffset.Should().Be(-4);
+        result.Profile.ShowCalories.Should().BeTrue();
+        result.Profile.SharingToken.Should().Be("legacy-key");
+        result.Profile.SharingEnabled.Should().BeTrue();
+        result.Profile.IsMigrated.Should().BeTrue();
+        result.Profile.IsNewlyMigrated.Should().BeTrue();
+        result.Profile.HideDataBeforeStart.Should().BeFalse();
+        result.Profile.TrendAlgorithm.Should().BeNull();
+
+        foreach (var stamp in new[] { result.CreatedAt, result.UpdatedAt })
+        {
+            var parsed = DateTime.Parse(stamp, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            parsed.Kind.Should().Be(DateTimeKind.Utc);
+            parsed.Should().BeOnOrAfter(before).And.BeOnOrBefore(DateTime.UtcNow);
+            parsed.ToString("o").Should().Be(stamp);
+        }
+    }
+
+    [Fact]
+    public async Task MigrateLegacyProfileAsync_WithAllNullLegacyFields_UsesDefaults()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var legacyProfile = new LegacyProfile
+        {
+            Email = email,
+            FirstName = null,
+            UseMetric = null,
+            StartDate = null,
+            GoalWeight = null,
+            PlannedPoundsPerWeek = null,
+            DayStartOffset = null,
+            PrivateUrlKey = null,
+            DeviceType = null,
+            RefreshToken = null,
+            Measurements = new List<RawMeasurement>()
+        };
+        _profileServiceMock.Setup(x => x.GenerateUniqueShareTokenAsync()).ReturnsAsync("generated-token");
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
+
+        // Act
+        var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
+
+        // Assert - unset legacy goals must stay unset; 0 means "maintain" in the settings contract
+        result.Profile.FirstName.Should().BeEmpty();
+        result.Profile.UseMetric.Should().BeFalse();
+        result.Profile.GoalStart.Should().BeNull();
+        result.Profile.GoalWeight.Should().BeNull();
+        result.Profile.PlannedPoundsPerWeek.Should().BeNull();
+        result.Profile.DayStartOffset.Should().Be(0);
+        result.Profile.SharingToken.Should().Be("generated-token");
+        result.Profile.ShowCalories.Should().BeTrue();
+        result.Profile.SharingEnabled.Should().BeTrue();
+        result.Profile.IsMigrated.Should().BeTrue();
+        result.Profile.IsNewlyMigrated.Should().BeTrue();
+        VerifyNoProviderLinkStored();
+    }
 
     [Theory]
     [InlineData(null)]
@@ -199,64 +292,57 @@ public class LegacyMigrationServiceTests
             RefreshToken = "test-refresh-token-123",
             Measurements = new List<RawMeasurement>()
         };
-        var expectedProfile = CreateTestDbProfile(userId, email);
 
-        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync(expectedProfile);
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
 
         // Act
         var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
 
         // Assert
-        result.Should().BeEquivalentTo(expectedProfile);
+        result.Uid.Should().Be(userId);
         _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
-            It.Is<Guid>(g => g == userId),
+            userId,
             "fitbit",
             It.Is<Dictionary<string, object>>(d =>
                 d.ContainsKey("refresh_token") &&
                 d["refresh_token"].ToString() == "test-refresh-token-123"),
-            It.IsAny<string>()),
+            null),
             Times.Once);
     }
 
     [Fact]
-    public async Task MigrateLegacyProfileAsync_WithWithingsDevice_CreatesProviderLink()
+    public async Task MigrateLegacyProfileAsync_WithWithingsDevice_StoresExpiredTokenMarker()
     {
-        // Arrange
+        // Arrange - the legacy site only kept a refresh token; the new link must force a refresh on first use
         var userId = Guid.NewGuid();
         var email = "test@example.com";
-        var legacyProfile = new LegacyProfile
-        {
-            Email = email,
-            FirstName = "Test User",
-            UseMetric = true,
-            StartDate = new DateTime(2024, 1, 1),
-            GoalWeight = 70.0m,
-            PlannedPoundsPerWeek = 0.5m,
-            DayStartOffset = 0,
-            PrivateUrlKey = "test-private-key",
-            DeviceType = "withings",
-            RefreshToken = "withings-refresh-token-456",
-            Measurements = new List<RawMeasurement>()
-        };
-        var expectedProfile = CreateTestDbProfile(userId, email);
+        var legacyProfile = CreateTestLegacyProfile(email);
+        legacyProfile.DeviceType = "Withings";
+        legacyProfile.RefreshToken = "withings-refresh-token-456";
 
-        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync(expectedProfile);
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
+        Dictionary<string, object>? stored = null;
+        _providerLinkServiceMock
+            .Setup(x => x.StoreProviderLinkAsync(userId, "withings", It.IsAny<Dictionary<string, object>>(), null))
+            .Callback<Guid, string, Dictionary<string, object>, string?>((_, _, token, _) => stored = token)
+            .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
+        await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
 
         // Assert
-        result.Should().BeEquivalentTo(expectedProfile);
-        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
-            It.Is<Guid>(g => g == userId),
-            "withings",
-            It.Is<Dictionary<string, object>>(d =>
-                d.ContainsKey("refresh_token") &&
-                d["refresh_token"].ToString() == "withings-refresh-token-456"),
-            It.IsAny<string>()),
-            Times.Once);
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(userId, "withings", It.IsAny<Dictionary<string, object>>(), null), Times.Once);
+        stored.Should().NotBeNull();
+        stored!.Keys.Should().BeEquivalentTo("refresh_token", "access_token", "token_type", "scope", "received_at", "expires_in");
+        stored["refresh_token"].Should().Be("withings-refresh-token-456");
+        stored["access_token"].Should().Be(string.Empty);
+        stored["token_type"].Should().Be("Bearer");
+        stored["scope"].Should().Be("user.metrics");
+        stored["received_at"].Should().Be(0L);
+        stored["expires_in"].Should().Be(3600);
+
+        var provider = new TestProviderService(Mock.Of<IProviderLinkService>(), Mock.Of<IProfileService>(), Mock.Of<ILogger>());
+        provider.IsExpired(stored).Should().BeTrue("the marker must trigger a refresh the first time the link is used");
     }
 
     [Fact]
@@ -279,22 +365,34 @@ public class LegacyMigrationServiceTests
             RefreshToken = null,
             Measurements = new List<RawMeasurement>()
         };
-        var expectedProfile = CreateTestDbProfile(userId, email);
 
-        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync(expectedProfile);
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
 
         // Act
         var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
 
         // Assert
-        result.Should().BeEquivalentTo(expectedProfile);
-        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
-            It.IsAny<Guid>(),
-            It.IsAny<string>(),
-            It.IsAny<Dictionary<string, object>>(),
-            It.IsAny<string>()),
-            Times.Never);
+        result.Uid.Should().Be(userId);
+        VerifyNoProviderLinkStored();
+    }
+
+    [Fact]
+    public async Task MigrateLegacyProfileAsync_WithDeviceButNoRefreshToken_DoesNotCreateProviderLink()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var legacyProfile = CreateTestLegacyProfile(email);
+        legacyProfile.DeviceType = "Withings";
+        legacyProfile.RefreshToken = "";
+
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
+
+        // Act
+        await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
+
+        // Assert
+        VerifyNoProviderLinkStored();
     }
 
     #endregion
@@ -350,6 +448,7 @@ public class LegacyMigrationServiceTests
 
         _legacyDbServiceMock.Setup(x => x.FindProfileByEmailAsync(email))
             .ReturnsAsync(legacyProfile);
+        var stored = CaptureStoredSourceData();
 
         // Act
         var result = await _sut.MigrateLegacyMeasurementsAsync(userId, email);
@@ -357,27 +456,18 @@ public class LegacyMigrationServiceTests
         // Assert
         result.Should().BeTrue();
 
-        // Verify measurements were transferred directly (no conversion needed as they're already in kg)
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
-            userId,
-            It.Is<List<SourceData>>(sd =>
-                sd != null &&
-                sd.Count == 1 &&
-                sd[0].Source == "legacy" &&
-                sd[0].Measurements != null &&
-                sd[0].Measurements.Count == 2 &&
-                sd[0].Measurements[0].Weight == 75.5m &&
-                sd[0].Measurements[1].Weight == 75.3m)),
-            Times.Once);
-#pragma warning restore CS8602
+        // Measurements are transferred directly (no conversion needed as they are already in kg)
+        stored.UserId.Should().Be(userId);
+        var sourceData = stored.Value.Should().ContainSingle().Subject;
+        sourceData.Source.Should().Be("legacy");
+        sourceData.Measurements.Should().Equal(legacyProfile.Measurements);
 
         // Verify legacy provider link was created
         _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
             userId,
             "legacy",
-            It.IsAny<Dictionary<string, object>>(),
-            It.IsAny<string>()),
+            It.Is<Dictionary<string, object>>(d => d.Count == 1 && Equals(d["disabled"], false)),
+            null),
             Times.Once);
     }
 
@@ -388,6 +478,7 @@ public class LegacyMigrationServiceTests
         var userId = Guid.NewGuid();
         var email = "test@example.com";
         var legacyProfile = CreateTestLegacyProfileWithMeasurements(email);
+        var stored = CaptureStoredSourceData();
 
         // Act - Pass the profile directly to avoid duplicate query
         var result = await _sut.MigrateLegacyMeasurementsAsync(userId, email, legacyProfile);
@@ -399,17 +490,10 @@ public class LegacyMigrationServiceTests
         _legacyDbServiceMock.Verify(x => x.FindProfileByEmailAsync(It.IsAny<string>()), Times.Never);
 
         // Should still migrate the measurements
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
-            userId,
-            It.Is<List<SourceData>>(sd =>
-                sd != null &&
-                sd.Count == 1 &&
-                sd[0].Source == "legacy" &&
-                sd[0].Measurements != null &&
-                sd[0].Measurements.Count == 2)),
-            Times.Once);
-#pragma warning restore CS8602
+        stored.UserId.Should().Be(userId);
+        var sourceData = stored.Value.Should().ContainSingle().Subject;
+        sourceData.Source.Should().Be("legacy");
+        sourceData.Measurements.Should().Equal(legacyProfile.Measurements);
     }
 
     #endregion
@@ -446,21 +530,56 @@ public class LegacyMigrationServiceTests
             .ReturnsAsync((DbProviderLink?)null);
         _legacyDbServiceMock.Setup(x => x.FindProfileByEmailAsync(email))
             .ReturnsAsync(legacyProfile);
+        var stored = CaptureStoredSourceData();
 
         // Act
         await _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, email);
 
         // Assert
         _legacyDbServiceMock.Verify(x => x.FindProfileByEmailAsync(email), Times.Once);
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
-            userId,
-            It.Is<List<SourceData>>(sd =>
-                sd != null &&
-                sd.Count == 1 &&
-                sd[0].Source == "legacy")),
-            Times.Once);
-#pragma warning restore CS8602
+        stored.UserId.Should().Be(userId);
+        var sourceData = stored.Value.Should().ContainSingle().Subject;
+        sourceData.Source.Should().Be("legacy");
+        sourceData.Measurements.Should().Equal(legacyProfile.Measurements);
+    }
+
+    [Fact]
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync_WhenLinkLookupThrows_LogsAndReturns()
+    {
+        // Arrange - a profile load must survive a failing legacy check
+        var userId = Guid.NewGuid();
+        var failure = new InvalidOperationException("provider_links unavailable");
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "legacy")).ThrowsAsync(failure);
+
+        // Act
+        var act = () => _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, "test@example.com");
+
+        // Assert
+        await act.Should().NotThrowAsync();
+        _logs.ShouldHaveLogged(LogLevel.Error, "Error checking/importing legacy data");
+        _logs.Entries.Should().ContainSingle(e => e.Level == LogLevel.Error).Which.Exception.Should().BeSameAs(failure);
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckAndMigrateLegacyDataIfNeededAsync_WhenImportThrows_LogsAndReturns()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var email = "test@example.com";
+        var failure = new InvalidOperationException("source_data write failed");
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "legacy")).ReturnsAsync((DbProviderLink?)null);
+        _legacyDbServiceMock.Setup(x => x.FindProfileByEmailAsync(email)).ReturnsAsync(CreateTestLegacyProfileWithMeasurements(email));
+        _sourceDataServiceMock.Setup(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>())).ThrowsAsync(failure);
+
+        // Act
+        var act = () => _sut.CheckAndMigrateLegacyDataIfNeededAsync(userId, email);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+        _logs.ShouldHaveLogged(LogLevel.Error, "Error checking/importing legacy data");
+        _logs.Entries.Should().ContainSingle(e => e.Level == LogLevel.Error).Which.Exception.Should().BeSameAs(failure);
+        VerifyNoProviderLinkStored();
     }
 
     #endregion
@@ -477,10 +596,11 @@ public class LegacyMigrationServiceTests
         _legacyDbServiceMock.Setup(x => x.FindProfileByEmailAsync(email))
             .ThrowsAsync(new Exception("Database connection failed"));
 
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(async () =>
-            await _sut.CheckAndMigrateIfNeededAsync(userId, email));
+        // Act
+        var act = () => _sut.CheckAndMigrateIfNeededAsync(userId, email);
 
+        // Assert
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database connection failed");
         _profileServiceMock.Verify(x => x.CreateAsync(It.IsAny<DbProfile>()), Times.Never);
         _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()), Times.Never);
     }
@@ -506,7 +626,7 @@ public class LegacyMigrationServiceTests
     }
 
     [Fact]
-    public async Task MigrateLegacyMeasurementsAsync_WithMalformedMeasurementData_HandlesGracefully()
+    public async Task MigrateLegacyMeasurementsAsync_PassesMeasurementsThroughWithoutValidation()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -539,21 +659,14 @@ public class LegacyMigrationServiceTests
 
         _legacyDbServiceMock.Setup(x => x.FindProfileByEmailAsync(email))
             .ReturnsAsync(legacyProfile);
+        var stored = CaptureStoredSourceData();
 
         // Act
         var result = await _sut.MigrateLegacyMeasurementsAsync(userId, email);
 
-        // Assert
-        result.Should().BeTrue(); // Should still migrate, measurements are passed as-is
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
-            userId,
-            It.Is<List<SourceData>>(sd =>
-                sd != null &&
-                sd.Count == 1 &&
-                sd[0].Source == "legacy" &&
-                sd[0].Measurements != null &&
-                sd[0].Measurements!.Count == 3)), // All measurements should be included, even malformed ones
-            Times.Once);
+        // Assert - every measurement is stored as-is, malformed ones included
+        result.Should().BeTrue();
+        stored.Value.Should().ContainSingle().Which.Measurements.Should().Equal(legacyProfile.Measurements);
     }
 
     [Fact]
@@ -567,16 +680,12 @@ public class LegacyMigrationServiceTests
         _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
             .ThrowsAsync(new Exception("Profile creation failed"));
 
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(async () =>
-            await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile));
+        // Act
+        var act = () => _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
 
-        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
-            It.IsAny<Guid>(),
-            It.IsAny<string>(),
-            It.IsAny<Dictionary<string, object>>(),
-            It.IsAny<string>()),
-            Times.Never); // Provider link should not be created if profile creation fails
+        // Assert - provider link should not be created if profile creation fails
+        await act.Should().ThrowAsync<Exception>().WithMessage("Profile creation failed");
+        VerifyNoProviderLinkStored();
     }
 
     [Fact]
@@ -592,16 +701,12 @@ public class LegacyMigrationServiceTests
         _sourceDataServiceMock.Setup(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()))
             .ThrowsAsync(new Exception("Failed to save measurements"));
 
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(async () =>
-            await _sut.MigrateLegacyMeasurementsAsync(userId, email));
+        // Act
+        var act = () => _sut.MigrateLegacyMeasurementsAsync(userId, email);
 
-        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
-            It.IsAny<Guid>(),
-            It.IsAny<string>(),
-            It.IsAny<Dictionary<string, object>>(),
-            It.IsAny<string>()),
-            Times.Never); // Provider link should not be created if measurements fail to save
+        // Assert - provider link should not be created if measurements fail to save
+        await act.Should().ThrowAsync<Exception>().WithMessage("Failed to save measurements");
+        VerifyNoProviderLinkStored();
     }
 
     [Fact]
@@ -614,12 +719,9 @@ public class LegacyMigrationServiceTests
         legacyProfile.RefreshToken = null; // No token to migrate
         legacyProfile.DeviceType = null; // No device to migrate
 
-        var expectedProfile = CreateTestDbProfile(userId, email);
-
         _legacyDbServiceMock.Setup(x => x.FindProfileByEmailAsync(email))
             .ReturnsAsync(legacyProfile);
-        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync(expectedProfile);
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
 
         // Act
         var result = await _sut.CheckAndMigrateIfNeededAsync(userId, email);
@@ -631,79 +733,21 @@ public class LegacyMigrationServiceTests
         _profileServiceMock.Verify(x => x.CreateAsync(It.IsAny<DbProfile>()), Times.Once);
 
         // Should migrate measurements even without device/token
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
-            It.Is<Guid>(g => g == userId),
-            It.IsAny<List<SourceData>>()),
-            Times.Once);
+        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()), Times.Once);
 
-        // Should create legacy provider link for measurements (separate from device provider link)
-        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
-            It.Is<Guid>(g => g == userId),
-            "legacy",
-            It.IsAny<Dictionary<string, object>>(),
-            It.IsAny<string>()),
-            Times.Once); // Legacy provider link is always created when measurements exist
+        // The legacy provider link is the only link created (separate from any device provider link)
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(userId, "legacy", It.IsAny<Dictionary<string, object>>(), null), Times.Once);
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
-    public async Task MigrateLegacyProfileAsync_WithEdgeCaseValues_MapsCorrectly()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var email = "test@example.com";
-        var legacyProfile = new LegacyProfile
-        {
-            Email = email,
-            FirstName = null, // Null first name
-            UseMetric = true,
-            StartDate = null, // Null start date
-            GoalWeight = null, // Null goal weight
-            PlannedPoundsPerWeek = null, // Null planned rate
-            DayStartOffset = null, // Null day offset
-            PrivateUrlKey = "", // Empty private key
-            DeviceType = "unknown", // Unknown device type (should not create provider link)
-            RefreshToken = "", // Empty refresh token
-            Measurements = new List<RawMeasurement>()
-        };
-        var expectedProfile = CreateTestDbProfile(userId, email);
-
-        DbProfile? createdProfile = null;
-        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
-            .Callback<DbProfile>(p => createdProfile = p)
-            .ReturnsAsync(expectedProfile);
-
-        // Act
-        var result = await _sut.MigrateLegacyProfileAsync(userId, email, legacyProfile);
-
-        // Assert
-        result.Should().BeEquivalentTo(expectedProfile);
-
-        // Unset legacy goals must stay unset; 0 means "maintain" in the settings contract
-        createdProfile.Should().NotBeNull();
-        createdProfile!.Profile.GoalWeight.Should().BeNull();
-        createdProfile.Profile.PlannedPoundsPerWeek.Should().BeNull();
-        createdProfile.Profile.GoalStart.Should().BeNull();
-        createdProfile.Profile.FirstName.Should().BeEmpty();
-        createdProfile.Profile.DayStartOffset.Should().Be(0);
-
-        // Should not create provider link for unknown device type or empty token
-        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
-            It.IsAny<Guid>(),
-            It.IsAny<string>(),
-            It.IsAny<Dictionary<string, object>>(),
-            It.IsAny<string>()),
-            Times.Never);
-    }
-
-    [Fact]
-    public async Task MigrateLegacyMeasurementsAsync_WithVeryLargeMeasurementSet_HandlesEfficiently()
+    public async Task MigrateLegacyMeasurementsAsync_WithLargeSet_PassesEveryMeasurementThrough()
     {
         // Arrange
         var userId = Guid.NewGuid();
         var email = "test@example.com";
         var legacyProfile = CreateTestLegacyProfile(email);
 
-        // Create 10000 measurements to test performance/memory handling
         legacyProfile.Measurements = new List<RawMeasurement>();
         for (int i = 0; i < 10000; i++)
         {
@@ -718,26 +762,65 @@ public class LegacyMigrationServiceTests
 
         _legacyDbServiceMock.Setup(x => x.FindProfileByEmailAsync(email))
             .ReturnsAsync(legacyProfile);
+        var stored = CaptureStoredSourceData();
 
         // Act
         var result = await _sut.MigrateLegacyMeasurementsAsync(userId, email);
 
         // Assert
         result.Should().BeTrue();
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
-            userId,
-            It.Is<List<SourceData>>(sd =>
-                sd != null &&
-                sd.Count == 1 &&
-                sd[0].Source == "legacy" &&
-                sd[0].Measurements != null &&
-                sd[0].Measurements!.Count == 10000)), // All measurements should be migrated
-            Times.Once);
+        var measurements = stored.Value.Should().ContainSingle().Which.Measurements;
+        measurements.Should().HaveCount(10000);
+        measurements.First().Should().Be(new RawMeasurement { Date = "2024-01-01", Time = "08:00:00", Weight = 75.0m, FatRatio = 0.25m });
+        measurements.Last().Should().Be(new RawMeasurement { Date = "2024-01-10", Time = "08:00:00", Weight = 75.9m, FatRatio = 0.29m });
+        measurements.Should().Equal(legacyProfile.Measurements);
     }
 
     #endregion
 
     #region Helper Methods
+
+    private sealed class Captured<T>
+    {
+        public Guid UserId { get; set; }
+        public T? Value { get; set; }
+    }
+
+    /// <summary>Stubs CreateAsync to echo the profile it is given and records that profile.</summary>
+    private Captured<DbProfile> CaptureCreatedProfile()
+    {
+        var captured = new Captured<DbProfile>();
+        _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
+            .ReturnsAsync((DbProfile p) =>
+            {
+                captured.Value = p;
+                return p;
+            });
+        return captured;
+    }
+
+    private Captured<List<SourceData>> CaptureStoredSourceData()
+    {
+        var captured = new Captured<List<SourceData>>();
+        _sourceDataServiceMock.Setup(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()))
+            .Callback<Guid, List<SourceData>>((uid, data) =>
+            {
+                captured.UserId = uid;
+                captured.Value = data;
+            })
+            .Returns(Task.CompletedTask);
+        return captured;
+    }
+
+    private void VerifyNoProviderLinkStored()
+    {
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<string>(),
+            It.IsAny<Dictionary<string, object>>(),
+            It.IsAny<string?>()),
+            Times.Never);
+    }
 
     private static LegacyProfile CreateTestLegacyProfile(string email)
     {
@@ -788,17 +871,9 @@ public class LegacyMigrationServiceTests
             Email = email,
             Profile = new ProfileData
             {
-                FirstName = "Test User",
-                UseMetric = false,
-                GoalStart = new DateTime(2024, 1, 1),
-                GoalWeight = 180.0m,
-                PlannedPoundsPerWeek = 1.0m,
-                DayStartOffset = -4,
-                ShowCalories = false,
-                SharingToken = "test-private-key",
-                SharingEnabled = true,
-                IsMigrated = true,
-                IsNewlyMigrated = true
+                FirstName = "Someone Else",
+                SharingToken = "taken-key",
+                SharingEnabled = true
             },
             CreatedAt = DateTime.UtcNow.ToString("o"),
             UpdatedAt = DateTime.UtcNow.ToString("o")

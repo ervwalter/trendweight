@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { Toaster } from "./sonner";
@@ -44,6 +44,13 @@ const TestComponent = () => {
   );
 };
 
+// Each toast renders as a list item inside the toaster list
+function toastContaining(text: string) {
+  const toast = screen.getAllByRole("listitem").find((item) => within(item).queryByText(text));
+  if (!toast) throw new Error(`No toast containing "${text}"`);
+  return toast;
+}
+
 describe("Toast System (Sonner)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -66,9 +73,9 @@ describe("Toast System (Sonner)", () => {
 
       await user.click(screen.getByTestId("show-themed"));
 
-      await waitFor(() => {
-        expect(screen.getByText(`Themed ${theme}`).closest("[data-sonner-toaster]")).toHaveAttribute("data-sonner-theme", theme);
-      });
+      await screen.findByText(`Themed ${theme}`);
+      // The toaster is the <ol> that carries the resolved theme
+      expect(screen.getByRole("list")).toHaveAttribute("data-sonner-theme", theme);
     });
   });
 
@@ -89,14 +96,12 @@ describe("Toast System (Sonner)", () => {
       await user.click(screen.getByTestId("show-toast"));
 
       // Toast should be visible with default styling
-      await waitFor(() => {
-        const defaultToast = screen.getByText("Test Title").closest("[data-sonner-toast]");
-        expect(defaultToast).toBeInTheDocument();
-        expect(screen.getByText("Test Description")).toBeInTheDocument();
-        // Default toasts should not have a data-type attribute
-        expect(defaultToast).not.toHaveAttribute("data-type", "success");
-        expect(defaultToast).not.toHaveAttribute("data-type", "error");
-      });
+      await screen.findByText("Test Title");
+      expect(screen.getByText("Test Description")).toBeInTheDocument();
+      const defaultToast = screen.getByRole("listitem");
+      // Default toasts should not have a data-type attribute
+      expect(defaultToast).not.toHaveAttribute("data-type", "success");
+      expect(defaultToast).not.toHaveAttribute("data-type", "error");
     });
 
     it("should handle different toast variants with appropriate styling", async () => {
@@ -113,21 +118,15 @@ describe("Toast System (Sonner)", () => {
 
       // Show success toast and verify it has success styling
       await user.click(screen.getByTestId("show-success"));
-      await waitFor(() => {
-        const successToast = screen.getByText("Success Toast").closest("[data-sonner-toast]");
-        expect(successToast).toBeInTheDocument();
-        // With richColors, sonner adds data-type attribute for styled variants
-        expect(successToast).toHaveAttribute("data-type", "success");
-      });
+      await screen.findByText("Success Toast");
+      // With richColors, sonner adds data-type attribute for styled variants
+      expect(toastContaining("Success Toast")).toHaveAttribute("data-type", "success");
 
       // Show error toast and verify it has error styling
       await user.click(screen.getByTestId("show-error"));
-      await waitFor(() => {
-        const errorToast = screen.getByText("Error Toast").closest("[data-sonner-toast]");
-        expect(errorToast).toBeInTheDocument();
-        // With richColors, sonner adds data-type attribute for styled variants
-        expect(errorToast).toHaveAttribute("data-type", "error");
-      });
+      await screen.findByText("Error Toast");
+      // With richColors, sonner adds data-type attribute for styled variants
+      expect(toastContaining("Error Toast")).toHaveAttribute("data-type", "error");
     });
   });
 

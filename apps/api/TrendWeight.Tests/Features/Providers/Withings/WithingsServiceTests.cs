@@ -1,119 +1,533 @@
+using System.Globalization;
+using System.Net;
+using System.Text.Json;
+using System.Web;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Moq.Protected;
-using System.Net;
-using System.Text;
-using System.Text.Json;
-using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Services;
+using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Features.Providers.Exceptions;
 using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.Providers.Withings;
-using TrendWeight.Features.Providers.Withings.Models;
-using TrendWeight.Features.ProviderLinks.Services;
 using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Tests.Fixtures;
 using Xunit;
+using static TrendWeight.Tests.Fixtures.WithingsPayloads;
 
 namespace TrendWeight.Tests.Features.Providers.Withings;
 
+/// <summary>
+/// WithingsService against the documented wire format: what it sends, how it reads
+/// measurement pages, and how it degrades when Withings sends something unexpected.
+/// Every provider payload comes from <see cref="WithingsPayloads"/>.
+/// </summary>
 public class WithingsServiceTests
 {
-    private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
-    private readonly HttpClient _httpClient;
-    private readonly Mock<IOptions<AppOptions>> _appOptionsMock;
-    private readonly Mock<IProviderLinkService> _providerLinkServiceMock;
-    private readonly Mock<IProfileService> _profileServiceMock;
-    private readonly Mock<ILogger<WithingsService>> _loggerMock;
+    private const string TokenUrl = "https://wbsapi.withings.net/v2/oauth2";
+    private const string MeasureUrl = "wbsapi.withings.net/measure";
+    private const string ClientId = "test-client-id";
+    private const string ClientSecret = "test-client-secret";
+    private const string Callback = "https://example.com/callback";
+
+    // 2024-01-01T08:00:00Z: 09:00 in Paris, 03:00 in New York
+    private const long Jan1_0800Utc = 1704096000;
+    private const long Jan1_1200Utc = 1704110400;
+    private const long Jan1_0700Utc = 1704092400;
+    private const long Jan2_0700Utc = 1704178800;
+    private const long Jan3_0700Utc = 1704265200;
+
+    private readonly RecordingHttpHandler _http = new();
+    private readonly CapturingLoggerProvider _logs = new();
+    private readonly Mock<IProviderLinkService> _providerLinkServiceMock = new();
     private readonly WithingsService _sut;
-    private readonly WithingsConfig _withingsConfig;
 
     public WithingsServiceTests()
     {
-        _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
-        _httpClient = new HttpClient(_httpMessageHandlerMock.Object)
+        var options = Options.Create(new AppOptions
         {
-            BaseAddress = new Uri("https://api.withings.com")
-        };
-
-        _withingsConfig = new WithingsConfig
-        {
-            ClientId = "test-client-id",
-            ClientSecret = "test-client-secret"
-        };
-
-        var appOptions = new AppOptions
-        {
-            Withings = _withingsConfig
-        };
-
-        _appOptionsMock = new Mock<IOptions<AppOptions>>();
-        _appOptionsMock.Setup(x => x.Value).Returns(appOptions);
-
-        _providerLinkServiceMock = new Mock<IProviderLinkService>();
-        _profileServiceMock = new Mock<IProfileService>();
-        _loggerMock = new Mock<ILogger<WithingsService>>();
+            Withings = new WithingsConfig { ClientId = ClientId, ClientSecret = ClientSecret }
+        });
 
         _sut = new WithingsService(
-            _httpClient,
-            _appOptionsMock.Object,
+            new HttpClient(_http),
+            options,
             _providerLinkServiceMock.Object,
-            _profileServiceMock.Object,
-            null, // ISyncProgressReporter
-            _loggerMock.Object);
+            Mock.Of<IProfileService>(),
+            null,
+            _logs.CreateLogger<WithingsService>());
+    }
+
+    #region Measurement parsing
+
+    [Theory]
+    [InlineData(79350, -3, "79.35")]
+    [InlineData(7935, -2, "79.35")]
+    [InlineData(80, 0, "80")]
+    public async Task SyncMeasurementsAsync_ScalesWeightByUnitExponent(int value, int unit, string expectedKg)
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas("UTC", [Group(1, Jan1_0800Utc, Measure(value, 1, unit))]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Measurements.Should().ContainSingle().Which.Weight.Should().Be(decimal.Parse(expectedKg, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(2265, -2)]
+    [InlineData(22650, -3)]
+    public async Task SyncMeasurementsAsync_ConvertsFatPercentToRatio(int value, int unit)
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas("UTC", [Group(1, Jan1_0800Utc, Weight79_35, Measure(value, 6, unit))]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        var measurement = result.Measurements.Should().ContainSingle().Subject;
+        measurement.Weight.Should().Be(79.35m);
+        measurement.FatRatio.Should().Be(0.2265m);
+    }
+
+    [Theory]
+    [InlineData("Europe/Paris", Jan1_0800Utc, "2024-01-01", "09:00:00")]
+    [InlineData("America/New_York", Jan1_1200Utc, "2024-01-01", "07:00:00")]
+    [InlineData("UTC", Jan1_0800Utc, "2024-01-01", "08:00:00")]
+    public async Task SyncMeasurementsAsync_ConvertsTimestampToLocalDateAndTime(string timezone, long unixDate, string expectedDate, string expectedTime)
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas(timezone, [Group(1, unixDate, Weight79_35)]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        var measurement = result.Measurements.Should().ContainSingle().Subject;
+        measurement.Date.Should().Be(expectedDate);
+        measurement.Time.Should().Be(expectedTime);
+    }
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_WithoutFatMeasure_LeavesFatRatioNull()
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas("UTC", [Group(1, Jan1_0800Utc, Weight79_35)]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Measurements.Should().ContainSingle().Which.FatRatio.Should().BeNull();
+    }
+
+    #endregion
+
+    #region Request shape
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_SendsDocumentedGetMeasQueryWithBearerToken()
+    {
+        var userId = LinkUser(ProviderTokens.Valid("bearer-abc"));
+        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        MeasurePage(null, GetMeas("UTC", []));
+
+        await _sut.SyncMeasurementsAsync(userId, true, startDate);
+
+        var request = _http.Requests.Should().ContainSingle().Subject;
+        request.Method.Should().Be(HttpMethod.Get);
+        request.Uri.GetLeftPart(UriPartial.Path).Should().Be("https://wbsapi.withings.net/measure");
+        request.AuthScheme.Should().Be("Bearer");
+        request.AuthParameter.Should().Be("bearer-abc");
+
+        var query = HttpUtility.ParseQueryString(request.Uri.Query);
+        query["action"].Should().Be("getmeas");
+        query["category"].Should().Be("1");
+        query["meastypes"].Should().Be("1,6");
+        query["startdate"].Should().Be(new DateTimeOffset(startDate).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));
+        query.AllKeys.Should().NotContain("offset");
+        _logs.ShouldNotMention("bearer-abc");
+    }
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_WithoutStartDate_RequestsAllTime()
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas("UTC", []));
+
+        await _sut.SyncMeasurementsAsync(userId, true);
+
+        var query = HttpUtility.ParseQueryString(_http.Requests.Single().Uri.Query);
+        query["startdate"].Should().Be("1");
+    }
+
+    #endregion
+
+    #region Pagination
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_FollowsOffsetsUntilMoreIsZero_AndReturnsDescending()
+    {
+        var userId = LinkUser();
+        // Page one is deliberately out of order to prove the page is sorted, and both
+        // pages are newer than the next so the concatenation is descending overall.
+        MeasurePage(null, GetMeas("UTC", [Group(1, Jan2_0700Utc, Measure(80000, 1, -3)), Group(2, Jan3_0700Utc, Measure(81000, 1, -3))], more: 1, offset: 42));
+        MeasurePage("42", GetMeas("UTC", [Group(3, Jan1_0700Utc, Measure(79000, 1, -3))], more: 1, offset: 77));
+        MeasurePage("77", GetMeas("UTC", []));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Provider.Should().Be("withings");
+        result.Measurements.Should().Equal(
+            new RawMeasurement { Date = "2024-01-03", Time = "07:00:00", Weight = 81m },
+            new RawMeasurement { Date = "2024-01-02", Time = "07:00:00", Weight = 80m },
+            new RawMeasurement { Date = "2024-01-01", Time = "07:00:00", Weight = 79m });
+        RequestedOffsets().Should().Equal(null, "42", "77");
+    }
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_WithEmptyMiddlePage_ContinuesPagination()
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas("UTC", [Group(1, Jan2_0700Utc, Weight79_35)], more: 1, offset: 42));
+        MeasurePage("42", GetMeas("UTC", [], more: 1, offset: 77));
+        MeasurePage("77", GetMeas("UTC", [Group(2, Jan1_0700Utc, Weight79_35)]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Measurements.Should().HaveCount(2);
+        RequestedOffsets().Should().Equal(null, "42", "77");
+    }
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_WithManyPages_FetchesEveryPageOnce()
+    {
+        const int pages = 10;
+        var userId = LinkUser();
+        _http.When(IsMeasureRequest, r =>
+        {
+            var offset = OffsetOf(r);
+            var page = offset == null ? 1 : int.Parse(offset, CultureInfo.InvariantCulture) + 1;
+            var group = Group(page, Jan1_0700Utc - (page - 1) * 86400, Weight79_35);
+            var json = page < pages
+                ? GetMeas("UTC", [group], more: 1, offset: page)
+                : GetMeas("UTC", [group]);
+            return RecordingHttpHandler.Json(HttpStatusCode.OK, json);
+        });
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Measurements.Should().HaveCount(pages);
+        RequestedOffsets().Should().Equal(Enumerable.Range(0, pages).Select(i => i == 0 ? null : i.ToString(CultureInfo.InvariantCulture)));
     }
 
     [Theory]
     [InlineData(null, 1)]
+    [InlineData(0, 2)]
     [InlineData(123, 2)]
     public async Task SyncMeasurementsAsync_WithInvalidPagination_FailsInsteadOfLooping(int? offset, int expectedCalls)
     {
-        var userId = Guid.NewGuid();
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(new DbProviderLink { Provider = "withings", Token = CreateValidToken() });
-        var calls = 0;
-        _httpMessageHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .Returns(() =>
-            {
-                calls++;
-                // Stop the old implementation after a finite number of responses.
-                var response = new WithingsResponse<WithingsGetMeasuresResponse>
-                {
-                    Status = 0,
-                    Body = new WithingsGetMeasuresResponse { More = calls <= 3 ? 1 : 0, Offset = offset }
-                };
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(JsonSerializer.Serialize(response))
-                });
-            });
+        var userId = LinkUser();
+        // more:1 with the same cursor forever; a null cursor is the fixture's more:1 page with offset removed
+        var page = offset is null
+            ? GetMeas("UTC", [], more: 1).Replace(",\"offset\":0", string.Empty, StringComparison.Ordinal)
+            : GetMeas("UTC", [], more: 1, offset: offset.Value);
+        _http.When(IsMeasureRequest, _ => RecordingHttpHandler.Json(HttpStatusCode.OK, page));
 
         var result = await _sut.SyncMeasurementsAsync(userId, true);
 
         result.Success.Should().BeFalse();
+        result.Error.Should().Be(ProviderSyncError.Unknown);
         result.Measurements.Should().BeNull();
-        calls.Should().Be(expectedCalls);
+        _http.Requests.Should().HaveCount(expectedCalls);
+    }
+
+    [Fact]
+    public async Task GetMeasurementsAsync_WhenLaterPageReportsAuthError_ThrowsProviderAuthException()
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas("UTC", [Group(1, Jan2_0700Utc, Weight79_35)], more: 1, offset: 42));
+        MeasurePage("42", Error(401, "Invalid access token"));
+
+        var act = () => _sut.GetMeasurementsAsync(userId, true);
+
+        await act.Should().ThrowAsync<ProviderAuthException>();
+        _http.Requests.Should().HaveCount(2);
+    }
+
+    #endregion
+
+    #region Resilience: tolerated payload shapes
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_IgnoresDocumentedFieldsItDoesNotUse()
+    {
+        var userId = LinkUser();
+        // Group() already carries hash_deviceid, modified and comment; measures gain algo and fm
+        var group = Group(1, Jan1_0800Utc,
+            Measure(79350, 1, -3, ",\"algo\":0,\"fm\":3"),
+            Measure(2265, 6, -2, ",\"algo\":0,\"fm\":3"));
+        MeasurePage(null, GetMeas("UTC", [group]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Measurements.Should().ContainSingle().Which.Should().Be(
+            new RawMeasurement { Date = "2024-01-01", Time = "08:00:00", Weight = 79.35m, FatRatio = 0.2265m });
+    }
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_WithoutTimezone_UsesUtcWithoutWarning()
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas(null, [Group(1, Jan1_0800Utc, Weight79_35)]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        var measurement = result.Measurements.Should().ContainSingle().Subject;
+        measurement.Date.Should().Be("2024-01-01");
+        measurement.Time.Should().Be("08:00:00");
+        _logs.ShouldNotHaveLogged(LogLevel.Warning);
+    }
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_SkipsGroupsWithoutWeight_AndKeepsTheRest()
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas("UTC",
+        [
+            Group(1, Jan2_0700Utc, Fat22_65),
+            Group(2, Jan1_0700Utc, Weight79_35)
+        ]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Measurements.Should().ContainSingle().Which.Should().Be(
+            new RawMeasurement { Date = "2024-01-01", Time = "07:00:00", Weight = 79.35m });
+    }
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_IgnoresUnknownMeasureTypes()
+    {
+        var userId = LinkUser();
+        var group = Group(1, Jan1_0800Utc,
+            Measure(50000, 5, -3),   // fat free mass
+            Measure(60000, 8, -3),   // fat mass weight
+            Measure(40000, 76, -3),  // muscle mass
+            Measure(30000, 77, -3),  // hydration
+            Measure(2000, 88, -3),   // bone mass
+            Weight79_35,
+            Fat22_65);
+        MeasurePage(null, GetMeas("UTC", [group]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Measurements.Should().ContainSingle().Which.Should().Be(
+            new RawMeasurement { Date = "2024-01-01", Time = "08:00:00", Weight = 79.35m, FatRatio = 0.2265m });
+    }
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_WithGroupMissingMeasuresArray_SkipsThatGroup()
+    {
+        var userId = LinkUser();
+        var groupWithoutMeasures = Group(1, Jan2_0700Utc).Replace("\"measures\":[],", string.Empty, StringComparison.Ordinal);
+        groupWithoutMeasures.Should().NotContain("measures", "the fixture must have been reshaped");
+        MeasurePage(null, GetMeas("UTC", [groupWithoutMeasures, Group(2, Jan1_0700Utc, Weight79_35)]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Measurements.Should().ContainSingle().Which.Weight.Should().Be(79.35m);
+    }
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_WithNoGroups_SucceedsWithZeroMeasurements()
+    {
+        var userId = LinkUser();
+        MeasurePage(null, GetMeas("UTC", []));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Error.Should().BeNull();
+        result.Measurements.Should().BeEmpty();
+    }
+
+    #endregion
+
+    #region Resilience: failures
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_WithSuccessStatusButNullBody_ReportsUnknownAfterSwallowingNullReference()
+    {
+        var userId = LinkUser();
+        // Not a shape the docs describe, so WithingsPayloads has no builder for it
+        MeasurePage(null, "{\"status\":0,\"body\":null}");
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(ProviderSyncError.Unknown);
+        result.Measurements.Should().BeNull();
+        // Current behaviour: body! dereferences null and the base class catch-all turns it into null
+        _logs.Entries.Should().Contain(e => e.Level == LogLevel.Error && e.Exception is NullReferenceException);
+        VerifyNothingStored();
+    }
+
+    [Theory]
+    [InlineData(401, "Unauthorized", ProviderSyncError.AuthFailed)]
+    [InlineData(601, "Same arguments in less than 10 seconds", ProviderSyncError.Unknown)]
+    [InlineData(2555, "Unknown error", ProviderSyncError.Unknown)]
+    public async Task SyncMeasurementsAsync_WithApiStatusInBody_MapsToSyncError(int status, string error, ProviderSyncError expected)
+    {
+        var userId = LinkUser();
+        MeasurePage(null, Error(status, error));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(expected);
+        result.Measurements.Should().BeNull();
+        VerifyNothingStored();
+    }
+
+    [Fact]
+    public async Task GetMeasurementsAsync_With503InvalidRefreshToken_ThrowsProviderAuthException()
+    {
+        var userId = LinkUser();
+        MeasurePage(null, Error(503, "Invalid Params: invalid refresh_token"));
+
+        var act = () => _sut.GetMeasurementsAsync(userId, true);
+
+        await act.Should().ThrowAsync<ProviderAuthException>().WithMessage("*invalid refresh_token*");
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Unauthorized, ProviderSyncError.AuthFailed)]
+    [InlineData(HttpStatusCode.TooManyRequests, ProviderSyncError.NetworkError)]
+    [InlineData(HttpStatusCode.ServiceUnavailable, ProviderSyncError.NetworkError)]
+    [InlineData(HttpStatusCode.InternalServerError, ProviderSyncError.Unknown)]
+    public async Task SyncMeasurementsAsync_WithHttpFailure_MapsStatusToSyncError(HttpStatusCode status, ProviderSyncError expected)
+    {
+        var userId = LinkUser();
+        _http.WhenUrlContains(MeasureUrl, status, Error((int)status, status.ToString()));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeFalse();
+        result.Error.Should().Be(expected);
+        result.Measurements.Should().BeNull();
+        _http.Requests.Should().ContainSingle("a failed page must not be retried in a loop");
+        VerifyNothingStored();
+    }
+
+    [Theory]
+    [MemberData(nameof(UnparseableBodies))]
+    public async Task SyncMeasurementsAsync_WithUnparseableBody_ReportsUnknown(string caseName, string body)
+    {
+        var userId = LinkUser();
+        MeasurePage(null, body);
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeFalse(caseName);
+        result.Error.Should().Be(ProviderSyncError.Unknown, caseName);
+        result.Measurements.Should().BeNull(caseName);
+        VerifyNothingStored();
+    }
+
+    public static TheoryData<string, string> UnparseableBodies => new()
+    {
+        { "empty body", string.Empty },
+        { "truncated JSON", GetMeas("UTC", [Group(1, Jan1_0800Utc, Weight79_35)])[..40] },
+        { "value as float", GetMeas("UTC", [Group(1, Jan1_0800Utc, Weight79_35.Replace("79350", "79350.0", StringComparison.Ordinal))]) }
+    };
+
+    #endregion
+
+    #region Authorization code exchange
+
+    [Fact]
+    public void ProviderName_ReturnsWithings()
+    {
+        _sut.ProviderName.Should().Be("withings");
+    }
+
+    [Fact]
+    public void GetAuthorizationUrl_ReturnsWithingsAuthorizeUrlWithEncodedCallback()
+    {
+        var result = _sut.GetAuthorizationUrl("test-state", Callback);
+
+        result.Should().StartWith("https://account.withings.com/oauth2_user/authorize2");
+        var query = HttpUtility.ParseQueryString(new Uri(result).Query);
+        query["client_id"].Should().Be(ClientId);
+        query["response_type"].Should().Be("code");
+        query["scope"].Should().Be("user.metrics");
+        query["state"].Should().Be("test-state");
+        query["redirect_uri"].Should().Be(Callback);
+    }
+
+    [Fact]
+    public async Task ExchangeAuthorizationCodeAsync_PostsDocumentedFormBody()
+    {
+        _http.WhenUrlContains(TokenUrl, HttpStatusCode.OK, Token());
+
+        var result = await _sut.ExchangeAuthorizationCodeAsync("auth-code-1", Callback, Guid.NewGuid());
+
+        result.Should().BeTrue();
+        var request = _http.Requests.Should().ContainSingle().Subject;
+        request.Method.Should().Be(HttpMethod.Post);
+        request.Uri.ToString().Should().Be(TokenUrl);
+        var form = HttpUtility.ParseQueryString(request.Body!);
+        form["action"].Should().Be("requesttoken");
+        form["grant_type"].Should().Be("authorization_code");
+        form["client_id"].Should().Be(ClientId);
+        form["client_secret"].Should().Be(ClientSecret);
+        form["code"].Should().Be("auth-code-1");
+        form["redirect_uri"].Should().Be(Callback);
+    }
+
+    [Fact]
+    public async Task ExchangeAuthorizationCodeAsync_StoresTokenInOurShape()
+    {
+        var userId = Guid.NewGuid();
+        _http.WhenUrlContains(TokenUrl, HttpStatusCode.OK, Token("acc-1", "ref-1", 10800));
+        Dictionary<string, object>? stored = null;
+        _providerLinkServiceMock
+            .Setup(x => x.StoreProviderLinkAsync(userId, "withings", It.IsAny<Dictionary<string, object>>(), null))
+            .Callback<Guid, string, Dictionary<string, object>, string?>((_, _, token, _) => stored = token)
+            .Returns(Task.CompletedTask);
+        var before = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        var result = await _sut.ExchangeAuthorizationCodeAsync("code", Callback, userId);
+
+        result.Should().BeTrue();
+        stored.Should().NotBeNull();
+        stored!.Keys.Should().BeEquivalentTo("access_token", "refresh_token", "token_type", "scope", "received_at", "expires_in");
+        stored["access_token"].Should().Be("acc-1");
+        stored["refresh_token"].Should().Be("ref-1");
+        stored["token_type"].Should().Be("Bearer");
+        stored["scope"].Should().Be("user.metrics");
+        stored["expires_in"].Should().Be(10800);
+        stored["received_at"].Should().BeOfType<long>().Which.Should().BeGreaterThanOrEqualTo(before);
     }
 
     [Fact]
     public async Task ExchangeAuthorizationCodeAsync_WithIncompleteToken_DoesNotStoreCredentials()
     {
-        _httpMessageHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("{\"status\":0,\"body\":{}}")
-            });
+        _http.WhenUrlContains(TokenUrl, HttpStatusCode.OK, Token(includeRefresh: false));
 
-        var act = () => _sut.ExchangeAuthorizationCodeAsync("code", "https://example.com/callback", Guid.NewGuid());
+        var act = () => _sut.ExchangeAuthorizationCodeAsync("code", Callback, Guid.NewGuid());
 
         await act.Should().ThrowAsync<JsonException>();
-        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(),
-            It.IsAny<Dictionary<string, object>>(), It.IsAny<string?>()), Times.Never);
+        VerifyNothingStored();
     }
 
     [Fact]
@@ -121,23 +535,13 @@ public class WithingsServiceTests
     {
         const string accessToken = "secret-access-token-never-log";
         const string refreshToken = "secret-refresh-token-never-log";
-        _httpMessageHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(new
-                {
-                    status = 0,
-                    body = new { access_token = accessToken, refresh_token = refreshToken, expires_in = 3600, token_type = "Bearer" }
-                }))
-            });
+        _http.WhenUrlContains(TokenUrl, HttpStatusCode.OK, Token(accessToken, refreshToken));
 
-        var result = await _sut.ExchangeAuthorizationCodeAsync("code", "https://example.com/callback", Guid.NewGuid());
+        var result = await _sut.ExchangeAuthorizationCodeAsync("code", Callback, Guid.NewGuid());
 
         result.Should().BeTrue();
-        _loggerMock.Verify(x => x.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((value, type) => value.ToString()!.Contains(accessToken) || value.ToString()!.Contains(refreshToken)),
-            It.IsAny<Exception>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Never);
+        _logs.ShouldNotMention(accessToken);
+        _logs.ShouldNotMention(refreshToken);
     }
 
     [Theory]
@@ -146,972 +550,60 @@ public class WithingsServiceTests
     [InlineData(2555, "Unknown error")]
     public async Task ExchangeAuthorizationCodeAsync_WhenWithingsRejectsCode_ThrowsInvalidCodeAsBadRequest(int status, string error)
     {
-        _httpMessageHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(new { status, error }))
-            });
+        _http.WhenUrlContains(TokenUrl, HttpStatusCode.OK, Error(status, error));
 
-        var act = () => _sut.ExchangeAuthorizationCodeAsync("stale-code", "https://example.com/callback", Guid.NewGuid());
+        var act = () => _sut.ExchangeAuthorizationCodeAsync("stale-code", Callback, Guid.NewGuid());
 
         var thrown = await act.Should().ThrowAsync<ProviderException>();
         thrown.Which.ErrorCode.Should().Be("INVALID_CODE");
         thrown.Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         thrown.Which.IsRetryable.Should().BeFalse();
+        VerifyNothingStored();
+    }
+
+    [Fact]
+    public async Task ExchangeAuthorizationCodeAsync_WhenDuplicateRequestAndLinkExists_ReturnsTrueWithoutStoring()
+    {
+        var userId = LinkUser();
+        _http.WhenUrlContains(TokenUrl, HttpStatusCode.OK, Error(601, "Same arguments in less than 10 seconds"));
+
+        var result = await _sut.ExchangeAuthorizationCodeAsync("reused-code", Callback, userId);
+
+        result.Should().BeTrue();
+        VerifyNothingStored();
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private Guid LinkUser(Dictionary<string, object>? token = null)
+    {
+        var userId = Guid.NewGuid();
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
+            .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "withings", Token = token ?? ProviderTokens.Valid() });
+        return userId;
+    }
+
+    private static bool IsMeasureRequest(HttpRequestMessage request)
+        => request.RequestUri!.ToString().Contains(MeasureUrl, StringComparison.Ordinal);
+
+    private static string? OffsetOf(HttpRequestMessage request)
+        => HttpUtility.ParseQueryString(request.RequestUri!.Query)["offset"];
+
+    /// <summary>Serves <paramref name="json"/> for the getmeas request carrying <paramref name="offset"/> (null for the first page).</summary>
+    private void MeasurePage(string? offset, string json)
+    {
+        _http.When(r => IsMeasureRequest(r) && OffsetOf(r) == offset, _ => RecordingHttpHandler.Json(HttpStatusCode.OK, json));
+    }
+
+    private IEnumerable<string?> RequestedOffsets()
+        => _http.Requests.Select(r => HttpUtility.ParseQueryString(r.Uri.Query)["offset"]);
+
+    private void VerifyNothingStored()
+    {
         _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(It.IsAny<Guid>(), It.IsAny<string>(),
             It.IsAny<Dictionary<string, object>>(), It.IsAny<string?>()), Times.Never);
-    }
-
-    #region Pagination Tests - Critical for Withings
-
-    [Fact]
-    public async Task GetMeasurementsAsync_WithMultiplePages_CorrectlyCombinesAllPages()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        // Setup first page response with more=1 and offset
-        var firstPageResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 0,
-            Body = new WithingsGetMeasuresResponse
-            {
-                UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                More = 1, // Indicates there are more pages
-                Offset = 12345, // Offset for next page
-                Timezone = "America/New_York",
-                MeasureGroups = new List<WithingsMeasureGroup>
-                {
-                    CreateMeasureGroup(1, DateTimeOffset.UtcNow.AddDays(-1), 75.0m),
-                    CreateMeasureGroup(2, DateTimeOffset.UtcNow.AddDays(-2), 75.5m)
-                }
-            }
-        };
-
-        // Setup second page response with more=1 and new offset
-        var secondPageResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 0,
-            Body = new WithingsGetMeasuresResponse
-            {
-                UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                More = 1, // Still more pages
-                Offset = 67890,
-                Timezone = "America/New_York",
-                MeasureGroups = new List<WithingsMeasureGroup>
-                {
-                    CreateMeasureGroup(3, DateTimeOffset.UtcNow.AddDays(-3), 76.0m),
-                    CreateMeasureGroup(4, DateTimeOffset.UtcNow.AddDays(-4), 76.5m)
-                }
-            }
-        };
-
-        // Setup third (final) page response with more=0
-        var thirdPageResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 0,
-            Body = new WithingsGetMeasuresResponse
-            {
-                UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                More = 0, // No more pages
-                Offset = 0,
-                Timezone = "America/New_York",
-                MeasureGroups = new List<WithingsMeasureGroup>
-                {
-                    CreateMeasureGroup(5, DateTimeOffset.UtcNow.AddDays(-5), 77.0m)
-                }
-            }
-        };
-
-        // Setup HTTP responses based on offset parameter
-        SetupPaginatedHttpResponses(firstPageResponse, secondPageResponse, thirdPageResponse);
-
-        // Act
-        var result = await _sut.GetMeasurementsAsync(userId, true);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(5); // All measurements from all pages
-        result![0].Weight.Should().Be(75.0m);
-        result[1].Weight.Should().Be(75.5m);
-        result[2].Weight.Should().Be(76.0m);
-        result[3].Weight.Should().Be(76.5m);
-        result[4].Weight.Should().Be(77.0m);
-
-        // Verify that exactly 3 API calls were made
-        _httpMessageHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Exactly(3),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri!.ToString().Contains("wbsapi.withings.net/measure")),
-            ItExpr.IsAny<CancellationToken>());
-
-        // Verify offset was passed correctly
-        _httpMessageHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Once(),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri!.ToString().Contains("offset=12345")),
-            ItExpr.IsAny<CancellationToken>());
-
-        _httpMessageHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Once(),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri!.ToString().Contains("offset=67890")),
-            ItExpr.IsAny<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task GetMeasurementsAsync_WithEmptyMiddlePage_ContinuesPagination()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        // First page has data
-        var firstPageResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 0,
-            Body = new WithingsGetMeasuresResponse
-            {
-                UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                More = 1,
-                Offset = 12345,
-                Timezone = "UTC",
-                MeasureGroups = new List<WithingsMeasureGroup>
-                {
-                    CreateMeasureGroup(1, DateTimeOffset.UtcNow.AddDays(-1), 75.0m)
-                }
-            }
-        };
-
-        // Second page is empty but indicates more pages
-        var emptyPageResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 0,
-            Body = new WithingsGetMeasuresResponse
-            {
-                UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                More = 1,
-                Offset = 67890,
-                Timezone = "UTC",
-                MeasureGroups = new List<WithingsMeasureGroup>()
-            }
-        };
-
-        // Third page has data and is final
-        var thirdPageResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 0,
-            Body = new WithingsGetMeasuresResponse
-            {
-                UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                More = 0,
-                Offset = 0,
-                Timezone = "UTC",
-                MeasureGroups = new List<WithingsMeasureGroup>
-                {
-                    CreateMeasureGroup(2, DateTimeOffset.UtcNow.AddDays(-5), 77.0m)
-                }
-            }
-        };
-
-        SetupPaginatedHttpResponses(firstPageResponse, emptyPageResponse, thirdPageResponse);
-
-        // Act
-        var result = await _sut.GetMeasurementsAsync(userId, true);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(2); // Only non-empty measurements
-        result![0].Weight.Should().Be(75.0m);
-        result[1].Weight.Should().Be(77.0m);
-
-        // Verify all 3 pages were fetched despite empty middle page
-        _httpMessageHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Exactly(3),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri!.ToString().Contains("wbsapi.withings.net/measure")),
-            ItExpr.IsAny<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task GetMeasurementsAsync_WithLargePaginatedDataset_HandlesCorrectly()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        // Simulate 10 pages of data
-        var pageCount = 0;
-        _httpMessageHandlerMock
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.RequestUri!.ToString().Contains("wbsapi.withings.net/measure")),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(() =>
-            {
-                pageCount++;
-                var isLastPage = pageCount >= 10;
-                var measurements = new List<WithingsMeasureGroup>();
-
-                // Each page has 5 measurements
-                for (int i = 0; i < 5; i++)
-                {
-                    var dayOffset = -((pageCount - 1) * 5 + i + 1);
-                    measurements.Add(CreateMeasureGroup(
-                        pageCount * 100 + i,
-                        DateTimeOffset.UtcNow.AddDays(dayOffset),
-                        70.0m + pageCount + (i * 0.1m)));
-                }
-
-                var response = new WithingsResponse<WithingsGetMeasuresResponse>
-                {
-                    Status = 0,
-                    Body = new WithingsGetMeasuresResponse
-                    {
-                        UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                        More = isLastPage ? 0 : 1,
-                        Offset = isLastPage ? 0 : pageCount * 1000,
-                        Timezone = "UTC",
-                        MeasureGroups = measurements
-                    }
-                };
-
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(JsonSerializer.Serialize(response), Encoding.UTF8, "application/json")
-                };
-            });
-
-        // Act
-        var result = await _sut.GetMeasurementsAsync(userId, true);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(50); // 10 pages × 5 measurements each
-
-        // Verify exactly 10 API calls were made
-        _httpMessageHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Exactly(10),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri!.ToString().Contains("wbsapi.withings.net/measure")),
-            ItExpr.IsAny<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task GetMeasurementsAsync_VerifiesFollowsAllPagesUntilMoreIsZero()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        // Track all offset values requested to ensure proper pagination
-        var requestedOffsets = new List<int?>();
-        var pageCount = 0;
-
-        _httpMessageHandlerMock
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.RequestUri!.ToString().Contains("wbsapi.withings.net/measure")),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync((HttpRequestMessage request, CancellationToken ct) =>
-            {
-                pageCount++;
-
-                // Extract offset from query string
-                var uri = request.RequestUri!;
-                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-                var offsetStr = query["offset"];
-                var offset = string.IsNullOrEmpty(offsetStr) ? (int?)null : int.Parse(offsetStr);
-                requestedOffsets.Add(offset);
-
-                // Create response based on page number
-                WithingsResponse<WithingsGetMeasuresResponse> response;
-
-                if (pageCount == 1)
-                {
-                    // First page - no offset should be provided
-                    response = new WithingsResponse<WithingsGetMeasuresResponse>
-                    {
-                        Status = 0,
-                        Body = new WithingsGetMeasuresResponse
-                        {
-                            UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                            More = 1,
-                            Offset = 12345, // Next offset
-                            Timezone = "UTC",
-                            MeasureGroups = new List<WithingsMeasureGroup>
-                            {
-                                CreateMeasureGroup(1, DateTimeOffset.UtcNow.AddDays(-1), 75.0m)
-                            }
-                        }
-                    };
-                }
-                else if (pageCount == 2)
-                {
-                    // Second page - should use offset 12345
-                    response = new WithingsResponse<WithingsGetMeasuresResponse>
-                    {
-                        Status = 0,
-                        Body = new WithingsGetMeasuresResponse
-                        {
-                            UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                            More = 1,
-                            Offset = 67890, // Next offset
-                            Timezone = "UTC",
-                            MeasureGroups = new List<WithingsMeasureGroup>
-                            {
-                                CreateMeasureGroup(2, DateTimeOffset.UtcNow.AddDays(-2), 76.0m)
-                            }
-                        }
-                    };
-                }
-                else
-                {
-                    // Third page - should use offset 67890 and indicate no more pages
-                    response = new WithingsResponse<WithingsGetMeasuresResponse>
-                    {
-                        Status = 0,
-                        Body = new WithingsGetMeasuresResponse
-                        {
-                            UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                            More = 0, // No more pages
-                            Offset = 0,
-                            Timezone = "UTC",
-                            MeasureGroups = new List<WithingsMeasureGroup>
-                            {
-                                CreateMeasureGroup(3, DateTimeOffset.UtcNow.AddDays(-3), 77.0m)
-                            }
-                        }
-                    };
-                }
-
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(JsonSerializer.Serialize(response), Encoding.UTF8, "application/json")
-                };
-            });
-
-        // Act
-        var result = await _sut.GetMeasurementsAsync(userId, true);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(3);
-
-        // Verify correct sequence of offset values
-        requestedOffsets.Should().HaveCount(3);
-        requestedOffsets[0].Should().BeNull(); // First request has no offset
-        requestedOffsets[1].Should().Be(12345); // Second request uses first page's offset
-        requestedOffsets[2].Should().Be(67890); // Third request uses second page's offset
-
-        // Verify exactly 3 API calls were made (stopped when more=0)
-        pageCount.Should().Be(3);
-    }
-
-    [Fact]
-    public async Task GetMeasurementsAsync_WithManyPages_HandlesLargeDatasets()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        var pageCount = 0;
-        const int maxPages = 20; // Simulate 20 pages of data
-
-        _httpMessageHandlerMock
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.RequestUri!.ToString().Contains("wbsapi.withings.net/measure")),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(() =>
-            {
-                pageCount++;
-
-                // Return more=0 on the last page
-                var isLastPage = pageCount >= maxPages;
-                var response = new WithingsResponse<WithingsGetMeasuresResponse>
-                {
-                    Status = 0,
-                    Body = new WithingsGetMeasuresResponse
-                    {
-                        UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                        More = isLastPage ? 0 : 1,
-                        Offset = isLastPage ? 0 : pageCount * 1000,
-                        Timezone = "UTC",
-                        MeasureGroups = new List<WithingsMeasureGroup>
-                        {
-                            CreateMeasureGroup(pageCount, DateTimeOffset.UtcNow.AddDays(-pageCount), 70.0m + pageCount)
-                        }
-                    }
-                };
-
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(JsonSerializer.Serialize(response), Encoding.UTF8, "application/json")
-                };
-            });
-
-        // Act
-        var result = await _sut.GetMeasurementsAsync(userId, true);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Count.Should().Be(maxPages);
-        pageCount.Should().Be(maxPages);
-    }
-
-    [Fact]
-    public async Task GetMeasurementsAsync_WhenPageFailsPartway_ThrowsException()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        var callCount = 0;
-
-        _httpMessageHandlerMock
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.RequestUri!.ToString().Contains("wbsapi.withings.net/measure")),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(() =>
-            {
-                callCount++;
-
-                if (callCount == 1)
-                {
-                    // First page succeeds
-                    var response = new WithingsResponse<WithingsGetMeasuresResponse>
-                    {
-                        Status = 0,
-                        Body = new WithingsGetMeasuresResponse
-                        {
-                            UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                            More = 1,
-                            Offset = 12345,
-                            Timezone = "UTC",
-                            MeasureGroups = new List<WithingsMeasureGroup>
-                            {
-                                CreateMeasureGroup(1, DateTimeOffset.UtcNow.AddDays(-1), 75.0m)
-                            }
-                        }
-                    };
-
-                    return new HttpResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new StringContent(JsonSerializer.Serialize(response), Encoding.UTF8, "application/json")
-                    };
-                }
-
-                // Second page fails with auth error
-                var errorResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-                {
-                    Status = 401,
-                    Error = "Invalid access token"
-                };
-
-                return new HttpResponseMessage(HttpStatusCode.OK) // Withings returns 200 with error in body
-                {
-                    Content = new StringContent(JsonSerializer.Serialize(errorResponse), Encoding.UTF8, "application/json")
-                };
-            });
-
-        // Act & Assert
-        await _sut.Invoking(x => x.GetMeasurementsAsync(userId, true))
-            .Should().ThrowAsync<ProviderAuthException>();
-
-        // Verify we made exactly 2 calls
-        callCount.Should().Be(2);
-    }
-
-    [Fact]
-    public async Task SyncMeasurementsAsync_WhenMeasureFetchReturnsHttp401_ReportsAuthFailed()
-    {
-        var userId = Guid.NewGuid();
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "withings", Token = CreateValidToken() });
-        _httpMessageHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Unauthorized) { Content = new StringContent("{}") });
-
-        var result = await _sut.SyncMeasurementsAsync(userId, true);
-
-        result.Success.Should().BeFalse();
-        result.Error.Should().Be(ProviderSyncError.AuthFailed);
-    }
-
-    [Theory]
-    [InlineData(HttpStatusCode.TooManyRequests)]
-    [InlineData(HttpStatusCode.ServiceUnavailable)]
-    public async Task SyncMeasurementsAsync_WhenProviderIsRateLimitedOrDown_ReportsRetryableNetworkError(HttpStatusCode status)
-    {
-        var userId = Guid.NewGuid();
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(new DbProviderLink { Uid = userId, Provider = "withings", Token = CreateValidToken() });
-        _httpMessageHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(status) { Content = new StringContent("busy") });
-
-        var result = await _sut.SyncMeasurementsAsync(userId, true);
-
-        result.Success.Should().BeFalse();
-        result.Error.Should().Be(ProviderSyncError.NetworkError);
-        result.Message.Should().Contain("try again");
-    }
-
-    [Fact]
-    public async Task GetMeasurementsAsync_With503InvalidRefreshToken_ThrowsProviderAuthException()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        // Setup response with 503 status and "invalid refresh_token" message
-        var errorResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 503,
-            Error = "Invalid Params: invalid refresh_token"
-        };
-
-        _httpMessageHandlerMock
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK) // Withings returns 200 with error in body
-            {
-                Content = new StringContent(JsonSerializer.Serialize(errorResponse), Encoding.UTF8, "application/json")
-            });
-
-        // Act & Assert
-        await _sut.Invoking(x => x.GetMeasurementsAsync(userId, true))
-            .Should().ThrowAsync<ProviderAuthException>()
-            .WithMessage("*invalid refresh_token*");
-    }
-
-    [Fact]
-    public async Task GetMeasurementsAsync_WithDateRange_PassesCorrectStartTimestamp()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        var expectedStartTimestamp = ((DateTimeOffset)startDate).ToUnixTimeSeconds();
-
-        long? capturedStartTime = null;
-
-        _httpMessageHandlerMock
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.RequestUri!.ToString().Contains("wbsapi.withings.net/measure")),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync((HttpRequestMessage request, CancellationToken ct) =>
-            {
-                // Capture the startdate from the request
-                var uri = request.RequestUri!;
-                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-
-                if (query["startdate"] != null)
-                    capturedStartTime = long.Parse(query["startdate"]!);
-
-                var response = new WithingsResponse<WithingsGetMeasuresResponse>
-                {
-                    Status = 0,
-                    Body = new WithingsGetMeasuresResponse
-                    {
-                        UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                        More = 0,
-                        Offset = 0,
-                        Timezone = "UTC",
-                        MeasureGroups = new List<WithingsMeasureGroup>
-                        {
-                            CreateMeasureGroup(1, DateTimeOffset.UtcNow.AddDays(-1), 75.0m)
-                        }
-                    }
-                };
-
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(JsonSerializer.Serialize(response), Encoding.UTF8, "application/json")
-                };
-            });
-
-        // Act
-        await _sut.GetMeasurementsAsync(userId, true, startDate);
-
-        // Assert
-        capturedStartTime.Should().NotBeNull();
-        capturedStartTime.Should().Be(expectedStartTimestamp);
-    }
-
-    #endregion
-
-    #region Other Important Tests
-
-    [Fact]
-    public void ProviderName_ReturnsWithings()
-    {
-        // Assert
-        _sut.ProviderName.Should().Be("withings");
-    }
-
-    [Fact]
-    public void GetAuthorizationUrl_ReturnsCorrectUrl()
-    {
-        // Arrange
-        var state = "test-state";
-        var callbackUrl = "https://example.com/callback";
-
-        // Act
-        var result = _sut.GetAuthorizationUrl(state, callbackUrl);
-
-        // Assert
-        result.Should().StartWith("https://account.withings.com/oauth2_user/authorize2");
-        result.Should().Contain($"client_id={_withingsConfig.ClientId}");
-        result.Should().Contain("response_type=code");
-        result.Should().Contain("scope=user.metrics");
-        result.Should().Contain($"state={state}");
-        result.Should().Contain("redirect_uri=");
-        // Verify the callback URL is encoded (case-insensitive check)
-        result.ToLower().Should().Contain(Uri.EscapeDataString(callbackUrl).ToLower());
-    }
-
-    [Fact]
-    public async Task ExchangeAuthorizationCodeAsync_WithValidCode_ReturnsTrue()
-    {
-        // Arrange
-        var code = "test-code";
-        var callbackUrl = "https://example.com/callback";
-        var userId = Guid.NewGuid();
-
-        var tokenResponse = new WithingsResponse<WithingsTokenResponse>
-        {
-            Status = 0,
-            Body = new WithingsTokenResponse
-            {
-                AccessToken = "test-access-token",
-                RefreshToken = "test-refresh-token",
-                TokenType = "Bearer",
-                ExpiresIn = 10800,
-                Scope = "user.metrics"
-            }
-        };
-
-        SetupHttpResponse("https://wbsapi.withings.net/v2/oauth2", tokenResponse);
-
-        // Act
-        var result = await _sut.ExchangeAuthorizationCodeAsync(code, callbackUrl, userId);
-
-        // Assert
-        result.Should().BeTrue();
-
-        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
-            userId,
-            "withings",
-            It.Is<Dictionary<string, object>>(d =>
-                d["access_token"].ToString() == "test-access-token" &&
-                d["refresh_token"].ToString() == "test-refresh-token" &&
-                d["token_type"].ToString() == "Bearer" &&
-                d["scope"].ToString() == "user.metrics" &&
-                d.ContainsKey("received_at") &&
-                d["expires_in"].ToString() == "10800"),
-            null),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task GetMeasurementsAsync_HandlesTimezoneProperly()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        // Create a measurement at a specific UTC time
-        var utcTimestamp = new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero).ToUnixTimeSeconds();
-
-        var measurementResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 0,
-            Body = new WithingsGetMeasuresResponse
-            {
-                UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                More = 0,
-                Offset = 0,
-                Timezone = "America/New_York", // UTC-5 in January
-                MeasureGroups = new List<WithingsMeasureGroup>
-                {
-                    new WithingsMeasureGroup
-                    {
-                        GroupId = 123456,
-                        Attribute = 0,
-                        Date = utcTimestamp,
-                        Created = utcTimestamp,
-                        Category = 1,
-                        Measures = new List<WithingsMeasure>
-                        {
-                            new WithingsMeasure
-                            {
-                                Value = 75000,
-                                Type = 1,
-                                Unit = -3
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        SetupHttpResponse("https://wbsapi.withings.net/measure", measurementResponse);
-
-        // Act
-        var result = await _sut.GetMeasurementsAsync(userId, true);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(1);
-
-        // The measurement should be converted to New York time
-        // 2024-01-01 12:00 UTC = 2024-01-01 07:00 EST
-        result![0].Date.Should().Be("2024-01-01");
-        result[0].Time.Should().Be("07:00:00");
-    }
-
-    [Fact]
-    public async Task SyncMeasurementsAsync_WithPaginatedData_SyncsAllPages()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        // Profile service is not used in sync
-
-        var token = CreateValidToken();
-        var providerLink = new DbProviderLink
-        {
-            Provider = "withings",
-            Token = token
-        };
-
-        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "withings"))
-            .ReturnsAsync(providerLink);
-
-        // Setup paginated responses
-        var firstPageResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 0,
-            Body = new WithingsGetMeasuresResponse
-            {
-                UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                More = 1,
-                Offset = 12345,
-                Timezone = "UTC",
-                MeasureGroups = CreateMeasureGroups(10) // 10 measurements
-            }
-        };
-
-        var secondPageResponse = new WithingsResponse<WithingsGetMeasuresResponse>
-        {
-            Status = 0,
-            Body = new WithingsGetMeasuresResponse
-            {
-                UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                More = 0,
-                Offset = 0,
-                Timezone = "UTC",
-                MeasureGroups = CreateMeasureGroups(5) // 5 measurements
-            }
-        };
-
-        SetupPaginatedHttpResponses(firstPageResponse, secondPageResponse);
-
-        // Act
-        var result = await _sut.SyncMeasurementsAsync(userId, true);
-
-        // Assert
-        result.Success.Should().BeTrue();
-        result.Provider.Should().Be("withings");
-        result.Measurements.Should().NotBeNull();
-        result.Measurements!.Count.Should().Be(15); // 10 from first page + 5 from second page
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    private Dictionary<string, object> CreateValidToken()
-    {
-        return new Dictionary<string, object>
-        {
-            ["access_token"] = "test-access-token",
-            ["refresh_token"] = "test-refresh-token",
-            ["received_at"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            ["expires_in"] = 10800
-        };
-    }
-
-    private WithingsMeasureGroup CreateMeasureGroup(long groupId, DateTimeOffset date, decimal weightKg)
-    {
-        return new WithingsMeasureGroup
-        {
-            GroupId = groupId,
-            Attribute = 0,
-            Date = date.ToUnixTimeSeconds(),
-            Created = date.ToUnixTimeSeconds(),
-            Category = 1,
-            Measures = new List<WithingsMeasure>
-            {
-                new WithingsMeasure
-                {
-                    Value = (int)(weightKg * 1000), // Convert kg to mg
-                    Type = 1, // Weight
-                    Unit = -3 // kg
-                }
-            }
-        };
-    }
-
-    private List<WithingsMeasureGroup> CreateMeasureGroups(int count)
-    {
-        var groups = new List<WithingsMeasureGroup>();
-        for (int i = 0; i < count; i++)
-        {
-            groups.Add(CreateMeasureGroup(
-                i + 1,
-                DateTimeOffset.UtcNow.AddDays(-(i + 1)),
-                70.0m + i * 0.5m));
-        }
-        return groups;
-    }
-
-    private void SetupHttpResponse<T>(string urlContains, T responseContent, HttpStatusCode statusCode = HttpStatusCode.OK)
-    {
-        var json = JsonSerializer.Serialize(responseContent);
-        var response = new HttpResponseMessage(statusCode)
-        {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
-        };
-
-        _httpMessageHandlerMock
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains(urlContains)),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(response);
-    }
-
-    private void SetupPaginatedHttpResponses(params WithingsResponse<WithingsGetMeasuresResponse>[] responses)
-    {
-        var callCount = 0;
-        _httpMessageHandlerMock
-            .Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.RequestUri!.ToString().Contains("wbsapi.withings.net/measure")),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(() =>
-            {
-                var response = responses[callCount];
-                callCount = Math.Min(callCount + 1, responses.Length - 1);
-
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(
-                        JsonSerializer.Serialize(response),
-                        Encoding.UTF8,
-                        "application/json")
-                };
-            });
     }
 
     #endregion

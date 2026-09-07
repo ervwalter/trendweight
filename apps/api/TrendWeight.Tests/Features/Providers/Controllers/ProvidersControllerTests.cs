@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Security.Claims;
@@ -16,18 +17,22 @@ using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
 using TrendWeight.Infrastructure.Configuration;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Providers.Controllers;
 
 public class ProvidersControllerTests
 {
+    // A realistic-looking bearer secret; nothing the controller logs may contain it.
+    private const string Code = "shr-secret-0123456789abc";
+
     private readonly Mock<IProviderLinkService> _providerLinkServiceMock;
     private readonly Mock<ISourceDataService> _sourceDataServiceMock;
     private readonly Mock<IProviderIntegrationService> _providerIntegrationServiceMock;
     private readonly Mock<IMeasurementSyncService> _measurementSyncServiceMock;
     private readonly Mock<IProfileService> _profileServiceMock;
-    private readonly Mock<ILogger<ProvidersController>> _loggerMock;
+    private readonly CapturingLoggerProvider _logs;
     private readonly FitbitConfig _fitbitConfig;
     private readonly ProvidersController _sut;
 
@@ -38,7 +43,7 @@ public class ProvidersControllerTests
         _providerIntegrationServiceMock = new Mock<IProviderIntegrationService>();
         _measurementSyncServiceMock = new Mock<IMeasurementSyncService>();
         _profileServiceMock = new Mock<IProfileService>();
-        _loggerMock = new Mock<ILogger<ProvidersController>>();
+        _logs = new CapturingLoggerProvider();
         _fitbitConfig = new FitbitConfig();
 
         _sut = new ProvidersController(
@@ -48,7 +53,18 @@ public class ProvidersControllerTests
             _measurementSyncServiceMock.Object,
             _profileServiceMock.Object,
             Options.Create(new AppOptions { Fitbit = _fitbitConfig }),
-            _loggerMock.Object);
+            _logs.CreateLogger<ProvidersController>());
+    }
+
+    /// <summary>
+    /// The controller downcasts to the concrete <see cref="LegacyService"/>, so the
+    /// real service is wired up and its behaviour driven through the link service mock.
+    /// </summary>
+    private LegacyService UseRealLegacyService()
+    {
+        var legacyService = new LegacyService(_providerLinkServiceMock.Object, NullLogger<LegacyService>.Instance);
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy")).Returns(legacyService);
+        return legacyService;
     }
 
     #region GetProviderLinks Tests
@@ -323,6 +339,39 @@ public class ProvidersControllerTests
         _sourceDataServiceMock.Verify(x => x.DeleteSourceDataAsync(userId, provider), Times.Once);
     }
 
+    [Fact]
+    public async Task DisconnectProvider_WhenSourceDataCleanupThrows_StillReportsSuccess()
+    {
+        // Arrange - the link is already gone by the time cleanup runs, so a failed
+        // cleanup is logged rather than reported as a failed disconnect
+        var userId = Guid.NewGuid();
+        var provider = "withings";
+        var providerService = new Mock<IProviderService>();
+        var cleanupFailure = new InvalidOperationException("source_data delete failed");
+
+        SetupAuthenticatedUser(userId.ToString());
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, provider))
+            .ReturnsAsync(CreateTestProviderLink(userId, provider));
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider))
+            .Returns(providerService.Object);
+        providerService.Setup(x => x.RemoveProviderLinkAsync(userId))
+            .ReturnsAsync(true);
+        _sourceDataServiceMock.Setup(x => x.DeleteSourceDataAsync(userId, provider))
+            .ThrowsAsync(cleanupFailure);
+
+        // Act
+        var result = await _sut.DisconnectProvider(provider);
+
+        // Assert
+        result.Result.Should().BeOfType<OkObjectResult>()
+            .Which.Value.Should().BeOfType<ProviderOperationResponse>()
+            .Which.Message.Should().Be("withings disconnected successfully");
+        providerService.Verify(x => x.RemoveProviderLinkAsync(userId), Times.Once);
+        _logs.Entries.Should().ContainSingle(e => e.Level == LogLevel.Error)
+            .Which.Should().Match<CapturingLoggerProvider.LogEntry>(e =>
+                e.Exception == cleanupFailure && e.Message.Contains("source data"));
+    }
+
     [Theory]
     [InlineData("invalid-provider")]
     [InlineData("unknown")]
@@ -343,9 +392,9 @@ public class ProvidersControllerTests
     }
 
     [Fact]
-    public async Task DisconnectProvider_WithLegacyProvider_ReturnsSuccess()
+    public async Task DisconnectProvider_ForLegacy_DoesNotDeleteSourceData()
     {
-        // Arrange
+        // Arrange - legacy readings survive a disconnect so the link can be re-enabled
         var userId = Guid.NewGuid();
         var provider = "legacy";
         var existingLink = CreateTestProviderLink(userId, provider);
@@ -366,8 +415,6 @@ public class ProvidersControllerTests
         var result = await _sut.DisconnectProvider(provider);
 
         // Assert
-        // This test will initially fail because we haven't implemented legacy support yet
-        // We expect it to succeed after implementation
         result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
@@ -472,17 +519,20 @@ public class ProvidersControllerTests
     #region EnableProvider Tests
 
     [Fact]
-    public async Task EnableProvider_WithLegacyProvider_ReturnsSuccess()
+    public async Task EnableProvider_WithLegacyProvider_ClearsDisabledFlagAndReturnsSuccess()
     {
-        // Arrange
+        // Arrange - a disabled legacy link; enabling rewrites the token with disabled = false
         var userId = Guid.NewGuid();
-        var legacyService = new Mock<LegacyService>(_providerLinkServiceMock.Object, new Mock<ILogger<LegacyService>>().Object);
-        legacyService.Setup(x => x.EnableProviderLinkAsync(userId))
-            .ReturnsAsync(true);
-
+        UseRealLegacyService();
         SetupAuthenticatedUser(userId.ToString());
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
-            .Returns(legacyService.Object);
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ReturnsAsync(new DbProviderLink
+            {
+                Uid = userId,
+                Provider = "legacy",
+                Token = new Dictionary<string, object> { { "disabled", true }, { "source", "legacy_import" } },
+                UpdatedAt = DateTime.UtcNow.ToString("O")
+            });
 
         // Act
         var result = await _sut.EnableProvider("legacy");
@@ -494,7 +544,11 @@ public class ProvidersControllerTests
         response.Message.Should().Contain("legacy");
         response.Message.Should().MatchRegex("enabled.*successfully", "message should indicate successful enable");
 
-        legacyService.Verify(x => x.EnableProviderLinkAsync(userId), Times.Once);
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
+            userId,
+            "legacy",
+            It.Is<Dictionary<string, object>>(t => Equals(t["disabled"], false) && Equals(t["source"], "legacy_import")),
+            It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
@@ -519,13 +573,10 @@ public class ProvidersControllerTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var legacyService = new Mock<LegacyService>(_providerLinkServiceMock.Object, new Mock<ILogger<LegacyService>>().Object);
-        legacyService.Setup(x => x.EnableProviderLinkAsync(userId))
-            .ReturnsAsync(false);
-
+        UseRealLegacyService();
         SetupAuthenticatedUser(userId.ToString());
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
-            .Returns(legacyService.Object);
+        _providerLinkServiceMock.Setup(x => x.GetProviderLinkAsync(userId, "legacy"))
+            .ReturnsAsync((DbProviderLink?)null);
 
         // Act
         var result = await _sut.EnableProvider("legacy");
@@ -535,30 +586,8 @@ public class ProvidersControllerTests
         var notFoundResult = result.Result.Should().BeOfType<NotFoundObjectResult>().Subject;
         var response = notFoundResult.Value.Should().BeOfType<ErrorResponse>().Subject;
         response.Error.Should().Be("No legacy connection found");
-    }
-
-    [Fact]
-    public async Task EnableProvider_WithAlreadyEnabledLink_ReturnsSuccess()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var legacyService = new Mock<LegacyService>(_providerLinkServiceMock.Object, new Mock<ILogger<LegacyService>>().Object);
-        legacyService.Setup(x => x.EnableProviderLinkAsync(userId))
-            .ReturnsAsync(true);
-
-        SetupAuthenticatedUser(userId.ToString());
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("legacy"))
-            .Returns(legacyService.Object);
-
-        // Act
-        var result = await _sut.EnableProvider("legacy");
-
-        // Assert
-        result.Should().NotBeNull();
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<ProviderOperationResponse>().Subject;
-        response.Message.Should().Contain("legacy");
-        response.Message.Should().MatchRegex("enabled.*successfully", "message should indicate successful enable");
+        _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<string?>()), Times.Never);
     }
 
     [Fact]
@@ -937,42 +966,64 @@ public class ProvidersControllerTests
     }
 
     [Fact]
-    public async Task GetProviderLinksBySharingCode_WhenUserNotFound_ReturnsNotFound()
+    public async Task GetProviderLinksBySharingCode_WhenUserNotFound_ReturnsNotFoundWithoutLoggingTheCode()
     {
         // Arrange
-        var sharingCode = "invalid-code";
-        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode))
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code))
             .ReturnsAsync((DbProfile?)null);
 
         // Act
-        var result = await _sut.GetProviderLinksBySharingCode(sharingCode);
+        var result = await _sut.GetProviderLinksBySharingCode(Code);
 
         // Assert
         result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Be("User not found");
+        _logs.ShouldHaveLogged(LogLevel.Warning, "sharing code");
+        _logs.ShouldNotMention(Code);
     }
 
     [Fact]
-    public async Task GetProviderLinksBySharingCode_WhenSharingDisabled_ReturnsNotFound()
+    public async Task GetProviderLinksBySharingCode_WhenSharingDisabled_ReturnsNotFoundWithoutLoggingTheCode()
     {
-        // Arrange
+        // Arrange - a disabled code can be re-enabled later, so it is still a secret
         var userId = Guid.NewGuid();
-        var sharingCode = "test-sharing-code";
         var user = CreateTestProfile(userId);
         user.Profile.SharingEnabled = false;
-        user.Profile.SharingToken = sharingCode;
+        user.Profile.SharingToken = Code;
 
-        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode))
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code))
             .ReturnsAsync(user);
 
         // Act
-        var result = await _sut.GetProviderLinksBySharingCode(sharingCode);
+        var result = await _sut.GetProviderLinksBySharingCode(Code);
 
         // Assert
         result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Be("User not found");
+        _providerLinkServiceMock.Verify(x => x.GetAllForUserAsync(It.IsAny<Guid>()), Times.Never);
+        _logs.ShouldHaveLogged(LogLevel.Warning, "sharing code");
+        _logs.ShouldNotMention(Code);
+    }
+
+    [Fact]
+    public async Task GetProviderLinksBySharingCode_WhenLookupThrows_ReturnsInternalServerErrorWithoutLoggingTheCode()
+    {
+        // Arrange
+        var failure = new InvalidOperationException("Database error");
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code))
+            .ThrowsAsync(failure);
+
+        // Act
+        var result = await _sut.GetProviderLinksBySharingCode(Code);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>()
+            .Which.StatusCode.Should().Be(500);
+        _logs.Entries.Should().ContainSingle(e => e.Level == LogLevel.Error)
+            .Which.Exception.Should().BeSameAs(failure);
+        _logs.ShouldNotMention(Code);
     }
 
     #endregion

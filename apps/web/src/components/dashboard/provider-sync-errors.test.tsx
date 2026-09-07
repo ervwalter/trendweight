@@ -15,12 +15,12 @@ vi.mock("./provider-sync-error", () => ({
 describe("ProviderSyncErrors", () => {
   it("should return null when providerStatus is undefined", () => {
     const { container } = render(<ProviderSyncErrors />);
-    expect(container.firstChild).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("should return null when providerStatus is empty", () => {
     const { container } = render(<ProviderSyncErrors providerStatus={{}} />);
-    expect(container.firstChild).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("should return null when all providers are successful", () => {
@@ -30,7 +30,7 @@ describe("ProviderSyncErrors", () => {
     };
 
     const { container } = render(<ProviderSyncErrors providerStatus={providerStatus} />);
-    expect(container.firstChild).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("should return null when providers have no error", () => {
@@ -40,7 +40,7 @@ describe("ProviderSyncErrors", () => {
     };
 
     const { container } = render(<ProviderSyncErrors providerStatus={providerStatus} />);
-    expect(container.firstChild).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("should render error for providers with errors", () => {

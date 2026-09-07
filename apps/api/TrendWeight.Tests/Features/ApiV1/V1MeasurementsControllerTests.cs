@@ -45,7 +45,7 @@ public class V1MeasurementsControllerTests
         };
         var computed = new List<ComputedMeasurement>
         {
-            Computed("2024-01-01"),
+            ComputedWithFat("2024-01-01"),
             Computed("2024-06-15"),
             Computed("2024-12-31")
         };
@@ -83,6 +83,7 @@ public class V1MeasurementsControllerTests
         return new MeasurementDataResult(profile, computed, sourceData, new Dictionary<string, ProviderSyncStatus>());
     }
 
+    /// <summary>A day with no fat reading: the four fat fields stay null.</summary>
     private static ComputedMeasurement Computed(string date)
     {
         return new ComputedMeasurement
@@ -90,8 +91,25 @@ public class V1MeasurementsControllerTests
             Date = date,
             ActualWeight = 80m,
             TrendWeight = 80.1m,
-            WeightIsInterpolated = false,
+            WeightIsInterpolated = true,
             FatIsInterpolated = false
+        };
+    }
+
+    /// <summary>A measured day with fat data; every value differs from its neighbour.</summary>
+    private static ComputedMeasurement ComputedWithFat(string date)
+    {
+        return new ComputedMeasurement
+        {
+            Date = date,
+            ActualWeight = 81.2m,
+            TrendWeight = 81.35m,
+            WeightIsInterpolated = false,
+            FatIsInterpolated = true,
+            ActualFatPercent = 0.221m,
+            TrendFatPercent = 0.2245m,
+            TrendFatMass = 18.263m,
+            TrendLeanMass = 63.087m
         };
     }
 
@@ -107,7 +125,30 @@ public class V1MeasurementsControllerTests
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var measurements = ok.Value.Should().BeAssignableTo<List<V1Measurement>>().Subject;
         measurements.Should().HaveCount(3);
-        measurements[0].TrendWeight.Should().Be(80.1m);
+        measurements[0].Should().BeEquivalentTo(new V1Measurement
+        {
+            Date = "2024-01-01",
+            ActualWeight = 81.2m,
+            TrendWeight = 81.35m,
+            WeightIsInterpolated = false,
+            FatIsInterpolated = true,
+            ActualFatPercent = 0.221m,
+            TrendFatPercent = 0.2245m,
+            TrendFatMass = 18.263m,
+            TrendLeanMass = 63.087m
+        });
+        measurements[1].Should().BeEquivalentTo(new V1Measurement
+        {
+            Date = "2024-06-15",
+            ActualWeight = 80m,
+            TrendWeight = 80.1m,
+            WeightIsInterpolated = true,
+            FatIsInterpolated = false,
+            ActualFatPercent = null,
+            TrendFatPercent = null,
+            TrendFatMass = null,
+            TrendLeanMass = null
+        });
     }
 
     [Fact]

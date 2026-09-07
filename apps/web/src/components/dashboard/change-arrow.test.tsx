@@ -22,38 +22,33 @@ describe("ChangeArrow", () => {
 
   describe("semantic meaning based on intended direction", () => {
     it("indicates neutral when no intended direction", () => {
-      const { container } = render(<ChangeArrow change={5} intendedDirection={0} />);
-      const arrow = container.querySelector("span");
-      expect(arrow).toHaveAttribute("aria-label", "Neutral change");
+      render(<ChangeArrow change={5} intendedDirection={0} />);
+      expect(screen.getByLabelText("Neutral change")).toBeInTheDocument();
     });
 
     it("indicates positive for positive change with positive intended direction", () => {
-      const { container } = render(<ChangeArrow change={5} intendedDirection={1} />);
-      const arrow = container.querySelector("span");
-      expect(arrow).toHaveAttribute("aria-label", "Positive change");
+      render(<ChangeArrow change={5} intendedDirection={1} />);
+      expect(screen.getByLabelText("Positive change")).toBeInTheDocument();
     });
 
     it("indicates negative for positive change with negative intended direction", () => {
-      const { container } = render(<ChangeArrow change={5} intendedDirection={-1} />);
-      const arrow = container.querySelector("span");
-      expect(arrow).toHaveAttribute("aria-label", "Negative change");
+      render(<ChangeArrow change={5} intendedDirection={-1} />);
+      expect(screen.getByLabelText("Negative change")).toBeInTheDocument();
     });
 
     it("indicates positive for negative change with negative intended direction", () => {
-      const { container } = render(<ChangeArrow change={-5} intendedDirection={-1} />);
-      const arrow = container.querySelector("span");
-      expect(arrow).toHaveAttribute("aria-label", "Positive change");
+      render(<ChangeArrow change={-5} intendedDirection={-1} />);
+      expect(screen.getByLabelText("Positive change")).toBeInTheDocument();
     });
 
     it("indicates negative for negative change with positive intended direction", () => {
-      const { container } = render(<ChangeArrow change={-5} intendedDirection={1} />);
-      const arrow = container.querySelector("span");
-      expect(arrow).toHaveAttribute("aria-label", "Negative change");
+      render(<ChangeArrow change={-5} intendedDirection={1} />);
+      expect(screen.getByLabelText("Negative change")).toBeInTheDocument();
     });
 
     it("renders nothing for zero change regardless of intended direction", () => {
       const { container } = render(<ChangeArrow change={0} intendedDirection={1} />);
-      expect(container.querySelector("span")).toBeNull();
+      expect(container).toBeEmptyDOMElement();
     });
   });
 

@@ -87,6 +87,28 @@ public class ManualMeasurementsControllerTests
         captured!.Time.Should().Be("23:59:59");
     }
 
+    [Fact]
+    public async Task UpsertReading_StoresRoundedValuesWithPlaceholderTime()
+    {
+        // Arrange - the form can submit more precision than is stored; weight keeps
+        // three decimals (grams) and the fat ratio four
+        RawMeasurement? storedReading = null;
+        _manualDataServiceMock.Setup(x => x.UpsertReadingAsync(_userId, It.IsAny<RawMeasurement>()))
+            .Callback<Guid, RawMeasurement>((_, r) => storedReading = r)
+            .ReturnsAsync((Guid _, RawMeasurement r) => r);
+
+        // Act
+        var result = await _sut.UpsertReading("2024-05-01", ValidRequest(weight: 80.12345m, fatRatio: 0.223456m));
+
+        // Assert
+        result.Result.Should().BeOfType<OkObjectResult>();
+        storedReading.Should().NotBeNull();
+        storedReading!.Date.Should().Be("2024-05-01");
+        storedReading.Time.Should().Be(ManualMeasurementValidation.StoredTime);
+        storedReading.Weight.Should().Be(80.123m);
+        storedReading.FatRatio.Should().Be(0.2235m);
+    }
+
     [Theory]
     [InlineData("not-a-date")]
     [InlineData("2024-13-01")]

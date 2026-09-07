@@ -67,7 +67,7 @@ describe("AdvancedSection trend algorithm setting", () => {
 
     fireEvent.click(screen.getByText("Use an alternate trend algorithm"));
 
-    expect(alternate).toHaveAttribute("aria-checked", "true");
+    expect(alternate).toBeChecked();
     expect(screen.getByText("Holt (standard)")).toBeInTheDocument();
   });
 

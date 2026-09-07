@@ -109,14 +109,10 @@ describe("chartOptionsTemplate", () => {
 
     it("should disable legend item click", () => {
       const options = chartOptionsTemplate();
-      const clickHandler = options.plotOptions?.series?.events?.legendItemClick;
+      const clickHandler = options.plotOptions?.series?.events?.legendItemClick as (() => boolean) | undefined;
 
-      expect(clickHandler).toBeDefined();
-      if (typeof clickHandler === "function") {
-        // The function returns false to prevent default legend item click behavior
-        const result = (clickHandler as any)();
-        expect(result).toBe(false);
-      }
+      // The handler returns false to prevent the default legend item click behavior
+      expect(clickHandler?.()).toBe(false);
     });
 
     it("should configure hover and inactive states", () => {

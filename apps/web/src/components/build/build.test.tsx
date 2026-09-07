@@ -1,195 +1,111 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useChangelog } from "@/lib/build/use-changelog";
+import { freezeClock } from "@/test/clock";
 import { Build } from "./build";
 
-// Mock environment variables
+// The changelog is fetched from GitHub; use-changelog has its own MSW-backed tests
+vi.mock("@/lib/build/use-changelog", () => ({ useChangelog: vi.fn() }));
 
-// Mock dependencies
-vi.mock("@/components/container", () => ({
-  Container: ({ children }: any) => <div data-testid="container">{children}</div>,
-}));
+const useChangelogMock = vi.mocked(useChangelog);
 
-vi.mock("@/components/common/heading", () => ({
-  Heading: ({ children, className, display }: any) => (
-    <h1 className={className} data-display={display}>
-      {children}
-    </h1>
-  ),
-}));
-
-vi.mock("./changelog-section", () => ({
-  ChangelogSection: ({ changelog, loadingChangelog, buildVersion }: any) => (
-    <div data-testid="changelog-section">
-      <div>Loading: {loadingChangelog ? "true" : "false"}</div>
-      <div>Version: {buildVersion}</div>
-      {changelog && <div>Changelog content</div>}
-    </div>
-  ),
-}));
-
-vi.mock("./quick-actions-section", () => ({
-  QuickActionsSection: ({ onCopyClick, copied, mailtoLink }: any) => (
-    <div data-testid="quick-actions">
-      <button onClick={onCopyClick}>Copy Debug Info</button>
-      <div>Copied: {copied ? "true" : "false"}</div>
-      <a href={mailtoLink}>Email Support</a>
-    </div>
-  ),
-}));
-
-vi.mock("./build-details-section", () => ({
-  BuildDetailsSection: (props: any) => (
-    <div data-testid="build-details">
-      <div>Environment: {props.environment}</div>
-      <div>Version: {props.buildVersion}</div>
-      <div>Branch: {props.buildBranch}</div>
-      <div>Commit: {props.buildCommit}</div>
-      <div>Time: {props.buildTime}</div>
-      {props.versionUrl && <a href={props.versionUrl}>Version Link</a>}
-      {props.commitUrl && <a href={props.commitUrl}>Commit Link</a>}
-    </div>
-  ),
-}));
-
-vi.mock("./browser-info-section", () => ({
-  BrowserInfoSection: ({ systemInfo }: any) => (
-    <div data-testid="browser-info">
-      <div>Browser: {systemInfo.browser}</div>
-      <div>OS: {systemInfo.os}</div>
-    </div>
-  ),
-}));
-
-vi.mock("@/lib/build/formatters", () => ({
-  formatBuildTime: (time: string) => {
-    if (time === "2024-01-15T10:30:45Z") {
-      return {
-        formatted: "January 15, 2024 at 10:30 AM",
-        relative: "2 days ago",
-      };
-    }
-    return time;
-  },
-}));
-
-vi.mock("@/lib/build/browser-info", () => ({
-  getBrowserInfo: () => ({
-    browser: "Chrome 120.0",
-    os: "macOS 14.0",
-    platform: "Mac",
-    userAgent: "Mozilla/5.0...",
-  }),
-}));
-
-vi.mock("@/lib/utils/debug-info", () => ({
-  getDebugInfo: () => "Debug Information:\nVersion: v2.0.0\nBrowser: Chrome 120.0",
-  getBuildInfo: () => ({
-    environment: "test",
-    buildVersion: "v2.0.0",
-    buildBranch: "main",
-    buildCommit: "abc123def456",
-    buildTime: "2024-01-15T10:30:45Z",
-    buildTimeInfo: null,
-  }),
-}));
-
-vi.mock("@/lib/build/use-changelog", () => ({
-  useChangelog: () => ({
-    changelog: "## v2.0.0\n- New features\n- Bug fixes",
-    loadingChangelog: false,
-  }),
-}));
+const REPO = "trendweight/trendweight";
+const GITHUB = `https://github.com/${REPO}`;
+const COMMIT = "abc123def456";
+const BUILD_TIME = "2024-01-15T10:30:45Z";
 
 describe("Build", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Set up environment variables - MODE is always 'test' in Vitest
-    vi.stubEnv("VITE_BUILD_TIME", "2024-01-15T10:30:45Z");
-    vi.stubEnv("VITE_BUILD_COMMIT", "abc123def456");
+    useChangelogMock.mockReturnValue({ changelog: "## v2.0.0\n- New features\n- Bug fixes", loadingChangelog: false });
+    // MODE is always "test" under Vitest; the rest of the build info comes from these
+    vi.stubEnv("VITE_BUILD_TIME", BUILD_TIME);
+    vi.stubEnv("VITE_BUILD_COMMIT", COMMIT);
     vi.stubEnv("VITE_BUILD_BRANCH", "main");
     vi.stubEnv("VITE_BUILD_VERSION", "v2.0.0");
-    vi.stubEnv("VITE_BUILD_REPO", "anthropics/trendweight");
+    vi.stubEnv("VITE_BUILD_REPO", REPO);
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
 
-  it("should render build information page", () => {
+  it("renders the page heading and explanation", () => {
     render(<Build />);
 
-    expect(screen.getByText("Build Information")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "This page contains technical information about the current build of TrendWeight. This information is useful when reporting issues or contacting support.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Build Information");
+    expect(screen.getByText(/This page contains technical information about the current build of TrendWeight/)).toBeInTheDocument();
   });
 
-  it("should display all build sections", () => {
+  it("links a tagged version to its release and the commit to GitHub", () => {
+    freezeClock("2024-01-17T12:00:00Z");
+
     render(<Build />);
 
-    expect(screen.getByTestId("changelog-section")).toBeInTheDocument();
-    expect(screen.getByTestId("quick-actions")).toBeInTheDocument();
-    expect(screen.getByTestId("build-details")).toBeInTheDocument();
-    expect(screen.getByTestId("browser-info")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "v2.0.0" })).toHaveAttribute("href", `${GITHUB}/releases/tag/v2.0.0`);
+    expect(screen.getByRole("link", { name: "abc123d" })).toHaveAttribute("href", `${GITHUB}/commit/${COMMIT}`);
+    expect(screen.getByRole("link", { name: REPO })).toHaveAttribute("href", GITHUB);
+    expect(screen.getByText("main")).toBeInTheDocument();
+    expect(screen.getByText("test")).toBeInTheDocument();
+    // Build age is relative to the frozen clock; the local time is whatever the browser formats
+    expect(screen.getByText("2 days ago")).toBeInTheDocument();
+    expect(screen.getByText(new Date(BUILD_TIME).toLocaleString())).toBeInTheDocument();
+    expect(useChangelogMock).toHaveBeenCalledWith("v2.0.0", REPO, true, GITHUB);
   });
 
-  it("should display build details correctly", () => {
+  it("shows a CI build number as plain text and asks for no changelog", () => {
+    vi.stubEnv("VITE_BUILD_VERSION", "build-42");
+
     render(<Build />);
 
-    const buildDetails = screen.getByTestId("build-details");
-    expect(buildDetails).toHaveTextContent("Environment: test");
-    expect(buildDetails).toHaveTextContent("Version: v2.0.0");
-    expect(buildDetails).toHaveTextContent("Branch: main");
-    expect(buildDetails).toHaveTextContent("Commit: abc123def456");
-    expect(buildDetails).toHaveTextContent("Time: 2024-01-15T10:30:45Z");
+    expect(screen.getByText("build-42")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "build-42" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "abc123d" })).toHaveAttribute("href", `${GITHUB}/commit/${COMMIT}`);
+    expect(useChangelogMock).toHaveBeenCalledWith("build-42", REPO, false, GITHUB);
   });
 
-  it("should generate GitHub URLs for tagged versions", () => {
+  it("shows a local build as plain text", () => {
+    vi.stubEnv("VITE_BUILD_VERSION", "local");
+
     render(<Build />);
 
-    expect(screen.getByText("Version Link")).toHaveAttribute("href", "https://github.com/anthropics/trendweight/releases/tag/v2.0.0");
-    expect(screen.getByText("Commit Link")).toHaveAttribute("href", "https://github.com/anthropics/trendweight/commit/abc123def456");
+    expect(screen.getByText("local")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "local" })).not.toBeInTheDocument();
+    expect(useChangelogMock).toHaveBeenCalledWith("local", REPO, false, GITHUB);
   });
 
-  it("should display browser information", () => {
+  it("reports every unset build variable as not available and links nothing", () => {
+    vi.stubEnv("VITE_BUILD_TIME", undefined);
+    vi.stubEnv("VITE_BUILD_COMMIT", undefined);
+    vi.stubEnv("VITE_BUILD_BRANCH", undefined);
+    vi.stubEnv("VITE_BUILD_VERSION", undefined);
+    vi.stubEnv("VITE_BUILD_REPO", undefined);
+
     render(<Build />);
 
-    const browserInfo = screen.getByTestId("browser-info");
-    expect(browserInfo).toHaveTextContent("Browser: Chrome 120.0");
-    expect(browserInfo).toHaveTextContent("OS: macOS 14.0");
+    // Build Time, Version, Branch and Commit
+    expect(screen.getAllByText("Not available")).toHaveLength(4);
+    expect(screen.queryByText("Repository")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual(["Email Support"]);
+    expect(useChangelogMock).toHaveBeenCalledWith("Not available", "", false, null);
   });
 
-  it("should show changelog when available", () => {
+  it("shows the changelog for the build", () => {
     render(<Build />);
 
-    const changelog = screen.getByTestId("changelog-section");
-    expect(changelog).toHaveTextContent("Loading: false");
-    expect(changelog).toHaveTextContent("Version: v2.0.0");
-    expect(changelog).toHaveTextContent("Changelog content");
+    expect(screen.getByRole("heading", { name: "Changelog for v2.0.0" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "v2.0.0" })).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["New features", "Bug fixes"]);
   });
 
-  it("should handle tag versions with version link", () => {
-    // Our mock returns v2.0.0 which is a tag version
+  it("shows a loading note while the changelog is fetched", () => {
+    useChangelogMock.mockReturnValue({ changelog: null, loadingChangelog: true });
+
     render(<Build />);
 
-    // Should have both version link and commit link for tag versions
-    expect(screen.getByText("Version Link")).toBeInTheDocument();
-    expect(screen.getByText("Commit Link")).toBeInTheDocument();
+    expect(screen.getByText("Loading changelog...")).toBeInTheDocument();
   });
 
-  it("should display version and commit links when repository info is available", () => {
-    // Our mock includes repository info (VITE_BUILD_REPO is set to "anthropics/trendweight")
-    render(<Build />);
-
-    // Should have GitHub links with repo
-    expect(screen.getByText("Version Link")).toBeInTheDocument();
-    expect(screen.getByText("Commit Link")).toBeInTheDocument();
-  });
-
-  it("copies the debug info and shows a confirmation that reverts after two seconds", async () => {
+  it("copies the build info and shows a confirmation that reverts after two seconds", async () => {
     vi.useFakeTimers();
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
@@ -197,28 +113,34 @@ describe("Build", () => {
       render(<Build />);
 
       await act(async () => {
-        fireEvent.click(screen.getByText("Copy Debug Info"));
+        fireEvent.click(screen.getByRole("button", { name: "Copy Build Info" }));
       });
 
-      expect(writeText).toHaveBeenCalledWith("Debug Information:\nVersion: v2.0.0\nBrowser: Chrome 120.0");
-      expect(screen.getByTestId("quick-actions")).toHaveTextContent("Copied: true");
+      expect(writeText).toHaveBeenCalledTimes(1);
+      const copied: string = writeText.mock.calls[0][0];
+      expect(copied).toContain("=== Build Information ===");
+      expect(copied).toContain("- Version: v2.0.0");
+      expect(copied).toContain(`- Commit: ${COMMIT}`);
+      expect(copied).toContain("=== System Information ===");
+      expect(screen.getByRole("button", { name: "Copied!" })).toBeInTheDocument();
 
       act(() => {
         vi.advanceTimersByTime(2000);
       });
 
-      expect(screen.getByTestId("quick-actions")).toHaveTextContent("Copied: false");
+      expect(screen.getByRole("button", { name: "Copy Build Info" })).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("should display email support link", () => {
+  it("prefills a support email with the build info", () => {
     render(<Build />);
 
-    const emailLink = screen.getByText("Email Support");
-    expect(emailLink).toHaveAttribute("href", expect.stringContaining("mailto:erv@ewal.net"));
-    expect(emailLink).toHaveAttribute("href", expect.stringContaining("subject=TrendWeight%20Support%20Request"));
-    expect(emailLink).toHaveAttribute("href", expect.stringContaining("Please%20describe%20your%20issue%20here"));
+    const href = screen.getByRole("link", { name: "Email Support" }).getAttribute("href") ?? "";
+    expect(href).toMatch(/^mailto:erv@ewal\.net\?subject=TrendWeight%20Support%20Request&body=/);
+    const body = decodeURIComponent(href.slice(href.indexOf("&body=") + "&body=".length));
+    expect(body).toContain("Please describe your issue here:");
+    expect(body).toContain("- Version: v2.0.0");
   });
 });

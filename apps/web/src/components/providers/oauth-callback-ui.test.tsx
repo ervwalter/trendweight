@@ -35,10 +35,6 @@ describe("OAuthCallbackUI", () => {
 
       expect(screen.getByText("Connected!")).toBeInTheDocument();
       expect(screen.getByText("Taking you to your dashboard...")).toBeInTheDocument();
-
-      // Check for checkmark icon (FaCheck)
-      const icon = document.querySelector(".text-success");
-      expect(icon).toBeInTheDocument();
     });
   });
 

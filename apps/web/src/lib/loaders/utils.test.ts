@@ -1,231 +1,227 @@
-import { QueryClient } from "@tanstack/react-query";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { redirect } from "@tanstack/react-router";
-import { ensureProfile, ensureProviderLinks } from "./utils";
+import { isRedirect } from "@tanstack/react-router";
+import { http } from "msw";
+import { describe, expect, it } from "vitest";
+import { ApiError } from "@/lib/api/client";
+import { queryKeys } from "@/lib/api/queries";
 import type { ProviderLink } from "@/lib/api/types";
+import type { GetToken } from "@/lib/auth/use-auth";
+import { TEST_TOKEN } from "@/test/auth";
+import { buildProfileResponse, buildProviderLink } from "@/test/fixtures";
+import { server } from "@/test/mocks/server";
+import { json, recordRequests } from "@/test/msw";
+import { createTestQueryClient } from "@/test/query-client";
+import { expectRedirect } from "@/test/routes";
+import { ensureProfile, ensureProviderLinks } from "./utils";
 
-// Mock dependencies
-vi.mock("@tanstack/react-router", () => ({
-  redirect: vi.fn(() => {
-    throw new Error("Redirect");
-  }),
-}));
+const getToken: GetToken = async () => TEST_TOKEN;
+// Shared dashboards are fetched anonymously
+const noToken: GetToken = async () => null;
 
-vi.mock("@/lib/api/queries", () => ({
-  queryOptions: {
-    providerLinks: vi.fn((sharingCode?: string) => ({
-      queryKey: ["providerLinks", sharingCode],
-    })),
-    profile: vi.fn((_getToken: unknown, sharingCode?: string) => ({
-      queryKey: ["profile", sharingCode],
-    })),
-  },
-}));
+// Resolves with whatever the promise rejects with (undefined when it resolves)
+const rejectionOf = (promise: Promise<unknown>) =>
+  promise.then(
+    () => undefined,
+    (error: unknown) => error,
+  );
 
 describe("ensureProfile", () => {
-  const mockRedirect = vi.mocked(redirect);
-  const nullTokenGetter = vi.fn().mockResolvedValue(null);
-  const mockGetToken = vi.fn().mockResolvedValue("mock-token");
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe("authenticated users", () => {
-    it("passes when the profile exists and is not newly migrated", async () => {
-      const client = new QueryClient();
-      const fetchQuery = vi.spyOn(client, "fetchQuery").mockResolvedValue({ user: { firstName: "Sam", isNewlyMigrated: false } });
+    it("passes when the profile exists, sending the bearer token and caching the response", async () => {
+      server.use(http.get("/api/profile", () => json(200, buildProfileResponse())));
+      const requests = recordRequests();
+      const client = createTestQueryClient();
 
-      await expect(ensureProfile(client, mockGetToken)).resolves.toBeUndefined();
+      await expect(ensureProfile(client, getToken)).resolves.toBeUndefined();
 
-      expect(fetchQuery).toHaveBeenCalledWith({ queryKey: ["profile", undefined] });
-      expect(mockRedirect).not.toHaveBeenCalled();
+      const calls = await requests.settled();
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ method: "GET", path: "/api/profile", headers: expect.objectContaining({ authorization: `Bearer ${TEST_TOKEN}` }) });
+      expect(client.getQueryData(queryKeys.profile())).toEqual(buildProfileResponse());
     });
 
-    it("redirects to initial setup when there is no profile yet", async () => {
-      const client = new QueryClient();
-      vi.spyOn(client, "fetchQuery").mockResolvedValue(null);
+    it("redirects to initial setup when the profile query normalises a 404 to null", async () => {
+      server.use(http.get("/api/profile", () => json(404, { error: "No profile" })));
+      const client = createTestQueryClient();
 
-      await expect(ensureProfile(client, mockGetToken)).rejects.toThrow("Redirect");
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/initial-setup", replace: true });
+      await expectRedirect(ensureProfile(client, getToken), { to: "/initial-setup", replace: true });
+
+      expect(client.getQueryData(queryKeys.profile())).toBeNull();
     });
 
-    it("redirects to the migration page for a newly migrated profile", async () => {
-      const client = new QueryClient();
-      // fetchQuery returns the raw ProfileResponse, so the flag lives under `user`
-      vi.spyOn(client, "fetchQuery").mockResolvedValue({ user: { firstName: "Sam", isNewlyMigrated: true } });
+    it("redirects to the migration page by reading the raw ProfileResponse that fetchQuery returns (select is not applied)", async () => {
+      server.use(http.get("/api/profile", () => json(200, buildProfileResponse({ user: { isNewlyMigrated: true } }))));
+      const client = createTestQueryClient();
 
-      await expect(ensureProfile(client, mockGetToken)).rejects.toThrow("Redirect");
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/migration", replace: true });
+      await expectRedirect(ensureProfile(client, getToken), { to: "/migration", replace: true });
+
+      // The cache holds the envelope, so the flag really is at profile.user.isNewlyMigrated
+      expect(client.getQueryData(queryKeys.profile())).toMatchObject({ user: { isNewlyMigrated: true } });
     });
 
-    it("surfaces server and network failures instead of redirecting", async () => {
-      const client = new QueryClient();
-      const failure = new Error("Internal Server Error");
-      vi.spyOn(client, "fetchQuery").mockRejectedValue(failure);
+    it("surfaces a server failure as an ApiError instead of redirecting", async () => {
+      server.use(http.get("/api/profile", () => json(500, { error: "Database unavailable" })));
 
-      await expect(ensureProfile(client, mockGetToken)).rejects.toBe(failure);
-      expect(mockRedirect).not.toHaveBeenCalled();
+      const failure = await rejectionOf(ensureProfile(createTestQueryClient(), getToken));
+
+      expect(failure).toBeInstanceOf(ApiError);
+      expect(failure).toMatchObject({ status: 500, message: "Database unavailable" });
+      expect(isRedirect(failure)).toBe(false);
     });
   });
 
   describe("shared dashboards", () => {
-    it("passes when the sharing code resolves to a profile", async () => {
-      const client = new QueryClient();
-      vi.spyOn(client, "fetchQuery").mockResolvedValue({ user: { firstName: "Sam" } });
+    it("fetches the encoded sharing code anonymously and caches it under the sharing code's key", async () => {
+      server.use(http.get("/api/profile/:code", () => json(200, buildProfileResponse({ isMe: false }))));
+      const requests = recordRequests();
+      const client = createTestQueryClient();
 
-      await expect(ensureProfile(client, nullTokenGetter, "abc123")).resolves.toBeUndefined();
-      expect(mockRedirect).not.toHaveBeenCalled();
+      await expect(ensureProfile(client, noToken, "abc d")).resolves.toBeUndefined();
+
+      const calls = await requests.settled();
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ method: "GET", path: "/api/profile/abc%20d" });
+      expect(calls[0].headers).not.toHaveProperty("authorization");
+      expect(client.getQueryData(queryKeys.profile("abc d"))).toEqual(buildProfileResponse({ isMe: false }));
+      expect(client.getQueryData(queryKeys.profile())).toBeUndefined();
     });
 
     it("redirects home when the sharing code is unknown", async () => {
-      const client = new QueryClient();
-      vi.spyOn(client, "fetchQuery").mockResolvedValue(null);
+      server.use(http.get("/api/profile/:code", () => json(404, { error: "Unknown sharing code" })));
+      const client = createTestQueryClient();
 
-      await expect(ensureProfile(client, nullTokenGetter, "abc123")).rejects.toThrow("Redirect");
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/", replace: true });
+      await expectRedirect(ensureProfile(client, noToken, "abc123"), { to: "/", replace: true });
+
+      expect(client.getQueryData(queryKeys.profile("abc123"))).toBeNull();
     });
 
-    it("surfaces server and network failures instead of silently redirecting home", async () => {
-      const client = new QueryClient();
-      const failure = new Error("Internal Server Error");
-      vi.spyOn(client, "fetchQuery").mockRejectedValue(failure);
+    it("surfaces a server failure as an ApiError instead of silently redirecting home", async () => {
+      server.use(http.get("/api/profile/:code", () => json(500, { error: "Database unavailable" })));
 
-      await expect(ensureProfile(client, nullTokenGetter, "abc123")).rejects.toBe(failure);
-      expect(mockRedirect).not.toHaveBeenCalled();
+      const failure = await rejectionOf(ensureProfile(createTestQueryClient(), noToken, "abc123"));
+
+      expect(failure).toBeInstanceOf(ApiError);
+      expect(failure).toMatchObject({ status: 500 });
+      expect(isRedirect(failure)).toBe(false);
+    });
+
+    it("makes no request for the demo dashboard", async () => {
+      const requests = recordRequests();
+
+      await expect(ensureProfile(createTestQueryClient(), noToken, "demo")).resolves.toBeUndefined();
+
+      expect(requests.calls).toEqual([]);
     });
   });
 });
 
 describe("ensureProviderLinks", () => {
-  const queryClient = new QueryClient();
-  const mockFetchQuery = vi.spyOn(queryClient, "fetchQuery");
-  const mockRedirect = vi.mocked(redirect);
-
-  const createProviderLink = (provider: string, isDisabled = false): ProviderLink => ({
-    provider,
-    connectedAt: "2024-01-01T00:00:00Z",
-    hasToken: true,
-    isDisabled,
-  });
-
-  const mockGetToken = vi.fn().mockResolvedValue("mock-token");
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockGetToken.mockResolvedValue("mock-token");
-  });
-
-  it("uses only the supplied account client", async () => {
-    const accountClient = new QueryClient();
-    const fetchQuery = vi.spyOn(accountClient, "fetchQuery").mockResolvedValue([createProviderLink("withings")]);
-    await ensureProviderLinks(accountClient, mockGetToken);
-    expect(fetchQuery).toHaveBeenCalledOnce();
-    expect(mockFetchQuery).not.toHaveBeenCalled();
-  });
+  // Link lists that do not count as a connected scale
+  const rejectedLinks: Array<[string, ProviderLink[]]> = [
+    ["no links", []],
+    ["only a legacy link", [buildProviderLink("legacy")]],
+    ["only disabled links", [buildProviderLink("withings", { isDisabled: true }), buildProviderLink("fitbit", { isDisabled: true })]],
+    ["only links without a token", [buildProviderLink("withings", { hasToken: false })]],
+  ];
+  // Link lists with at least one usable non-legacy provider
+  const acceptedLinks: Array<[string, ProviderLink[]]> = [
+    ["a legacy link and a connected provider", [buildProviderLink("legacy"), buildProviderLink("withings")]],
+    [
+      "one active provider among disabled and legacy links",
+      [buildProviderLink("fitbit", { isDisabled: true }), buildProviderLink("legacy"), buildProviderLink("withings")],
+    ],
+  ];
 
   describe("authenticated users", () => {
-    it("passes when user has non-legacy providers", async () => {
-      mockFetchQuery.mockResolvedValue([createProviderLink("withings"), createProviderLink("fitbit")]);
+    it("passes with a connected provider, sending the bearer token and caching the links", async () => {
+      const links = [buildProviderLink("withings")];
+      server.use(http.get("/api/providers/links", () => json(200, links)));
+      const requests = recordRequests();
+      const client = createTestQueryClient();
 
-      await ensureProviderLinks(queryClient, mockGetToken);
+      await expect(ensureProviderLinks(client, getToken)).resolves.toBeUndefined();
 
-      expect(mockRedirect).not.toHaveBeenCalled();
+      const calls = await requests.settled();
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({
+        method: "GET",
+        path: "/api/providers/links",
+        headers: expect.objectContaining({ authorization: `Bearer ${TEST_TOKEN}` }),
+      });
+      expect(client.getQueryData(queryKeys.providerLinks())).toEqual(links);
     });
 
-    it("passes when user has both legacy and non-legacy providers", async () => {
-      mockFetchQuery.mockResolvedValue([createProviderLink("withings"), createProviderLink("legacy")]);
+    it("redirects to /link when the links query normalises a 404 to an empty list", async () => {
+      server.use(http.get("/api/providers/links", () => json(404, { error: "No links" })));
+      const client = createTestQueryClient();
 
-      await ensureProviderLinks(queryClient, mockGetToken);
+      await expectRedirect(ensureProviderLinks(client, getToken), { to: "/link", replace: true });
 
-      expect(mockRedirect).not.toHaveBeenCalled();
+      expect(client.getQueryData(queryKeys.providerLinks())).toEqual([]);
     });
 
-    it("redirects to /link when user has no providers", async () => {
-      mockFetchQuery.mockResolvedValue([]);
+    it.each(rejectedLinks)("redirects to /link with %s", async (_description, links) => {
+      server.use(http.get("/api/providers/links", () => json(200, links)));
+      const client = createTestQueryClient();
 
-      await expect(ensureProviderLinks(queryClient, mockGetToken)).rejects.toThrow();
+      await expectRedirect(ensureProviderLinks(client, getToken), { to: "/link", replace: true });
 
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/link", replace: true });
+      expect(client.getQueryData(queryKeys.providerLinks())).toEqual(links);
     });
 
-    it("redirects to /link when user has only legacy provider", async () => {
-      mockFetchQuery.mockResolvedValue([createProviderLink("legacy")]);
+    it.each(acceptedLinks)("passes with %s", async (_description, links) => {
+      server.use(http.get("/api/providers/links", () => json(200, links)));
 
-      await expect(ensureProviderLinks(queryClient, mockGetToken)).rejects.toThrow();
-
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/link", replace: true });
-    });
-
-    it("redirects to /link when user has only disabled non-legacy providers", async () => {
-      mockFetchQuery.mockResolvedValue([createProviderLink("withings", true), createProviderLink("fitbit", true)]);
-
-      await expect(ensureProviderLinks(queryClient, mockGetToken)).rejects.toThrow();
-
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/link", replace: true });
-    });
-
-    it("redirects to /link when user has only providers without tokens", async () => {
-      mockFetchQuery.mockResolvedValue([{ ...createProviderLink("withings"), hasToken: false }]);
-
-      await expect(ensureProviderLinks(queryClient, mockGetToken)).rejects.toThrow();
-
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/link", replace: true });
-    });
-
-    it("passes when user has at least one active non-legacy provider", async () => {
-      mockFetchQuery.mockResolvedValue([
-        createProviderLink("withings"),
-        createProviderLink("fitbit", true), // disabled
-        createProviderLink("legacy"),
-      ]);
-
-      await ensureProviderLinks(queryClient, mockGetToken);
-
-      expect(mockRedirect).not.toHaveBeenCalled();
+      await expect(ensureProviderLinks(createTestQueryClient(), getToken)).resolves.toBeUndefined();
     });
   });
 
   describe("shared dashboards", () => {
-    const sharingCode = "test-sharing-code";
+    it("fetches the encoded sharing code's links anonymously and caches them under the sharing code's key", async () => {
+      const links = [buildProviderLink("withings")];
+      server.use(http.get("/api/providers/links/:code", () => json(200, links)));
+      const requests = recordRequests();
+      const client = createTestQueryClient();
 
-    it("passes for demo sharing code", async () => {
-      await ensureProviderLinks(queryClient, mockGetToken, "demo");
+      await expect(ensureProviderLinks(client, noToken, "abc d")).resolves.toBeUndefined();
 
-      expect(mockFetchQuery).not.toHaveBeenCalled();
-      expect(mockRedirect).not.toHaveBeenCalled();
+      const calls = await requests.settled();
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ method: "GET", path: "/api/providers/links/abc%20d" });
+      expect(calls[0].headers).not.toHaveProperty("authorization");
+      expect(client.getQueryData(queryKeys.providerLinks("abc d"))).toEqual(links);
+      expect(client.getQueryData(queryKeys.providerLinks())).toBeUndefined();
     });
 
-    it("passes when shared user has non-legacy providers", async () => {
-      mockFetchQuery.mockResolvedValue([createProviderLink("withings")]);
+    it("redirects home when the links query normalises a 404 to an empty list", async () => {
+      server.use(http.get("/api/providers/links/:code", () => json(404, { error: "Unknown sharing code" })));
+      const client = createTestQueryClient();
 
-      await ensureProviderLinks(queryClient, mockGetToken, sharingCode);
+      await expectRedirect(ensureProviderLinks(client, noToken, "abc123"), { to: "/", replace: true });
 
-      expect(mockRedirect).not.toHaveBeenCalled();
+      expect(client.getQueryData(queryKeys.providerLinks("abc123"))).toEqual([]);
     });
 
-    it("redirects to / when shared user has no providers", async () => {
-      mockFetchQuery.mockResolvedValue([]);
+    it.each(rejectedLinks)("redirects home with %s", async (_description, links) => {
+      server.use(http.get("/api/providers/links/:code", () => json(200, links)));
+      const client = createTestQueryClient();
 
-      await expect(ensureProviderLinks(queryClient, mockGetToken, sharingCode)).rejects.toThrow();
+      await expectRedirect(ensureProviderLinks(client, noToken, "abc123"), { to: "/", replace: true });
 
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/", replace: true });
+      expect(client.getQueryData(queryKeys.providerLinks("abc123"))).toEqual(links);
     });
 
-    it("redirects to / when shared user has only legacy provider", async () => {
-      mockFetchQuery.mockResolvedValue([createProviderLink("legacy")]);
+    it.each(acceptedLinks)("passes with %s", async (_description, links) => {
+      server.use(http.get("/api/providers/links/:code", () => json(200, links)));
 
-      await expect(ensureProviderLinks(queryClient, mockGetToken, sharingCode)).rejects.toThrow();
-
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/", replace: true });
+      await expect(ensureProviderLinks(createTestQueryClient(), noToken, "abc123")).resolves.toBeUndefined();
     });
 
-    it("redirects to / when shared user has only disabled providers", async () => {
-      mockFetchQuery.mockResolvedValue([createProviderLink("withings", true), createProviderLink("legacy")]);
+    it("makes no request for the demo dashboard", async () => {
+      const requests = recordRequests();
 
-      await expect(ensureProviderLinks(queryClient, mockGetToken, sharingCode)).rejects.toThrow();
+      await expect(ensureProviderLinks(createTestQueryClient(), noToken, "demo")).resolves.toBeUndefined();
 
-      expect(mockRedirect).toHaveBeenCalledWith({ to: "/", replace: true });
+      expect(requests.calls).toEqual([]);
     });
   });
 });

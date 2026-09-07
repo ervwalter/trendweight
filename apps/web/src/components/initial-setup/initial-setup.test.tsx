@@ -1,306 +1,170 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http } from "msw";
+import { useAuth } from "@/lib/auth/use-auth";
+import { authState, TEST_TOKEN, TEST_USER } from "@/test/auth";
+import { buildProfileResponse } from "@/test/fixtures";
+import { server } from "@/test/mocks/server";
+import { json, recordRequests } from "@/test/msw";
+import { renderWithProviders } from "@/test/render";
 import { InitialSetup } from "./initial-setup";
 
-// Mock dependencies
 const mockNavigate = vi.fn();
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => mockNavigate,
 }));
+vi.mock("@/lib/auth/use-auth");
 
-const mockMutateAsync = vi.fn();
-const mockUpdateProfile = {
-  mutateAsync: mockMutateAsync,
-  isError: false,
-};
-vi.mock("@/lib/api/mutations", () => ({
-  useUpdateProfile: () => mockUpdateProfile,
-}));
+const PROFILE_PATH = "/api/profile";
 
-const mockUser = {
-  uid: "user_123",
-  email: "test@example.com",
-  displayName: "John Doe Smith",
-};
 // Like the real hook, return a fresh user object on every call so the component cannot rely on identity
-vi.mock("@/lib/auth/use-auth", () => ({
-  useAuth: vi.fn(() => ({ user: { ...mockUser } })),
-}));
-
-vi.mock("@/lib/utils/locale", () => ({
-  shouldUseMetric: () => false,
-  extractFirstName: (name: string) => name.split(" ")[0],
-}));
-
-// Mock UI components
-vi.mock("@/components/ui/heading", () => ({
-  Heading: ({ children }: any) => <h1>{children}</h1>,
-}));
-
-vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, onClick, disabled, type, variant }: any) => (
-    <button onClick={onClick} disabled={disabled} type={type} data-variant={variant}>
-      {children}
-    </button>
-  ),
-}));
-
-// Mock BasicProfileSettings
-vi.mock("@/components/settings/basic-profile-settings", () => ({
-  BasicProfileSettings: ({ register, errors }: any) => (
-    <div data-testid="basic-profile-settings">
-      <input {...register("firstName", { required: "First name is required" })} data-testid="first-name" />
-      {errors.firstName && <span role="alert">{errors.firstName.message}</span>}
-      <input {...register("useMetric")} type="checkbox" data-testid="use-metric" />
-    </div>
-  ),
-}));
-
-// Mock StartDateSettings
-vi.mock("@/components/settings/start-date-settings", () => ({
-  StartDateSettings: ({ register }: any) => (
-    <div data-testid="start-date-settings">
-      <input {...register("goalStart")} type="date" data-testid="goal-start" />
-      <input {...register("hideDataBeforeStart")} type="checkbox" data-testid="hide-data-before-start" />
-    </div>
-  ),
-}));
+function signInAs(displayName: string) {
+  vi.mocked(useAuth).mockImplementation(() => authState({ user: { ...TEST_USER, displayName } }));
+}
 
 describe("InitialSetup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUpdateProfile.isError = false;
-    mockUser.displayName = "John Doe Smith";
+    signInAs("John Doe Smith");
+    server.use(http.put(PROFILE_PATH, () => json(200, buildProfileResponse())));
   });
 
-  it("should render welcome message and form", () => {
-    render(<InitialSetup />);
+  it("renders the welcome message and the profile form", () => {
+    renderWithProviders(<InitialSetup />);
 
     expect(screen.getByText("Welcome to TrendWeight!")).toBeInTheDocument();
     expect(screen.getByText("Let's set up your profile to get started.")).toBeInTheDocument();
-    expect(screen.getByTestId("basic-profile-settings")).toBeInTheDocument();
-    expect(screen.getByTestId("start-date-settings")).toBeInTheDocument();
-    expect(screen.getByText("Continue")).toBeInTheDocument();
+    expect(screen.getByLabelText("First Name")).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Weight Units" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Start Date")).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Earlier weight data" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
   });
 
-  it("should pre-fill first name from user metadata", async () => {
-    render(<InitialSetup />);
+  it("pre-fills the first name from the signed-in user", async () => {
+    renderWithProviders(<InitialSetup />);
 
-    await waitFor(() => {
-      const firstNameInput = screen.getByTestId("first-name") as HTMLInputElement;
-      expect(firstNameInput.value).toBe("John");
-    });
+    await waitFor(() => expect(screen.getByLabelText("First Name")).toHaveValue("John"));
   });
 
-  it("should handle alternative name field in metadata", async () => {
-    mockUser.displayName = "Jane Smith";
+  it("leaves the first name blank when the user has no display name", () => {
+    signInAs("");
+    renderWithProviders(<InitialSetup />);
 
-    render(<InitialSetup />);
-
-    await waitFor(() => {
-      const firstNameInput = screen.getByTestId("first-name") as HTMLInputElement;
-      expect(firstNameInput.value).toBe("Jane");
-    });
+    expect(screen.getByLabelText("First Name")).toHaveValue("");
   });
 
-  it("should handle missing user metadata", async () => {
-    mockUser.displayName = "";
+  it("defaults to imperial units for the en-US locale", () => {
+    renderWithProviders(<InitialSetup />);
 
-    render(<InitialSetup />);
-
-    await waitFor(() => {
-      const firstNameInput = screen.getByTestId("first-name") as HTMLInputElement;
-      expect(firstNameInput.value).toBe("");
-    });
+    expect(screen.getByRole("radio", { name: "lbs" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "kg" })).not.toBeChecked();
   });
 
-  it("should handle no session", async () => {
-    // Temporarily override the mock
-    const originalUser = mockUser.displayName;
-    mockUser.displayName = null as any;
-
-    render(<InitialSetup />);
-
-    await waitFor(() => {
-      const firstNameInput = screen.getByTestId("first-name") as HTMLInputElement;
-      expect(firstNameInput.value).toBe("");
-    });
-
-    // Restore original mock
-    mockUser.displayName = originalUser;
-  });
-
-  it("should handle form submission successfully", async () => {
+  it("creates the profile and replaces the route with the dashboard", async () => {
     const user = userEvent.setup();
-    mockMutateAsync.mockResolvedValue({});
+    const recorder = recordRequests();
+    renderWithProviders(<InitialSetup />);
 
-    render(<InitialSetup />);
+    const firstName = screen.getByLabelText("First Name");
+    await user.clear(firstName);
+    await user.type(firstName, "Jane");
+    await user.type(screen.getByLabelText("Start Date"), "2024-01-01");
+    await user.click(screen.getByRole("radio", { name: "Hide" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    // Fill form
-    const firstNameInput = screen.getByTestId("first-name");
-    await user.clear(firstNameInput);
-    await user.type(firstNameInput, "Jane");
-
-    // Set start date
-    const startDateInput = screen.getByTestId("goal-start");
-    await user.type(startDateInput, "2024-01-01");
-
-    // Toggle hide data before start
-    const hideDataCheckbox = screen.getByTestId("hide-data-before-start");
-    await user.click(hideDataCheckbox);
-
-    const submitButton = screen.getByText("Continue");
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalledWith({
-        firstName: "Jane",
-        useMetric: false,
-        goalStart: "2024-01-01",
-        hideDataBeforeStart: true,
-      });
-      expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard", replace: true });
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard", replace: true }));
+    const [request] = await recorder.settled();
+    expect(request).toMatchObject({
+      method: "PUT",
+      path: PROFILE_PATH,
+      headers: { authorization: `Bearer ${TEST_TOKEN}` },
+      body: { firstName: "Jane", useMetric: false, goalStart: "2024-01-01", hideDataBeforeStart: true },
     });
   });
 
-  it("should show loading state during submission", async () => {
+  it("sends metric units when kg is chosen", async () => {
     const user = userEvent.setup();
-    mockMutateAsync.mockImplementation(() => new Promise(() => {})); // Never resolves
+    const recorder = recordRequests();
+    renderWithProviders(<InitialSetup />);
 
-    render(<InitialSetup />);
+    await user.click(screen.getByRole("radio", { name: "kg" }));
+    expect(screen.getByRole("radio", { name: "kg" })).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    const submitButton = screen.getByText("Continue");
-    await user.click(submitButton);
-
-    expect(screen.getByText("Creating Profile...")).toBeInTheDocument();
-    expect(screen.getByRole("button")).toBeDisabled();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+    // The untouched start date is sent as unset, not as an empty string
+    const [request] = await recorder.settled();
+    expect(request.body).toEqual({ firstName: "John", useMetric: true, hideDataBeforeStart: false });
   });
 
-  it("should handle submission error", async () => {
+  it("disables the button while the profile is being created", async () => {
+    const user = userEvent.setup();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    server.use(
+      http.put(PROFILE_PATH, async () => {
+        await gate;
+        return json(200, buildProfileResponse());
+      }),
+    );
+    renderWithProviders(<InitialSetup />);
+
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("button", { name: "Creating Profile..." })).toBeDisabled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+
+    release();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
+  });
+
+  it("shows the failure message and stays on the page when the API fails", async () => {
     const user = userEvent.setup();
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    mockMutateAsync.mockRejectedValue(new Error("Network error"));
-    mockUpdateProfile.isError = true;
+    server.use(http.put(PROFILE_PATH, () => json(500, { error: "Server exploded" })));
+    renderWithProviders(<InitialSetup />);
 
-    render(<InitialSetup />);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    const submitButton = screen.getByText("Continue");
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText("Failed to create profile. Please try again.")).toBeInTheDocument();
-    });
-
+    expect(await screen.findByText("Failed to create profile. Please try again.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
     expect(mockNavigate).not.toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
   });
 
-  it("should validate required fields", async () => {
+  it("requires a first name", async () => {
     const user = userEvent.setup();
+    const recorder = recordRequests();
+    renderWithProviders(<InitialSetup />);
 
-    render(<InitialSetup />);
+    const firstName = screen.getByLabelText("First Name");
+    await waitFor(() => expect(firstName).toHaveValue("John"));
+    await user.clear(firstName);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    // Clear the pre-filled first name
-    const firstNameInput = screen.getByTestId("first-name");
-    await user.clear(firstNameInput);
-
-    const submitButton = screen.getByText("Continue");
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("First name is required");
-    });
-
-    expect(mockMutateAsync).not.toHaveBeenCalled();
+    expect(await screen.findByText("First name is required")).toBeInTheDocument();
+    expect(firstName).toBeInvalid();
+    expect(recorder.calls).toHaveLength(0);
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it("should not repopulate a cleared first name after a validation error", async () => {
+  it("does not repopulate a cleared first name after a validation error", async () => {
     const user = userEvent.setup();
+    renderWithProviders(<InitialSetup />);
 
-    render(<InitialSetup />);
+    const firstName = screen.getByLabelText("First Name");
+    await waitFor(() => expect(firstName).toHaveValue("John"));
+    await user.clear(firstName);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    const firstNameInput = screen.getByTestId("first-name") as HTMLInputElement;
-    await waitFor(() => expect(firstNameInput.value).toBe("John"));
-    await user.clear(firstNameInput);
-    await user.click(screen.getByText("Continue"));
-
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("First name is required");
-    });
-    expect(firstNameInput.value).toBe("");
+    expect(await screen.findByText("First name is required")).toBeInTheDocument();
+    expect(firstName).toHaveValue("");
 
     // A later re-render (e.g. Clerk re-emitting the user) must not undo the edit either
-    await user.type(firstNameInput, "J");
-    await user.clear(firstNameInput);
-    expect(firstNameInput.value).toBe("");
-  });
-
-  it("should set metric units based on locale", async () => {
-    // This test is tricky because the component's defaultValues are set when the component is created
-    // We can't change the mock after the fact. Let's verify the form submission includes metric setting
-    const user = userEvent.setup();
-    mockMutateAsync.mockResolvedValue({});
-
-    render(<InitialSetup />);
-
-    const metricCheckbox = screen.getByTestId("use-metric") as HTMLInputElement;
-    // Check the checkbox to enable metric
-    await user.click(metricCheckbox);
-
-    // Submit form
-    const submitButton = screen.getByText("Continue");
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          useMetric: true,
-        }),
-      );
-    });
-  });
-
-  it("should use replace navigation to prevent back navigation", async () => {
-    const user = userEvent.setup();
-    mockMutateAsync.mockResolvedValue({});
-
-    render(<InitialSetup />);
-
-    const submitButton = screen.getByText("Continue");
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith({ to: "/dashboard", replace: true });
-    });
-  });
-
-  it("should render in a card container", () => {
-    render(<InitialSetup />);
-
-    const container = screen.getByText("Welcome to TrendWeight!").closest("[data-slot='card']");
-    expect(container).toBeInTheDocument();
-  });
-
-  it("should handle metric checkbox toggle", async () => {
-    const user = userEvent.setup();
-    mockMutateAsync.mockResolvedValue({});
-
-    render(<InitialSetup />);
-
-    const metricCheckbox = screen.getByTestId("use-metric");
-    await user.click(metricCheckbox);
-
-    const submitButton = screen.getByText("Continue");
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalledWith({
-        firstName: "John",
-        useMetric: true,
-        goalStart: "",
-        hideDataBeforeStart: false,
-      });
-    });
+    await user.type(firstName, "J");
+    await user.clear(firstName);
+    expect(firstName).toHaveValue("");
   });
 });

@@ -43,13 +43,13 @@ describe("ProviderSyncError", () => {
   it("should return null when status is successful", () => {
     const status: ProviderSyncStatus = { success: true };
     const { container } = render(<ProviderSyncError provider="fitbit" status={status} />);
-    expect(container.firstChild).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("should return null when there is no error", () => {
     const status: ProviderSyncStatus = { success: false };
     const { container } = render(<ProviderSyncError provider="fitbit" status={status} />);
-    expect(container.firstChild).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("should render authfailed error for Fitbit", () => {
@@ -120,7 +120,7 @@ describe("ProviderSyncError", () => {
     const status: ProviderSyncStatus = { success: false, error: "disabled" };
     const { container } = render(<ProviderSyncError provider="fitbit" status={status} />);
 
-    expect(container.firstChild).toBeNull();
+    expect(container).toBeEmptyDOMElement();
     vi.useRealTimers();
   });
 
@@ -130,7 +130,7 @@ describe("ProviderSyncError", () => {
     const status: ProviderSyncStatus = { success: false, error: "disabled" };
     const { container } = render(<ProviderSyncError provider="fitbit" status={status} />);
 
-    expect(container.firstChild).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("should disable button when mutation is pending", () => {

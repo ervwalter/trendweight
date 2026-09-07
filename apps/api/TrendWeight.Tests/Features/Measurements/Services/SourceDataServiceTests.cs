@@ -1,357 +1,239 @@
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
-using Moq;
-using Supabase.Interfaces;
-using Supabase.Realtime;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Globalization;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
-using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Measurements.Services;
 
 public class SourceDataServiceTests
 {
-    private readonly Mock<ISupabaseService> _supabaseServiceMock;
-    private readonly Mock<ILogger<SourceDataService>> _loggerMock;
+    private static readonly Guid Me = Guid.NewGuid();
+    private static readonly Guid Other = Guid.NewGuid();
+    private static readonly DateTime FixedLastSync = new(2024, 1, 15, 9, 30, 0, DateTimeKind.Utc);
+    private const string OldUpdatedAt = "2024-01-01T00:00:00.0000000Z";
+
+    private readonly FakeSupabaseService _database = new();
     private readonly SourceDataService _sut;
 
     public SourceDataServiceTests()
     {
-        _supabaseServiceMock = new Mock<ISupabaseService>();
-        _loggerMock = new Mock<ILogger<SourceDataService>>();
-
-        _sut = new SourceDataService(
-            _supabaseServiceMock.Object,
-            _loggerMock.Object);
+        _sut = new SourceDataService(_database, NullLogger<SourceDataService>.Instance);
     }
 
-    #region UpdateSourceDataAsync Tests - Basic Scenarios
+    #region UpdateSourceDataAsync
 
     [Fact]
     public async Task UpdateSourceDataAsync_WithNewProvider_CreatesNewRecord()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
         var sourceData = CreateTestSourceData("withings");
-        var dataList = new List<SourceData> { sourceData };
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData>()); // No existing data
+        await _sut.UpdateSourceDataAsync(Me, new List<SourceData> { sourceData });
 
-        // Act
-        await _sut.UpdateSourceDataAsync(userId, dataList);
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d =>
-            d.Uid == userId &&
-            d.Provider == "withings" &&
-            d.Measurements.Count == 1 &&
-            !string.IsNullOrEmpty(d.LastSync))), Times.Once);
+        var row = _database.Rows<DbSourceData>().Should().ContainSingle().Subject;
+        row.Uid.Should().Be(Me);
+        row.Provider.Should().Be("withings");
+        row.Measurements.Should().Equal(sourceData.Measurements!);
+        row.LastSync.Should().Be(sourceData.LastUpdate.ToString("o"));
+        row.ForceFullSync.Should().BeFalse();
+        DateTime.Parse(row.UpdatedAt, null, DateTimeStyles.RoundtripKind)
+            .Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
 
     [Fact]
     public async Task UpdateSourceDataAsync_ReplacementClearsFullSyncFlagInSameWrite()
     {
-        var userId = Guid.NewGuid();
-        var existing = new DbSourceData { Uid = userId, Provider = "withings", ForceFullSync = true };
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(
-            It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>())).ReturnsAsync(new List<DbSourceData> { existing });
+        var existing = Row(Me, "withings", forceFullSync: true);
+        _database.Seed(existing);
         var replacement = CreateTestSourceData("withings");
 
-        await _sut.UpdateSourceDataAsync(userId, new() { replacement });
+        await _sut.UpdateSourceDataAsync(Me, new() { replacement });
 
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbSourceData>(d =>
-            !d.ForceFullSync && d.Measurements == replacement.Measurements)), Times.Once);
+        var row = _database.Rows<DbSourceData>().Should().ContainSingle().Subject;
+        row.Should().BeSameAs(existing);
+        row.ForceFullSync.Should().BeFalse();
+        row.Measurements.Should().Equal(replacement.Measurements!);
     }
 
     [Fact]
-    public async Task UpdateSourceDataAsync_WithExistingProviderAndNoChanges_UpdatesTimestampOnly()
+    public async Task UpdateSourceDataAsync_WithExistingRow_ReplacesMeasurementsLastSyncAndTimestamp()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow.AddDays(-1);
-        var existingMeasurement = CreateTestRawMeasurement("2024-01-15", 70.5m);
-        var newMeasurement = CreateTestRawMeasurement("2024-01-15", 70.5m); // Same measurement
-
-        var existingDbData = new DbSourceData
+        var existing = Row(Me, "withings",
+            measurements: new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-15", 70.5m) },
+            lastSync: FixedLastSync.AddDays(-1).ToString("o"),
+            updatedAt: OldUpdatedAt);
+        _database.Seed(existing);
+        var newMeasurements = new List<RawMeasurement>
         {
-            Uid = userId,
-            Provider = "withings",
-            Measurements = new List<RawMeasurement> { existingMeasurement },
-            LastSync = lastSync.ToString("o"),
-            UpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o")
+            CreateTestRawMeasurement("2024-01-16", 70.1m),
+            CreateTestRawMeasurement("2024-01-15", 70.5m)
         };
-
         var sourceData = new SourceData
         {
             Source = "withings",
-            LastUpdate = DateTime.UtcNow,
-            Measurements = new List<RawMeasurement> { newMeasurement }
+            LastUpdate = FixedLastSync,
+            Measurements = newMeasurements
         };
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData> { existingDbData });
+        await _sut.UpdateSourceDataAsync(Me, new List<SourceData> { sourceData });
 
-        // Act
-        await _sut.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<DbSourceData>()), Times.Once);
-    }
-
-
-    [Fact]
-    public async Task UpdateSourceDataAsync_WithMultipleProviders_ProcessesAllProviders()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var withingsData = CreateTestSourceData("withings");
-        var fitbitData = CreateTestSourceData("fitbit");
-        var dataList = new List<SourceData> { withingsData, fitbitData };
-
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData>()); // No existing data
-
-        // Act
-        await _sut.UpdateSourceDataAsync(userId, dataList);
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d => d.Provider == "withings")), Times.Once);
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d => d.Provider == "fitbit")), Times.Once);
+        var row = _database.Rows<DbSourceData>().Should().ContainSingle("the existing row is updated, not duplicated").Subject;
+        row.Should().BeSameAs(existing);
+        row.Measurements.Should().Equal(newMeasurements);
+        row.LastSync.Should().Be(FixedLastSync.ToString("o"));
+        row.ForceFullSync.Should().BeFalse();
+        row.UpdatedAt.Should().NotBe(OldUpdatedAt);
+        DateTime.Parse(row.UpdatedAt, null, DateTimeStyles.RoundtripKind)
+            .Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
 
     [Fact]
-    public async Task UpdateSourceDataAsync_WithEmptyMeasurements_HandlesGracefully()
+    public async Task UpdateSourceDataAsync_WritesLastSyncInRoundTripFormat()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
+        var lastUpdate = new DateTime(2024, 3, 5, 6, 7, 8, DateTimeKind.Utc).AddTicks(1234567);
         var sourceData = new SourceData
         {
             Source = "withings",
-            LastUpdate = DateTime.UtcNow,
-            Measurements = null // Null measurements
+            LastUpdate = lastUpdate,
+            Measurements = new List<RawMeasurement> { CreateTestRawMeasurement() }
         };
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData>());
+        await _sut.UpdateSourceDataAsync(Me, new List<SourceData> { sourceData });
 
-        // Act
-        await _sut.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
+        _database.Rows<DbSourceData>().Single().LastSync.Should().Be("2024-03-05T06:07:08.1234567Z");
 
-        // Assert
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d =>
-            d.Uid == userId &&
-            d.Provider == "withings" &&
-            d.Measurements.Count == 0)), Times.Once);
+        // A later request gets a fresh, empty per-request cache and must read the instant back exactly
+        var laterRequest = new SourceDataService(_database, NullLogger<SourceDataService>.Instance);
+        var readBack = await laterRequest.GetLastSyncTimeAsync(Me, "withings");
+
+        readBack.Should().Be(lastUpdate);
+        readBack!.Value.Kind.Should().Be(DateTimeKind.Utc);
+    }
+
+    [Fact]
+    public async Task UpdateSourceDataAsync_WithExistingData_ReplacesCompletely()
+    {
+        // Merging is the sync service's job; this layer stores whatever it is handed
+        _database.Seed(Row(Me, "withings", measurements: new List<RawMeasurement>
+        {
+            CreateTestRawMeasurement("2024-01-01", 70.0m),
+            CreateTestRawMeasurement("2024-01-02", 71.0m),
+            CreateTestRawMeasurement("2024-01-03", 72.0m)
+        }));
+        var newMeasurements = new List<RawMeasurement>
+        {
+            CreateTestRawMeasurement("2024-01-03", 72.5m),
+            CreateTestRawMeasurement("2024-01-01", 70.0m)
+        };
+
+        await _sut.UpdateSourceDataAsync(Me, new List<SourceData>
+        {
+            new() { Source = "withings", LastUpdate = FixedLastSync, Measurements = newMeasurements }
+        });
+
+        var row = _database.Rows<DbSourceData>().Single();
+        row.Measurements.Should().Equal(newMeasurements);
+        row.Measurements.Should().NotContain(m => m.Date == "2024-01-02", "dropped readings are not merged back in");
+    }
+
+    [Fact]
+    public async Task UpdateSourceDataAsync_WithTwoProviders_WritesOneRowPerProvider()
+    {
+        var withings = new SourceData
+        {
+            Source = "withings",
+            LastUpdate = FixedLastSync,
+            Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-15", 70.0m) }
+        };
+        var legacy = new SourceData
+        {
+            Source = "legacy",
+            LastUpdate = FixedLastSync.AddHours(-1),
+            Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-15", 70.1m) }
+        };
+
+        await _sut.UpdateSourceDataAsync(Me, new List<SourceData> { withings, legacy });
+
+        var rows = _database.Rows<DbSourceData>();
+        rows.Should().HaveCount(2);
+        rows.Should().AllSatisfy(row => row.Uid.Should().Be(Me));
+        rows.Single(r => r.Provider == "withings").Measurements.Should().Equal(withings.Measurements!);
+        rows.Single(r => r.Provider == "withings").LastSync.Should().Be(FixedLastSync.ToString("o"));
+        rows.Single(r => r.Provider == "legacy").Measurements.Should().Equal(legacy.Measurements!);
+        rows.Single(r => r.Provider == "legacy").LastSync.Should().Be(FixedLastSync.AddHours(-1).ToString("o"));
+    }
+
+    [Fact]
+    public async Task UpdateSourceDataAsync_WithNullMeasurements_StoresEmptyList()
+    {
+        var sourceData = new SourceData { Source = "withings", LastUpdate = FixedLastSync, Measurements = null };
+
+        await _sut.UpdateSourceDataAsync(Me, new List<SourceData> { sourceData });
+
+        var row = _database.Rows<DbSourceData>().Single();
+        row.Measurements.Should().NotBeNull();
+        row.Measurements.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task UpdateSourceDataAsync_WhenOnlyDecoyRowsExist_InsertsWithoutTouchingThem()
+    {
+        var otherUsersWithings = Row(Other, "withings",
+            measurements: new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-01", 90.0m) },
+            lastSync: FixedLastSync.AddDays(-3).ToString("o"),
+            updatedAt: OldUpdatedAt);
+        var myLegacy = Row(Me, "legacy",
+            measurements: new List<RawMeasurement> { CreateTestRawMeasurement("2023-06-01", 95.0m) },
+            lastSync: FixedLastSync.AddDays(-30).ToString("o"),
+            updatedAt: OldUpdatedAt);
+        _database.Seed(otherUsersWithings, myLegacy);
+        var otherSnapshot = Snapshot(otherUsersWithings);
+        var legacySnapshot = Snapshot(myLegacy);
+        var mine = CreateTestSourceData("withings");
+
+        await _sut.UpdateSourceDataAsync(Me, new List<SourceData> { mine });
+
+        var rows = _database.Rows<DbSourceData>();
+        rows.Should().HaveCount(3, "a new row is inserted rather than overwriting a decoy");
+        var inserted = rows.Single(r => r.Uid == Me && r.Provider == "withings");
+        inserted.Measurements.Should().Equal(mine.Measurements!);
+        Snapshot(otherUsersWithings).Should().Be(otherSnapshot);
+        Snapshot(myLegacy).Should().Be(legacySnapshot);
     }
 
     [Fact]
     public async Task UpdateSourceDataAsync_WithDatabaseError_RethrowsException()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var sourceData = CreateTestSourceData("withings");
+        _database.ThrowOnQuery = new InvalidOperationException("Database error");
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ThrowsAsync(new InvalidOperationException("Database error"));
-
-        // Act & Assert
-        await _sut.Invoking(x => x.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData }))
+        await _sut.Invoking(x => x.UpdateSourceDataAsync(Me, new List<SourceData> { CreateTestSourceData("withings") }))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Database error");
+        _database.Rows<DbSourceData>().Should().BeEmpty();
     }
 
     #endregion
 
-    #region UpdateSourceDataAsync Tests - Data Merging Scenarios
-
-    [Fact]
-    public async Task UpdateSourceDataAsync_WithExistingData_ReplacesCompletely()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow.AddDays(-1);
-
-        // Existing data will be completely replaced (merging is done in MeasurementSyncService)
-        var existingMeasurements = new List<RawMeasurement>
-        {
-            CreateTestRawMeasurement("2024-01-01", 70.0m),
-            CreateTestRawMeasurement("2024-01-02", 71.0m),
-            CreateTestRawMeasurement("2024-01-03", 72.0m)
-        };
-
-        var existingDbData = new DbSourceData
-        {
-            Uid = userId,
-            Provider = "withings",
-            Measurements = existingMeasurements,
-            LastSync = lastSync.ToString("o"),
-            UpdatedAt = DateTime.UtcNow.AddDays(-1).ToString("o")
-        };
-
-        // New measurements will completely replace the old ones
-        var newMeasurements = new List<RawMeasurement>
-        {
-            CreateTestRawMeasurement("2024-01-01", 70.0m),
-            CreateTestRawMeasurement("2024-01-03", 72.5m) // Updated weight
-            // 2024-01-02 is missing - this is fine, merging logic handles this upstream
-        };
-
-        var sourceData = new SourceData
-        {
-            Source = "withings",
-            LastUpdate = DateTime.UtcNow,
-            Measurements = newMeasurements
-        };
-
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData> { existingDbData });
-
-        // Act
-        await _sut.UpdateSourceDataAsync(userId, new List<SourceData> { sourceData });
-
-        // Assert - Should have exactly the new measurements
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.Is<DbSourceData>(d =>
-            d.Uid == userId &&
-            d.Provider == "withings" &&
-            d.Measurements.Count == 2 &&
-            d.Measurements.Any(m => m.Date == "2024-01-01" && m.Weight == 70.0m) &&
-            d.Measurements.Any(m => m.Date == "2024-01-03" && m.Weight == 72.5m))), Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdateSourceDataAsync_WithMultipleProviders_UpdatesEachSeparately()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-
-        // Setup multiple source data updates
-        var sourceDataList = new List<SourceData>
-        {
-            new SourceData
-            {
-                Source = "withings",
-                LastUpdate = DateTime.UtcNow,
-                Measurements = new List<RawMeasurement>
-                {
-                    CreateTestRawMeasurement("2024-01-01", 70.0m),
-                    CreateTestRawMeasurement("2024-01-02", 71.0m)
-                }
-            },
-            new SourceData
-            {
-                Source = "fitbit",
-                LastUpdate = DateTime.UtcNow,
-                Measurements = new List<RawMeasurement>
-                {
-                    CreateTestRawMeasurement("2024-01-01", 70.2m),
-                    CreateTestRawMeasurement("2024-01-03", 72.0m)
-                }
-            }
-        };
-
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData>());
-
-        // Act
-        await _sut.UpdateSourceDataAsync(userId, sourceDataList);
-
-        // Assert - Should create both provider records
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d =>
-            d.Uid == userId &&
-            d.Provider == "withings" &&
-            d.Measurements.Count == 2)), Times.Once);
-
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d =>
-            d.Uid == userId &&
-            d.Provider == "fitbit" &&
-            d.Measurements.Count == 2)), Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdateSourceDataAsync_WithMultipleProvidersAndOverlappingData_KeepsBothProviders()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-
-        // Simulate both Withings and Fitbit reporting the same measurement date
-        var withingsData = new SourceData
-        {
-            Source = "withings",
-            LastUpdate = DateTime.UtcNow,
-            Measurements = new List<RawMeasurement>
-            {
-                CreateTestRawMeasurement("2024-01-15", 70.0m) // Same date as Fitbit
-            }
-        };
-
-        var fitbitData = new SourceData
-        {
-            Source = "fitbit",
-            LastUpdate = DateTime.UtcNow,
-            Measurements = new List<RawMeasurement>
-            {
-                CreateTestRawMeasurement("2024-01-15", 70.1m) // Same date, slightly different weight
-            }
-        };
-
-        // No existing data for either provider
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData>());
-
-        // Act
-        await _sut.UpdateSourceDataAsync(userId, new List<SourceData> { withingsData, fitbitData });
-
-        // Assert - Should create separate records for each provider, even with overlapping dates
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d =>
-            d.Provider == "withings" &&
-            d.Measurements.Any(m => m.Date == "2024-01-15" && m.Weight == 70.0m))), Times.Once);
-
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.Is<DbSourceData>(d =>
-            d.Provider == "fitbit" &&
-            d.Measurements.Any(m => m.Date == "2024-01-15" && m.Weight == 70.1m))), Times.Once);
-    }
-
-    #endregion
-
-    #region GetSourceDataAsync Tests
+    #region GetSourceDataAsync
 
     [Fact]
     public async Task GetSourceDataAsync_WithExistingData_ReturnsCorrectData()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow.AddHours(-1);
         var measurement = CreateTestRawMeasurement("2024-01-15", 70.5m);
+        _database.Seed(Row(Me, "withings",
+            measurements: new List<RawMeasurement> { measurement },
+            lastSync: FixedLastSync.ToString("o")));
 
-        var dbData = new List<DbSourceData>
-        {
-            new()
-            {
-                Uid = userId,
-                Provider = "withings",
-                Measurements = new List<RawMeasurement> { measurement },
-                LastSync = lastSync.ToString("o"),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            }
-        };
+        var result = await _sut.GetSourceDataAsync(Me, new List<string> { "withings" });
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(dbData);
-
-        // Act
-        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings" });
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(1);
-        result![0].Source.Should().Be("withings");
-        result[0].LastUpdate.Should().BeCloseTo(lastSync, TimeSpan.FromSeconds(1));
-        result[0].Measurements.Should().HaveCount(1);
-        result[0].Measurements![0].Weight.Should().Be(70.5m);
+        var data = result.Should().ContainSingle().Subject;
+        data.Source.Should().Be("withings");
+        data.LastUpdate.Should().Be(FixedLastSync);
+        data.LastUpdate.Kind.Should().Be(DateTimeKind.Utc);
+        data.Measurements.Should().Equal(measurement);
     }
 
     [Fact]
@@ -359,377 +241,353 @@ public class SourceDataServiceTests
     {
         // The service is request-scoped; the sync service reads the same providers several
         // times per request and only the first read may hit the database
-        var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow.AddHours(-1);
-        var dbData = new List<DbSourceData>
-        {
-            new()
-            {
-                Uid = userId,
-                Provider = "withings",
-                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-15", 70.5m) },
-                LastSync = lastSync.ToString("o"),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            }
-        };
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(dbData);
+        var row = Row(Me, "withings",
+            measurements: new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-15", 70.5m) },
+            lastSync: FixedLastSync.ToString("o"));
+        _database.Seed(row);
         var providers = new List<string> { "withings" };
 
-        var first = await _sut.GetSourceDataAsync(userId, providers);
-        var second = await _sut.GetSourceDataAsync(userId, providers);
-        var lastSyncTime = await _sut.GetLastSyncTimeAsync(userId, "withings");
+        var first = await _sut.GetSourceDataAsync(Me, providers);
+        await _database.DeleteAsync(row); // Anything read after this point must have come from the cache
+        var second = await _sut.GetSourceDataAsync(Me, providers);
+        var lastSyncTime = await _sut.GetLastSyncTimeAsync(Me, "withings");
 
-        _supabaseServiceMock.Verify(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()), Times.Once);
+        _database.Rows<DbSourceData>().Should().BeEmpty();
         second.Should().BeEquivalentTo(first);
         second![0].Measurements![0].Weight.Should().Be(70.5m);
-        lastSyncTime.Should().BeCloseTo(lastSync, TimeSpan.FromSeconds(1), "the last-sync lookup reuses the cached row");
+        lastSyncTime.Should().Be(FixedLastSync, "the last-sync lookup reuses the cached row");
     }
 
     [Fact]
     public async Task GetSourceDataAsync_WithNoData_ReturnsEmptyList()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
+        var result = await _sut.GetSourceDataAsync(Me, new List<string> { "withings", "legacy" });
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData>());
-
-        // Act
-        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings", "fitbit" });
-
-        // Assert
         result.Should().NotBeNull();
         result!.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task GetSourceDataAsync_WithMultipleProviders_ReturnsAllProviders()
+    public async Task GetSourceDataAsync_ReturnsOnlyRequestedProvidersOfThisUser()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow;
+        var myWithings = Row(Me, "withings", measurements: new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-01", 70.0m) });
+        var myLegacy = Row(Me, "legacy", measurements: new List<RawMeasurement> { CreateTestRawMeasurement("2023-01-01", 80.0m) });
+        var myManual = Row(Me, "manual", measurements: new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-02", 71.0m) });
+        var otherUsersWithings = Row(Other, "withings", measurements: new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-01", 90.0m) });
+        _database.Seed(myWithings, myLegacy, myManual, otherUsersWithings);
 
-        var dbData = new List<DbSourceData>
-        {
-            new()
-            {
-                Uid = userId,
-                Provider = "withings",
-                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement() },
-                LastSync = lastSync.ToString("o"),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            },
-            new()
-            {
-                Uid = userId,
-                Provider = "fitbit",
-                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement() },
-                LastSync = lastSync.AddMinutes(-5).ToString("o"),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            }
-        };
+        var result = await _sut.GetSourceDataAsync(Me, new List<string> { "withings", "legacy" });
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(dbData);
-
-        // Act
-        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings", "fitbit" });
-
-        // Assert
         result.Should().NotBeNull();
-        result.Should().HaveCount(2);
-        result!.Should().Contain(s => s.Source == "withings");
-        result.Should().Contain(s => s.Source == "fitbit");
+        result!.Select(s => s.Source).Should().BeEquivalentTo("withings", "legacy");
+        result.Single(s => s.Source == "withings").Measurements.Should().BeSameAs(myWithings.Measurements);
+        result.Single(s => s.Source == "legacy").Measurements.Should().BeSameAs(myLegacy.Measurements);
+        result.SelectMany(s => s.Measurements!).Should().NotContain(m => m.Weight == 90.0m, "another user's readings must never leak");
+        result.Should().NotContain(s => s.Source == "manual", "unrequested providers are not returned");
     }
 
     [Fact]
     public async Task GetSourceDataAsync_WithNullLastSync_UsesCurrentTime()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
+        _database.Seed(Row(Me, "withings", lastSync: null));
 
-        var dbData = new List<DbSourceData>
-        {
-            new()
-            {
-                Uid = userId,
-                Provider = "withings",
-                Measurements = new List<RawMeasurement>(),
-                LastSync = null, // Null last sync
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            }
-        };
+        var result = await _sut.GetSourceDataAsync(Me, new List<string> { "withings" });
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(dbData);
-
-        // Act
-        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings" });
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(1);
-        result![0].LastUpdate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        result.Should().ContainSingle().Which.LastUpdate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
 
     [Fact]
     public async Task GetSourceDataAsync_WithDatabaseError_RethrowsException()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
+        _database.ThrowOnQuery = new InvalidOperationException("Database error");
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ThrowsAsync(new InvalidOperationException("Database error"));
-
-        // Act & Assert
-        await _sut.Invoking(x => x.GetSourceDataAsync(userId, new List<string> { "withings" }))
+        await _sut.Invoking(x => x.GetSourceDataAsync(Me, new List<string> { "withings" }))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Database error");
     }
 
-    [Fact]
-    public async Task GetSourceDataAsync_WithActiveProvidersFilter_ReturnsOnlyRequestedProviders()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow;
-
-        var dbData = new List<DbSourceData>
-        {
-            new()
-            {
-                Uid = userId,
-                Provider = "withings",
-                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-01", 70.0m) },
-                LastSync = lastSync.ToString("o"),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            },
-            new()
-            {
-                Uid = userId,
-                Provider = "fitbit",
-                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-02", 71.0m) },
-                LastSync = lastSync.ToString("o"),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            },
-            new()
-            {
-                Uid = userId,
-                Provider = "legacy",
-                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-03", 72.0m) },
-                LastSync = lastSync.ToString("o"),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            }
-        };
-
-        // Return only the requested providers
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync((Action<ISupabaseTable<DbSourceData, RealtimeChannel>> queryBuilder) =>
-            {
-                // Simulate filtering - only return withings and fitbit, not legacy
-                return dbData.Where(d => d.Provider == "withings" || d.Provider == "fitbit").ToList();
-            });
-
-        // Act - Request only withings and fitbit (legacy is disabled)
-        var result = await _sut.GetSourceDataAsync(userId, new List<string> { "withings", "fitbit" });
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(2);
-        result!.Should().Contain(s => s.Source == "withings");
-        result.Should().Contain(s => s.Source == "fitbit");
-        result.Should().NotContain(s => s.Source == "legacy"); // Legacy should not be included
-    }
-
     #endregion
 
-    #region GetLastSyncTimeAsync Tests
+    #region GetLastSyncTimeAsync
 
     [Fact]
     public async Task GetLastSyncTimeAsync_WithExistingData_ReturnsLastSyncTime()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var provider = "withings";
-        var lastSync = DateTime.UtcNow.AddHours(-2);
+        _database.Seed(Row(Me, "withings", lastSync: FixedLastSync.ToString("o")));
 
-        var dbData = new List<DbSourceData>
-        {
-            new()
-            {
-                Uid = userId,
-                Provider = provider,
-                LastSync = lastSync.ToString("o"),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            }
-        };
+        var result = await _sut.GetLastSyncTimeAsync(Me, "withings");
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(dbData);
-
-        // Act
-        var result = await _sut.GetLastSyncTimeAsync(userId, provider);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Value.Should().BeCloseTo(lastSync, TimeSpan.FromSeconds(1));
+        result.Should().Be(FixedLastSync);
+        result!.Value.Kind.Should().Be(DateTimeKind.Utc);
     }
 
     [Fact]
     public async Task GetLastSyncTimeAsync_WithNoData_ReturnsNull()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var provider = "withings";
+        var result = await _sut.GetLastSyncTimeAsync(Me, "withings");
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData>());
-
-        // Act
-        var result = await _sut.GetLastSyncTimeAsync(userId, provider);
-
-        // Assert
         result.Should().BeNull();
     }
 
     [Fact]
     public async Task GetLastSyncTimeAsync_WithNullLastSync_ReturnsNull()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var provider = "withings";
+        _database.Seed(Row(Me, "withings", lastSync: null));
 
-        var dbData = new List<DbSourceData>
-        {
-            new()
-            {
-                Uid = userId,
-                Provider = provider,
-                LastSync = null, // Null last sync
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            }
-        };
+        var result = await _sut.GetLastSyncTimeAsync(Me, "withings");
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(dbData);
+        result.Should().BeNull();
+    }
 
-        // Act
-        var result = await _sut.GetLastSyncTimeAsync(userId, provider);
+    [Fact]
+    public async Task GetLastSyncTimeAsync_WithOnlyDecoyRows_ReturnsNull()
+    {
+        _database.Seed(
+            Row(Other, "withings", lastSync: FixedLastSync.ToString("o")),
+            Row(Me, "legacy", lastSync: FixedLastSync.ToString("o")));
 
-        // Assert
+        var result = await _sut.GetLastSyncTimeAsync(Me, "withings");
+
         result.Should().BeNull();
     }
 
     [Fact]
     public async Task GetLastSyncTimeAsync_WithDatabaseError_ReturnsNull()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var provider = "withings";
+        _database.ThrowOnQuery = new InvalidOperationException("Database error");
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ThrowsAsync(new InvalidOperationException("Database error"));
+        var result = await _sut.GetLastSyncTimeAsync(Me, "withings");
 
-        // Act
-        var result = await _sut.GetLastSyncTimeAsync(userId, provider);
-
-        // Assert
         result.Should().BeNull();
     }
 
     #endregion
 
+    #region HasMeasurementsAsync
+
+    [Fact]
+    public async Task HasMeasurementsAsync_WithMeasurements_ReturnsTrue()
+    {
+        _database.Seed(Row(Me, "withings", measurements: new List<RawMeasurement> { CreateTestRawMeasurement() }));
+
+        (await _sut.HasMeasurementsAsync(Me, "withings")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task HasMeasurementsAsync_WithEmptyMeasurements_ReturnsFalse()
+    {
+        _database.Seed(Row(Me, "withings", measurements: new List<RawMeasurement>()));
+
+        (await _sut.HasMeasurementsAsync(Me, "withings")).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task HasMeasurementsAsync_WithOnlyDecoyRows_ReturnsFalse()
+    {
+        _database.Seed(
+            Row(Other, "withings", measurements: new List<RawMeasurement> { CreateTestRawMeasurement() }),
+            Row(Me, "legacy", measurements: new List<RawMeasurement> { CreateTestRawMeasurement() }));
+
+        (await _sut.HasMeasurementsAsync(Me, "withings")).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task HasMeasurementsAsync_WithDatabaseError_ReturnsFalse()
+    {
+        _database.ThrowOnQuery = new InvalidOperationException("Database error");
+
+        (await _sut.HasMeasurementsAsync(Me, "withings")).Should().BeFalse();
+    }
+
+    #endregion
+
+    #region GetForceFullSyncAsync
+
+    [Fact]
+    public async Task GetForceFullSyncAsync_WithFlagSet_ReturnsTrue()
+    {
+        _database.Seed(Row(Me, "withings", forceFullSync: true));
+
+        (await _sut.GetForceFullSyncAsync(Me, "withings")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetForceFullSyncAsync_WithNoRow_ReturnsFalse()
+    {
+        (await _sut.GetForceFullSyncAsync(Me, "withings")).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetForceFullSyncAsync_WithOnlyFlaggedDecoyRows_ReturnsFalse()
+    {
+        _database.Seed(
+            Row(Other, "withings", forceFullSync: true),
+            Row(Me, "legacy", forceFullSync: true));
+
+        (await _sut.GetForceFullSyncAsync(Me, "withings")).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetForceFullSyncAsync_WithDatabaseError_ReturnsFalse()
+    {
+        _database.ThrowOnQuery = new InvalidOperationException("Database error");
+
+        (await _sut.GetForceFullSyncAsync(Me, "withings")).Should().BeFalse();
+    }
+
+    #endregion
+
+    #region RequestFullSyncAsync
+
     [Fact]
     public async Task RequestFullSyncAsync_WithoutSourceRow_DoesNotCreateEmptyDocument()
     {
-        var userId = Guid.NewGuid();
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(
-            It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData>());
+        await _sut.RequestFullSyncAsync(Me, "withings");
 
-        await _sut.RequestFullSyncAsync(userId, "withings");
-
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbSourceData>()), Times.Never);
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<DbSourceData>()), Times.Never);
+        _database.Rows<DbSourceData>().Should().BeEmpty();
     }
 
-    #region DeleteSourceDataAsync Tests
+    [Fact]
+    public async Task RequestFullSyncAsync_WithExistingRow_SetsFlagAndKeepsReadings()
+    {
+        var readings = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-01", 80m) };
+        var row = Row(Me, "withings", measurements: readings, lastSync: FixedLastSync.ToString("o"), updatedAt: OldUpdatedAt);
+        _database.Seed(row);
+
+        await _sut.RequestFullSyncAsync(Me, "withings");
+
+        var stored = _database.Rows<DbSourceData>().Should().ContainSingle().Subject;
+        stored.Should().BeSameAs(row);
+        stored.ForceFullSync.Should().BeTrue();
+        stored.Measurements.Should().BeSameAs(readings, "the last good readings stay until the full fetch succeeds");
+        stored.LastSync.Should().Be(FixedLastSync.ToString("o"));
+        stored.UpdatedAt.Should().NotBe(OldUpdatedAt);
+    }
+
+    [Fact]
+    public async Task RequestFullSyncAsync_InvalidatesCachedRowSoTheFlagIsVisible()
+    {
+        _database.Seed(Row(Me, "withings"));
+        (await _sut.GetForceFullSyncAsync(Me, "withings")).Should().BeFalse("this call primes the request cache");
+
+        await _sut.RequestFullSyncAsync(Me, "withings");
+
+        (await _sut.GetForceFullSyncAsync(Me, "withings")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task RequestFullSyncAsync_WithOnlyDecoyRows_FlagsNothing()
+    {
+        var otherUsersWithings = Row(Other, "withings", updatedAt: OldUpdatedAt);
+        var myLegacy = Row(Me, "legacy", updatedAt: OldUpdatedAt);
+        _database.Seed(otherUsersWithings, myLegacy);
+        var otherSnapshot = Snapshot(otherUsersWithings);
+        var legacySnapshot = Snapshot(myLegacy);
+
+        await _sut.RequestFullSyncAsync(Me, "withings");
+
+        _database.Rows<DbSourceData>().Should().HaveCount(2);
+        Snapshot(otherUsersWithings).Should().Be(otherSnapshot);
+        Snapshot(myLegacy).Should().Be(legacySnapshot);
+    }
+
+    #endregion
+
+    #region DeleteSourceDataAsync
 
     [Fact]
     public async Task DeleteSourceDataAsync_WithExistingProvider_DeletesRecord()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var provider = "withings";
+        _database.Seed(Row(Me, "withings", measurements: new List<RawMeasurement> { CreateTestRawMeasurement() }));
 
-        var dbData = new List<DbSourceData>
-        {
-            new()
-            {
-                Uid = userId,
-                Provider = provider,
-                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement() },
-                LastSync = DateTime.UtcNow.ToString("o"),
-                UpdatedAt = DateTime.UtcNow.ToString("o")
-            }
-        };
+        await _sut.DeleteSourceDataAsync(Me, "withings");
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(dbData);
+        _database.Rows<DbSourceData>().Should().BeEmpty();
+    }
 
-        // Act
-        await _sut.DeleteSourceDataAsync(userId, provider);
+    [Fact]
+    public async Task DeleteSourceDataAsync_ClearsCachedRow()
+    {
+        _database.Seed(Row(Me, "withings", measurements: new List<RawMeasurement> { CreateTestRawMeasurement() }));
+        (await _sut.HasMeasurementsAsync(Me, "withings")).Should().BeTrue("this call primes the request cache");
 
-        // Assert
-        _supabaseServiceMock.Verify(x => x.DeleteAsync<DbSourceData>(It.Is<DbSourceData>(d =>
-            d.Uid == userId &&
-            d.Provider == provider)), Times.Once);
+        await _sut.DeleteSourceDataAsync(Me, "withings");
+
+        (await _sut.HasMeasurementsAsync(Me, "withings")).Should().BeFalse();
     }
 
     [Fact]
     public async Task DeleteSourceDataAsync_WithNonExistentProvider_DoesNothing()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var provider = "nonexistent";
+        var row = Row(Me, "withings");
+        _database.Seed(row);
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData>());
+        await _sut.DeleteSourceDataAsync(Me, "nonexistent");
 
-        // Act
-        await _sut.DeleteSourceDataAsync(userId, provider);
+        _database.Rows<DbSourceData>().Should().ContainSingle().Which.Should().BeSameAs(row);
+    }
 
-        // Assert
-        _supabaseServiceMock.Verify(x => x.DeleteAsync<DbSourceData>(It.IsAny<DbSourceData>()), Times.Never);
+    [Fact]
+    public async Task DeleteSourceDataAsync_WithOnlyDecoyRows_DeletesNothing()
+    {
+        var otherUsersWithings = Row(Other, "withings");
+        var myLegacy = Row(Me, "legacy");
+        _database.Seed(otherUsersWithings, myLegacy);
+
+        await _sut.DeleteSourceDataAsync(Me, "withings");
+
+        _database.Rows<DbSourceData>().Should().BeEquivalentTo(
+            new[] { otherUsersWithings, myLegacy },
+            options => options.WithStrictOrdering());
     }
 
     [Fact]
     public async Task DeleteSourceDataAsync_WithDatabaseError_RethrowsException()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var provider = "withings";
+        _database.Seed(Row(Me, "withings"));
+        _database.ThrowOnQuery = new InvalidOperationException("Database error");
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbSourceData>(It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ThrowsAsync(new InvalidOperationException("Database error"));
-
-        // Act & Assert
-        await _sut.Invoking(x => x.DeleteSourceDataAsync(userId, provider))
+        await _sut.Invoking(x => x.DeleteSourceDataAsync(Me, "withings"))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Database error");
+        _database.Rows<DbSourceData>().Should().HaveCount(1);
     }
 
     #endregion
 
     #region Private Helper Methods
 
+    private static DbSourceData Row(
+        Guid uid,
+        string provider,
+        List<RawMeasurement>? measurements = null,
+        string? lastSync = "2024-01-10T00:00:00.0000000Z",
+        bool forceFullSync = false,
+        string updatedAt = "2024-01-10T00:00:00.0000000Z")
+    {
+        return new DbSourceData
+        {
+            Uid = uid,
+            Provider = provider,
+            Measurements = measurements ?? new List<RawMeasurement>(),
+            LastSync = lastSync,
+            ForceFullSync = forceFullSync,
+            UpdatedAt = updatedAt
+        };
+    }
+
+    /// <summary>Value snapshot of a row so a test can prove a decoy was not written to.</summary>
+    private static (Guid Uid, string Provider, List<RawMeasurement> Measurements, string? LastSync, bool ForceFullSync, string UpdatedAt) Snapshot(DbSourceData row)
+    {
+        return (row.Uid, row.Provider, row.Measurements, row.LastSync, row.ForceFullSync, row.UpdatedAt);
+    }
+
     private static SourceData CreateTestSourceData(string provider)
     {
         return new SourceData
         {
             Source = provider,
-            LastUpdate = DateTime.UtcNow,
+            LastUpdate = FixedLastSync,
             Measurements = new List<RawMeasurement>
             {
                 CreateTestRawMeasurement()
@@ -741,7 +599,7 @@ public class SourceDataServiceTests
     {
         return new RawMeasurement
         {
-            Date = date ?? DateTime.UtcNow.ToString("yyyy-MM-dd"),
+            Date = date ?? "2024-01-15",
             Time = "10:30:00",
             Weight = weight ?? 70.5m,
             FatRatio = 0.152m

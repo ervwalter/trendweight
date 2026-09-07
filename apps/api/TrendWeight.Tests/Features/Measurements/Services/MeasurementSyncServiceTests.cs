@@ -1,17 +1,16 @@
-using Supabase.Interfaces;
-using Supabase.Realtime;
-using TrendWeight.Infrastructure.DataAccess;
-using TrendWeight.Infrastructure.DataAccess.Models;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Providers;
 using TrendWeight.Features.Providers.Models;
 using TrendWeight.Features.SyncProgress;
+using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Measurements.Services;
@@ -178,7 +177,7 @@ public class MeasurementSyncServiceTests
     }
 
     [Fact]
-    public async Task GetMeasurementsForUserAsync_WithMultipleProviders_ProcessesAllConcurrently()
+    public async Task GetMeasurementsForUserAsync_WithTwoStaleProviders_RefreshesBothAndReportsEach()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -437,28 +436,28 @@ public class MeasurementSyncServiceTests
     [Fact]
     public async Task GetMeasurementsForUserAsync_WithProviderSyncFailure_PreservesExistingData()
     {
-        // Arrange
+        // A real store underneath: "preserved" means the row is still in the table untouched
         var userId = Guid.NewGuid();
-        var activeProviders = new List<string> { "withings" };
-
-        // Set up existing data that should be preserved
-        var existingData = new List<SourceData>
+        var lastSync = DateTime.UtcNow.AddHours(-2).ToString("o");
+        var readings = new List<RawMeasurement>
         {
-            new SourceData
-            {
-                Source = "withings",
-                LastUpdate = DateTime.UtcNow.AddHours(-2),
-                Measurements = new List<RawMeasurement>
-                {
-                    CreateTestRawMeasurement("2024-01-01", 70.0m),
-                    CreateTestRawMeasurement("2024-01-02", 71.0m),
-                    CreateTestRawMeasurement("2024-01-03", 72.0m)
-                }
-            }
+            CreateTestRawMeasurement("2024-01-03", 72.0m),
+            CreateTestRawMeasurement("2024-01-02", 71.0m),
+            CreateTestRawMeasurement("2024-01-01", 70.0m)
         };
+        var row = new DbSourceData
+        {
+            Uid = userId,
+            Provider = "withings",
+            Measurements = readings,
+            LastSync = lastSync,
+            UpdatedAt = "2024-01-03T08:00:00.0000000Z"
+        };
+        var database = new FakeSupabaseService().Seed(row);
+        var sut = CreateSutOver(database);
 
-        var mockProviderService = new Mock<IProviderService>();
-        mockProviderService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
+        var providerService = new Mock<IProviderService>();
+        providerService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
             .ReturnsAsync(new ProviderSyncResult
             {
                 Provider = "withings",
@@ -466,40 +465,25 @@ public class MeasurementSyncServiceTests
                 Error = ProviderSyncError.NetworkError,
                 Message = "Provider API returned error"
             });
-
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
-            .ReturnsAsync((DateTime?)null); // Needs refresh
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
-            .ReturnsAsync(existingData); // Return existing data
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings"))
-            .Returns(mockProviderService.Object);
+            .Returns(providerService.Object);
 
-        // Act
-        var result = await _sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+        var result = await sut.GetMeasurementsForUserAsync(userId, new List<string> { "withings" }, useMetric: true);
 
-        // Assert
-        result.Should().NotBeNull();
-
-        // Verify failure status is recorded
-        result.ProviderStatus.Should().ContainKey("withings");
         result.ProviderStatus["withings"].Success.Should().BeFalse();
         result.ProviderStatus["withings"].Error.Should().Be("networkerror");
         result.ProviderStatus["withings"].Message.Should().Be("Provider API returned error");
+        providerService.Verify(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()), Times.Once);
 
-        // Verify existing data is returned
-        result.Data.Should().HaveCount(1);
-        var returnedData = result.Data[0];
-        returnedData.Source.Should().Be("withings");
-        returnedData.Measurements.Should().NotBeNull();
-        returnedData.Measurements!.Should().HaveCount(3);
+        result.Data.Should().ContainSingle().Which.Source.Should().Be("withings");
+        result.Data[0].Measurements.Should().Equal(readings);
 
-        // Verify measurements content
-        returnedData.Measurements.Should().Contain(m => m.Date == "2024-01-01" && m.Weight == 70.0m);
-        returnedData.Measurements.Should().Contain(m => m.Date == "2024-01-02" && m.Weight == 71.0m);
-        returnedData.Measurements.Should().Contain(m => m.Date == "2024-01-03" && m.Weight == 72.0m);
-
-        // Verify no data was stored (existing data preserved)
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()), Times.Never);
+        var stored = database.Rows<DbSourceData>().Should().ContainSingle().Subject;
+        stored.Should().BeSameAs(row);
+        stored.Measurements.Should().Equal(readings);
+        stored.LastSync.Should().Be(lastSync);
+        stored.UpdatedAt.Should().Be("2024-01-03T08:00:00.0000000Z");
+        stored.ForceFullSync.Should().BeFalse();
     }
 
     [Fact]
@@ -642,19 +626,68 @@ public class MeasurementSyncServiceTests
     }
 
     [Fact]
-    public async Task GetMeasurementsForUserAsync_WithException_RethrowsException()
+    public async Task GetMeasurementsForUserAsync_WhenSourceDataLookupThrows_Rethrows()
     {
-        // Arrange
+        // GetLastSyncTimeAsync swallows its own errors; the final read does not, so that
+        // is the failure the caller sees
         var userId = Guid.NewGuid();
         var activeProviders = new List<string> { "withings" };
-
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings"))
+            .ReturnsAsync(DateTime.UtcNow);
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, activeProviders))
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
-        // Act & Assert
         await _sut.Invoking(x => x.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Database error");
+    }
+
+    [Fact]
+    public async Task GetMeasurementsForUserAsync_WithNullLastSyncAndExistingData_StoresFullFetchAsReplacement()
+    {
+        // A null last-sync time (the store could not read it, or nothing was ever synced)
+        // means a full fetch, and a full fetch is stored as-is rather than merged
+        var userId = Guid.NewGuid();
+        var activeProviders = new List<string> { "withings" };
+        var existingData = new List<SourceData>
+        {
+            new()
+            {
+                Source = "withings",
+                LastUpdate = DateTime.UtcNow.AddDays(-1),
+                Measurements = new List<RawMeasurement> { CreateTestRawMeasurement("2023-12-31", 69.0m) }
+            }
+        };
+        var providerService = new Mock<IProviderService>();
+        DateTime? capturedStartDate = DateTime.MinValue;
+        providerService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
+            .Callback<Guid, bool, DateTime?>((_, _, startDate) => capturedStartDate = startDate)
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = "withings",
+                Success = true,
+                Measurements = new List<RawMeasurement>
+                {
+                    CreateTestRawMeasurement("2024-01-01", 70.0m),
+                    CreateTestRawMeasurement("2024-01-02", 71.0m)
+                }
+            });
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings")).Returns(providerService.Object);
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "withings")).ReturnsAsync((DateTime?)null);
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, It.IsAny<List<string>>())).ReturnsAsync(existingData);
+        List<SourceData>? stored = null;
+        _sourceDataServiceMock.Setup(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()))
+            .Callback<Guid, List<SourceData>>((_, data) => stored = data)
+            .Returns(Task.CompletedTask);
+
+        var result = await _sut.GetMeasurementsForUserAsync(userId, activeProviders, useMetric: true);
+
+        result.ProviderStatus["withings"].Success.Should().BeTrue();
+        capturedStartDate.Should().BeNull("a full fetch has no start date");
+        stored.Should().ContainSingle().Which.Source.Should().Be("withings");
+        stored![0].Measurements.Should().Equal(
+            CreateTestRawMeasurement("2024-01-02", 71.0m),
+            CreateTestRawMeasurement("2024-01-01", 70.0m));
     }
 
     #endregion
@@ -678,29 +711,18 @@ public class MeasurementSyncServiceTests
     public async Task RequestedResync_ThenFailedProviderFetch_RetainsReadingsAndLastSync()
     {
         var userId = Guid.NewGuid();
-        var lastSync = DateTime.UtcNow.ToString("o");
+        var lastSync = DateTime.UtcNow.ToString("o"); // Fresh: only the resync flag can trigger a refresh
         var readings = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-01", 80m) };
-        var cachedRow = new DbSourceData
+        var row = new DbSourceData
         {
             Uid = userId,
             Provider = "withings",
             LastSync = lastSync,
-            Measurements = readings
+            Measurements = readings,
+            UpdatedAt = "2024-01-01T08:00:00.0000000Z"
         };
-        var storedRow = new DbSourceData
-        {
-            Uid = userId,
-            Provider = "withings",
-            LastSync = lastSync,
-            Measurements = readings
-        };
-        var database = new Mock<ISupabaseService>();
-        database.SetupSequence(x => x.QueryAsync<DbSourceData>(
-                It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbSourceData> { cachedRow })
-            .ReturnsAsync(new List<DbSourceData> { storedRow })
-            .ReturnsAsync(new List<DbSourceData> { storedRow });
-        var sourceData = new SourceDataService(database.Object, Mock.Of<ILogger<SourceDataService>>());
+        var database = new FakeSupabaseService().Seed(row);
+        var sourceData = new SourceDataService(database, NullLogger<SourceDataService>.Instance);
         var sync = new MeasurementSyncService(_providerIntegrationServiceMock.Object, sourceData,
             _loggerMock.Object, _environmentMock.Object, Mock.Of<ISyncProgressReporter>());
         var provider = new Mock<IProviderService>();
@@ -714,14 +736,72 @@ public class MeasurementSyncServiceTests
 
         queued.Success.Should().BeTrue();
         result.ProviderStatus["withings"].Success.Should().BeFalse();
-        result.Data.Single().Measurements.Should().BeEquivalentTo(readings);
-        storedRow.LastSync.Should().Be(lastSync);
-        storedRow.ForceFullSync.Should().BeTrue("failed refreshes must remain retryable");
-        database.Verify(x => x.UpdateAsync(It.Is<DbSourceData>(row =>
-            row.Measurements == readings && row.LastSync == lastSync && row.ForceFullSync)), Times.Once);
-        database.Verify(x => x.QueryAsync<DbSourceData>(
-            It.IsAny<Action<ISupabaseTable<DbSourceData, RealtimeChannel>>>()), Times.Exactly(3));
+        result.Data.Single().Measurements.Should().Equal(readings);
         provider.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once);
+
+        var stored = database.Rows<DbSourceData>().Should().ContainSingle().Subject;
+        stored.Should().BeSameAs(row);
+        stored.Measurements.Should().Equal(readings);
+        stored.LastSync.Should().Be(lastSync);
+        stored.ForceFullSync.Should().BeTrue("failed refreshes must remain retryable");
+    }
+
+    [Fact]
+    public async Task RequestedResync_ThenSuccessfulProviderFetch_ReplacesRowAndClearsFlag()
+    {
+        var userId = Guid.NewGuid();
+        var oldLastSync = DateTime.UtcNow.AddSeconds(-30).ToString("o"); // Fresh: only the resync flag can trigger a refresh
+        var row = new DbSourceData
+        {
+            Uid = userId,
+            Provider = "withings",
+            LastSync = oldLastSync,
+            Measurements = new List<RawMeasurement>
+            {
+                CreateTestRawMeasurement("2024-01-02", 71.0m),
+                CreateTestRawMeasurement("2024-01-01", 70.0m)
+            },
+            UpdatedAt = "2024-01-02T08:00:00.0000000Z"
+        };
+        var database = new FakeSupabaseService().Seed(row);
+        var sourceData = new SourceDataService(database, NullLogger<SourceDataService>.Instance);
+        var sync = new MeasurementSyncService(_providerIntegrationServiceMock.Object, sourceData,
+            _loggerMock.Object, _environmentMock.Object, Mock.Of<ISyncProgressReporter>());
+        var provider = new Mock<IProviderService>();
+        provider.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
+            .ReturnsAsync(new ProviderSyncResult
+            {
+                Provider = "withings",
+                Success = true,
+                Measurements = new List<RawMeasurement>
+                {
+                    CreateTestRawMeasurement("2024-01-01", 70.5m),
+                    CreateTestRawMeasurement("2024-01-03", 72.0m)
+                }
+            });
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings")).Returns(provider.Object);
+
+        var queued = await sync.RequestFullSyncAsync(userId, "withings");
+        var result = await sync.GetMeasurementsForUserAsync(userId, new() { "withings" }, true);
+
+        queued.Success.Should().BeTrue();
+        result.ProviderStatus["withings"].Success.Should().BeTrue();
+        provider.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once,
+            "a requested resync ignores the last-sync time and fetches everything");
+
+        var expected = new List<RawMeasurement>
+        {
+            CreateTestRawMeasurement("2024-01-03", 72.0m),
+            CreateTestRawMeasurement("2024-01-01", 70.5m)
+        };
+        result.Data.Single().Measurements.Should().Equal(expected);
+        var stored = database.Rows<DbSourceData>().Should().ContainSingle().Subject;
+        stored.Should().BeSameAs(row);
+        stored.Measurements.Should().Equal(expected, "the fetched array replaces the old one; deleted readings are not retained");
+        stored.ForceFullSync.Should().BeFalse("the flag is cleared by the same write that stores the replacement");
+        stored.LastSync.Should().NotBe(oldLastSync);
+        DateTime.Parse(stored.LastSync!, null, System.Globalization.DateTimeStyles.RoundtripKind)
+            .Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
 
     [Fact]
@@ -807,43 +887,108 @@ public class MeasurementSyncServiceTests
     }
 
     [Fact]
-    public async Task RefreshProviderAsync_WithNoExistingData_UsesProviderDataAsIs()
+    public async Task RefreshProviderAsync_WithNoExistingData_StoresProviderDataSortedDescending()
     {
-        // Arrange
         var userId = Guid.NewGuid();
-        var provider = "fitbit";
-
-        var newMeasurements = new List<RawMeasurement>
-        {
-            CreateTestRawMeasurement("2024-01-01", 70.0m),
-            CreateTestRawMeasurement("2024-01-02", 71.0m)
-        };
+        var provider = "withings";
 
         var providerService = new Mock<IProviderService>();
         providerService.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
-            .ReturnsAsync(new ProviderSyncResult
+            .ReturnsAsync(() => new ProviderSyncResult
             {
                 Provider = provider,
                 Success = true,
-                Measurements = newMeasurements
+                Measurements = new List<RawMeasurement>
+                {
+                    CreateTestRawMeasurement("2024-01-01", 70.0m),
+                    CreateTestRawMeasurement("2024-01-03", 72.0m),
+                    CreateTestRawMeasurement("2024-01-02", 71.0m)
+                }
             });
-
         _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider))
             .Returns(providerService.Object);
-
         _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider))
             .ReturnsAsync((DateTime?)null);
-
         _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider }))
             .ReturnsAsync(new List<SourceData>());
+        List<SourceData>? stored = null;
+        _sourceDataServiceMock.Setup(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()))
+            .Callback<Guid, List<SourceData>>((_, data) => stored = data)
+            .Returns(Task.CompletedTask);
 
-        // Act
+        await _sut.GetMeasurementsForUserAsync(userId, new List<string> { provider }, true);
+
+        stored.Should().ContainSingle().Which.Source.Should().Be(provider);
+        stored![0].Measurements.Should().Equal(
+            CreateTestRawMeasurement("2024-01-03", 72.0m),
+            CreateTestRawMeasurement("2024-01-02", 71.0m),
+            CreateTestRawMeasurement("2024-01-01", 70.0m));
+    }
+
+    [Fact]
+    public async Task RefreshProvider_MergesAtCutoffAndStoresDescending()
+    {
+        // The fetch starts 90 days before the last sync; the first 2 days of that window are
+        // a buffer: existing readings before the cutoff are kept, provider readings inside
+        // the buffer are discarded, and everything from the cutoff on comes from the provider
+        var userId = Guid.NewGuid();
+        var provider = "withings";
+        var lastSync = new DateTime(2024, 6, 1, 12, 0, 0, DateTimeKind.Utc); // Long stale
+        var expectedStartDate = new DateTime(2024, 3, 3, 12, 0, 0, DateTimeKind.Utc); // lastSync - 90 days
+        // Cutoff = startDate + 2 days = 2024-03-05
+
+        var existingData = new List<SourceData>
+        {
+            new()
+            {
+                Source = provider,
+                LastUpdate = lastSync,
+                Measurements = new List<RawMeasurement>
+                {
+                    Reading("2024-03-10", "08:00:00", 72.0m), // At/after cutoff: replaced (absent from provider -> gone)
+                    Reading("2024-03-05", "08:00:00", 71.0m), // At cutoff: replaced by the provider's value
+                    Reading("2024-03-04", "08:00:00", 70.5m), // Inside the buffer: kept from existing
+                    Reading("2024-02-20", "08:00:00", 70.0m)  // Before the window: kept
+                }
+            }
+        };
+
+        var providerService = new Mock<IProviderService>();
+        DateTime? capturedStartDate = null;
+        providerService.Setup(x => x.SyncMeasurementsAsync(userId, true, It.IsAny<DateTime?>()))
+            .Callback<Guid, bool, DateTime?>((_, _, startDate) => capturedStartDate = startDate)
+            .ReturnsAsync(() => new ProviderSyncResult
+            {
+                Provider = provider,
+                Success = true,
+                Measurements = new List<RawMeasurement>
+                {
+                    Reading("2024-03-03", "08:00:00", 69.9m), // Inside the buffer: discarded
+                    Reading("2024-03-04", "08:00:00", 70.4m), // Inside the buffer: discarded
+                    Reading("2024-03-05", "08:00:00", 71.1m), // At cutoff: used
+                    Reading("2024-03-05", "20:00:00", 71.3m), // Same day, later: used, ordered by time
+                    Reading("2024-03-12", "08:00:00", 72.5m)  // After cutoff: used
+                }
+            });
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService(provider)).Returns(providerService.Object);
+        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, provider)).ReturnsAsync(lastSync);
+        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, new List<string> { provider })).ReturnsAsync(existingData);
+        List<SourceData>? stored = null;
+        _sourceDataServiceMock.Setup(x => x.UpdateSourceDataAsync(userId, It.IsAny<List<SourceData>>()))
+            .Callback<Guid, List<SourceData>>((_, data) => stored = data)
+            .Returns(Task.CompletedTask);
+
         var result = await _sut.GetMeasurementsForUserAsync(userId, new List<string> { provider }, true);
 
-        // Assert
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(
-            userId,
-            It.Is<List<SourceData>>(sd => VerifyProviderDataAsIs(sd, provider, newMeasurements))), Times.Once);
+        result.ProviderStatus[provider].Success.Should().BeTrue();
+        capturedStartDate.Should().Be(expectedStartDate);
+        stored.Should().ContainSingle().Which.Source.Should().Be(provider);
+        stored![0].Measurements.Should().Equal(
+            Reading("2024-03-12", "08:00:00", 72.5m),
+            Reading("2024-03-05", "20:00:00", 71.3m),
+            Reading("2024-03-05", "08:00:00", 71.1m),
+            Reading("2024-03-04", "08:00:00", 70.5m),
+            Reading("2024-02-20", "08:00:00", 70.0m));
     }
 
     [Fact]
@@ -974,24 +1119,36 @@ public class MeasurementSyncServiceTests
     public async Task GetMeasurementsForUserAsync_FailedForcedSyncPreservesLastGoodData()
     {
         var userId = Guid.NewGuid();
-        var readings = new List<SourceData>
+        var lastSync = DateTime.UtcNow.ToString("o"); // Fresh: only the flag can trigger the refresh
+        var readings = new List<RawMeasurement> { CreateTestRawMeasurement("2024-01-01", 80m) };
+        var row = new DbSourceData
         {
-            new() { Source = "fitbit", Measurements = new() { CreateTestRawMeasurement("2024-01-01", 80m) } }
+            Uid = userId,
+            Provider = "withings",
+            Measurements = readings,
+            LastSync = lastSync,
+            ForceFullSync = true,
+            UpdatedAt = "2024-01-01T08:00:00.0000000Z"
         };
+        var database = new FakeSupabaseService().Seed(row);
+        var sut = CreateSutOver(database);
         var providerService = new Mock<IProviderService>();
         providerService.Setup(x => x.SyncMeasurementsAsync(userId, true, null))
-            .ReturnsAsync(new ProviderSyncResult { Provider = "fitbit", Success = false });
-        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("fitbit")).Returns(providerService.Object);
-        _sourceDataServiceMock.Setup(x => x.GetForceFullSyncAsync(userId, "fitbit")).ReturnsAsync(true);
-        _sourceDataServiceMock.Setup(x => x.GetLastSyncTimeAsync(userId, "fitbit")).ReturnsAsync(DateTime.UtcNow);
-        _sourceDataServiceMock.Setup(x => x.GetSourceDataAsync(userId, It.IsAny<List<string>>())).ReturnsAsync(readings);
+            .ReturnsAsync(new ProviderSyncResult { Provider = "withings", Success = false });
+        _providerIntegrationServiceMock.Setup(x => x.GetProviderService("withings")).Returns(providerService.Object);
 
-        var result = await _sut.GetMeasurementsForUserAsync(userId, new() { "fitbit" }, true);
+        var result = await sut.GetMeasurementsForUserAsync(userId, new() { "withings" }, true);
 
-        result.Data.Should().BeSameAs(readings);
-        result.ProviderStatus["fitbit"].Success.Should().BeFalse();
+        result.ProviderStatus["withings"].Success.Should().BeFalse();
+        result.Data.Single().Measurements.Should().Equal(readings);
         providerService.Verify(x => x.SyncMeasurementsAsync(userId, true, null), Times.Once);
-        _sourceDataServiceMock.Verify(x => x.UpdateSourceDataAsync(It.IsAny<Guid>(), It.IsAny<List<SourceData>>()), Times.Never);
+
+        var stored = database.Rows<DbSourceData>().Should().ContainSingle().Subject;
+        stored.Should().BeSameAs(row);
+        stored.Measurements.Should().Equal(readings);
+        stored.LastSync.Should().Be(lastSync);
+        stored.UpdatedAt.Should().Be("2024-01-01T08:00:00.0000000Z");
+        stored.ForceFullSync.Should().BeTrue("the flag stays until a full fetch succeeds");
     }
 
     [Fact]
@@ -1136,12 +1293,31 @@ public class MeasurementSyncServiceTests
 
     private static RawMeasurement CreateTestRawMeasurement(string date, decimal weight)
     {
+        return Reading(date, "08:00:00", weight);
+    }
+
+    private static RawMeasurement Reading(string date, string time, decimal weight)
+    {
         return new RawMeasurement
         {
             Date = date,
-            Weight = weight,
-            Time = "08:00:00"
+            Time = time,
+            Weight = weight
         };
+    }
+
+    /// <summary>
+    /// A sync service over a real <see cref="SourceDataService"/> backed by <paramref name="database"/>,
+    /// for tests where "preserved" or "stored" must mean the row in the table.
+    /// </summary>
+    private MeasurementSyncService CreateSutOver(FakeSupabaseService database)
+    {
+        return new MeasurementSyncService(
+            _providerIntegrationServiceMock.Object,
+            new SourceDataService(database, NullLogger<SourceDataService>.Instance),
+            _loggerMock.Object,
+            _environmentMock.Object,
+            Mock.Of<ISyncProgressReporter>());
     }
 
     private static bool VerifyMergedData(List<SourceData> sd, string provider, DateTime syncStartDate)
@@ -1163,16 +1339,6 @@ public class MeasurementSyncServiceTests
                // Deleted measurements are gone (days -80, -75 were in old data but not in provider data)
                !measurements.Any(m => m.Date == syncStartDate.AddDays(10).ToString("yyyy-MM-dd")) &&
                !measurements.Any(m => m.Date == syncStartDate.AddDays(15).ToString("yyyy-MM-dd"));
-    }
-
-    private static bool VerifyProviderDataAsIs(List<SourceData> sd, string provider, List<RawMeasurement> expectedMeasurements)
-    {
-        if (sd.Count != 1 || sd[0].Source != provider || sd[0].Measurements == null)
-            return false;
-
-        var measurements = sd[0].Measurements!; // We already checked it's not null
-        return measurements.Count == expectedMeasurements.Count &&
-               measurements.SequenceEqual(expectedMeasurements);
     }
 
     private static bool VerifyFullSyncReplacement(List<SourceData> sd, string provider, List<RawMeasurement> newMeasurements)

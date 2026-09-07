@@ -1,38 +1,17 @@
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import HelpLink from "./help-link";
 
-// Mock TanStack Router's Link component
+// There is no router in this test; Link renders as a plain anchor
 vi.mock("@tanstack/react-router", () => ({
-  Link: ({ to, className, children }: any) => (
-    <a href={to} className={className}>
-      {children}
-    </a>
-  ),
+  Link: ({ to, children }: { to: string; children: React.ReactNode }) => <a href={to}>{children}</a>,
 }));
 
 describe("HelpLink", () => {
-  it("renders the help link with correct text", () => {
+  it("links the explanation prompt to the math page", () => {
     render(<HelpLink />);
-    expect(screen.getByText("What is all this?")).toBeInTheDocument();
-  });
 
-  it("links to the math page", () => {
-    render(<HelpLink />);
-    const link = screen.getByRole("link", { name: /what is all this/i });
+    const link = screen.getByRole("link", { name: "What is all this?" });
     expect(link).toHaveAttribute("href", "/math");
-  });
-
-  it("includes question mark icon", () => {
-    const { container } = render(<HelpLink />);
-    const icon = container.querySelector("svg");
-    expect(icon).toBeInTheDocument();
-    expect(icon).toHaveClass("h-5", "w-5");
-  });
-
-  it("has correct styling classes", () => {
-    render(<HelpLink />);
-    const link = screen.getByRole("link");
-    expect(link).toHaveClass("inline-flex", "items-center", "gap-1", "text-muted-foreground", "italic", "transition-colors", "hover:text-foreground/80");
   });
 });

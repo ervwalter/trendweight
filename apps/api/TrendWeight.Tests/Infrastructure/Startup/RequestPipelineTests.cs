@@ -18,6 +18,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Infrastructure.Auth;
 using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Infrastructure.Middleware;
 using TrendWeight.Infrastructure.Services;
 using TrendWeight.Tests.Fixtures;
 
@@ -586,6 +587,32 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
             .ToList();
         httpLogs.Should().Contain(m => m.Contains($"Path: {loggedPath}"));
         httpLogs.Should().NotContain(m => m.Contains("disabled-share"));
+    }
+
+    [Fact]
+    public async Task SharedRoutes_NeverWriteTheSharingCodeToAnyLog()
+    {
+        // The HTTP log is only one place a code could leak: routing, auth, rate
+        // limiting and the controllers all log too, so every category is captured.
+        // A dedicated host keeps these three anonymous requests out of the shared
+        // rate-limit budget described on StartupTestFactory.
+        const string code = "shr-secret-0123456789abc";
+        var logs = new CapturingLoggerProvider();
+        using var host = new StartupTestFactory();
+        using var factory = host.WithWebHostBuilder(builder =>
+            builder.ConfigureLogging(logging => logging.AddProvider(logs)));
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+
+        foreach (var path in new[] { $"/api/profile/{code}", $"/api/data/{code}", $"/api/providers/links/{code}" })
+        {
+            using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound, "the factory's profile service knows no such token ({0})", path);
+        }
+
+        logs.ShouldNotMention(code);
+        logs.Entries.Should().Contain(
+            e => e.Category == "Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware" && e.Message.Contains(LogSafePath.Placeholder),
+            "the redacting interceptor must be active for the absence of the code to mean anything");
     }
 
     [Theory]

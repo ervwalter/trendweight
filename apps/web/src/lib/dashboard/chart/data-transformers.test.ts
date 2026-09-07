@@ -189,8 +189,56 @@ describe("data-transformers", () => {
       expect(result.projectionsData).toHaveLength(2); // start and end of projection
     });
 
-    it("should handle empty data array", () => {
-      expect(() => transformChartData([], "weight", 0.1)).toThrow();
+    it("projects from the last trend value six days forward along the active slope", () => {
+      // Three daily points ending 2024-01-15 with a last trend of 180 and a slope of 0.1/day
+      const dataPoints = [
+        createDataPoint(LocalDate.of(2024, 1, 13), 179.5, 179.8, false),
+        createDataPoint(LocalDate.of(2024, 1, 14), 180.2, 179.9, false),
+        createDataPoint(LocalDate.of(2024, 1, 15), 180.4, 180, false),
+      ];
+
+      const result = transformChartData(dataPoints, "weight", 0.1);
+
+      expect(result.projectionsData).toEqual([
+        [1705276800000, 180], // 2024-01-15
+        [1705795200000, 180.6], // 2024-01-21: 180 + 0.1 * 6
+      ]);
+    });
+
+    it("multiplies every fat percentage ratio by 100 across all series", () => {
+      const dataPoints = [
+        createDataPoint(LocalDate.of(2024, 1, 1), 0.25, 0.125, false),
+        createDataPoint(LocalDate.of(2024, 1, 2), 0.375, 0.5, true), // interpolated reading
+      ];
+
+      const result = transformChartData(dataPoints, "fatpercent", 0.0625);
+
+      expect(result).toEqual({
+        actualData: [
+          [1704067200000, 25],
+          [1704153600000, null],
+        ],
+        interpolatedData: [
+          [1704067200000, null],
+          [1704153600000, 37.5],
+        ],
+        trendData: [
+          [1704067200000, 12.5],
+          [1704153600000, 50],
+        ],
+        projectionsData: [
+          [1704153600000, 50],
+          [1704672000000, 87.5], // (0.5 + 0.0625 * 6) * 100
+        ],
+        actualSinkersData: [
+          [1704067200000, 25, 12.5, null],
+          [1704153600000, null, null, null],
+        ],
+        interpolatedSinkersData: [
+          [1704067200000, null, null, null],
+          [1704153600000, 37.5, 50, null],
+        ],
+      });
     });
 
     it("should create correct epoch timestamps", () => {

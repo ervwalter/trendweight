@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/mocks/server";
+import { json } from "@/test/msw";
 import { apiRequest, ApiError } from "./client";
-import { apiHandlers } from "@/test/mocks/handlers";
-
-// No longer need to mock window.Clerk since we pass tokens directly
 
 describe("api/client with MSW", () => {
   beforeEach(() => {
@@ -163,7 +161,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 401 unauthorized errors", async () => {
-      server.use(apiHandlers.unauthorized("/api/protected"));
+      server.use(http.get("/api/protected", () => json(401, { error: "Authentication required", errorCode: "AUTH_REQUIRED" })));
 
       await expect(apiRequest("/protected")).rejects.toMatchObject({
         name: "ApiError",
@@ -174,7 +172,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 403 forbidden errors", async () => {
-      server.use(apiHandlers.forbidden("/api/admin"));
+      server.use(http.get("/api/admin", () => json(403, { error: "Insufficient permissions", errorCode: "FORBIDDEN" })));
 
       await expect(apiRequest("/admin")).rejects.toMatchObject({
         name: "ApiError",
@@ -185,7 +183,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle 404 not found errors", async () => {
-      server.use(apiHandlers.notFound("/api/missing"));
+      server.use(http.get("/api/missing", () => json(404, { error: "Resource not found", errorCode: "NOT_FOUND" })));
 
       await expect(apiRequest("/missing")).rejects.toMatchObject({
         name: "ApiError",
@@ -219,7 +217,7 @@ describe("api/client with MSW", () => {
     });
 
     it("should handle network errors", async () => {
-      server.use(apiHandlers.networkError("/api/test"));
+      server.use(http.get("/api/test", () => HttpResponse.error()));
 
       await expect(apiRequest("/test")).rejects.toThrow();
     });

@@ -151,10 +151,6 @@ describe("ProviderList", () => {
       // Withings is connected
       expect(screen.getByText("Resync Data")).toBeInTheDocument();
       expect(screen.getByText("Disconnect")).toBeInTheDocument();
-
-      // Check for checkmark icon
-      const checkIcon = document.querySelector(".text-success");
-      expect(checkIcon).toBeInTheDocument();
     });
 
     it("should show connect button for unconnected providers", () => {
@@ -255,8 +251,7 @@ describe("ProviderList", () => {
       await user.click(screen.getByText("Disconnect"));
 
       // Click the confirm button in the dialog
-      const confirmButton = screen.getByTestId("confirm-dialog").querySelector("button");
-      await user.click(confirmButton!);
+      await user.click(within(screen.getByTestId("confirm-dialog")).getByRole("button"));
 
       expect(mockDisconnectMutate).toHaveBeenCalledWith(
         "withings",
@@ -474,8 +469,7 @@ describe("ProviderList", () => {
       await user.click(screen.getByText("Disconnect"));
 
       // Click the confirm button in the dialog
-      const confirmButton = screen.getByTestId("confirm-dialog").querySelector("button");
-      await user.click(confirmButton!);
+      await user.click(within(screen.getByTestId("confirm-dialog")).getByRole("button"));
 
       // Simulate error callback
       await act(async () => {
@@ -518,7 +512,7 @@ describe("ProviderList", () => {
 
       expect(screen.getAllByText("Disconnecting...")).toHaveLength(1);
       // Withings keeps its label but still waits for the in-flight mutation
-      expect(screen.getByText("Disconnect").closest("button")).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Disconnect" })).toBeDisabled();
     });
 
     it("should disable buttons during mutations", () => {
@@ -530,8 +524,7 @@ describe("ProviderList", () => {
 
       render(<ProviderList variant="settings" />);
 
-      const resyncButton = screen.getByText("Syncing...");
-      expect(resyncButton.closest("button")).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Syncing..." })).toBeDisabled();
     });
   });
 });

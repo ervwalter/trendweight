@@ -1,381 +1,304 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { LocalDate } from "@js-joda/core";
+import { http } from "msw";
+import { server } from "@/test/mocks/server";
+import { json, recordRequests } from "@/test/msw";
+import { mockAuth } from "@/test/auth";
+import { createQueryWrapper } from "@/test/render";
+import { createTestQueryClient } from "@/test/query-client";
+import { buildComputedMeasurement, buildMeasurementsResponse, buildProfileResponse, buildSourceData } from "@/test/fixtures";
+import type { ApiSourceData, MeasurementsResponse } from "@/lib/api/types";
 import { useScaleReadingsData } from "./use-scale-readings-data";
-import { useDownloadData, useProfile } from "@/lib/api/queries";
-// Mock dependencies
-vi.mock("@/lib/api/queries");
-vi.mock("@/components/dashboard/sync-progress/hooks", () => ({
-  useSyncProgress: () => ({
-    progressId: "test-progress-id",
-    progress: null,
-    startProgress: vi.fn(),
-    endProgress: vi.fn(),
-  }),
-}));
+
+vi.mock("@/lib/auth/use-auth");
+
+type SourceMeasurement = NonNullable<ApiSourceData["measurements"]>[number];
+
+// Withings readings: two on 2024-01-15 (morning and afternoon) and one on 2024-01-16
+const withingsMeasurements: SourceMeasurement[] = [
+  { date: "2024-01-15", time: "08:30:00", weight: 80, fatRatio: 0.225 },
+  { date: "2024-01-16", time: "08:00:00", weight: 75.3, fatRatio: 0.223 },
+  { date: "2024-01-15", time: "14:00:00", weight: 75.7 },
+];
+
+function givenApi({
+  useMetric,
+  sourceData,
+  computedMeasurements,
+}: {
+  useMetric: boolean;
+  sourceData?: ApiSourceData[];
+  computedMeasurements?: MeasurementsResponse["computedMeasurements"];
+}) {
+  server.use(
+    http.get("/api/profile", () => json(200, buildProfileResponse({ user: { useMetric } }))),
+    http.get("/api/data", () =>
+      json(
+        200,
+        buildMeasurementsResponse({
+          computedMeasurements: computedMeasurements ?? [buildComputedMeasurement()],
+          sourceData: sourceData ?? [buildSourceData({ measurements: withingsMeasurements })],
+        }),
+      ),
+    ),
+  );
+}
+
+async function renderReadings(view: string, newestFirst = false) {
+  const wrapper = createQueryWrapper(createTestQueryClient(), { syncProgress: true });
+  const rendered = renderHook(() => useScaleReadingsData(view, newestFirst), { wrapper });
+  await waitFor(() => expect(rendered.result.current).not.toBeNull());
+  return rendered;
+}
 
 describe("useScaleReadingsData", () => {
-  const mockApiData = {
-    sourceData: [
-      {
-        source: "withings",
-        lastUpdate: "2024-01-16T10:00:00Z",
-        measurements: [
-          {
-            date: "2024-01-15",
-            time: "08:30:00",
-            weight: 75.5,
-            fatRatio: 0.225,
-          },
-          {
-            date: "2024-01-16",
-            time: "08:00:00",
-            weight: 75.3,
-            fatRatio: 0.223,
-          },
-          {
-            date: "2024-01-15",
-            time: "14:00:00",
-            weight: 75.7,
-            fatRatio: null,
-          },
-        ],
-      },
-      {
-        source: "fitbit",
-        lastUpdate: "2024-01-15T10:00:00Z",
-        measurements: [
-          {
-            date: "2024-01-15",
-            time: "09:00:00",
-            weight: 75.6,
-            fatRatio: null,
-          },
-        ],
-      },
-    ],
-  };
-
   beforeEach(() => {
-    vi.mocked(useDownloadData).mockReturnValue({
-      computedMeasurements: [
-        {
-          date: "2024-01-15",
-          actualWeight: 75.5,
-          trendWeight: 75.2,
-          actualFatPercent: 22.5,
-          trendFatPercent: 22.3,
-          weightIsInterpolated: false,
-          fatIsInterpolated: false,
-        },
-        {
-          date: "2024-01-16",
-          actualWeight: 75.3,
-          trendWeight: 75.25,
-          actualFatPercent: null,
-          trendFatPercent: null,
-          weightIsInterpolated: true,
-          fatIsInterpolated: false,
-        },
-        {
-          date: "2024-01-14",
-          actualWeight: 75.8,
-          trendWeight: 75.4,
-          actualFatPercent: 22.5,
-          trendFatPercent: 22.3,
-          weightIsInterpolated: false,
-          fatIsInterpolated: false,
-        },
-      ],
-      sourceData: mockApiData.sourceData,
-      providerStatus: {},
-      isMe: true,
-    } as any);
-    vi.mocked(useProfile).mockReturnValue({
-      data: {
-        firstName: "Test User",
-        useMetric: true,
-        goalStart: null,
-        goalWeight: null,
-        plannedPoundsPerWeek: null,
-        dayStartOffset: 0,
-        showCalories: false,
-        hideDataBeforeStart: false,
-        sharingToken: null,
-        sharingEnabled: false,
-        isMigrated: true,
-        isNewlyMigrated: false,
-      },
-    } as any);
+    mockAuth();
+  });
+
+  it("requests the download data with source readings included", async () => {
+    givenApi({ useMetric: true });
+    const requests = recordRequests();
+
+    await renderReadings("withings");
+
+    const [dataRequest] = requests.byPath("/api/data");
+    expect(dataRequest.method).toBe("GET");
+    expect(new URLSearchParams(dataRequest.search).get("includeSource")).toBe("true");
+  });
+
+  describe("unit conversion", () => {
+    it("converts provider weights from kilograms to pounds for an imperial profile", async () => {
+      givenApi({ useMetric: false, sourceData: [buildSourceData({ measurements: [withingsMeasurements[0]] })] });
+
+      const { result } = await renderReadings("withings");
+
+      expect(result.current.readings).toHaveLength(1);
+      expect(result.current.readings[0].weight).toBeCloseTo(176.37, 2);
+      // Fat is a ratio and has no unit, so it passes through untouched
+      expect(result.current.readings[0].fatRatio).toBe(0.225);
+    });
+
+    it("converts computed weights and trends to pounds while leaving fat ratios alone", async () => {
+      givenApi({
+        useMetric: false,
+        computedMeasurements: [buildComputedMeasurement({ actualWeight: 80, trendWeight: 80.5, actualFatPercent: 0.225, trendFatPercent: 0.23 })],
+      });
+
+      const { result } = await renderReadings("computed");
+
+      expect(result.current.readings).toHaveLength(1);
+      const [reading] = result.current.readings;
+      expect(reading.weight).toBeCloseTo(176.37, 2);
+      expect(reading.trend).toBeCloseTo(177.47, 2);
+      expect(reading.fatRatio).toBe(0.225);
+      expect(reading.fatTrend).toBe(0.23);
+    });
+
+    it("keeps kilograms unchanged for a metric profile", async () => {
+      givenApi({ useMetric: true, sourceData: [buildSourceData({ measurements: [{ date: "2024-01-15", time: "08:30:00", weight: 75.5, fatRatio: 0.225 }] })] });
+
+      const { result } = await renderReadings("withings");
+
+      expect(result.current.readings[0].weight).toBe(75.5);
+    });
+
+    it("returns the profile it converted with", async () => {
+      givenApi({ useMetric: false });
+
+      const { result } = await renderReadings("computed");
+
+      expect(result.current.profile?.useMetric).toBe(false);
+      expect(result.current.profile?.firstName).toBe("Alex");
+    });
   });
 
   describe("computed view", () => {
-    it("should return computed measurements sorted oldest first by default", () => {
-      const { result } = renderHook(() => useScaleReadingsData("computed", false));
+    const computed = [
+      buildComputedMeasurement({ date: "2024-01-15", actualWeight: 75.5, trendWeight: 75.2, actualFatPercent: 0.225, trendFatPercent: 0.223 }),
+      buildComputedMeasurement({
+        date: "2024-01-16",
+        actualWeight: 75.3,
+        trendWeight: 75.25,
+        actualFatPercent: undefined,
+        trendFatPercent: undefined,
+        weightIsInterpolated: true,
+      }),
+      buildComputedMeasurement({ date: "2024-01-14", actualWeight: 75.8, trendWeight: 75.4, actualFatPercent: 0.225, trendFatPercent: 0.223 }),
+    ];
+
+    it("maps computed measurements oldest first by default", async () => {
+      givenApi({ useMetric: true, computedMeasurements: computed });
+
+      const { result } = await renderReadings("computed");
 
       expect(result.current.readings).toHaveLength(3);
       expect(result.current.readings[0]).toEqual({
         date: LocalDate.of(2024, 1, 14),
         weight: 75.8,
         trend: 75.4,
-        fatRatio: 22.5,
-        fatTrend: 22.3,
+        fatRatio: 0.225,
+        fatTrend: 0.223,
         weightIsInterpolated: false,
         fatIsInterpolated: false,
       });
-      expect(result.current.readings[1].date).toEqual(LocalDate.of(2024, 1, 15));
-      expect(result.current.readings[2].date).toEqual(LocalDate.of(2024, 1, 16));
+      expect(result.current.readings.map((r) => r.date.toString())).toEqual(["2024-01-14", "2024-01-15", "2024-01-16"]);
     });
 
-    it("should return computed measurements sorted newest first when specified", () => {
-      const { result } = renderHook(() => useScaleReadingsData("computed", true));
+    it("sorts newest first when requested", async () => {
+      givenApi({ useMetric: true, computedMeasurements: computed });
 
-      expect(result.current.readings).toHaveLength(3);
-      expect(result.current.readings[0].date).toEqual(LocalDate.of(2024, 1, 16));
-      expect(result.current.readings[1].date).toEqual(LocalDate.of(2024, 1, 15));
-      expect(result.current.readings[2].date).toEqual(LocalDate.of(2024, 1, 14));
+      const { result } = await renderReadings("computed", true);
+
+      expect(result.current.readings.map((r) => r.date.toString())).toEqual(["2024-01-16", "2024-01-15", "2024-01-14"]);
     });
 
-    it("should include interpolation flags", () => {
-      const { result } = renderHook(() => useScaleReadingsData("computed", false));
+    it("carries the interpolation flags through", async () => {
+      givenApi({ useMetric: true, computedMeasurements: computed });
 
-      const interpolatedReading = result.current.readings.find((r) => r.date.equals(LocalDate.of(2024, 1, 16)));
-      expect(interpolatedReading?.weightIsInterpolated).toBe(true);
+      const { result } = await renderReadings("computed");
+
+      const interpolated = result.current.readings.find((r) => r.date.equals(LocalDate.of(2024, 1, 16)));
+      expect(interpolated?.weightIsInterpolated).toBe(true);
+      expect(interpolated?.fatIsInterpolated).toBe(false);
     });
 
-    it("should return profile data", () => {
-      const { result } = renderHook(() => useScaleReadingsData("computed", false));
-
-      expect(result.current.profile).toEqual({
-        firstName: "Test User",
-        useMetric: true,
-        goalStart: null,
-        goalWeight: null,
-        plannedPoundsPerWeek: null,
-        dayStartOffset: 0,
-        showCalories: false,
-        hideDataBeforeStart: false,
-        sharingToken: null,
-        sharingEnabled: false,
-        isMigrated: true,
-        isNewlyMigrated: false,
+    it("reverses the order when the sort direction changes", async () => {
+      givenApi({ useMetric: true, computedMeasurements: computed });
+      const wrapper = createQueryWrapper(createTestQueryClient(), { syncProgress: true });
+      const { result, rerender } = renderHook(({ newestFirst }) => useScaleReadingsData("computed", newestFirst), {
+        wrapper,
+        initialProps: { newestFirst: false },
       });
+      await waitFor(() => expect(result.current).not.toBeNull());
+      const oldestFirst = result.current.readings;
+
+      rerender({ newestFirst: true });
+
+      expect(result.current.readings).toEqual([...oldestFirst].reverse());
+    });
+
+    it("returns no readings when there are no computed measurements", async () => {
+      givenApi({ useMetric: true, computedMeasurements: [] });
+
+      const { result } = await renderReadings("computed");
+
+      expect(result.current.readings).toEqual([]);
     });
   });
 
   describe("provider view", () => {
-    it("should return withings measurements sorted by date and time", () => {
-      const { result } = renderHook(() => useScaleReadingsData("withings", false));
+    it("sorts same-day readings by time, oldest first", async () => {
+      givenApi({ useMetric: true });
+
+      const { result } = await renderReadings("withings");
 
       expect(result.current.readings).toHaveLength(3);
-
-      // First should be morning measurement on Jan 15
       expect(result.current.readings[0]).toEqual({
         date: LocalDate.of(2024, 1, 15),
         time: "08:30:00",
-        weight: 75.5,
+        weight: 80,
         fatRatio: 0.225,
         provider: "withings",
       });
-
-      // Second should be afternoon measurement on Jan 15
       expect(result.current.readings[1]).toEqual({
         date: LocalDate.of(2024, 1, 15),
         time: "14:00:00",
         weight: 75.7,
-        fatRatio: null,
+        fatRatio: undefined,
         provider: "withings",
       });
-
-      // Third should be Jan 16
       expect(result.current.readings[2].date).toEqual(LocalDate.of(2024, 1, 16));
     });
 
-    it("should handle sorting newest first with time consideration", () => {
-      const { result } = renderHook(() => useScaleReadingsData("withings", true));
+    it("sorts same-day readings by time, newest first", async () => {
+      givenApi({ useMetric: true });
 
-      expect(result.current.readings).toHaveLength(3);
+      const { result } = await renderReadings("withings", true);
 
-      // First should be Jan 16
-      expect(result.current.readings[0].date).toEqual(LocalDate.of(2024, 1, 16));
-
-      // Second should be afternoon measurement on Jan 15
-      expect(result.current.readings[1]).toEqual({
-        date: LocalDate.of(2024, 1, 15),
-        time: "14:00:00",
-        weight: 75.7,
-        fatRatio: null,
-        provider: "withings",
-      });
-
-      // Third should be morning measurement on Jan 15
-      expect(result.current.readings[2]).toEqual({
-        date: LocalDate.of(2024, 1, 15),
-        time: "08:30:00",
-        weight: 75.5,
-        fatRatio: 0.225,
-        provider: "withings",
-      });
+      expect(result.current.readings.map((r) => `${r.date} ${r.time}`)).toEqual(["2024-01-16 08:00:00", "2024-01-15 14:00:00", "2024-01-15 08:30:00"]);
     });
 
-    it("should return fitbit measurements", () => {
-      const { result } = renderHook(() => useScaleReadingsData("fitbit", false));
-
-      expect(result.current.readings).toHaveLength(1);
-      expect(result.current.readings[0]).toEqual({
-        date: LocalDate.of(2024, 1, 15),
-        time: "09:00:00",
-        weight: 75.6,
-        fatRatio: null,
-        provider: "fitbit",
-      });
-    });
-
-    it("should return empty array for unknown provider", () => {
-      const { result } = renderHook(() => useScaleReadingsData("unknown", false));
-
-      expect(result.current.readings).toEqual([]);
-    });
-
-    it("should handle undefined weight as undefined", () => {
-      const dataWithNullWeight = {
+    it("drops the placeholder time for manual entries", async () => {
+      givenApi({
+        useMetric: true,
         sourceData: [
-          {
-            source: "withings",
-            lastUpdate: "2024-01-15T10:00:00Z",
-            measurements: [
-              {
-                date: "2024-01-15",
-                time: "08:30:00",
-                weight: null,
-                fatRatio: 0.225,
-              },
-            ],
-          },
+          buildSourceData({ source: "manual", measurements: [{ date: "2024-01-15", time: "12:00:00", weight: 75.5 }] }),
+          buildSourceData({ source: "withings", measurements: [{ date: "2024-01-15", time: "08:30:00", weight: 80 }] }),
         ],
-      };
+      });
 
-      vi.mocked(useDownloadData).mockReturnValue(dataWithNullWeight as any);
+      const manual = await renderReadings("manual");
+      const withings = await renderReadings("withings");
 
-      const { result } = renderHook(() => useScaleReadingsData("withings", false));
+      expect(manual.result.current.readings).toHaveLength(1);
+      expect(manual.result.current.readings[0].time).toBeUndefined();
+      expect(manual.result.current.readings[0].provider).toBe("manual");
+      expect(withings.result.current.readings[0].time).toBe("08:30:00");
+    });
+
+    it("sorts manual entries without times by date", async () => {
+      givenApi({
+        useMetric: true,
+        sourceData: [
+          buildSourceData({
+            source: "manual",
+            measurements: [
+              { date: "2024-01-16", time: "12:00:00", weight: 75.3 },
+              { date: "2024-01-15", time: "12:00:00", weight: 75.5 },
+            ],
+          }),
+        ],
+      });
+
+      const { result } = await renderReadings("manual");
+
+      expect(result.current.readings.map((r) => r.date.toString())).toEqual(["2024-01-15", "2024-01-16"]);
+    });
+
+    it("maps a null weight to undefined", async () => {
+      givenApi({
+        useMetric: false,
+        sourceData: [buildSourceData({ measurements: [{ date: "2024-01-15", time: "08:30:00", weight: null as unknown as number, fatRatio: 0.225 }] })],
+      });
+
+      const { result } = await renderReadings("withings");
 
       expect(result.current.readings).toHaveLength(1);
       expect(result.current.readings[0].weight).toBeUndefined();
+      expect(result.current.readings[0].fatRatio).toBe(0.225);
     });
 
-    it("should keep a zero weight instead of dropping it", () => {
-      const dataWithZeroWeight = {
-        sourceData: [
-          {
-            source: "withings",
-            lastUpdate: "2024-01-15T10:00:00Z",
-            measurements: [
-              {
-                date: "2024-01-15",
-                time: "08:30:00",
-                weight: 0,
-                fatRatio: 0,
-              },
-            ],
-          },
-        ],
-      };
+    it("keeps a zero weight and zero fat ratio instead of dropping them", async () => {
+      givenApi({ useMetric: true, sourceData: [buildSourceData({ measurements: [{ date: "2024-01-15", time: "08:30:00", weight: 0, fatRatio: 0 }] })] });
 
-      vi.mocked(useDownloadData).mockReturnValue(dataWithZeroWeight as any);
-
-      const { result } = renderHook(() => useScaleReadingsData("withings", false));
+      const { result } = await renderReadings("withings");
 
       expect(result.current.readings[0].weight).toBe(0);
       expect(result.current.readings[0].fatRatio).toBe(0);
     });
-  });
 
-  describe("sorting edge cases", () => {
-    it("should handle readings without time fields", () => {
-      const dataWithoutTime = {
-        sourceData: [
-          {
-            source: "manual",
-            lastUpdate: "2024-01-16T12:00:00Z",
-            measurements: [
-              {
-                date: "2024-01-15",
-                weight: 75.5,
-                fatRatio: null,
-              },
-              {
-                date: "2024-01-16",
-                weight: 75.3,
-                fatRatio: null,
-              },
-            ],
-          },
-        ],
-      };
+    it("returns no readings for a provider that is not in the response", async () => {
+      givenApi({ useMetric: true });
 
-      vi.mocked(useDownloadData).mockReturnValue(dataWithoutTime as any);
-
-      const { result } = renderHook(() => useScaleReadingsData("manual", false));
-
-      expect(result.current.readings).toHaveLength(2);
-      expect(result.current.readings[0].date).toEqual(LocalDate.of(2024, 1, 15));
-      expect(result.current.readings[1].date).toEqual(LocalDate.of(2024, 1, 16));
-    });
-
-    it("should be stable when sort order changes", () => {
-      const { result, rerender } = renderHook(({ sortNewestFirst }) => useScaleReadingsData("computed", sortNewestFirst), {
-        initialProps: { sortNewestFirst: false },
-      });
-
-      const initialReadings = result.current.readings;
-
-      rerender({ sortNewestFirst: true });
-
-      const reversedReadings = result.current.readings;
-
-      expect(reversedReadings).toHaveLength(initialReadings.length);
-      expect(reversedReadings[0]).toEqual(initialReadings[initialReadings.length - 1]);
-      expect(reversedReadings[reversedReadings.length - 1]).toEqual(initialReadings[0]);
-    });
-  });
-
-  describe("empty data handling", () => {
-    it("should handle empty dashboard measurements", () => {
-      vi.mocked(useDownloadData).mockReturnValue({
-        computedMeasurements: [],
-        sourceData: [],
-        providerStatus: {},
-        isMe: true,
-      } as any);
-
-      const { result } = renderHook(() => useScaleReadingsData("computed", false));
-
-      expect(result.current.readings).toEqual([]);
-      expect(result.current.profile).toBeDefined();
-    });
-
-    it("should handle missing provider data", () => {
-      vi.mocked(useDownloadData).mockReturnValue({
-        sourceData: [],
-      } as any);
-
-      const { result } = renderHook(() => useScaleReadingsData("withings", false));
+      const { result } = await renderReadings("unknown");
 
       expect(result.current.readings).toEqual([]);
     });
 
-    it("should handle provider with empty measurements", () => {
-      vi.mocked(useDownloadData).mockReturnValue({
-        sourceData: [
-          {
-            source: "withings",
-            lastUpdate: "2024-01-15T10:00:00Z",
-            measurements: [],
-          },
-        ],
-      } as any);
+    it("returns no readings when the response has no source data", async () => {
+      givenApi({ useMetric: true, sourceData: [] });
 
-      const { result } = renderHook(() => useScaleReadingsData("withings", false));
+      const { result } = await renderReadings("withings");
+
+      expect(result.current.readings).toEqual([]);
+    });
+
+    it("returns no readings when the provider has no measurements", async () => {
+      givenApi({ useMetric: true, sourceData: [buildSourceData({ measurements: [] })] });
+
+      const { result } = await renderReadings("withings");
 
       expect(result.current.readings).toEqual([]);
     });

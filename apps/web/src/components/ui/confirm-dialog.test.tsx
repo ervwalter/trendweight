@@ -102,24 +102,6 @@ describe("ConfirmDialog", () => {
     expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("should render destructive variant when destructive prop is true", () => {
-    render(<ConfirmDialog {...defaultProps} destructive />);
-
-    // Just verify the button renders with correct text
-    // The variant prop is being passed correctly in the implementation
-    const confirmButton = screen.getByRole("button", { name: "Confirm" });
-    expect(confirmButton).toBeInTheDocument();
-  });
-
-  it("should render primary variant when destructive prop is false", () => {
-    render(<ConfirmDialog {...defaultProps} destructive={false} />);
-
-    // Just verify the button renders with correct text
-    // The variant prop is being passed correctly in the implementation
-    const confirmButton = screen.getByRole("button", { name: "Confirm" });
-    expect(confirmButton).toBeInTheDocument();
-  });
-
   it("should render ReactNode description", () => {
     const complexDescription = (
       <div>
@@ -140,25 +122,6 @@ describe("ConfirmDialog", () => {
     const dialog = screen.getByRole("alertdialog");
     expect(dialog).toHaveAttribute("aria-labelledby");
     expect(dialog).toHaveAttribute("aria-describedby");
-  });
-
-  it("should have overlay element", () => {
-    render(<ConfirmDialog {...defaultProps} />);
-
-    // Check that overlay exists (but don't test click behavior due to Radix complexity)
-    const overlay = document.querySelector('[data-state="open"]');
-    expect(overlay).toBeInTheDocument();
-  });
-
-  it("should have both buttons available for keyboard navigation", () => {
-    render(<ConfirmDialog {...defaultProps} />);
-
-    const confirmButton = screen.getByRole("button", { name: "Confirm" });
-    const cancelButton = screen.getByRole("button", { name: "Cancel" });
-
-    // Both buttons should be focusable
-    expect(confirmButton).not.toHaveAttribute("disabled");
-    expect(cancelButton).not.toHaveAttribute("disabled");
   });
 
   it("should render dialog with buttons inside", () => {

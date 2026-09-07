@@ -1,237 +1,85 @@
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { EmbedDashboard } from "./embed-dashboard";
+import { describe, expect, it, vi } from "vitest";
+import type { Mode, TimeRange } from "@/lib/core/interfaces";
 import type { DashboardData } from "@/lib/dashboard/dashboard-context";
+import { useDashboardData } from "@/lib/dashboard/hooks";
+import { buildDashboardData, buildDataPoint, buildProfileData } from "@/test/fixtures";
+import { EmbedDashboard } from "./embed-dashboard";
 
-// Mock the Chart component
+// Highcharts does not render in jsdom; the stand-in proves the chart sees the embed's data
 vi.mock("./chart/chart", () => ({
-  default: () => <div data-testid="chart">Chart Component</div>,
+  default: function ChartStandIn() {
+    const { dataPoints } = useDashboardData();
+    return <div data-testid="chart">{dataPoints.length} points</div>;
+  },
 }));
 
-// Mock the DashboardProvider
-vi.mock("@/lib/dashboard/context", () => ({
-  DashboardProvider: ({ children }: { children: React.ReactNode }) => <div data-testid="dashboard-provider">{children}</div>,
-}));
+const modeOf = (mode: Mode): [Mode, (mode: Mode) => void] => [mode, () => {}];
+const rangeOf = (range: TimeRange): [TimeRange, (range: TimeRange) => void] => [range, () => {}];
 
-// Mock formatMeasurement function
-vi.mock("@/lib/core/numbers", () => ({
-  formatMeasurement: vi.fn((value, options) => {
-    if (options.type === "weight") {
-      return options.metric ? `${value} kg` : `${value} lbs`;
-    }
-    return `${value}%`;
-  }),
-}));
+// Trend 150 -> 149 lb
+const embedData = (overrides: Partial<DashboardData> = {}) =>
+  buildDashboardData({
+    dataPoints: [buildDataPoint("2024-01-01", 150, 152), buildDataPoint("2024-01-08", 149, 148)],
+    profile: buildProfileData({ firstName: "John", useMetric: false }),
+    timeRange: rangeOf("4w"),
+    ...overrides,
+  });
+
+const title = () => screen.getByText(/^(Weight|Fat %|Fat Mass|Lean Mass),/);
 
 describe("EmbedDashboard", () => {
-  const mockDashboardData: DashboardData = {
-    mode: ["weight", vi.fn()],
-    timeRange: ["4w", vi.fn()],
-    profile: {
-      firstName: "John",
-      useMetric: false,
-    } as any,
-    dataPoints: [
-      {
-        date: {} as any, // Mock LocalDate
-        source: "test",
-        trend: 150,
-        actual: 152,
-        isInterpolated: false,
-      },
-      {
-        date: {} as any, // Mock LocalDate
-        source: "test",
-        trend: 149,
-        actual: 148,
-        isInterpolated: false,
-      },
-    ],
-    measurements: [], // Add missing property
-    weightSlope: 0, // Add missing property
-    activeSlope: 0, // Add missing property
-    deltas: [], // Add missing property
-    isMe: true,
-  } as DashboardData;
+  it("shows the mode, the range and the latest trend value above the chart", () => {
+    render(<EmbedDashboard dashboardData={embedData()} />);
 
-  it("renders the dashboard with title and current weight", () => {
-    render(<EmbedDashboard dashboardData={mockDashboardData} />);
-
-    expect(
-      screen.getByText((_content, element) => {
-        return (
-          (element?.className?.includes("font-medium") && element?.textContent?.includes("Weight") && element?.textContent?.includes("Past 4 weeks")) || false
-        );
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Current:")).toBeInTheDocument();
-    expect(screen.getByText("149 lbs")).toBeInTheDocument();
-    expect(screen.getByTestId("chart")).toBeInTheDocument();
+    expect(title()).toHaveTextContent(/^Weight, Past 4 weeks$/);
+    expect(screen.getByText("Current:")).toHaveTextContent(/^Current: 149\.0 lb$/);
+    expect(screen.getByTestId("chart")).toHaveTextContent("2 points");
   });
 
-  it("displays correct mode and time range in title", () => {
-    const data = {
-      ...mockDashboardData,
-      mode: ["fatpercent", vi.fn()],
-      timeRange: ["3m", vi.fn()],
-    } as DashboardData;
+  it.each([
+    ["3m", "Weight, Past 3 months"],
+    ["6m", "Weight, Past 6 months"],
+    ["1y", "Weight, Past 1 year"],
+    ["all", "Weight, All Time"],
+    ["explore", "Weight, Explore"],
+  ] as [TimeRange, string][])("describes the %s range as %j", (range, expected) => {
+    render(<EmbedDashboard dashboardData={embedData({ timeRange: rangeOf(range) })} />);
 
-    render(<EmbedDashboard dashboardData={data} />);
-
-    expect(
-      screen.getByText((_content, element) => {
-        return (
-          (element?.className?.includes("font-medium") && element?.textContent?.includes("Fat %") && element?.textContent?.includes("Past 3 months")) || false
-        );
-      }),
-    ).toBeInTheDocument();
+    expect(title()).toHaveTextContent(new RegExp(`^${expected}$`));
   });
 
-  it("shows 'All Time' for all timeRange", () => {
-    const data = {
-      ...mockDashboardData,
-      timeRange: ["all", vi.fn()],
-    } as DashboardData;
+  it("formats the current value for the mode and unit", () => {
+    render(
+      <EmbedDashboard
+        dashboardData={embedData({
+          mode: modeOf("fatpercent"),
+          dataPoints: [buildDataPoint("2024-01-01", 0.26), buildDataPoint("2024-01-08", 0.248)],
+        })}
+      />,
+    );
 
-    render(<EmbedDashboard dashboardData={data} />);
-
-    expect(
-      screen.getByText((_content, element) => {
-        return (element?.className?.includes("font-medium") && element?.textContent?.includes("Weight") && element?.textContent?.includes("All Time")) || false;
-      }),
-    ).toBeInTheDocument();
+    expect(title()).toHaveTextContent(/^Fat %, Past 4 weeks$/);
+    expect(screen.getByText("Current:")).toHaveTextContent(/^Current: 24\.8%$/);
   });
 
-  it("shows 'Explore' for explore timeRange", () => {
-    const data = {
-      ...mockDashboardData,
-      timeRange: ["explore", vi.fn()],
-    } as DashboardData;
+  it("uses kilograms for metric profiles", () => {
+    render(<EmbedDashboard dashboardData={embedData({ profile: buildProfileData({ firstName: "John", useMetric: true }) })} />);
 
-    render(<EmbedDashboard dashboardData={data} />);
-
-    expect(
-      screen.getByText((_content, element) => {
-        return (element?.className?.includes("font-medium") && element?.textContent?.includes("Weight") && element?.textContent?.includes("Explore")) || false;
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Current:")).toHaveTextContent(/^Current: 149\.0 kg$/);
   });
 
-  it("includes user name when not viewing own data", () => {
-    const data = {
-      ...mockDashboardData,
-      isMe: false,
-    };
+  it("names the owner when viewing someone else's data", () => {
+    render(<EmbedDashboard dashboardData={embedData({ isMe: false })} />);
 
-    render(<EmbedDashboard dashboardData={data} />);
-
-    expect(
-      screen.getByText((_content, element) => {
-        return (
-          (element?.className?.includes("font-medium") &&
-            element?.textContent?.includes("Weight") &&
-            element?.textContent?.includes("Past 4 weeks") &&
-            element?.textContent?.includes("for John")) ||
-          false
-        );
-      }),
-    ).toBeInTheDocument();
+    expect(title()).toHaveTextContent(/^Weight, Past 4 weeks for John$/);
   });
 
-  it("shows no data message when no data points", () => {
-    const data = {
-      ...mockDashboardData,
-      dataPoints: [],
-    };
-
-    render(<EmbedDashboard dashboardData={data} />);
+  it("shows a message instead of the chart without data points", () => {
+    render(<EmbedDashboard dashboardData={embedData({ dataPoints: [] })} />);
 
     expect(screen.getByText("No data available")).toBeInTheDocument();
     expect(screen.queryByText("Current:")).not.toBeInTheDocument();
-    // Should not show the title when no data
-    expect(
-      screen.queryByText((_content, element) => {
-        return element?.className?.includes("font-medium") || false;
-      }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("uses metric units when profile.useMetric is true", () => {
-    const data = {
-      ...mockDashboardData,
-      profile: {
-        ...mockDashboardData.profile,
-        useMetric: true,
-      },
-    };
-
-    render(<EmbedDashboard dashboardData={data} />);
-
-    expect(screen.getByText("149 kg")).toBeInTheDocument();
-  });
-
-  it("handles different modes correctly", () => {
-    const modes = [
-      ["weight", "Weight"],
-      ["fatpercent", "Fat %"],
-      ["fatmass", "Fat Mass"],
-      ["leanmass", "Lean Mass"],
-    ] as const;
-
-    modes.forEach(([mode, expectedLabel]) => {
-      const data = {
-        ...mockDashboardData,
-        mode: [mode, vi.fn()],
-      } as DashboardData;
-
-      const { unmount } = render(<EmbedDashboard dashboardData={data} />);
-
-      expect(
-        screen.getByText((_content, element) => {
-          return (element?.className?.includes("font-medium") && element?.textContent?.includes(expectedLabel)) || false;
-        }),
-      ).toBeInTheDocument();
-
-      unmount();
-    });
-  });
-
-  it("wraps content in DashboardProvider", () => {
-    render(<EmbedDashboard dashboardData={mockDashboardData} />);
-
-    expect(screen.getByTestId("dashboard-provider")).toBeInTheDocument();
-  });
-
-  it("uses flex layout with correct structure", () => {
-    const { container } = render(<EmbedDashboard dashboardData={mockDashboardData} />);
-
-    const mainContainer = container.querySelector(".flex.h-full.w-full.flex-col");
-    expect(mainContainer).toBeInTheDocument();
-
-    const headerContainer = container.querySelector(".flex.items-baseline.justify-between");
-    expect(headerContainer).toBeInTheDocument();
-
-    const chartContainer = container.querySelector(".flex-1");
-    expect(chartContainer).toBeInTheDocument();
-  });
-
-  it("handles data with single data point", () => {
-    const data = {
-      ...mockDashboardData,
-      dataPoints: [
-        {
-          date: {} as any, // Mock LocalDate
-          source: "test",
-          trend: 150,
-          actual: 152,
-          isInterpolated: false,
-        },
-      ],
-    };
-
-    render(<EmbedDashboard dashboardData={data} />);
-
-    expect(screen.getByText("Current:")).toBeInTheDocument();
-    expect(screen.getByText("150 lbs")).toBeInTheDocument();
+    expect(screen.queryByTestId("chart")).not.toBeInTheDocument();
   });
 });

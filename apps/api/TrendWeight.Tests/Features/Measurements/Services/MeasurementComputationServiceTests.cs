@@ -214,11 +214,54 @@ public class MeasurementComputationServiceTests
         // Check that fat data was interpolated for missing days
         result[1].Date.Should().Be("2024-01-02");
         result[1].FatIsInterpolated.Should().BeTrue();
-        result[1].ActualFatPercent.Should().BeApproximately(0.21m, 0.001m); // Linear interpolation
+        result[1].ActualFatPercent.Should().Be(0.21m); // Linear interpolation: 0.20 + 0.01/day
 
         result[2].Date.Should().Be("2024-01-03");
         result[2].FatIsInterpolated.Should().BeTrue();
-        result[2].ActualFatPercent.Should().BeApproximately(0.22m, 0.001m);
+        result[2].ActualFatPercent.Should().Be(0.22m);
+
+        // The fat series interpolates its own weights (100 -> 103 over three days gives
+        // 101 and 102), and fat/lean mass are seeded from those, not from the weight series:
+        //   fat mass  = weight * ratio      : 20.00, 21.21, 22.44, 23.69
+        //   lean mass = weight * (1 - ratio): 80.00, 79.79, 79.56, 79.31
+        // Each mass gets its own EMA with alpha 0.1 (trend + 0.1 * (value - trend)):
+        //   fat  : 20 -> 20.121 -> 20.3529 -> 20.68661  (rounded to 3 places below)
+        //   lean : 80 -> 79.979 -> 79.9371 -> 79.87439
+        // and the ratio itself: 0.2 -> 0.201 -> 0.2029 -> 0.20561.
+        result.Select(r => r.ActualWeight).Should().Equal(100.0m, 101.0m, 102.0m, 103.0m);
+        result.Select(r => r.TrendFatMass).Should().Equal(20.0m, 20.121m, 20.353m, 20.687m);
+        result.Select(r => r.TrendLeanMass).Should().Equal(80.0m, 79.979m, 79.937m, 79.874m);
+        result.Select(r => r.TrendFatPercent).Should().Equal(0.2m, 0.201m, 0.2029m, 0.2056m);
+        result.Select(r => r.WeightIsInterpolated).Should().Equal(false, true, true, false);
+        result.Select(r => r.FatIsInterpolated).Should().Equal(false, true, true, false);
+    }
+
+    [Fact]
+    public void ComputeMeasurements_WithDescendingInput_MatchesAscendingInput()
+    {
+        // Arrange - the same readings, once oldest-first and once newest-first (the order
+        // providers store them), with a gap and same-day duplicates so grouping and
+        // interpolation both depend on the sort rather than the input order.
+        var profile = CreateTestProfile();
+        var readings = new[]
+        {
+            ("2024-01-01", "07:30:00", 80.0m, (decimal?)0.25m),
+            ("2024-01-01", "21:00:00", 81.0m, (decimal?)null),
+            ("2024-01-02", "07:30:00", 79.6m, (decimal?)0.248m),
+            ("2024-01-05", "07:30:00", 79.0m, (decimal?)null),
+            ("2024-01-06", "07:30:00", 78.8m, (decimal?)0.244m)
+        };
+
+        // Act
+        var ascending = _sut.ComputeMeasurements(CreateTestSourceData(readings), profile);
+        var descending = _sut.ComputeMeasurements(CreateTestSourceData(Enumerable.Reverse(readings).ToArray()), profile);
+
+        // Assert
+        ascending.Should().HaveCount(6);
+        ascending[0].Date.Should().Be("2024-01-01");
+        ascending[^1].Date.Should().Be("2024-01-06");
+        descending.Should().BeEquivalentTo(ascending, options => options.WithStrictOrdering());
+        descending[0].Date.Should().Be("2024-01-01");
     }
 
     #endregion
@@ -409,25 +452,25 @@ public class MeasurementComputationServiceTests
         // Act
         var result = _sut.ComputeMeasurements(sourceData, profile);
 
-        // Assert
-        result.Should().HaveCount(100); // Should fill in all 100 days via interpolation
-        result.Should().NotBeEmpty();
+        // Assert - every day from the first reading to the last is present exactly once
+        var firstDate = DateTime.Parse(measurements[0].Date, System.Globalization.CultureInfo.InvariantCulture);
+        var lastDate = DateTime.Parse(measurements[^1].Date, System.Globalization.CultureInfo.InvariantCulture);
+        var daySpan = (lastDate - firstDate).Days + 1;
+        result.Should().HaveCount(daySpan);
+        result.Select(r => r.Date).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
 
-        // Verify we have some interpolated measurements
-        var interpolatedCount = result.Count(r => r.WeightIsInterpolated);
-        interpolatedCount.Should().BeGreaterThan(0, "should have some interpolated days");
+        // The skipped days (and only those) are interpolated
+        var measuredDates = measurements.Select(m => m.Date).ToHashSet();
+        result.Where(r => r.WeightIsInterpolated).Select(r => r.Date).Should().NotIntersectWith(measuredDates);
+        result.Where(r => !r.WeightIsInterpolated).Select(r => r.Date).Should().BeEquivalentTo(measuredDates);
+        result.Count(r => r.WeightIsInterpolated).Should().Be(daySpan - actualMeasurementCount);
 
         // Verify trend is smoother than actual values
         var actualWeights = result.Where(r => !r.WeightIsInterpolated).Select(r => (double)r.ActualWeight).ToList();
         var trendWeights = result.Select(r => (double)r.TrendWeight).ToList();
 
-        if (actualWeights.Count > 1)
-        {
-            var actualVariance = CalculateVariance(actualWeights);
-            var trendVariance = CalculateVariance(trendWeights);
-
-            trendVariance.Should().BeLessThan(actualVariance, "trend should be smoother than actual measurements");
-        }
+        actualWeights.Should().HaveCount(actualMeasurementCount);
+        CalculateVariance(trendWeights).Should().BeLessThan(CalculateVariance(actualWeights), "trend should be smoother than actual measurements");
     }
 
     [Fact]
@@ -572,9 +615,9 @@ public class MeasurementComputationServiceTests
     }
 
     [Fact]
-    public void ComputeMeasurements_WithMixedSources_PreservesSourceInfo()
+    public void ComputeMeasurements_WithMultipleSources_MergesIntoOneDailySeries()
     {
-        // Arrange
+        // Arrange - one reading from each source on consecutive days
         var profile = CreateTestProfile();
         var sourceData = new List<SourceData>
         {
@@ -588,7 +631,7 @@ public class MeasurementComputationServiceTests
             },
             new()
             {
-                Source = "fitbit",
+                Source = "legacy",
                 Measurements = new List<RawMeasurement>
                 {
                     new() { Date = "2024-01-02", Time = "08:00:00", Weight = 71.0m }
@@ -599,10 +642,11 @@ public class MeasurementComputationServiceTests
         // Act
         var result = _sut.ComputeMeasurements(sourceData, profile);
 
-        // Assert
-        result.Should().HaveCount(2);
-        // Note: The service doesn't preserve source in ComputedMeasurement model
-        // This test documents the current behavior
+        // Assert - both sources feed a single chronological series with one trend
+        result.Select(r => r.Date).Should().Equal("2024-01-01", "2024-01-02");
+        result.Select(r => r.ActualWeight).Should().Equal(70.0m, 71.0m);
+        result.Select(r => r.TrendWeight).Should().Equal(70.0m, 70.1m); // 70 + 0.1 * (71 - 70)
+        result.Should().AllSatisfy(r => r.WeightIsInterpolated.Should().BeFalse());
     }
 
     #endregion

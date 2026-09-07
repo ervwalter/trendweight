@@ -1,216 +1,142 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { LocalDate } from "@js-joda/core";
+import { screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import type { Mode, ProfileData } from "@/lib/core/interfaces";
+import { buildDataPoint, buildProfileData } from "@/test/fixtures";
+import { renderWithDashboardData } from "@/test/render";
 import Currently from "./currently";
-import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 
-// Mock the dashboard hooks
-vi.mock("@/lib/dashboard/hooks", () => ({
-  useDashboardData: vi.fn(),
-}));
+const imperial = (overrides: Partial<ProfileData> = {}) =>
+  buildProfileData({ useMetric: false, plannedPoundsPerWeek: undefined, goalWeight: undefined, goalStart: undefined, ...overrides });
 
-import { useDashboardData } from "@/lib/dashboard/hooks";
+const modeOf = (mode: Mode): [Mode, (mode: Mode) => void] => [mode, () => {}];
 
-const mockUseDashboardData = vi.mocked(useDashboardData);
+// 180 -> 178 over one week
+const oneWeek = [buildDataPoint("2024-01-01", 180), buildDataPoint("2024-01-08", 178)];
 
 describe("Currently", () => {
-  const createDataPoint = (date: string, trend: number) => ({
-    date: LocalDate.parse(date),
-    source: "test",
-    actual: trend,
-    trend,
-    isInterpolated: false,
+  it("renders nothing without data points", () => {
+    const { container } = renderWithDashboardData(<Currently />, { dataPoints: [], profile: imperial() });
+
+    expect(container).toBeEmptyDOMElement();
   });
 
-  const defaultMockData: Partial<DashboardData> = {
-    dataPoints: [],
-    mode: ["weight", () => {}],
-    profile: {
-      useMetric: false,
-      plannedPoundsPerWeek: null,
-      goalWeight: null,
-      goalStart: null,
-    } as any,
-  };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns null when no data points", () => {
-    mockUseDashboardData.mockReturnValue(defaultMockData as any);
-
-    const { container } = render(<Currently />);
-    expect(container.firstChild).toBeNull();
-  });
-
-  it("displays current weight with trend", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      dataPoints: [createDataPoint("2024-01-01", 180), createDataPoint("2024-01-08", 178)],
-    } as any);
-
-    render(<Currently />);
+  it("shows the latest trend, the change since the first point and the latest date", () => {
+    renderWithDashboardData(<Currently />, { dataPoints: oneWeek, profile: imperial() });
 
     expect(screen.getByText("Current Weight")).toBeInTheDocument();
     expect(screen.getByText("178.0 lb")).toBeInTheDocument();
     expect(screen.getByText("-2.0 lb")).toBeInTheDocument();
-    expect(screen.getByText(/as of/)).toBeInTheDocument();
+    expect(screen.getByText("as of Jan 8, 2024")).toBeInTheDocument();
   });
 
-  it("displays body fat percentage", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      mode: ["fatpercent"],
-      dataPoints: [createDataPoint("2024-01-01", 0.255), createDataPoint("2024-01-08", 0.248)],
-    } as any);
-
-    render(<Currently />);
-
-    expect(screen.getByText("Current Fat %")).toBeInTheDocument();
-    expect(screen.getByText("24.8%")).toBeInTheDocument();
-    expect(screen.getByText("-0.7%")).toBeInTheDocument();
-  });
-
-  it("displays fat mass", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      mode: ["fatmass"],
-      dataPoints: [createDataPoint("2024-01-01", 45), createDataPoint("2024-01-08", 43)],
-    } as any);
-
-    render(<Currently />);
-
-    expect(screen.getByText("Current Fat Mass")).toBeInTheDocument();
-    expect(screen.getByText("43.0 lb")).toBeInTheDocument();
-    expect(screen.getByText("-2.0 lb")).toBeInTheDocument();
-  });
-
-  it("displays lean mass", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      mode: ["leanmass"],
-      dataPoints: [createDataPoint("2024-01-01", 135), createDataPoint("2024-01-08", 136)],
-    } as any);
-
-    render(<Currently />);
-
-    expect(screen.getByText("Current Lean Mass")).toBeInTheDocument();
-    expect(screen.getByText("136.0 lb")).toBeInTheDocument();
-    expect(screen.getByText("+1.0 lb")).toBeInTheDocument();
-  });
-
-  it("uses metric units when enabled", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      profile: {
-        ...defaultMockData.profile,
-        useMetric: true,
-      } as any,
-      dataPoints: [createDataPoint("2024-01-01", 81.6), createDataPoint("2024-01-08", 80.7)],
-    } as any);
-
-    render(<Currently />);
+  it("formats metric values in kilograms", () => {
+    renderWithDashboardData(<Currently />, {
+      dataPoints: [buildDataPoint("2024-01-01", 81.6), buildDataPoint("2024-01-08", 80.7)],
+      profile: imperial({ useMetric: true }),
+    });
 
     expect(screen.getByText("80.7 kg")).toBeInTheDocument();
     expect(screen.getByText("-0.9 kg")).toBeInTheDocument();
   });
 
-  it("uses goal start date when available", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      profile: {
-        ...defaultMockData.profile,
-        goalStart: "2024-01-05",
-      } as any,
+  it("measures the change from the first point on or after the goal start", () => {
+    renderWithDashboardData(<Currently />, {
       dataPoints: [
-        createDataPoint("2024-01-01", 180),
-        createDataPoint("2024-01-04", 179),
-        createDataPoint("2024-01-05", 178.5),
-        createDataPoint("2024-01-08", 178),
+        buildDataPoint("2024-01-01", 180),
+        buildDataPoint("2024-01-04", 179),
+        buildDataPoint("2024-01-05", 178.5),
+        buildDataPoint("2024-01-08", 178),
       ],
-    } as any);
+      profile: imperial({ goalStart: "2024-01-05" }),
+    });
 
-    render(<Currently />);
-
-    // Should use Jan 5 as the start point, not Jan 1
-    expect(screen.getByText("-0.5 lb")).toBeInTheDocument(); // 178 - 178.5
-    expect(screen.getByText(/since/)).toBeInTheDocument();
+    // 178 - 178.5, not 178 - 180
+    expect(screen.getByText("-0.5 lb")).toBeInTheDocument();
+    expect(screen.getByText("since Jan 5, 2024")).toBeInTheDocument();
   });
 
-  it("handles goal start date edge case", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      profile: {
-        ...defaultMockData.profile,
-        goalStart: "2024-01-10", // Goal start is after all data points
-      } as any,
-      dataPoints: [createDataPoint("2024-01-01", 180), createDataPoint("2024-01-08", 178)],
-    } as any);
-
-    render(<Currently />);
-
-    // Should use the first data point since no data after goal start
-    expect(screen.getByText("-2.0 lb")).toBeInTheDocument();
-  });
-
-  it("calculates intended direction based on planned rate", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      profile: {
-        ...defaultMockData.profile,
-        plannedPoundsPerWeek: -1,
-      } as any,
-      dataPoints: [createDataPoint("2024-01-01", 180), createDataPoint("2024-01-08", 178)],
-    } as any);
-
-    render(<Currently />);
+  it("falls back to the first point when the goal start is after every data point", () => {
+    renderWithDashboardData(<Currently />, { dataPoints: oneWeek, profile: imperial({ goalStart: "2024-01-10" }) });
 
     expect(screen.getByText("-2.0 lb")).toBeInTheDocument();
+    expect(screen.getByText("since Jan 10, 2024")).toBeInTheDocument();
   });
 
-  it("calculates intended direction based on goal weight", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      profile: {
-        ...defaultMockData.profile,
-        goalWeight: 170,
-      } as any,
-      dataPoints: [createDataPoint("2024-01-01", 180), createDataPoint("2024-01-08", 178)],
-    } as any);
+  describe("change direction", () => {
+    it("treats a loss as positive under a losing plan", () => {
+      renderWithDashboardData(<Currently />, { dataPoints: oneWeek, profile: imperial({ plannedPoundsPerWeek: -1 }) });
 
-    render(<Currently />);
+      expect(screen.getByLabelText("Positive change")).toHaveTextContent("↓");
+    });
 
-    // Goal is 170, starting at 180, so intended direction is negative
+    it("treats a loss as negative when there is no plan and the goal is above the starting trend", () => {
+      renderWithDashboardData(<Currently />, { dataPoints: oneWeek, profile: imperial({ goalWeight: 190 }) });
+
+      expect(screen.getByLabelText("Negative change")).toHaveTextContent("↓");
+    });
+
+    it("treats a loss as positive when there is no plan and the goal is below the starting trend", () => {
+      renderWithDashboardData(<Currently />, { dataPoints: oneWeek, profile: imperial({ goalWeight: 170 }) });
+
+      expect(screen.getByLabelText("Positive change")).toHaveTextContent("↓");
+    });
+
+    it("assumes losing is the goal without a plan or goal weight", () => {
+      renderWithDashboardData(<Currently />, {
+        dataPoints: [buildDataPoint("2024-01-01", 178), buildDataPoint("2024-01-08", 180)],
+        profile: imperial(),
+      });
+
+      expect(screen.getByText("+2.0 lb")).toBeInTheDocument();
+      expect(screen.getByLabelText("Negative change")).toHaveTextContent("↑");
+    });
+
+    it("treats a lean mass gain as positive", () => {
+      renderWithDashboardData(<Currently />, {
+        mode: modeOf("leanmass"),
+        dataPoints: [buildDataPoint("2024-01-01", 135), buildDataPoint("2024-01-08", 136)],
+        profile: imperial(),
+      });
+
+      expect(screen.getByText("Current Lean Mass")).toBeInTheDocument();
+      expect(screen.getByText("136.0 lb")).toBeInTheDocument();
+      expect(screen.getByText("+1.0 lb")).toBeInTheDocument();
+      expect(screen.getByLabelText("Positive change")).toHaveTextContent("↑");
+    });
+
+    it("renders no arrow when nothing has changed", () => {
+      renderWithDashboardData(<Currently />, {
+        dataPoints: [buildDataPoint("2024-01-01", 180), buildDataPoint("2024-01-08", 180)],
+        profile: imperial(),
+      });
+
+      expect(screen.getByText("0.0 lb")).toBeInTheDocument();
+      expect(screen.queryByLabelText(/change/)).not.toBeInTheDocument();
+    });
+  });
+
+  it("formats fat percent as a percentage and treats a drop as positive", () => {
+    renderWithDashboardData(<Currently />, {
+      mode: modeOf("fatpercent"),
+      dataPoints: [buildDataPoint("2024-01-01", 0.257), buildDataPoint("2024-01-08", 0.25)],
+      profile: imperial(),
+    });
+
+    expect(screen.getByText("Current Fat %")).toBeInTheDocument();
+    expect(screen.getByText("25.0%")).toBeInTheDocument();
+    expect(screen.getByText("-0.7%")).toBeInTheDocument();
+    expect(screen.getByLabelText("Positive change")).toHaveTextContent("↓");
+  });
+
+  it("formats fat mass in the profile's weight unit", () => {
+    renderWithDashboardData(<Currently />, {
+      mode: modeOf("fatmass"),
+      dataPoints: [buildDataPoint("2024-01-01", 45), buildDataPoint("2024-01-08", 43)],
+      profile: imperial(),
+    });
+
+    expect(screen.getByText("Current Fat Mass")).toBeInTheDocument();
+    expect(screen.getByText("43.0 lb")).toBeInTheDocument();
     expect(screen.getByText("-2.0 lb")).toBeInTheDocument();
-  });
-
-  it("formats dates correctly", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      dataPoints: [createDataPoint("2024-01-01", 180), createDataPoint("2024-12-25", 178)],
-    } as any);
-
-    render(<Currently />);
-
-    expect(screen.getByText(/as of/)).toBeInTheDocument();
-  });
-
-  it("has correct styling classes", () => {
-    mockUseDashboardData.mockReturnValue({
-      ...defaultMockData,
-      dataPoints: [createDataPoint("2024-01-01", 180), createDataPoint("2024-01-08", 178)],
-    } as any);
-
-    const { container } = render(<Currently />);
-
-    const wrapper = container.firstChild;
-    expect(wrapper).toHaveClass("flex", "flex-col", "pb-0", "md:pb-12");
-
-    const title = screen.getByText("Current Weight");
-    expect(title).toHaveClass("text-lg", "font-light");
-
-    const value = screen.getByText("178.0 lb");
-    expect(value).toHaveClass("text-4xl", "font-medium", "md:text-5xl");
   });
 });

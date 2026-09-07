@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ModeToggle } from "./mode-toggle";
 import { ThemeProvider } from "./theme-provider";
@@ -22,7 +22,7 @@ describe("ModeToggle", () => {
     renderWithTheme(<ModeToggle />);
 
     const button = screen.getByRole("button", { name: /toggle theme/i });
-    expect(button.querySelector('[data-testid="sun-icon"]')).toBeInTheDocument();
+    expect(within(button).getByTestId("sun-icon")).toBeInTheDocument();
   });
 
   it("shows moon icon when theme is dark", () => {
@@ -31,7 +31,7 @@ describe("ModeToggle", () => {
     renderWithTheme(<ModeToggle />);
 
     const button = screen.getByRole("button", { name: /toggle theme/i });
-    expect(button.querySelector('[data-testid="moon-icon"]')).toBeInTheDocument();
+    expect(within(button).getByTestId("moon-icon")).toBeInTheDocument();
   });
 
   it("toggles from light to dark when clicked", async () => {
@@ -43,16 +43,14 @@ describe("ModeToggle", () => {
     const button = screen.getByRole("button", { name: /toggle theme/i });
 
     // Initially shows sun icon for light mode
-    expect(button.querySelector('[data-testid="sun-icon"]')).toBeInTheDocument();
+    expect(within(button).getByTestId("sun-icon")).toBeInTheDocument();
 
     await user.click(button);
 
-    await waitFor(() => {
-      // After click, should show moon icon for dark mode
-      expect(button.querySelector('[data-testid="moon-icon"]')).toBeInTheDocument();
-      expect(localStorage.getItem("trendweight-theme")).toBe("dark");
-      expect(document.documentElement.classList.contains("dark")).toBe(true);
-    });
+    // After click, should show moon icon for dark mode
+    await within(button).findByTestId("moon-icon");
+    expect(localStorage.getItem("trendweight-theme")).toBe("dark");
+    expect(document.documentElement).toHaveClass("dark");
   });
 
   it("toggles from dark to light when clicked", async () => {
@@ -64,16 +62,14 @@ describe("ModeToggle", () => {
     const button = screen.getByRole("button", { name: /toggle theme/i });
 
     // Initially shows moon icon for dark mode
-    expect(button.querySelector('[data-testid="moon-icon"]')).toBeInTheDocument();
+    expect(within(button).getByTestId("moon-icon")).toBeInTheDocument();
 
     await user.click(button);
 
-    await waitFor(() => {
-      // After click, should show sun icon for light mode
-      expect(button.querySelector('[data-testid="sun-icon"]')).toBeInTheDocument();
-      expect(localStorage.getItem("trendweight-theme")).toBe("light");
-      expect(document.documentElement.classList.contains("dark")).toBe(false);
-    });
+    // After click, should show sun icon for light mode
+    await within(button).findByTestId("sun-icon");
+    expect(localStorage.getItem("trendweight-theme")).toBe("light");
+    expect(document.documentElement).not.toHaveClass("dark");
   });
 
   it("supports keyboard activation", async () => {

@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { LocalDate } from "@js-joda/core";
 import { convertMeasurements } from "./conversion";
-import { fromKg } from "@/lib/core/weight-units";
 import type { ProfileData } from "@/lib/core/interfaces";
 import type { ApiComputedMeasurement } from "@/lib/api/types";
 
@@ -32,10 +31,10 @@ describe("conversion", () => {
 
       const [result] = convertMeasurements(apiMeasurements, nonMetricProfile);
 
-      expect(result.actualWeight).toBe(fromKg(1, false));
-      expect(result.trendWeight).toBe(fromKg(2, false));
-      expect(result.trendFatMass).toBe(fromKg(0.5, false));
-      expect(result.trendLeanMass).toBe(fromKg(1.5, false));
+      expect(result.actualWeight).toBeCloseTo(2.20462262, 8);
+      expect(result.trendWeight).toBeCloseTo(4.40924524, 8);
+      expect(result.trendFatMass).toBeCloseTo(1.10231131, 8);
+      expect(result.trendLeanMass).toBeCloseTo(3.30693393, 8);
     });
 
     it("should keep a zero fat percentage instead of dropping it", () => {

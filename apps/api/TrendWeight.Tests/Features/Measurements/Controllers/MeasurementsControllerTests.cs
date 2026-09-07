@@ -10,6 +10,7 @@ using TrendWeight.Features.Profile.Services;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
+using TrendWeight.Tests.Fixtures;
 using Xunit;
 using TrendWeight.Features.Common;
 
@@ -17,23 +18,27 @@ namespace TrendWeight.Tests.Features.Measurements.Controllers;
 
 public class MeasurementsControllerTests
 {
+    // A realistic-looking bearer secret; nothing the controller logs may contain it.
+    private const string Code = "shr-secret-0123456789abc";
+
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<IMeasurementOrchestrationService> _orchestrationServiceMock;
-    private readonly Mock<ICurrentRequestContext> _requestContextMock;
+    private readonly CurrentRequestContext _requestContext;
+    private readonly CapturingLoggerProvider _logs;
     private readonly MeasurementsController _sut;
 
     public MeasurementsControllerTests()
     {
         _profileServiceMock = new Mock<IProfileService>();
         _orchestrationServiceMock = new Mock<IMeasurementOrchestrationService>();
-        _requestContextMock = new Mock<ICurrentRequestContext>();
-        _requestContextMock.SetupAllProperties();
+        _requestContext = new CurrentRequestContext();
+        _logs = new CapturingLoggerProvider();
 
         _sut = new MeasurementsController(
             _profileServiceMock.Object,
             _orchestrationServiceMock.Object,
-            Mock.Of<ILogger<MeasurementsController>>(),
-            _requestContextMock.Object);
+            _logs.CreateLogger<MeasurementsController>(),
+            _requestContext);
     }
 
     #region GetMeasurements Tests
@@ -99,6 +104,23 @@ public class MeasurementsControllerTests
     }
 
     [Fact]
+    public async Task GetMeasurements_WithMalformedProgressId_PassesNullToOrchestration()
+    {
+        // Arrange - progress reporting is best effort; a bad id must not block the data
+        var userId = Guid.NewGuid();
+        SetupAuthenticatedUser(userId.ToString());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null)).ReturnsAsync(CreateDataResult(userId));
+
+        // Act
+        var result = await _sut.GetMeasurements(progressId: "nope");
+
+        // Assert
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _orchestrationServiceMock.Verify(x => x.GetForUserAsync(userId, null), Times.Once);
+        _orchestrationServiceMock.Verify(x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid?>()), Times.Once);
+    }
+
+    [Fact]
     public async Task GetMeasurements_WithNoUserIdClaim_ReturnsUnauthorized()
     {
         // Arrange
@@ -157,17 +179,16 @@ public class MeasurementsControllerTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var sharingCode = "test-sharing-code";
         var dataResult = CreateDataResult(userId);
         var user = dataResult.Profile;
         user.Profile.SharingEnabled = true;
-        user.Profile.SharingToken = sharingCode;
+        user.Profile.SharingToken = Code;
 
-        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code)).ReturnsAsync(user);
         _orchestrationServiceMock.Setup(x => x.GetForProfileAsync(user)).ReturnsAsync(dataResult);
 
         // Act
-        var result = await _sut.GetMeasurementsBySharingCode(sharingCode);
+        var result = await _sut.GetMeasurementsBySharingCode(Code);
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -176,6 +197,41 @@ public class MeasurementsControllerTests
         response.ComputedMeasurements.Should().NotBeNull();
         response.SourceData.Should().BeNull(); // Default includeSource=false
         response.ProviderStatus.Should().BeNull(); // No provider status for shared view
+        _logs.ShouldHaveLogged(LogLevel.Information, "via sharing code");
+        _logs.ShouldNotMention(Code);
+    }
+
+    [Fact]
+    public async Task GetMeasurementsBySharingCode_WithProgressId_SetsRequestContext()
+    {
+        // Arrange - the sync pipeline reads the progress id from the scoped request context
+        var progressId = Guid.NewGuid();
+        var dataResult = CreateDataResult(Guid.NewGuid());
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code)).ReturnsAsync(dataResult.Profile);
+        _orchestrationServiceMock.Setup(x => x.GetForProfileAsync(dataResult.Profile)).ReturnsAsync(dataResult);
+
+        // Act
+        var result = await _sut.GetMeasurementsBySharingCode(Code, progressId: progressId.ToString());
+
+        // Assert
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _requestContext.ProgressId.Should().Be(progressId);
+    }
+
+    [Fact]
+    public async Task GetMeasurementsBySharingCode_WithMalformedProgressId_LeavesRequestContextUnset()
+    {
+        // Arrange
+        var dataResult = CreateDataResult(Guid.NewGuid());
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code)).ReturnsAsync(dataResult.Profile);
+        _orchestrationServiceMock.Setup(x => x.GetForProfileAsync(dataResult.Profile)).ReturnsAsync(dataResult);
+
+        // Act
+        var result = await _sut.GetMeasurementsBySharingCode(Code, progressId: "nope");
+
+        // Assert
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _requestContext.ProgressId.Should().BeNull();
     }
 
     [Fact]
@@ -250,54 +306,79 @@ public class MeasurementsControllerTests
     }
 
     [Fact]
-    public async Task GetMeasurementsBySharingCode_WhenUserNotFound_ReturnsNotFound()
+    public async Task GetMeasurementsBySharingCode_WhenUserNotFound_ReturnsNotFoundWithoutLoggingTheCode()
     {
         // Arrange
-        var sharingCode = "invalid-code";
-        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync((DbProfile?)null);
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code)).ReturnsAsync((DbProfile?)null);
 
         // Act
-        var result = await _sut.GetMeasurementsBySharingCode(sharingCode);
+        var result = await _sut.GetMeasurementsBySharingCode(Code);
 
         // Assert
         result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Be("User not found");
+        _logs.ShouldHaveLogged(LogLevel.Warning, "unknown sharing code");
+        _logs.ShouldNotMention(Code);
     }
 
     [Fact]
-    public async Task GetMeasurementsBySharingCode_WhenSharingDisabled_ReturnsNotFound()
+    public async Task GetMeasurementsBySharingCode_WhenSharingDisabled_ReturnsNotFoundWithoutLoggingTheCode()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var sharingCode = "disabled-code";
-        var user = CreateTestProfile(userId);
+        // Arrange - a disabled code can be re-enabled later, so it is still a secret
+        var user = CreateTestProfile(Guid.NewGuid());
         user.Profile.SharingEnabled = false;
+        user.Profile.SharingToken = Code;
 
-        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code)).ReturnsAsync(user);
 
         // Act
-        var result = await _sut.GetMeasurementsBySharingCode(sharingCode);
+        var result = await _sut.GetMeasurementsBySharingCode(Code);
 
         // Assert
         result.Result.Should().BeOfType<NotFoundObjectResult>();
         _orchestrationServiceMock.Verify(x => x.GetForProfileAsync(It.IsAny<DbProfile>()), Times.Never);
+        _logs.ShouldHaveLogged(LogLevel.Warning, "sharing is disabled");
+        _logs.ShouldNotMention(Code);
     }
 
     [Fact]
-    public async Task GetMeasurementsBySharingCode_WhenExceptionThrown_ReturnsInternalServerError()
+    public async Task GetMeasurementsBySharingCode_WhenLookupThrows_ReturnsInternalServerErrorWithoutLoggingTheCode()
     {
         // Arrange
-        var sharingCode = "test-code";
         _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(It.IsAny<string>()))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
-        var result = await _sut.GetMeasurementsBySharingCode(sharingCode);
+        var result = await _sut.GetMeasurementsBySharingCode(Code);
 
         // Assert
         result.Result.Should().BeOfType<ObjectResult>()
             .Which.StatusCode.Should().Be(500);
+        _logs.ShouldHaveLogged(LogLevel.Error, "Error getting measurements");
+        _logs.ShouldNotMention(Code);
+    }
+
+    [Fact]
+    public async Task GetMeasurementsBySharingCode_WhenOrchestrationThrows_ReturnsInternalServerErrorWithoutLoggingTheCode()
+    {
+        // Arrange - the failure happens after the code resolved to a user, so the
+        // error log has the user in hand and must still not fall back to the code
+        var user = CreateTestProfile(Guid.NewGuid());
+        user.Profile.SharingToken = Code;
+        var failure = new InvalidOperationException("Provider sync failed");
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code)).ReturnsAsync(user);
+        _orchestrationServiceMock.Setup(x => x.GetForProfileAsync(user)).ThrowsAsync(failure);
+
+        // Act
+        var result = await _sut.GetMeasurementsBySharingCode(Code);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>()
+            .Which.StatusCode.Should().Be(500);
+        _logs.Entries.Should().ContainSingle(e => e.Level == LogLevel.Error)
+            .Which.Exception.Should().BeSameAs(failure);
+        _logs.ShouldNotMention(Code);
     }
 
     #endregion

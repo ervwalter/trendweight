@@ -1,22 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorBoundary } from "./error-boundary";
 
-// Mock router components
-vi.mock("@tanstack/react-router", () => ({
-  Link: ({ children, to, ...props }: any) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
-  ),
-}));
-
-// Mock react-helmet-async
-vi.mock("react-helmet-async", () => ({
-  Helmet: ({ children }: any) => children,
-}));
-
-// Component that throws an error
 function ThrowError({ shouldThrow }: { shouldThrow: boolean }) {
   if (shouldThrow) {
     throw new Error("Test error");
@@ -25,20 +10,16 @@ function ThrowError({ shouldThrow }: { shouldThrow: boolean }) {
 }
 
 describe("ErrorBoundary", () => {
-  let originalConsoleError: any;
-
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Suppress console errors for these tests
-    originalConsoleError = console.error;
-    console.error = vi.fn();
+    // React reports the caught error on console.error; keep the test output quiet
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    console.error = originalConsoleError;
+    vi.restoreAllMocks();
   });
 
-  it("should render children when there is no error", () => {
+  it("renders its children while nothing throws", () => {
     render(
       <ErrorBoundary>
         <div>Normal content</div>
@@ -48,7 +29,7 @@ describe("ErrorBoundary", () => {
     expect(screen.getByText("Normal content")).toBeInTheDocument();
   });
 
-  it("should render error UI when an error occurs", () => {
+  it("replaces the tree with the error page, including the thrown message", () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
@@ -57,20 +38,13 @@ describe("ErrorBoundary", () => {
 
     expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
     expect(screen.getByText("We encountered an unexpected error while processing your request.")).toBeInTheDocument();
-  });
-
-  it("should display error details when error occurs", () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-
     expect(screen.getByText("Error Details")).toBeInTheDocument();
     expect(screen.getByText("Test error")).toBeInTheDocument();
+    expect(screen.getByText(/Try refreshing the page first/)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "error icon" })).toHaveAttribute("src", "/error.svg");
   });
 
-  it("should display refresh and homepage buttons", () => {
+  it("offers a refresh, a way home and a prefilled support email", () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
@@ -78,96 +52,51 @@ describe("ErrorBoundary", () => {
     );
 
     expect(screen.getByRole("button", { name: "Refresh Page" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Go to Homepage" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go to Homepage" })).toHaveAttribute("href", "/");
+
+    const href = screen.getByRole("link", { name: "Email Support" }).getAttribute("href") ?? "";
+    expect(href).toMatch(/^mailto:erv@ewal\.net\?subject=TrendWeight%20Error%20Report&body=/);
+    const body = decodeURIComponent(href.slice(href.indexOf("&body=") + "&body=".length));
+    expect(body).toContain("- Error Message: Test error");
   });
 
-  it("should log error to console", () => {
-    const consoleSpy = vi.spyOn(console, "error");
-
+  it("logs the caught error", () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>,
     );
 
-    expect(consoleSpy).toHaveBeenCalled();
-    // The actual console.error call from React's error boundary
-    expect(consoleSpy.mock.calls.some((call) => call.some((arg) => arg instanceof Error && arg.message === "Test error"))).toBe(true);
+    expect(console.error).toHaveBeenCalledWith("Error caught by ErrorBoundary:", expect.objectContaining({ message: "Test error" }), expect.anything());
   });
 
-  it("should display help text", () => {
+  it("sets the page title and blocks indexing", async () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText(/Try refreshing the page first/)).toBeInTheDocument();
-    expect(screen.getByText(/If the problem persists/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.title).toBe("Something went wrong - TrendWeight");
+    });
+    expect(document.head.innerHTML).toContain('<meta name="robots" content="noindex, nofollow">');
   });
 
-  it("should have error icon", () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-
-    // Check for the error image
-    const icon = screen.getByRole("img", { name: "error icon" });
-    expect(icon).toBeInTheDocument();
-    expect(icon).toHaveAttribute("src", "/error.svg");
-  });
-
-  it("should set page title and meta tags when error occurs", () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-
-    // Helmet is mocked, so we can't test actual meta tags
-    // Just verify the error UI is shown
-    expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
-  });
-
-  it("should display error message for different errors", () => {
-    const { unmount } = render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-
-    expect(screen.getByText("Test error")).toBeInTheDocument();
-    unmount();
-
-    // Test that error boundary shows errors
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-
-    expect(screen.getByText("Test error")).toBeInTheDocument();
-  });
-
-  it("should handle error recovery", () => {
+  it("stays on the error page after the children stop throwing", () => {
     const { rerender } = render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
-
-    // Error boundaries don't automatically recover, but we can test the non-error state
     rerender(
       <ErrorBoundary>
         <ThrowError shouldThrow={false} />
       </ErrorBoundary>,
     );
 
-    // The error boundary will still show error state since it doesn't auto-recover
     expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
+    expect(screen.queryByText("No error")).not.toBeInTheDocument();
   });
 });

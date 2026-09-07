@@ -1,51 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http } from "msw";
+import { Suspense } from "react";
+import { queryKeys } from "@/lib/api/queries";
+import type { ProfileData } from "@/lib/core/interfaces";
+import { mockAuth, TEST_TOKEN } from "@/test/auth";
+import { buildProfileResponse } from "@/test/fixtures";
+import { server } from "@/test/mocks/server";
+import { json, recordRequests, type Recorded } from "@/test/msw";
+import { renderWithProviders } from "@/test/render";
 import { Settings } from "./settings";
 
-// Mock dependencies
+// Navigation blocking needs a router; the guard's input is what matters here
 const mockNavigationGuard = vi.fn();
 vi.mock("@/lib/hooks/use-navigation-guard", () => ({
   useNavigationGuard: (isDirty: boolean) => mockNavigationGuard(isDirty),
 }));
+vi.mock("@/lib/auth/use-auth");
 
-// Mock API calls
-let mockProfileData = {
-  firstName: "John Doe",
-  useMetric: false,
-  plannedPoundsPerWeek: 1.0,
-  goalWeight: 180,
-  goalStart: "2024-01-01",
-  dayStartOffset: 0,
-  showCalories: false,
-  hideDataBeforeStart: false,
-};
-
-const mockMutateAsync = vi.fn();
-const mockUpdateProfile = {
-  mutateAsync: mockMutateAsync,
-  isError: false,
-  isSuccess: false,
-};
-
-vi.mock("@/lib/api/queries", () => ({
-  useProfile: () => ({ data: mockProfileData }),
-}));
-
-vi.mock("@/lib/api/mutations", () => ({
-  useUpdateProfile: () => mockUpdateProfile,
-}));
-
-// Mock UI components
-vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, onClick, disabled, type, variant }: any) => (
-    <button onClick={onClick} disabled={disabled} type={type} data-variant={variant}>
-      {children}
-    </button>
-  ),
-}));
-
-// Mock section components
+// The sections have their own tests; these stand-ins expose the registered fields
 vi.mock("./account-security-section", () => ({
   AccountSecuritySection: () => <div data-testid="account-security">Account Security</div>,
 }));
@@ -112,10 +86,6 @@ vi.mock("./profile-section", () => ({
   ),
 }));
 
-vi.mock("./settings-layout", () => ({
-  SettingsLayout: ({ children }: any) => <div>{children}</div>,
-}));
-
 vi.mock("./sharing-section", () => ({
   SharingSection: () => <div data-testid="sharing-section">Sharing Section</div>,
 }));
@@ -124,378 +94,305 @@ vi.mock("./api-key-section", () => ({
   ApiKeySection: () => <div data-testid="api-key-section">API Key Section</div>,
 }));
 
+const PROFILE_PATH = "/api/profile";
+
+const baseProfile: ProfileData = {
+  firstName: "John Doe",
+  useMetric: false,
+  plannedPoundsPerWeek: 1.0,
+  goalWeight: 180,
+  goalStart: "2024-01-01",
+  dayStartOffset: 0,
+  showCalories: false,
+  hideDataBeforeStart: false,
+  trendAlgorithm: "ewma",
+  isNewlyMigrated: false,
+};
+
+// GET /api/profile serves this profile; PUT echoes the submitted fields back as the saved profile
+function givenProfile(overrides: Partial<ProfileData> = {}) {
+  const profile = { ...baseProfile, ...overrides };
+  server.use(
+    http.get(PROFILE_PATH, () => json(200, buildProfileResponse({ user: profile }))),
+    http.put(PROFILE_PATH, async ({ request }) => {
+      const body = (await request.json()) as Partial<ProfileData>;
+      return json(200, buildProfileResponse({ user: { ...profile, ...body } }));
+    }),
+  );
+}
+
+async function renderSettings() {
+  const result = renderWithProviders(
+    <Suspense fallback={<p>Loading settings...</p>}>
+      <Settings />
+    </Suspense>,
+  );
+  await screen.findByTestId("first-name");
+  return result;
+}
+
+const putCalls = (calls: Recorded[]) => calls.filter((call) => call.method === "PUT" && call.path === PROFILE_PATH);
+
+const saveButton = () => screen.getByRole("button", { name: "Save Settings" });
+
 describe("Settings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUpdateProfile.isError = false;
-    mockUpdateProfile.isSuccess = false;
-    // Mock the response to match what the component expects
-    mockMutateAsync.mockResolvedValue({
-      user: mockProfileData,
-    });
+    mockAuth();
+    givenProfile();
   });
 
-  it("should render all sections", () => {
-    render(<Settings />);
+  it("renders all sections once the profile has loaded", async () => {
+    await renderSettings();
 
-    expect(screen.getByTestId("profile-section")).toBeInTheDocument();
-    expect(screen.getByTestId("goal-section")).toBeInTheDocument();
-    expect(screen.getByTestId("advanced-section")).toBeInTheDocument();
-    expect(screen.getByTestId("sharing-section")).toBeInTheDocument();
-    expect(screen.getByTestId("connected-accounts")).toBeInTheDocument();
-    expect(screen.getByTestId("download-section")).toBeInTheDocument();
-    expect(screen.getByTestId("api-key-section")).toBeInTheDocument();
-    expect(screen.getByTestId("account-security")).toBeInTheDocument();
-    expect(screen.getByTestId("danger-zone")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    for (const section of [
+      "profile-section",
+      "goal-section",
+      "advanced-section",
+      "sharing-section",
+      "connected-accounts",
+      "download-section",
+      "api-key-section",
+      "account-security",
+      "danger-zone",
+    ]) {
+      expect(screen.getByTestId(section)).toBeInTheDocument();
+    }
   });
 
-  it("should populate form with settings data", async () => {
-    render(<Settings />);
+  it("populates the form with the profile", async () => {
+    await renderSettings();
 
-    await waitFor(() => {
-      expect(screen.getByTestId("first-name")).toHaveValue("John Doe");
-      expect(screen.getByTestId("goal-weight")).toHaveValue(180);
-      expect(screen.getByTestId("goal-start")).toHaveValue("2024-01-01");
-      expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
-    });
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("John Doe"));
+    expect(screen.getByTestId("goal-weight")).toHaveValue(180);
+    expect(screen.getByTestId("goal-start")).toHaveValue("2024-01-01");
+    expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
+    expect(screen.getByTestId("use-metric")).not.toBeChecked();
+    expect(saveButton()).toBeDisabled();
   });
 
-  it("should return to a clean state when a change is reverted and optional fields are unset", async () => {
+  it("populates metric profiles", async () => {
+    givenProfile({ useMetric: true, goalWeight: 82, plannedPoundsPerWeek: 0.5 });
+    await renderSettings();
+
+    await waitFor(() => expect(screen.getByTestId("use-metric")).toBeChecked());
+    expect(screen.getByTestId("goal-weight")).toHaveValue(82);
+    expect(screen.getByTestId("planned-rate")).toHaveValue(0.5);
+  });
+
+  it("returns to a clean state when a change is reverted and optional fields are unset", async () => {
     // Regression: with goalStart/goalWeight unset, the empty date input holds "" and the
     // empty valueAsNumber input holds NaN. Unless hydration normalizes the defaults to
     // match, react-hook-form's isDirty deep-compare sticks dirty forever after any edit.
-    const original = { ...mockProfileData };
-    delete (mockProfileData as Partial<typeof mockProfileData>).goalStart;
-    delete (mockProfileData as Partial<typeof mockProfileData>).goalWeight;
-    try {
-      const user = userEvent.setup();
-      render(<Settings />);
+    givenProfile({ goalStart: undefined, goalWeight: undefined });
+    const user = userEvent.setup();
+    await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("John Doe"));
 
-      const checkbox = screen.getByTestId("show-calories");
-      await user.click(checkbox); // change
-      expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
+    const checkbox = screen.getByTestId("show-calories");
+    await user.click(checkbox); // change
+    expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
 
-      await user.click(checkbox); // revert
-      await waitFor(() => {
-        expect(screen.queryByText("You have unsaved changes")).not.toBeInTheDocument();
-        expect(screen.getByText("Save Settings")).toBeDisabled();
-      });
-    } finally {
-      Object.assign(mockProfileData, original);
-    }
+    await user.click(checkbox); // revert
+    await waitFor(() => expect(screen.queryByText("You have unsaved changes")).not.toBeInTheDocument());
+    expect(saveButton()).toBeDisabled();
   });
 
-  it("should show unsaved changes message when form is dirty", async () => {
+  it("shows the unsaved changes message and enables saving when the form is dirty", async () => {
     const user = userEvent.setup();
-    render(<Settings />);
+    await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("John Doe"));
+    expect(saveButton()).toBeDisabled();
+    expect(mockNavigationGuard).toHaveBeenLastCalledWith(false);
 
     const firstNameInput = screen.getByTestId("first-name");
     await user.clear(firstNameInput);
     await user.type(firstNameInput, "Jane Doe");
 
     expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
+    expect(saveButton()).toBeEnabled();
+    expect(mockNavigationGuard).toHaveBeenLastCalledWith(true);
   });
 
   it("preserves unsaved settings when a background refetch returns a new profile", async () => {
-    const original = mockProfileData;
     const user = userEvent.setup();
-    const { rerender } = render(<Settings />);
+    const recorder = recordRequests();
+    const { queryClient } = await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("John Doe"));
+
     await user.clear(screen.getByTestId("first-name"));
     await user.type(screen.getByTestId("first-name"), "Unsaved Name");
-    try {
-      mockProfileData = { ...original, goalWeight: 175 };
-      rerender(<Settings />);
-      expect(screen.getByTestId("first-name")).toHaveValue("Unsaved Name");
-      expect(screen.getByTestId("goal-weight")).toHaveValue(180);
-      expect(screen.getByText("Save Settings")).toBeEnabled();
-      expect(mockNavigationGuard).toHaveBeenLastCalledWith(true);
-    } finally {
-      mockProfileData = original;
-    }
+
+    givenProfile({ goalWeight: 175 });
+    await act(() => queryClient.refetchQueries({ queryKey: queryKeys.profile() }));
+    await waitFor(() => expect(queryClient.getQueryState(queryKeys.profile())?.dataUpdateCount).toBe(2));
+
+    expect(screen.getByTestId("first-name")).toHaveValue("Unsaved Name");
+    expect(screen.getByTestId("goal-weight")).toHaveValue(180);
+    expect(saveButton()).toBeEnabled();
+    expect(mockNavigationGuard).toHaveBeenLastCalledWith(true);
+
+    // The draft, not the refetched profile, is what gets saved
+    await user.click(saveButton());
+    await waitFor(() => expect(putCalls(recorder.calls)).toHaveLength(1));
+    const [put] = putCalls(await recorder.settled());
+    expect(put.body).toMatchObject({ firstName: "Unsaved Name", goalWeight: 180 });
   });
 
-  it("refreshes pristine settings when a background refetch returns a new profile", () => {
-    const original = mockProfileData;
-    const { rerender } = render(<Settings />);
-    try {
-      mockProfileData = { ...original, firstName: "Updated Elsewhere" };
-      rerender(<Settings />);
-      expect(screen.getByTestId("first-name")).toHaveValue("Updated Elsewhere");
-      expect(screen.getByText("Save Settings")).toBeDisabled();
-    } finally {
-      mockProfileData = original;
-    }
+  it("refreshes pristine settings when a background refetch returns a new profile", async () => {
+    const { queryClient } = await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("John Doe"));
+
+    givenProfile({ firstName: "Updated Elsewhere" });
+    await act(() => queryClient.refetchQueries({ queryKey: queryKeys.profile() }));
+
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("Updated Elsewhere"));
+    expect(saveButton()).toBeDisabled();
+    expect(screen.queryByText("You have unsaved changes")).not.toBeInTheDocument();
   });
 
-  it("should enable save button when form is dirty", async () => {
+  it("saves the updated values and reports success", async () => {
     const user = userEvent.setup();
-    render(<Settings />);
-
-    const saveButton = screen.getByText("Save Settings");
-    expect(saveButton).toBeDisabled();
+    const recorder = recordRequests();
+    await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("John Doe"));
 
     const firstNameInput = screen.getByTestId("first-name");
     await user.clear(firstNameInput);
     await user.type(firstNameInput, "Jane Doe");
+    await user.click(saveButton());
 
-    expect(saveButton).not.toBeDisabled();
-    expect(saveButton).toHaveAttribute("data-variant", "default");
+    expect(await screen.findByText("Settings saved successfully!")).toBeInTheDocument();
+    expect(screen.queryByText("You have unsaved changes")).not.toBeInTheDocument();
+    expect(saveButton()).toBeDisabled();
+    const [put] = putCalls(await recorder.settled());
+    expect(put.headers.authorization).toBe(`Bearer ${TEST_TOKEN}`);
+    expect(put.body).toEqual({ ...baseProfile, firstName: "Jane Doe" });
   });
 
-  it("should submit form with updated values", async () => {
+  it("submits cleared goal fields as unset", async () => {
     const user = userEvent.setup();
-    render(<Settings />);
+    const recorder = recordRequests();
+    await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("goal-weight")).toHaveValue(180));
 
-    const firstNameInput = screen.getByTestId("first-name");
-    await user.clear(firstNameInput);
-    await user.type(firstNameInput, "Jane Doe");
+    await user.clear(screen.getByTestId("goal-weight"));
+    await user.clear(screen.getByTestId("goal-start"));
+    await user.click(saveButton());
 
-    const saveButton = screen.getByText("Save Settings");
-    await user.click(saveButton);
-
-    await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalledWith({
-        ...mockProfileData,
-        firstName: "Jane Doe",
-      });
-    });
+    expect(await screen.findByText("Settings saved successfully!")).toBeInTheDocument();
+    const [put] = putCalls(await recorder.settled());
+    expect(put.body).not.toHaveProperty("goalWeight");
+    expect(put.body).not.toHaveProperty("goalStart");
   });
 
-  it("should trigger unit toggle", async () => {
-    const user = userEvent.setup();
-    render(<Settings />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(180);
-      expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
-    });
-
-    // Toggle to metric
-    const metricCheckbox = screen.getByTestId("use-metric");
-    await user.click(metricCheckbox);
-
-    // The checkbox should be checked
-    expect(metricCheckbox).toBeChecked();
-
-    // The form should be dirty
-    expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
-  });
-
-  it("should handle metric data", async () => {
-    // Start with metric data
-    mockProfileData.useMetric = true;
-    mockProfileData.goalWeight = 82;
-    mockProfileData.plannedPoundsPerWeek = 0.5;
-
-    render(<Settings />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("use-metric")).toBeChecked();
-      expect(screen.getByTestId("goal-weight")).toHaveValue(82);
-      expect(screen.getByTestId("planned-rate")).toHaveValue(0.5);
-    });
-
-    // Reset for other tests
-    mockProfileData.useMetric = false;
-    mockProfileData.goalWeight = 180;
-    mockProfileData.plannedPoundsPerWeek = 1.0;
-  });
-
-  it("should handle empty goal values", async () => {
-    const user = userEvent.setup();
-    render(<Settings />);
-
-    const goalWeightInput = screen.getByTestId("goal-weight");
-    await user.clear(goalWeightInput);
-
-    const goalStartInput = screen.getByTestId("goal-start");
-    await user.clear(goalStartInput);
-
-    const saveButton = screen.getByText("Save Settings");
-    await user.click(saveButton);
-
-    await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          goalStart: undefined,
-          goalWeight: undefined,
-        }),
-      );
-    });
-  });
-
-  it("should show error message on save failure", async () => {
-    // Suppress expected console.error for this test
+  it("shows an error and keeps the draft when saving fails", async () => {
+    // Suppress the expected console.error for this test
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
     const user = userEvent.setup();
-    mockMutateAsync.mockRejectedValue(new Error("Network error"));
+    server.use(http.put(PROFILE_PATH, () => json(500, { error: "Server exploded" })));
+    await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("John Doe"));
 
-    const { rerender } = render(<Settings />);
+    await user.type(screen.getByTestId("first-name"), " Updated");
+    await user.click(saveButton());
 
-    const firstNameInput = screen.getByTestId("first-name");
-    await user.type(firstNameInput, " Updated");
-
-    const saveButton = screen.getByText("Save Settings");
-    await user.click(saveButton);
-
-    await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledOnce());
-    mockUpdateProfile.isError = true;
-    rerender(<Settings />);
-
-    expect(screen.getByText("Failed to save settings. Please try again.")).toBeInTheDocument();
+    expect(await screen.findByText("Failed to save settings. Please try again.")).toBeInTheDocument();
+    expect(screen.queryByText("Settings saved successfully!")).not.toBeInTheDocument();
+    expect(screen.getByTestId("first-name")).toHaveValue("John Doe Updated");
+    expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
+    expect(saveButton()).toBeEnabled();
 
     consoleErrorSpy.mockRestore();
   });
 
-  it("should show success message after saving", async () => {
+  it("disables the save button while submitting", async () => {
     const user = userEvent.setup();
-    const { rerender } = render(<Settings />);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    server.use(
+      http.put(PROFILE_PATH, async () => {
+        await gate;
+        return json(200, buildProfileResponse({ user: { ...baseProfile, firstName: "John Doe Updated" } }));
+      }),
+    );
+    await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("John Doe"));
 
-    const firstNameInput = screen.getByTestId("first-name");
-    await user.type(firstNameInput, " Updated");
+    await user.type(screen.getByTestId("first-name"), " Updated");
+    await user.click(saveButton());
 
-    const saveButton = screen.getByText("Save Settings");
-    await user.click(saveButton);
+    expect(await screen.findByRole("button", { name: "Saving..." })).toBeDisabled();
 
-    await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledOnce());
-    mockUpdateProfile.isSuccess = true;
-    rerender(<Settings />);
-
+    release();
     expect(await screen.findByText("Settings saved successfully!")).toBeInTheDocument();
+    expect(saveButton()).toBeDisabled();
   });
 
-  it("should disable save button while submitting", async () => {
+  it("marks the form dirty when the unit checkbox is toggled", async () => {
     const user = userEvent.setup();
+    await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("goal-weight")).toHaveValue(180));
 
-    // Create a promise that we can control
-    let resolveSubmit: (value: any) => void;
-    const submitPromise = new Promise((resolve) => {
-      resolveSubmit = resolve;
-    });
-    mockMutateAsync.mockReturnValue(submitPromise);
+    await user.click(screen.getByTestId("use-metric"));
 
-    render(<Settings />);
-
-    const firstNameInput = screen.getByTestId("first-name");
-    await user.type(firstNameInput, " Updated");
-
-    const saveButton = screen.getByText("Save Settings");
-    await user.click(saveButton);
-
-    // Button should be disabled and show loading text
-    expect(saveButton).toBeDisabled();
-    expect(saveButton).toHaveTextContent("Saving...");
-
-    // Resolve the promise with the expected response structure
-    resolveSubmit!({ user: mockProfileData });
-    await waitFor(() => {
-      expect(saveButton).toHaveTextContent("Save Settings");
-    });
-  });
-
-  it("should call navigation guard with dirty state", async () => {
-    const user = userEvent.setup();
-    render(<Settings />);
-
-    expect(mockNavigationGuard).toHaveBeenCalledWith(false);
-
-    const firstNameInput = screen.getByTestId("first-name");
-    await user.type(firstNameInput, " Updated");
-
-    expect(mockNavigationGuard).toHaveBeenCalledWith(true);
+    expect(screen.getByTestId("use-metric")).toBeChecked();
+    expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
   });
 
   it("shows a zero goal weight as no goal and keeps a zero plan when toggling units", async () => {
-    const user = userEvent.setup();
-
     // Older migrated profiles store 0 for "no goal"; 0 is a real "maintain" plan.
-    mockProfileData.goalWeight = 0;
-    mockProfileData.plannedPoundsPerWeek = 0;
-
-    render(<Settings />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(null);
-      expect(screen.getByTestId("planned-rate")).toHaveValue(0);
-    });
-
-    // Toggle to metric
-    const metricCheckbox = screen.getByTestId("use-metric");
-    await user.click(metricCheckbox);
-
-    // The empty goal stays empty and the plan stays 0
-    await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(null);
-      expect(screen.getByTestId("planned-rate")).toHaveValue(0);
-    });
-
-    // Saving submits the goal as unset rather than 0
-    await user.click(screen.getByRole("button", { name: /save/i }));
-    await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ goalWeight: undefined }));
-    });
-
-    // Reset for other tests
-    mockProfileData.goalWeight = 180;
-    mockProfileData.plannedPoundsPerWeek = 1.0;
-  });
-
-  it("round-trips a fractional goal weight through a unit toggle without losing the decimal", async () => {
+    givenProfile({ goalWeight: 0, plannedPoundsPerWeek: 0 });
     const user = userEvent.setup();
+    const recorder = recordRequests();
+    await renderSettings();
 
-    mockProfileData.useMetric = true;
-    mockProfileData.goalWeight = 70.5;
-
-    render(<Settings />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(70.5);
-    });
-
-    await user.click(screen.getByTestId("unit-lbs"));
-    await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(155.4);
-    });
+    await waitFor(() => expect(screen.getByTestId("first-name")).toHaveValue("John Doe"));
+    expect(screen.getByTestId("goal-weight")).toHaveValue(null);
+    expect(screen.getByTestId("planned-rate")).toHaveValue(0);
 
     await user.click(screen.getByTestId("unit-kg"));
-    await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(70.5);
-    });
 
-    // Reset for other tests
-    mockProfileData.useMetric = false;
-    mockProfileData.goalWeight = 180;
+    // The empty goal stays empty and the plan stays 0
+    await waitFor(() => expect(screen.getByTestId("use-metric")).toBeChecked());
+    expect(screen.getByTestId("goal-weight")).toHaveValue(null);
+    expect(screen.getByTestId("planned-rate")).toHaveValue(0);
+
+    // Saving submits the goal as unset rather than 0
+    await user.click(saveButton());
+    expect(await screen.findByText("Settings saved successfully!")).toBeInTheDocument();
+    const [put] = putCalls(await recorder.settled());
+    expect(put.body).not.toHaveProperty("goalWeight");
+    expect(put.body).toMatchObject({ useMetric: true, plannedPoundsPerWeek: 0 });
   });
 
-  it("should not convert units when clicking the same unit button", async () => {
+  it("converts the goal and plan when switching units", async () => {
+    givenProfile({ useMetric: true, goalWeight: 70.5, plannedPoundsPerWeek: -0.5 });
     const user = userEvent.setup();
+    await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("goal-weight")).toHaveValue(70.5));
 
-    // Start with lbs and specific values
-    mockProfileData.useMetric = false;
-    mockProfileData.goalWeight = 180;
-    mockProfileData.plannedPoundsPerWeek = 1.0;
+    await user.click(screen.getByTestId("unit-lbs"));
+    await waitFor(() => expect(screen.getByTestId("goal-weight")).toHaveValue(155.4));
+    expect(screen.getByTestId("planned-rate")).toHaveValue(-1);
+    expect(screen.getByTestId("use-metric")).not.toBeChecked();
 
-    render(<Settings />);
+    // Round-tripping keeps the decimal
+    await user.click(screen.getByTestId("unit-kg"));
+    await waitFor(() => expect(screen.getByTestId("goal-weight")).toHaveValue(70.5));
+    expect(screen.getByTestId("planned-rate")).toHaveValue(-0.5);
+  });
 
-    await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(180);
-      expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
-    });
+  it("does not convert units when clicking the current unit again", async () => {
+    const user = userEvent.setup();
+    await renderSettings();
+    await waitFor(() => expect(screen.getByTestId("goal-weight")).toHaveValue(180));
 
-    // Click lbs button again (should not convert)
-    const lbsButton = screen.getByTestId("unit-lbs");
-    await user.click(lbsButton);
+    await user.click(screen.getByTestId("unit-lbs"));
 
-    // Values should remain unchanged (not multiplied by conversion factor)
-    await waitFor(() => {
-      expect(screen.getByTestId("goal-weight")).toHaveValue(180);
-      expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
-    });
-
-    // Reset for other tests
-    mockProfileData.useMetric = false;
-    mockProfileData.goalWeight = 180;
-    mockProfileData.plannedPoundsPerWeek = 1.0;
+    expect(screen.getByTestId("goal-weight")).toHaveValue(180);
+    expect(screen.getByTestId("planned-rate")).toHaveValue(1.0);
+    expect(screen.queryByText("You have unsaved changes")).not.toBeInTheDocument();
   });
 });

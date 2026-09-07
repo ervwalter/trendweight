@@ -1,101 +1,96 @@
+using System.Globalization;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Supabase.Interfaces;
-using Supabase.Realtime;
-using TrendWeight.Features.Measurements;
+using Newtonsoft.Json;
+using Supabase.Postgrest;
+using TrendWeight.Features.ApiKeys;
 using TrendWeight.Features.Measurements.Models;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Features.Profile.Services;
-using TrendWeight.Features.ProviderLinks.Services;
-using TrendWeight.Infrastructure.DataAccess;
-using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Infrastructure.Auth;
+using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Infrastructure.Services;
+using TrendWeight.Tests.Fixtures;
 
 namespace TrendWeight.Tests.Features.Profile.Services;
 
 public class ProfileServiceTests
 {
-    private readonly Mock<ISupabaseService> _supabaseServiceMock;
-    private readonly Mock<ILogger<ProfileService>> _loggerMock;
-    private readonly Mock<IUserAccountMappingService> _userAccountMappingServiceMock;
-    private readonly Mock<IClerkService> _clerkServiceMock;
+    private const string OldTimestamp = "2020-01-01T00:00:00.0000000Z";
+
+    private readonly FakeSupabaseService _supabase = new();
+    private readonly CapturingLoggerProvider _logs = new();
+    private readonly Mock<IUserAccountMappingService> _userAccountMappingServiceMock = new();
+    private readonly Mock<IClerkService> _clerkServiceMock = new();
     private readonly ProfileService _sut;
 
     public ProfileServiceTests()
     {
-        _supabaseServiceMock = new Mock<ISupabaseService>();
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbLegacyProfile>(
-            It.IsAny<Action<ISupabaseTable<DbLegacyProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbLegacyProfile>());
-        _loggerMock = new Mock<ILogger<ProfileService>>();
-        _userAccountMappingServiceMock = new Mock<IUserAccountMappingService>();
-        _clerkServiceMock = new Mock<IClerkService>();
-
         _sut = new ProfileService(
-            _supabaseServiceMock.Object,
-            _loggerMock.Object,
+            _supabase,
+            _logs.CreateLogger<ProfileService>(),
             _userAccountMappingServiceMock.Object,
             _clerkServiceMock.Object);
     }
 
     [Fact]
-    public async Task GetByIdAsync_WithValidGuid_ReturnsProfile()
+    public async Task GetByIdAsync_ReturnsTheProfileWithThatUid()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var expectedProfile = CreateTestProfile(userId);
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(expectedProfile);
+        var mine = CreateTestProfile(Guid.NewGuid());
+        _supabase.Seed(mine, CreateTestProfile(Guid.NewGuid()));
 
-        // Act
-        var result = await _sut.GetByIdAsync(userId);
+        var result = await _sut.GetByIdAsync(mine.Uid);
 
-        // Assert
-        result.Should().NotBeNull();
-        result!.Uid.Should().Be(userId);
-        _supabaseServiceMock.Verify(x => x.GetByIdAsync<DbProfile>(userId), Times.Once);
+        result.Should().BeSameAs(mine);
     }
 
     [Fact]
-    public async Task CreateAsync_CallsSupabaseService()
+    public async Task GetByIdAsync_ReturnsNull_WhenNoProfileHasThatUid()
     {
-        // Arrange
-        var profile = CreateTestProfile(Guid.NewGuid());
-        _supabaseServiceMock.Setup(x => x.InsertAsync(profile))
-            .ReturnsAsync(profile);
+        _supabase.Seed(CreateTestProfile(Guid.NewGuid()));
 
-        // Act
+        var result = await _sut.GetByIdAsync(Guid.NewGuid());
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateAsync_PersistsTheProfile()
+    {
+        var profile = CreateTestProfile(Guid.NewGuid());
+
         var result = await _sut.CreateAsync(profile);
 
-        // Assert
-        result.Should().Be(profile);
-        _supabaseServiceMock.Verify(x => x.InsertAsync(profile), Times.Once);
+        result.Should().BeSameAs(profile);
+        _supabase.Rows<DbProfile>().Should().ContainSingle().Which.Should().BeSameAs(profile);
     }
 
     [Fact]
-    public async Task UpdateAsync_CallsSupabaseService()
+    public async Task UpdateAsync_ReplacesTheStoredRowWithTheSameUid()
     {
-        // Arrange
-        var profile = CreateTestProfile(Guid.NewGuid());
-        _supabaseServiceMock.Setup(x => x.UpdateAsync(profile))
-            .ReturnsAsync(profile);
+        var uid = Guid.NewGuid();
+        var decoy = CreateTestProfile(Guid.NewGuid());
+        _supabase.Seed(CreateTestProfile(uid), decoy);
+        var replacement = CreateTestProfile(uid);
+        replacement.Profile.FirstName = "Replaced";
 
-        // Act
-        var result = await _sut.UpdateAsync(profile);
+        var result = await _sut.UpdateAsync(replacement);
 
-        // Assert
-        result.Should().Be(profile);
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(profile), Times.Once);
+        result.Should().BeSameAs(replacement);
+        var rows = _supabase.Rows<DbProfile>();
+        rows.Should().HaveCount(2);
+        rows.Single(r => r.Uid == uid).Should().BeSameAs(replacement);
+        rows.Should().Contain(decoy);
     }
 
     [Fact]
     public async Task UpdateOrCreateProfileAsync_WhenProfileDoesNotExist_CreatesNewProfile()
     {
-        // Arrange
         var userId = Guid.NewGuid();
         var email = "test@example.com";
+        var decoy = CreateTestProfile(Guid.NewGuid());
+        _supabase.Seed(decoy);
         var request = new UpdateProfileRequest
         {
             FirstName = "Test",
@@ -107,37 +102,37 @@ public class ProfileServiceTests
             ShowCalories = false
         };
 
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(It.IsAny<Guid>()))
-            .ReturnsAsync((DbProfile?)null);
-        _supabaseServiceMock.Setup(x => x.InsertAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync((DbProfile p) => p);
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProfile>());
-
-        // Act
         var result = await _sut.UpdateOrCreateProfileAsync(userId, email, request);
 
-        // Assert
-        result.Should().NotBeNull();
+        result.Uid.Should().Be(userId);
         result.Email.Should().Be(email);
         result.Profile.FirstName.Should().Be("Test");
         result.Profile.UseMetric.Should().BeTrue();
         result.Profile.GoalStart.Should().Be(DateTime.UtcNow.Date);
         result.Profile.GoalWeight.Should().Be(70.0m);
-        result.Profile.SharingToken.Should().NotBeNullOrEmpty();
-        result.Profile.SharingToken.Should().HaveLength(25);
+        result.Profile.PlannedPoundsPerWeek.Should().Be(1.0m);
+        result.Profile.DayStartOffset.Should().Be(0);
+        result.Profile.ShowCalories.Should().BeFalse();
+        result.Profile.HideDataBeforeStart.Should().BeFalse();
+        result.Profile.TrendAlgorithm.Should().BeNull();
+        result.Profile.SharingToken.Should().MatchRegex("^[0-9a-z]{25}$");
+        result.Profile.SharingToken.Should().NotBe(decoy.Profile.SharingToken);
+        Parse(result.CreatedAt).Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
 
-        _supabaseServiceMock.Verify(x => x.InsertAsync(It.IsAny<DbProfile>()), Times.Once);
+        var rows = _supabase.Rows<DbProfile>();
+        rows.Should().HaveCount(2);
+        rows.Single(r => r.Uid == userId).Should().BeSameAs(result);
+        _logs.ShouldHaveLogged(LogLevel.Information, "Creating new profile");
     }
 
-
     [Fact]
-    public async Task UpdateOrCreateProfileAsync_WhenProfileExists_UpdatesProfile()
+    public async Task UpdateOrCreateProfileAsync_WhenProfileExists_UpdatesItInPlace()
     {
-        // Arrange
         var userId = Guid.NewGuid();
-        var email = "test@example.com";
-        var existingProfile = CreateTestProfile(userId);
+        var existing = CreateTestProfile(userId);
+        existing.UpdatedAt = OldTimestamp;
+        var decoy = CreateTestProfile(Guid.NewGuid());
+        _supabase.Seed(existing, decoy);
         var request = new UpdateProfileRequest
         {
             FirstName = "Updated",
@@ -146,19 +141,13 @@ public class ProfileServiceTests
             GoalWeight = 80.0m,
             PlannedPoundsPerWeek = 2.0m,
             DayStartOffset = 1,
-            ShowCalories = true
+            ShowCalories = true,
+            HideDataBeforeStart = true
         };
 
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(existingProfile);
-        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync((DbProfile p) => p);
+        var result = await _sut.UpdateOrCreateProfileAsync(userId, "test@example.com", request);
 
-        // Act
-        var result = await _sut.UpdateOrCreateProfileAsync(userId, email, request);
-
-        // Assert
-        result.Should().NotBeNull();
+        result.Should().BeSameAs(existing);
         result.Profile.FirstName.Should().Be("Updated");
         result.Profile.UseMetric.Should().BeFalse();
         result.Profile.GoalStart.Should().Be(DateTime.UtcNow.Date.AddDays(-7));
@@ -166,456 +155,430 @@ public class ProfileServiceTests
         result.Profile.PlannedPoundsPerWeek.Should().Be(2.0m);
         result.Profile.DayStartOffset.Should().Be(1);
         result.Profile.ShowCalories.Should().BeTrue();
+        result.Profile.HideDataBeforeStart.Should().BeTrue();
+        Parse(result.UpdatedAt).Should().BeAfter(Parse(OldTimestamp));
 
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<DbProfile>()), Times.Once);
+        _supabase.Rows<DbProfile>().Should().HaveCount(2);
+        decoy.Profile.FirstName.Should().Be("Test");
+        _logs.ShouldHaveLogged(LogLevel.Information, "Updating existing profile");
+    }
+
+    [Fact]
+    public async Task UpdateOrCreateProfileAsync_WhenEmailChanged_StoresTheNewEmail()
+    {
+        var userId = Guid.NewGuid();
+        var existing = CreateTestProfile(userId);
+        _supabase.Seed(existing);
+
+        var result = await _sut.UpdateOrCreateProfileAsync(userId, "renamed@example.com", new UpdateProfileRequest());
+
+        result.Email.Should().Be("renamed@example.com");
+        _logs.ShouldHaveLogged(LogLevel.Information, "Updating profile email");
     }
 
     [Fact]
     public async Task UpdateOrCreateProfileAsync_WithTrendAlgorithm_StoresValue()
     {
-        // Arrange
         var userId = Guid.NewGuid();
-        var email = "test@example.com";
-        var existingProfile = CreateTestProfile(userId);
-        var request = new UpdateProfileRequest { TrendAlgorithm = "holt" };
+        _supabase.Seed(CreateTestProfile(userId));
 
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(existingProfile);
-        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync((DbProfile p) => p);
+        var result = await _sut.UpdateOrCreateProfileAsync(userId, "test@example.com", new UpdateProfileRequest { TrendAlgorithm = "holt" });
 
-        // Act
-        var result = await _sut.UpdateOrCreateProfileAsync(userId, email, request);
-
-        // Assert
         result.Profile.TrendAlgorithm.Should().Be("holt");
     }
 
     [Fact]
     public async Task UpdateOrCreateProfileAsync_WithNullTrendAlgorithm_PreservesExistingValue()
     {
-        // Arrange
         var userId = Guid.NewGuid();
-        var email = "test@example.com";
-        var existingProfile = CreateTestProfile(userId);
-        existingProfile.Profile.TrendAlgorithm = "holt-gentle";
-        var request = new UpdateProfileRequest { FirstName = "Updated" };
+        var existing = CreateTestProfile(userId);
+        existing.Profile.TrendAlgorithm = "holt-gentle";
+        _supabase.Seed(existing);
 
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(existingProfile);
-        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync((DbProfile p) => p);
+        var result = await _sut.UpdateOrCreateProfileAsync(userId, "test@example.com", new UpdateProfileRequest { FirstName = "Updated" });
 
-        // Act
-        var result = await _sut.UpdateOrCreateProfileAsync(userId, email, request);
-
-        // Assert
         result.Profile.TrendAlgorithm.Should().Be("holt-gentle");
     }
 
     [Fact]
-    public async Task ProfileData_WhenTrendAlgorithmMissing_DefaultsToNull()
+    public async Task UpdateOrCreateProfileAsync_WithNullOptionalFields_ClearsThemButKeepsRequiredOnes()
     {
-        // Arrange: simulating profile JSONB written before this field existed
         var userId = Guid.NewGuid();
-        var dbProfile = new DbProfile
-        {
-            Uid = userId,
-            Email = "test@example.com",
-            Profile = new ProfileData
-            {
-                FirstName = "Test",
-                UseMetric = false,
-            },
-            CreatedAt = DateTime.UtcNow.ToString("o"),
-            UpdatedAt = DateTime.UtcNow.ToString("o")
-        };
+        var existing = CreateTestProfile(userId);
+        existing.Profile.FirstName = "Keep";
+        existing.Profile.UseMetric = true;
+        existing.Profile.HideDataBeforeStart = true;
+        existing.Profile.TrendAlgorithm = "holt";
+        existing.Profile.GoalStart = new DateTime(2024, 1, 15, 0, 0, 0, DateTimeKind.Utc);
+        existing.Profile.GoalWeight = 72.5m;
+        existing.Profile.PlannedPoundsPerWeek = 1.0m;
+        existing.Profile.DayStartOffset = 3;
+        existing.Profile.ShowCalories = true;
+        existing.UpdatedAt = OldTimestamp;
+        _supabase.Seed(existing);
 
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(dbProfile);
+        var result = await _sut.UpdateOrCreateProfileAsync(userId, "test@example.com", new UpdateProfileRequest());
 
-        // Act
-        var result = await _sut.GetByIdAsync(userId);
+        // Nullable settings are cleared when the request omits them.
+        result.Profile.GoalStart.Should().BeNull();
+        result.Profile.GoalWeight.Should().BeNull();
+        result.Profile.PlannedPoundsPerWeek.Should().BeNull();
+        result.Profile.DayStartOffset.Should().BeNull();
+        result.Profile.ShowCalories.Should().BeNull();
 
-        // Assert
-        result.Should().NotBeNull();
-        result!.Profile.TrendAlgorithm.Should().BeNull();
+        // Fields with a required value fall back to what was stored.
+        result.Profile.FirstName.Should().Be("Keep");
+        result.Profile.UseMetric.Should().BeTrue();
+        result.Profile.HideDataBeforeStart.Should().BeTrue();
+        result.Profile.TrendAlgorithm.Should().Be("holt");
+
+        Parse(result.UpdatedAt).Should().BeAfter(Parse(OldTimestamp));
+        result.Should().BeSameAs(existing);
+        _supabase.Rows<DbProfile>().Should().ContainSingle().Which.Should().BeSameAs(existing);
     }
 
     [Fact]
-    public async Task GetBySharingTokenAsync_ReturnsMatchingProfile()
+    public void DbProfile_DeserialisedLikePostgrest_DefaultsMissingProfileFieldsAndIgnoresUnknownKeys()
     {
-        // Arrange
-        var token = "test-token-12345678901234567890";
-        var matchingProfile = CreateTestProfile(Guid.NewGuid(), token);
-        var profiles = new List<DbProfile> { matchingProfile };
+        // Profile JSONB written before newer fields existed, plus a key this build does not know.
+        var uid = Guid.NewGuid();
+        var json = $$"""
+            {
+              "uid": "{{uid}}",
+              "email": "test@example.com",
+              "profile": {"FirstName":"Test","UseMetric":false,"SomethingNew":1},
+              "created_at": "2024-01-01T00:00:00+00:00",
+              "updated_at": "2024-01-02T00:00:00+00:00"
+            }
+            """;
 
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()))
-            .ReturnsAsync(profiles);
+        var result = DeserialiseLikePostgrest(json);
 
-        // Act
-        var result = await _sut.GetBySharingTokenAsync(token);
+        result.Uid.Should().Be(uid);
+        result.Email.Should().Be("test@example.com");
+        result.CreatedAt.Should().Be("2024-01-01T00:00:00+00:00");
+        result.UpdatedAt.Should().Be("2024-01-02T00:00:00+00:00");
+        result.Profile.FirstName.Should().Be("Test");
+        result.Profile.UseMetric.Should().BeFalse();
+        result.Profile.TrendAlgorithm.Should().BeNull();
+        result.Profile.HideDataBeforeStart.Should().BeFalse();
+        result.Profile.ShowCalories.Should().BeNull();
+        result.Profile.DayStartOffset.Should().BeNull();
+        result.Profile.GoalStart.Should().BeNull();
+        result.Profile.GoalWeight.Should().BeNull();
+        result.Profile.PlannedPoundsPerWeek.Should().BeNull();
+        result.Profile.SharingToken.Should().BeNull();
+        result.Profile.SharingEnabled.Should().BeFalse();
+        result.Profile.IsMigrated.Should().BeFalse();
+        result.Profile.IsNewlyMigrated.Should().BeFalse();
+        result.Profile.ApiKeyHash.Should().BeNull();
+        result.Profile.ApiKeySuffix.Should().BeNull();
+        result.Profile.ApiKeyCreatedAt.Should().BeNull();
+    }
 
-        // Assert
-        result.Should().NotBeNull();
-        result!.Profile.SharingToken.Should().Be(token);
+    [Fact]
+    public void DbProfile_DeserialisedLikePostgrest_RoundTripsEveryProfileField()
+    {
+        var uid = Guid.NewGuid();
+        var json = $$"""
+            {
+              "uid": "{{uid}}",
+              "email": "full@example.com",
+              "profile": {
+                "FirstName": "Full",
+                "GoalStart": "2024-01-15T00:00:00",
+                "GoalWeight": 72.5,
+                "PlannedPoundsPerWeek": 1.25,
+                "DayStartOffset": -3,
+                "UseMetric": true,
+                "ShowCalories": true,
+                "SharingToken": "abcdefghijklmnopqrstuvwxy",
+                "SharingEnabled": true,
+                "IsMigrated": true,
+                "IsNewlyMigrated": true,
+                "HideDataBeforeStart": true,
+                "TrendAlgorithm": "holt-gentle",
+                "ApiKeyHash": "0123abcd",
+                "ApiKeySuffix": "wxyz",
+                "ApiKeyCreatedAt": "2024-02-01T12:00:00.0000000Z"
+              },
+              "created_at": "2024-01-01T00:00:00+00:00",
+              "updated_at": "2024-01-02T00:00:00+00:00"
+            }
+            """;
+
+        var result = DeserialiseLikePostgrest(json);
+
+        result.Uid.Should().Be(uid);
+        result.Email.Should().Be("full@example.com");
+        result.Profile.Should().BeEquivalentTo(new ProfileData
+        {
+            FirstName = "Full",
+            GoalStart = new DateTime(2024, 1, 15, 0, 0, 0),
+            GoalWeight = 72.5m,
+            PlannedPoundsPerWeek = 1.25m,
+            DayStartOffset = -3,
+            UseMetric = true,
+            ShowCalories = true,
+            SharingToken = "abcdefghijklmnopqrstuvwxy",
+            SharingEnabled = true,
+            IsMigrated = true,
+            IsNewlyMigrated = true,
+            HideDataBeforeStart = true,
+            TrendAlgorithm = "holt-gentle",
+            ApiKeyHash = "0123abcd",
+            ApiKeySuffix = "wxyz",
+            ApiKeyCreatedAt = "2024-02-01T12:00:00.0000000Z"
+        });
+    }
+
+    [Fact]
+    public async Task GetBySharingTokenAsync_ReturnsOnlyTheProfileWithThatToken()
+    {
+        var shared = CreateTestProfile(Guid.NewGuid(), "abcdefghijklmnopqrstuvwxy");
+        _supabase.Seed(CreateTestProfile(Guid.NewGuid(), "zyxwvutsrqponmlkjihgfedcb"), shared);
+
+        var result = await _sut.GetBySharingTokenAsync("abcdefghijklmnopqrstuvwxy");
+
+        result.Should().BeSameAs(shared);
+    }
+
+    [Fact]
+    public async Task GetBySharingTokenAsync_ReturnsNull_WhenNoProfileHasThatToken()
+    {
+        _supabase.Seed(CreateTestProfile(Guid.NewGuid(), "abcdefghijklmnopqrstuvwxy"), CreateTestProfile(Guid.NewGuid(), "zyxwvutsrqponmlkjihgfedcb"));
+
+        var result = await _sut.GetBySharingTokenAsync("0000000000000000000000000");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByApiKeyHashAsync_ReturnsOnlyTheProfileWithThatHash()
+    {
+        var mine = CreateTestProfile(Guid.NewGuid());
+        mine.Profile.ApiKeyHash = ApiKeyService.HashKey("sk-abc");
+        var other = CreateTestProfile(Guid.NewGuid());
+        other.Profile.ApiKeyHash = ApiKeyService.HashKey("sk-other");
+        _supabase.Seed(other, mine);
+
+        var result = await _sut.GetByApiKeyHashAsync(ApiKeyService.HashKey("sk-abc"));
+
+        result.Should().BeSameAs(mine);
+    }
+
+    [Fact]
+    public async Task GetByApiKeyHashAsync_ReturnsNull_WhenNoProfileHasThatHash()
+    {
+        var mine = CreateTestProfile(Guid.NewGuid());
+        mine.Profile.ApiKeyHash = ApiKeyService.HashKey("sk-abc");
+        _supabase.Seed(mine, CreateTestProfile(Guid.NewGuid()));
+
+        var result = await _sut.GetByApiKeyHashAsync(ApiKeyService.HashKey("sk-unknown"));
+
+        result.Should().BeNull();
     }
 
     [Fact]
     public void GenerateShareToken_GeneratesValidToken()
     {
-        // Act
         var token = _sut.GenerateShareToken();
 
-        // Assert
-        token.Should().NotBeNullOrEmpty();
-        token.Should().HaveLength(25);
-        token.Should().MatchRegex("^[0-9a-z]+$"); // Base36 characters only
+        token.Should().MatchRegex("^[0-9a-z]{25}$"); // Base36 characters only
     }
 
     [Fact]
-    public async Task GenerateUniqueShareTokenAsync_GeneratesUniqueToken()
+    public async Task GenerateUniqueShareTokenAsync_ReturnsATokenNoStoredProfileUses()
     {
-        // Arrange
-        var callCount = 0;
+        var taken = CreateTestProfile(Guid.NewGuid(), "abcdefghijklmnopqrstuvwxy");
+        _supabase.Seed(taken);
 
-        // Setup mock to simulate collision on first try, then success
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()))
-            .ReturnsAsync(() =>
-            {
-                callCount++;
-                if (callCount == 1)
-                {
-                    // First call - return existing profile to force collision
-                    return new List<DbProfile> { CreateTestProfile(Guid.NewGuid(), "collision-token") };
-                }
-                // Subsequent calls - return empty to allow success
-                return new List<DbProfile>();
-            });
-
-        // Act
         var token = await _sut.GenerateUniqueShareTokenAsync();
 
-        // Assert
-        token.Should().NotBeNullOrEmpty();
-        token.Should().HaveLength(25);
-        token.Should().MatchRegex("^[0-9a-z]+$");
-
-        // The collision forced exactly one retry: the first candidate was rejected and
-        // the second was accepted
-        callCount.Should().Be(2);
-        _supabaseServiceMock.Verify(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()), Times.Exactly(2));
+        token.Should().MatchRegex("^[0-9a-z]{25}$");
+        token.Should().NotBe(taken.Profile.SharingToken);
+        (await _sut.GetBySharingTokenAsync(token)).Should().BeNull();
     }
 
     [Fact]
-    public async Task GenerateNewSharingTokenAsync_UpdatesProfileWithNewToken()
+    public async Task GenerateNewSharingTokenAsync_ReplacesOnlyThatProfilesToken()
     {
-        // Arrange
         var userId = Guid.NewGuid();
-        var profile = CreateTestProfile(userId, "old-token");
+        var profile = CreateTestProfile(userId, "abcdefghijklmnopqrstuvwxy");
+        profile.UpdatedAt = OldTimestamp;
+        var decoy = CreateTestProfile(Guid.NewGuid(), "zyxwvutsrqponmlkjihgfedcb");
+        _supabase.Seed(profile, decoy);
 
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(profile);
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProfile>(It.IsAny<Action<Supabase.Interfaces.ISupabaseTable<DbProfile, Supabase.Realtime.RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbProfile>());
-        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync((DbProfile p) => p);
-
-        // Act
         var result = await _sut.GenerateNewSharingTokenAsync(userId);
 
-        // Assert
-        result.Should().NotBeNull();
-        result!.Profile.SharingToken.Should().NotBe("old-token");
-        result.Profile.SharingToken.Should().HaveLength(25);
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<DbProfile>()), Times.Once);
+        result.Should().BeSameAs(profile);
+        result!.Profile.SharingToken.Should().MatchRegex("^[0-9a-z]{25}$");
+        result.Profile.SharingToken.Should().NotBe("abcdefghijklmnopqrstuvwxy");
+        Parse(result.UpdatedAt).Should().BeAfter(Parse(OldTimestamp));
+        decoy.Profile.SharingToken.Should().Be("zyxwvutsrqponmlkjihgfedcb");
+    }
+
+    [Fact]
+    public async Task GenerateNewSharingTokenAsync_ReturnsNull_WhenTheProfileDoesNotExist()
+    {
+        _supabase.Seed(CreateTestProfile(Guid.NewGuid()));
+
+        var result = await _sut.GenerateNewSharingTokenAsync(Guid.NewGuid());
+
+        result.Should().BeNull();
+        _logs.ShouldHaveLogged(LogLevel.Warning, "User document not found");
     }
 
     [Fact]
     public async Task CompleteMigrationAsync_ClearsIsNewlyMigratedFlag()
     {
-        // Arrange
         var userId = Guid.NewGuid();
         var profile = CreateTestProfile(userId);
         profile.Profile.IsNewlyMigrated = true;
+        profile.UpdatedAt = OldTimestamp;
+        _supabase.Seed(profile);
 
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(profile);
-        _supabaseServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
-            .ReturnsAsync((DbProfile p) => p);
-
-        // Act
         var result = await _sut.CompleteMigrationAsync(userId);
 
-        // Assert
         result.Should().BeTrue();
         profile.Profile.IsNewlyMigrated.Should().BeFalse();
-        _supabaseServiceMock.Verify(x => x.UpdateAsync(It.IsAny<DbProfile>()), Times.Once);
+        Parse(profile.UpdatedAt).Should().BeAfter(Parse(OldTimestamp));
+        _logs.ShouldHaveLogged(LogLevel.Information, "Completed migration");
+    }
+
+    [Fact]
+    public async Task CompleteMigrationAsync_ReturnsFalse_WhenTheProfileDoesNotExist()
+    {
+        var result = await _sut.CompleteMigrationAsync(Guid.NewGuid());
+
+        result.Should().BeFalse();
+        _logs.ShouldHaveLogged(LogLevel.Warning, "User document not found");
     }
 
     [Fact]
     public async Task DeleteAccountAsync_DeletesAllComponents()
     {
-        // Arrange
         var userId = Guid.NewGuid();
-        var userAccount = new DbUserAccount
-        {
-            Uid = userId,
-            ExternalId = "clerk_123",
-            Provider = "clerk",
-        };
         var profile = CreateTestProfile(userId);
-
+        var decoy = CreateTestProfile(Guid.NewGuid());
+        _supabase.Seed(profile, decoy);
         _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
-            .ReturnsAsync(userAccount);
-        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123"))
-            .ReturnsAsync(true);
-        _supabaseServiceMock.Setup(x => x.DeleteAuthUserAsync(userId))
-            .ReturnsAsync(true);
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(profile);
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(profile))
-            .Returns(Task.CompletedTask);
-        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId))
-            .ReturnsAsync(true);
+            .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
+        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123")).ReturnsAsync(true);
+        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId)).ReturnsAsync(true);
 
-        // Act
         var result = await _sut.DeleteAccountAsync(userId);
 
-        // Assert
         result.Should().BeTrue();
+        _supabase.Rows<DbProfile>().Should().ContainSingle().Which.Should().BeSameAs(decoy);
+        _supabase.DeletedAuthUsers.Should().Equal(userId);
         _clerkServiceMock.Verify(x => x.DeleteUserAsync("clerk_123"), Times.Once);
-        _supabaseServiceMock.Verify(x => x.DeleteAuthUserAsync(userId), Times.Once);
-        _supabaseServiceMock.Verify(x => x.GetByIdAsync<DbProfile>(userId), Times.Once);
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(profile), Times.Once);
         _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Once);
+        _logs.ShouldHaveLogged(LogLevel.Information, "Successfully completed account deletion");
     }
 
     [Fact]
     public async Task DeleteAccountAsync_WhenAuthDeletionFails_ContinuesWithOtherDeletions()
     {
-        // Arrange
         var userId = Guid.NewGuid();
-        var userAccount = new DbUserAccount
-        {
-            Uid = userId,
-            ExternalId = "clerk_123",
-            Provider = "clerk",
-        };
-
+        _supabase.Seed(CreateTestProfile(userId));
+        _supabase.DeleteAuthUserResult = false;
         _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
-            .ReturnsAsync(userAccount);
-        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123"))
-            .ReturnsAsync(true);
-        _supabaseServiceMock.Setup(x => x.DeleteAuthUserAsync(userId))
-            .ReturnsAsync(false); // Supabase auth deletion fails
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(CreateTestProfile(userId));
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(It.IsAny<DbProfile>()))
-            .Returns(Task.CompletedTask);
-        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId))
-            .ReturnsAsync(true);
+            .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
+        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123")).ReturnsAsync(true);
+        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId)).ReturnsAsync(true);
 
-        // Act
         var result = await _sut.DeleteAccountAsync(userId);
 
-        // Assert
-        result.Should().BeTrue(); // Should still succeed because other deletions worked
-        _supabaseServiceMock.Verify(x => x.DeleteAuthUserAsync(userId), Times.Once);
+        result.Should().BeTrue();
+        _supabase.DeletedAuthUsers.Should().Equal(userId);
+        _supabase.Rows<DbProfile>().Should().BeEmpty();
         _clerkServiceMock.Verify(x => x.DeleteUserAsync("clerk_123"), Times.Once);
         _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Once);
+        _logs.ShouldHaveLogged(LogLevel.Warning, "Could not delete legacy Supabase auth user");
     }
 
     [Fact]
-    public async Task ProfileData_WhenHideDataBeforeStartMissing_DefaultsToFalse()
+    public async Task DeleteAccountAsync_DeletesOnlyTheLegacyRowWhoseEmailMatches()
     {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var dbProfile = new DbProfile
-        {
-            Uid = userId,
-            Email = "test@example.com",
-            Profile = new ProfileData
-            {
-                FirstName = "Test",
-                UseMetric = false,
-                // HideDataBeforeStart is not set - simulating old data
-            },
-            CreatedAt = DateTime.UtcNow.ToString("o"),
-            UpdatedAt = DateTime.UtcNow.ToString("o")
-        };
-
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(dbProfile);
-
-        // Act
-        var result = await _sut.GetByIdAsync(userId);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Profile.HideDataBeforeStart.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task DeleteAccountAsync_DeletesLegacyProfileWhenExists()
-    {
-        // Arrange
         var userId = Guid.NewGuid();
         var email = "legacy@example.com";
-        var userAccount = new DbUserAccount
-        {
-            Uid = userId,
-            ExternalId = "clerk_123",
-            Provider = "clerk",
-        };
         var profile = CreateTestProfile(userId);
         profile.Email = email;
-
-        var legacyProfile = new DbLegacyProfile
-        {
-            Email = email,
-            FirstName = "Legacy User",
-            UseMetric = true,
-            Measurements = new List<RawMeasurement>
+        _supabase.Seed(profile);
+        var otherLegacy = new DbLegacyProfile { Email = "other@example.com", FirstName = "Other" };
+        _supabase.Seed(
+            new DbLegacyProfile
             {
-                new RawMeasurement
-                {
-                    Date = DateTime.UtcNow.Date.ToString("yyyy-MM-dd"),
-                    Time = DateTime.UtcNow.TimeOfDay.ToString(@"hh\:mm\:ss"),
-                    Weight = 80.5m,
-                    FatRatio = 0.25m
-                }
-            }
-        };
-
+                Email = email,
+                FirstName = "Legacy User",
+                UseMetric = true,
+                Measurements = [new RawMeasurement { Date = "2024-01-01", Time = "07:00:00", Weight = 80.5m, FatRatio = 0.25m }]
+            },
+            otherLegacy);
         _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
-            .ReturnsAsync(userAccount);
-        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123"))
-            .ReturnsAsync(true);
-        _supabaseServiceMock.Setup(x => x.DeleteAuthUserAsync(userId))
-            .ReturnsAsync(true);
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(profile);
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(profile))
-            .Returns(Task.CompletedTask);
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbLegacyProfile>(It.IsAny<Action<ISupabaseTable<DbLegacyProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbLegacyProfile> { legacyProfile });
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(legacyProfile))
-            .Returns(Task.CompletedTask);
-        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId))
-            .ReturnsAsync(true);
+            .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
+        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123")).ReturnsAsync(true);
+        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId)).ReturnsAsync(true);
 
-        // Act
         var result = await _sut.DeleteAccountAsync(userId);
 
-        // Assert
         result.Should().BeTrue();
-        _supabaseServiceMock.Verify(x => x.QueryAsync<DbLegacyProfile>(It.IsAny<Action<ISupabaseTable<DbLegacyProfile, RealtimeChannel>>>()), Times.Once);
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(legacyProfile), Times.Once);
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Deleted legacy profile for email {email}")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
+        _supabase.Rows<DbLegacyProfile>().Should().ContainSingle().Which.Should().BeSameAs(otherLegacy);
+        _supabase.Rows<DbProfile>().Should().BeEmpty();
+        _logs.ShouldHaveLogged(LogLevel.Information, $"Deleted legacy profile for email {email}");
     }
 
     [Fact]
     public async Task DeleteAccountAsync_ContinuesWhenNoLegacyProfileExists()
     {
-        // Arrange
         var userId = Guid.NewGuid();
-        var email = "nolegacy@example.com";
-        var userAccount = new DbUserAccount
-        {
-            Uid = userId,
-            ExternalId = "clerk_123",
-            Provider = "clerk",
-        };
         var profile = CreateTestProfile(userId);
-        profile.Email = email;
-
+        profile.Email = "nolegacy@example.com";
+        _supabase.Seed(profile);
+        var otherLegacy = new DbLegacyProfile { Email = "other@example.com" };
+        _supabase.Seed(otherLegacy);
         _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
-            .ReturnsAsync(userAccount);
-        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123"))
-            .ReturnsAsync(true);
-        _supabaseServiceMock.Setup(x => x.DeleteAuthUserAsync(userId))
-            .ReturnsAsync(true);
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(profile);
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(profile))
-            .Returns(Task.CompletedTask);
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbLegacyProfile>(It.IsAny<Action<ISupabaseTable<DbLegacyProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbLegacyProfile>()); // Empty list - no legacy profile
-        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId))
-            .ReturnsAsync(true);
+            .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
+        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123")).ReturnsAsync(true);
+        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId)).ReturnsAsync(true);
 
-        // Act
         var result = await _sut.DeleteAccountAsync(userId);
 
-        // Assert
         result.Should().BeTrue();
-        _supabaseServiceMock.Verify(x => x.QueryAsync<DbLegacyProfile>(It.IsAny<Action<ISupabaseTable<DbLegacyProfile, RealtimeChannel>>>()), Times.Once);
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<DbLegacyProfile>()), Times.Never); // Should not try to delete non-existent legacy profile
+        _supabase.Rows<DbLegacyProfile>().Should().ContainSingle().Which.Should().BeSameAs(otherLegacy);
+        _supabase.Rows<DbProfile>().Should().BeEmpty();
+        _logs.Entries.Should().NotContain(e => e.Message.Contains("Deleted legacy profile"));
     }
 
     [Fact]
     public async Task DeleteAccountAsync_PreservesProfileAndLoginWhenLegacyDeletionFails()
     {
-        // Arrange
         var userId = Guid.NewGuid();
         var email = "legacy@example.com";
-        var userAccount = new DbUserAccount
-        {
-            Uid = userId,
-            ExternalId = "clerk_123",
-            Provider = "clerk",
-        };
         var profile = CreateTestProfile(userId);
         profile.Email = email;
-
-        var legacyProfile = new DbLegacyProfile
-        {
-            Email = email,
-            FirstName = "Legacy User"
-        };
-
+        _supabase.Seed(profile);
+        _supabase.Seed(new DbLegacyProfile { Email = email, FirstName = "Legacy User" });
+        var failure = new Exception("Failed to delete legacy profile");
+        _supabase.ThrowOnDelete = failure;
         _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
-            .ReturnsAsync(userAccount);
-        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123"))
-            .ReturnsAsync(true);
-        _supabaseServiceMock.Setup(x => x.DeleteAuthUserAsync(userId))
-            .ReturnsAsync(true);
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(profile);
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(profile))
-            .Returns(Task.CompletedTask);
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbLegacyProfile>(It.IsAny<Action<ISupabaseTable<DbLegacyProfile, RealtimeChannel>>>()))
-            .ReturnsAsync(new List<DbLegacyProfile> { legacyProfile });
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(legacyProfile))
-            .ThrowsAsync(new Exception("Failed to delete legacy profile"));
-        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId))
-            .ReturnsAsync(true);
+            .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
+        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123")).ReturnsAsync(true);
+        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId)).ReturnsAsync(true);
 
-        // Act
         var result = await _sut.DeleteAccountAsync(userId);
 
-        // Assert
         result.Should().BeFalse();
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(legacyProfile), Times.Once);
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Failed to delete legacy profile for email {email}")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(profile), Times.Never);
+        _supabase.Rows<DbLegacyProfile>().Should().ContainSingle();
+        _supabase.Rows<DbProfile>().Should().ContainSingle().Which.Should().BeSameAs(profile);
+        _supabase.DeletedAuthUsers.Should().BeEmpty();
         _clerkServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<string>()), Times.Never);
         _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Never);
+        _logs.Entries.Should().Contain(e =>
+            e.Level == LogLevel.Error
+            && e.Exception == failure
+            && e.Message.Contains($"Failed to delete legacy profile for email {email}"));
     }
 
     [Fact]
@@ -623,34 +586,86 @@ public class ProfileServiceTests
     {
         var userId = Guid.NewGuid();
         var profile = CreateTestProfile(userId);
+        _supabase.Seed(profile);
+        _supabase.Seed(new DbLegacyProfile { Email = "other@example.com" }); // no legacy row for this user
+        _supabase.ThrowOnDelete = new Exception("Database unavailable");
         _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
             .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId)).ReturnsAsync(profile);
-        _supabaseServiceMock.Setup(x => x.DeleteAsync(profile)).ThrowsAsync(new Exception("Database unavailable"));
 
         var result = await _sut.DeleteAccountAsync(userId);
 
         result.Should().BeFalse();
+        _supabase.Rows<DbProfile>().Should().ContainSingle().Which.Should().BeSameAs(profile);
+        _supabase.DeletedAuthUsers.Should().BeEmpty();
         _clerkServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<string>()), Times.Never);
-        _supabaseServiceMock.Verify(x => x.DeleteAuthUserAsync(userId), Times.Never);
         _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Never);
+        _logs.ShouldHaveLogged(LogLevel.Error, "Error deleting account");
     }
 
     [Fact]
     public async Task DeleteAccountAsync_ClerkFailureReturnsFalseAndRetainsMappingForRetry()
     {
         var userId = Guid.NewGuid();
-        var profile = CreateTestProfile(userId);
+        _supabase.Seed(CreateTestProfile(userId));
         _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
             .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId)).ReturnsAsync(profile);
         _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123")).ReturnsAsync(false);
 
         var result = await _sut.DeleteAccountAsync(userId);
 
         result.Should().BeFalse();
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(profile), Times.Once);
+        _supabase.Rows<DbProfile>().Should().BeEmpty();
+        _supabase.DeletedAuthUsers.Should().BeEmpty();
         _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(userId), Times.Never);
+        _logs.ShouldHaveLogged(LogLevel.Error, "Failed to delete Clerk user");
+    }
+
+    [Fact]
+    public async Task DeleteAccountAsync_MappingDeletionFailureReturnsFalse()
+    {
+        var userId = Guid.NewGuid();
+        _supabase.Seed(CreateTestProfile(userId));
+        _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId))
+            .ReturnsAsync(new DbUserAccount { Uid = userId, ExternalId = "clerk_123", Provider = "clerk" });
+        _clerkServiceMock.Setup(x => x.DeleteUserAsync("clerk_123")).ReturnsAsync(true);
+        _userAccountMappingServiceMock.Setup(x => x.DeleteByInternalIdAsync(userId)).ReturnsAsync(false);
+
+        var result = await _sut.DeleteAccountAsync(userId);
+
+        result.Should().BeFalse();
+        _logs.ShouldHaveLogged(LogLevel.Error, "Failed to delete user_accounts record");
+    }
+
+    [Fact]
+    public async Task DeleteAccountAsync_WithoutAMapping_StillDeletesProfileAndAuthUser()
+    {
+        var userId = Guid.NewGuid();
+        _supabase.Seed(CreateTestProfile(userId));
+        _userAccountMappingServiceMock.Setup(x => x.GetByInternalIdAsync(userId)).ReturnsAsync((DbUserAccount?)null);
+
+        var result = await _sut.DeleteAccountAsync(userId);
+
+        result.Should().BeTrue();
+        _supabase.Rows<DbProfile>().Should().BeEmpty();
+        _supabase.DeletedAuthUsers.Should().Equal(userId);
+        _clerkServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<string>()), Times.Never);
+        _userAccountMappingServiceMock.Verify(x => x.DeleteByInternalIdAsync(It.IsAny<Guid>()), Times.Never);
+        _logs.ShouldHaveLogged(LogLevel.Information, "No user_accounts record found");
+    }
+
+    /// <summary>
+    /// Deserialises a row the way the Postgrest client does: Newtonsoft.Json with the
+    /// <see cref="PostgrestContractResolver"/> that maps <c>[Column]</c> names.
+    /// </summary>
+    private static DbProfile DeserialiseLikePostgrest(string json)
+    {
+        var settings = Client.SerializerSettings(new ClientOptions());
+        return JsonConvert.DeserializeObject<DbProfile>(json, settings)!;
+    }
+
+    private static DateTime Parse(string timestamp)
+    {
+        return DateTime.Parse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).ToUniversalTime();
     }
 
     private static DbProfile CreateTestProfile(Guid userId, string? sharingToken = null)

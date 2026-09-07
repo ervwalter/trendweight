@@ -8,27 +8,32 @@ using TrendWeight.Features.Profile;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
 using TrendWeight.Features.Profile.Services;
+using TrendWeight.Features.Measurements;
 using TrendWeight.Infrastructure.DataAccess.Models;
+using TrendWeight.Tests.Fixtures;
 using Xunit;
 
 namespace TrendWeight.Tests.Features.Profile.Controllers;
 
 public class ProfileControllerTests
 {
+    // A realistic-looking bearer secret; nothing the controller logs may contain it.
+    private const string Code = "shr-secret-0123456789abc";
+
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILegacyMigrationService> _migrationServiceMock;
-    private readonly Mock<ILogger<ProfileController>> _loggerMock;
+    private readonly CapturingLoggerProvider _logs;
     private readonly ProfileController _sut;
 
     public ProfileControllerTests()
     {
         _profileServiceMock = new Mock<IProfileService>();
         _migrationServiceMock = new Mock<ILegacyMigrationService>();
-        _loggerMock = new Mock<ILogger<ProfileController>>();
+        _logs = new CapturingLoggerProvider();
         _sut = new ProfileController(
             _profileServiceMock.Object,
             _migrationServiceMock.Object,
-            _loggerMock.Object);
+            _logs.CreateLogger<ProfileController>());
     }
 
     #region GetProfile Tests
@@ -108,22 +113,67 @@ public class ProfileControllerTests
     }
 
     [Fact]
-    public async Task GetProfile_WhenUserNotFound_ReturnsNotFound()
+    public async Task GetProfile_MapsEveryProfileField()
     {
-        // Arrange
         var userId = Guid.NewGuid();
-        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync((DbProfile?)null);
-        _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId, "test@example.com"))
-            .ReturnsAsync((DbProfile?)null);
+        var user = CreateFullyPopulatedProfile(userId);
+        SetupAuthenticatedUser(userId.ToString(), user.Email);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
 
-        // Act
         var result = await _sut.GetProfile();
 
-        // Assert
-        result.Result.Should().BeOfType<NotFoundObjectResult>()
-            .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("User not found");
+        var response = result.Result.Should().BeOfType<OkObjectResult>().Subject
+            .Value.Should().BeOfType<ProfileResponse>().Subject;
+        response.User.Should().BeEquivalentTo(ExpectedFullyPopulatedUser());
+        response.IsMe.Should().BeTrue();
+        response.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task GetProfile_WithNullOptionalFields_MapsDefaults()
+    {
+        // Nullable storage fields become concrete API values, and an unrecognised
+        // preset id (written by a newer version) resolves to the default preset
+        var userId = Guid.NewGuid();
+        var user = new DbProfile
+        {
+            Uid = userId,
+            Email = "test@example.com",
+            Profile = new ProfileData
+            {
+                FirstName = "Sparse",
+                GoalStart = null,
+                GoalWeight = null,
+                PlannedPoundsPerWeek = null,
+                DayStartOffset = null,
+                ShowCalories = null,
+                SharingToken = null,
+                TrendAlgorithm = "not-a-real-preset"
+            }
+        };
+        SetupAuthenticatedUser(userId.ToString(), user.Email);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
+
+        var result = await _sut.GetProfile();
+
+        var response = result.Result.Should().BeOfType<OkObjectResult>().Subject
+            .Value.Should().BeOfType<ProfileResponse>().Subject;
+        response.User.Should().BeEquivalentTo(new UserProfileData
+        {
+            FirstName = "Sparse",
+            GoalStart = null,
+            GoalWeight = null,
+            PlannedPoundsPerWeek = null,
+            DayStartOffset = 0,
+            UseMetric = false,
+            ShowCalories = false,
+            HideDataBeforeStart = false,
+            TrendAlgorithm = TrendAlgorithmPresets.Resolve(null).Id,
+            SharingEnabled = false,
+            SharingToken = null,
+            IsMigrated = false,
+            IsNewlyMigrated = false
+        });
     }
 
     [Fact]
@@ -191,27 +241,6 @@ public class ProfileControllerTests
     }
 
     [Fact]
-    public async Task GetProfile_WithMigratedUser_CallsCheckAndImportLegacyData()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = CreateTestProfile(userId);
-        user.Profile.IsMigrated = true;
-        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
-
-        // Act
-        var result = await _sut.GetProfile();
-
-        // Assert
-        result.Should().NotBeNull();
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-
-        // Verify legacy check was made
-        _migrationServiceMock.Verify(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, "test@example.com"), Times.Once);
-    }
-
-    [Fact]
     public async Task GetProfile_WithNonMigratedUser_SkipsLegacyCheck()
     {
         // Arrange
@@ -233,7 +262,7 @@ public class ProfileControllerTests
     }
 
     [Fact]
-    public async Task GetProfile_WithMigratedUserButNoEmail_SkipsLegacyImport()
+    public async Task GetProfile_WithMigratedUserAndNoEmail_DelegatesNullEmailToLegacyImport()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -249,38 +278,8 @@ public class ProfileControllerTests
         result.Should().NotBeNull();
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
 
-        // Verify legacy operation was called with null email (and handled internally)
+        // The migration service decides what a missing email means; the controller just passes it on
         _migrationServiceMock.Verify(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, null), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetProfile_WhenLegacyImportFails_StillReturnsProfile()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var user = CreateTestProfile(userId);
-        user.Profile.IsMigrated = true;
-        SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
-        // CheckAndImportLegacyDataIfNeededAsync catches exceptions internally,
-        // so we don't need to test exception handling here
-        _migrationServiceMock.Setup(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, "test@example.com"))
-            .Returns(Task.CompletedTask);
-
-        // Act
-        var result = await _sut.GetProfile();
-
-        // Assert
-        result.Should().NotBeNull();
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<ProfileResponse>().Subject;
-
-        // Profile should be returned successfully
-        response.User.FirstName.Should().Be("Test User");
-        response.IsMe.Should().Be(true);
-
-        // Verify the legacy import was attempted
-        _migrationServiceMock.Verify(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, "test@example.com"), Times.Once);
     }
 
     #endregion
@@ -291,14 +290,13 @@ public class ProfileControllerTests
     public async Task GetProfileBySharingCode_WithValidCodeAndSharingEnabled_ReturnsProfile()
     {
         // Arrange
-        var sharingCode = "test-sharing-code";
         var user = CreateTestProfile(Guid.NewGuid());
         user.Profile.SharingEnabled = true;
-        user.Profile.SharingToken = sharingCode;
-        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
+        user.Profile.SharingToken = Code;
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code)).ReturnsAsync(user);
 
         // Act
-        var result = await _sut.GetProfileBySharingCode(sharingCode);
+        var result = await _sut.GetProfileBySharingCode(Code);
 
         // Assert
         result.Should().NotBeNull();
@@ -307,41 +305,60 @@ public class ProfileControllerTests
 
         response.IsMe.Should().Be(false); // Always false for sharing code
         response.User.SharingEnabled.Should().Be(true);
+        _logs.ShouldNotMention(Code);
     }
 
     [Fact]
-    public async Task GetProfileBySharingCode_WhenUserNotFound_ReturnsNotFound()
+    public async Task GetProfileBySharingCode_MapsEveryProfileFieldWithIsMeFalse()
+    {
+        // The owner previewing their own share link still gets isMe = false
+        var user = CreateFullyPopulatedProfile(Guid.NewGuid());
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(user.Profile.SharingToken!)).ReturnsAsync(user);
+
+        var result = await _sut.GetProfileBySharingCode(user.Profile.SharingToken!);
+
+        var response = result.Result.Should().BeOfType<OkObjectResult>().Subject
+            .Value.Should().BeOfType<ProfileResponse>().Subject;
+        response.User.Should().BeEquivalentTo(ExpectedFullyPopulatedUser());
+        response.IsMe.Should().BeFalse();
+        response.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task GetProfileBySharingCode_WhenUserNotFound_ReturnsNotFoundWithoutLoggingTheCode()
     {
         // Arrange
-        var sharingCode = "invalid-code";
-        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync((DbProfile?)null);
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code)).ReturnsAsync((DbProfile?)null);
 
         // Act
-        var result = await _sut.GetProfileBySharingCode(sharingCode);
+        var result = await _sut.GetProfileBySharingCode(Code);
 
         // Assert
         result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Be("User not found");
+        _logs.ShouldHaveLogged(LogLevel.Warning, "sharing code");
+        _logs.ShouldNotMention(Code);
     }
 
     [Fact]
-    public async Task GetProfileBySharingCode_WhenSharingDisabled_ReturnsNotFound()
+    public async Task GetProfileBySharingCode_WhenSharingDisabled_ReturnsNotFoundWithoutLoggingTheCode()
     {
-        // Arrange
-        var sharingCode = "test-sharing-code";
+        // Arrange - a disabled code can be re-enabled later, so it is still a secret
         var user = CreateTestProfile(Guid.NewGuid());
         user.Profile.SharingEnabled = false;
-        user.Profile.SharingToken = sharingCode;
-        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(sharingCode)).ReturnsAsync(user);
+        user.Profile.SharingToken = Code;
+        _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(Code)).ReturnsAsync(user);
 
         // Act
-        var result = await _sut.GetProfileBySharingCode(sharingCode);
+        var result = await _sut.GetProfileBySharingCode(Code);
 
         // Assert
         result.Result.Should().BeOfType<NotFoundObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Be("User not found");
+        _logs.ShouldHaveLogged(LogLevel.Warning, "sharing code");
+        _logs.ShouldNotMention(Code);
     }
 
     [Fact]
@@ -885,6 +902,58 @@ public class ProfileControllerTests
                 IsMigrated = false,
                 IsNewlyMigrated = false
             }
+        };
+    }
+
+    /// <summary>
+    /// Every stored field set to a value that differs from its default, so a
+    /// dropped or swapped mapping shows up in <see cref="ExpectedFullyPopulatedUser"/>.
+    /// </summary>
+    private static DbProfile CreateFullyPopulatedProfile(Guid userId)
+    {
+        return new DbProfile
+        {
+            Uid = userId,
+            Email = "mapped@example.com",
+            Profile = new ProfileData
+            {
+                FirstName = "Mapped Name",
+                GoalStart = new DateTime(2023, 3, 7, 15, 45, 30), // time-of-day must not leak into the date string
+                GoalWeight = 68.4m,
+                PlannedPoundsPerWeek = -1.5m,
+                DayStartOffset = 5,
+                UseMetric = true,
+                ShowCalories = true,
+                HideDataBeforeStart = true,
+                TrendAlgorithm = "holt-gentle",
+                SharingToken = "shr-mapped-token-abcdef",
+                SharingEnabled = true,
+                IsMigrated = true,
+                IsNewlyMigrated = true,
+                ApiKeyHash = "hash-never-exposed",
+                ApiKeySuffix = "wxyz",
+                ApiKeyCreatedAt = "2024-01-02T03:04:05.0000000Z"
+            }
+        };
+    }
+
+    private static UserProfileData ExpectedFullyPopulatedUser()
+    {
+        return new UserProfileData
+        {
+            FirstName = "Mapped Name",
+            GoalStart = "2023-03-07",
+            GoalWeight = 68.4m,
+            PlannedPoundsPerWeek = -1.5m,
+            DayStartOffset = 5,
+            UseMetric = true,
+            ShowCalories = true,
+            HideDataBeforeStart = true,
+            TrendAlgorithm = "holt-gentle",
+            SharingEnabled = true,
+            SharingToken = "shr-mapped-token-abcdef",
+            IsMigrated = true,
+            IsNewlyMigrated = true
         };
     }
 

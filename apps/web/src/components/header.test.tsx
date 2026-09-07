@@ -65,6 +65,8 @@ describe("Header", () => {
 
       const menuButton = screen.getByRole("button", { name: "Open menu" });
       expect(menuButton).toHaveAttribute("aria-expanded", "false");
+      // Follow the aria-controls relationship the button exposes to assistive technology
+      // eslint-disable-next-line testing-library/no-node-access
       const menu = document.getElementById(menuButton.getAttribute("aria-controls")!)!;
       expect(menu).toHaveClass("hidden");
 

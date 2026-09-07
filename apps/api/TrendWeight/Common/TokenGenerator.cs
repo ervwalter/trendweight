@@ -29,7 +29,7 @@ public static class TokenGenerator
     /// <summary>
     /// Converts byte array to base36 string (0-9, a-z)
     /// </summary>
-    private static string ToBase36(byte[] bytes)
+    internal static string ToBase36(byte[] bytes)
     {
         const string base36Chars = "0123456789abcdefghijklmnopqrstuvwxyz";
         var result = new StringBuilder();

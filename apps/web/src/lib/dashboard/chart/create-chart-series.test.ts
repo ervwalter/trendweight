@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
+import type { SeriesLegendItemClickEventObject } from "highcharts";
 import { createTrendSeries, createDiamondsSeries, createDotSeries, createLineSeries, createProjectionSeries, createSinkersSeries } from "./create-chart-series";
+
+type LegendClickHandler = (this: unknown, event: SeriesLegendItemClickEventObject) => boolean | undefined;
+
+// Invokes a series' legendItemClick handler the way Highcharts would and returns its result
+function clickLegendItem(handler: unknown): boolean | undefined {
+  const event = { browserEvent: {}, preventDefault: () => {}, type: "legendItemClick", visible: true } as unknown as SeriesLegendItemClickEventObject;
+  return (handler as LegendClickHandler).call({}, event);
+}
 
 describe("create-chart-series", () => {
   const sampleData: [number, number][] = [
@@ -21,218 +30,228 @@ describe("create-chart-series", () => {
   ];
 
   describe("createTrendSeries", () => {
-    it("should create trend series with correct properties", () => {
+    it("builds the trend line in the mode's colour with the mode and algorithm in its name", () => {
       const series = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
 
-      expect(series.type).toBe("line");
-      expect(series.id).toBe("trend");
-      expect(series.name).toBe("Weight Trend");
+      expect(series).toMatchObject({
+        type: "line",
+        id: "trend",
+        name: "Weight Trend",
+        color: "var(--chart-weight)",
+        lineWidth: 2,
+        zIndex: 5,
+        legendIndex: 1,
+        marker: { enabled: false },
+      });
       expect(series.data).toBe(sampleData);
-      expect(series.color).toBe("var(--chart-weight)"); // weight color
-      expect(series.lineWidth).toBe(2);
-      expect(series.zIndex).toBe(5);
-      expect(series.legendIndex).toBe(1);
-      expect(series.marker?.enabled).toBe(false);
     });
 
-    it("should use different colors for different modes", () => {
-      const weightSeries = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
-      const fatPercentSeries = createTrendSeries(sampleData, "fatpercent", "Fat %", false, "Trend");
-      const fatMassSeries = createTrendSeries(sampleData, "fatmass", "Fat Mass", false, "Trend");
-      const leanMassSeries = createTrendSeries(sampleData, "leanmass", "Lean Mass", false, "Trend");
-
-      expect(weightSeries.color).toBe("var(--chart-weight)");
-      expect(fatPercentSeries.color).toBe("var(--chart-fatpercent)");
-      expect(fatMassSeries.color).toBe("var(--chart-fatmass)");
-      expect(leanMassSeries.color).toBe("var(--chart-leanmass)");
+    it.each([
+      ["weight", "var(--chart-weight)"],
+      ["fatpercent", "var(--chart-fatpercent)"],
+      ["fatmass", "var(--chart-fatmass)"],
+      ["leanmass", "var(--chart-leanmass)"],
+    ] as const)("colours the %s trend with %s", (mode, color) => {
+      expect(createTrendSeries(sampleData, mode, "Label", false, "Trend").color).toBe(color);
     });
 
-    it("should adjust line width for narrow displays", () => {
-      const normalSeries = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
-      const narrowSeries = createTrendSeries(sampleData, "weight", "Weight", true, "Trend");
-
-      expect(normalSeries.lineWidth).toBe(2);
-      expect(narrowSeries.lineWidth).toBe(1.5);
+    it("draws a thinner line on narrow displays", () => {
+      expect(createTrendSeries(sampleData, "weight", "Weight", false, "Trend").lineWidth).toBe(2);
+      expect(createTrendSeries(sampleData, "weight", "Weight", true, "Trend").lineWidth).toBe(1.5);
     });
 
-    it("should prevent legend item clicks", () => {
+    it("cancels legend clicks so the trend cannot be hidden", () => {
       const series = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
 
-      expect(series.events?.legendItemClick).toBeDefined();
-      expect(typeof series.events?.legendItemClick).toBe("function");
+      expect(clickLegendItem(series.events?.legendItemClick)).toBe(false);
     });
 
-    it("should use the provided trend label in the series name", () => {
-      const series = createTrendSeries(sampleData, "weight", "Weight", false, "Trend (Holt)");
-
-      expect(series.name).toBe("Weight Trend (Holt)");
+    it("uses the provided trend label in the series name", () => {
+      expect(createTrendSeries(sampleData, "weight", "Weight", false, "Trend (Holt)").name).toBe("Weight Trend (Holt)");
     });
   });
 
   describe("createDiamondsSeries", () => {
-    it("should create diamonds series for actual data", () => {
+    it("draws actual readings as unconnected diamonds above everything else", () => {
       const series = createDiamondsSeries(sampleDataWithNulls, false, false);
 
-      expect(series.connectNulls).toBe(false);
-      expect(series.zIndex).toBe(6);
-      expect(series.lineWidth).toBe(0);
-      expect(series.marker?.enabled).toBe(true);
-      expect(series.marker?.symbol).toBe("diamond");
-      expect(series.marker?.lineColor).toBe("var(--chart-actual-diamond)");
-      expect(series.marker?.fillColor).toBe("var(--chart-diamond-fill)");
-      expect(series.marker?.radius).toBe(4.5);
+      expect(series).toMatchObject({
+        type: "line",
+        id: "actual",
+        name: "Scale Reading",
+        color: "var(--chart-actual-line)",
+        connectNulls: false,
+        zIndex: 6,
+        lineWidth: 0,
+        showInLegend: true,
+        marker: {
+          enabled: true,
+          symbol: "diamond",
+          lineColor: "var(--chart-actual-diamond)",
+          fillColor: "var(--chart-diamond-fill)",
+          lineWidth: 1,
+          radius: 4.5,
+        },
+      });
+      expect(series.data).toBe(sampleDataWithNulls);
     });
 
-    it("should create diamonds series for interpolated data", () => {
+    it("draws interpolated readings as estimated diamonds hidden from the legend", () => {
       const series = createDiamondsSeries(sampleDataWithNulls, true, false);
 
-      expect(series.marker?.lineColor).toBe("var(--chart-interpolated-diamond)");
-      expect(series.marker?.fillColor).toBe("var(--chart-diamond-fill)");
+      expect(series).toMatchObject({
+        id: "estimated",
+        name: "Estimated Reading",
+        showInLegend: false,
+        marker: { symbol: "diamond", lineColor: "var(--chart-interpolated-diamond)", fillColor: "var(--chart-diamond-fill)" },
+      });
     });
 
-    it("should adjust marker size for narrow displays", () => {
-      const normalSeries = createDiamondsSeries(sampleDataWithNulls, false, false);
-      const narrowSeries = createDiamondsSeries(sampleDataWithNulls, false, true);
+    it("uses smaller diamonds on narrow displays", () => {
+      expect(createDiamondsSeries(sampleDataWithNulls, false, false).marker?.radius).toBe(4.5);
+      expect(createDiamondsSeries(sampleDataWithNulls, false, true).marker?.radius).toBe(3);
+    });
 
-      expect(normalSeries.marker?.radius).toBe(4.5);
-      expect(narrowSeries.marker?.radius).toBe(3);
+    it("cancels legend clicks", () => {
+      const series = createDiamondsSeries(sampleDataWithNulls, false, false);
+
+      expect(clickLegendItem(series.events?.legendItemClick)).toBe(false);
     });
   });
 
   describe("createDotSeries", () => {
-    it("should create dot series for actual data", () => {
+    it("draws actual readings as small unconnected dots", () => {
       const series = createDotSeries(sampleDataWithNulls, false);
 
-      expect(series.connectNulls).toBe(false);
-      expect(series.zIndex).toBe(4);
-      expect(series.lineWidth).toBe(0);
-      expect(series.marker?.enabled).toBe(true);
-      expect(series.marker?.symbol).toBe("circle");
-      expect(series.marker?.lineColor).toBe("var(--chart-actual-dot)");
-      expect(series.marker?.fillColor).toBe("var(--chart-actual-dot)");
-      expect(series.marker?.radius).toBe(2);
+      expect(series).toMatchObject({
+        id: "actual",
+        connectNulls: false,
+        zIndex: 4,
+        lineWidth: 0,
+        marker: {
+          enabled: true,
+          symbol: "circle",
+          lineColor: "var(--chart-actual-dot)",
+          fillColor: "var(--chart-actual-dot)",
+          lineWidth: 0,
+          radius: 2,
+        },
+      });
     });
 
-    it("should create dot series for interpolated data", () => {
+    it("draws interpolated readings as estimated dots", () => {
       const series = createDotSeries(sampleDataWithNulls, true);
 
-      expect(series.marker?.lineColor).toBe("var(--chart-interpolated-dot)");
-      expect(series.marker?.fillColor).toBe("var(--chart-interpolated-dot)");
+      expect(series).toMatchObject({
+        id: "estimated",
+        marker: { symbol: "circle", lineColor: "var(--chart-interpolated-dot)", fillColor: "var(--chart-interpolated-dot)" },
+      });
     });
   });
 
   describe("createLineSeries", () => {
-    it("should create line series for actual data", () => {
+    it("draws actual readings as a thin connected line without markers", () => {
       const series = createLineSeries(sampleDataWithNulls, false);
 
-      expect(series.type).toBe("line");
-      expect(series.id).toBe("actual");
-      expect(series.name).toBe("Scale Reading");
-      expect(series.lineWidth).toBe(1);
-      expect(series.color).toBe("var(--chart-actual-line)");
-      expect(series.legendIndex).toBe(0);
-      expect(series.zIndex).toBe(3);
-      expect(series.connectNulls).toBe(true);
-      expect(series.showInLegend).toBe(true);
-      expect(series.marker?.enabled).toBe(false);
+      expect(series).toMatchObject({
+        type: "line",
+        id: "actual",
+        name: "Scale Reading",
+        lineWidth: 1,
+        color: "var(--chart-actual-line)",
+        legendIndex: 0,
+        zIndex: 3,
+        connectNulls: true,
+        showInLegend: true,
+        marker: { enabled: false },
+      });
       expect(series.data).toBe(sampleDataWithNulls);
     });
 
-    it("should create line series for interpolated data", () => {
+    it("draws interpolated readings as an estimated line hidden from the legend", () => {
       const series = createLineSeries(sampleDataWithNulls, true);
 
-      expect(series.id).toBe("estimated");
-      expect(series.name).toBe("Estimated Reading");
-      expect(series.showInLegend).toBe(false);
+      expect(series).toMatchObject({ id: "estimated", name: "Estimated Reading", showInLegend: false });
     });
 
-    it("should prevent legend item clicks", () => {
+    it("cancels legend clicks", () => {
       const series = createLineSeries(sampleDataWithNulls, false);
 
-      expect(series.events?.legendItemClick).toBeDefined();
-      expect(typeof series.events?.legendItemClick).toBe("function");
+      expect(clickLegendItem(series.events?.legendItemClick)).toBe(false);
     });
   });
 
   describe("createProjectionSeries", () => {
-    it("should create projection series with correct properties", () => {
+    it("draws a dotted, non-interactive projection in the mode's colour", () => {
       const series = createProjectionSeries(sampleData, "fatpercent", "Fat %", false);
 
-      expect(series.type).toBe("line");
-      expect(series.id).toBe("projection");
-      expect(series.name).toBe("Projected Fat %");
+      expect(series).toMatchObject({
+        type: "line",
+        id: "projection",
+        name: "Projected Fat %",
+        color: "var(--chart-fatpercent)",
+        lineWidth: 2,
+        dashStyle: "ShortDot",
+        enableMouseTracking: false,
+        zIndex: 5,
+        legendIndex: 2,
+      });
       expect(series.data).toBe(sampleData);
-      expect(series.color).toBe("var(--chart-fatpercent)"); // fatpercent color
-      expect(series.lineWidth).toBe(2);
-      expect(series.dashStyle).toBe("ShortDot");
-      expect(series.enableMouseTracking).toBe(false);
-      expect(series.zIndex).toBe(5);
-      expect(series.legendIndex).toBe(2);
     });
 
-    it("should adjust line width for narrow displays", () => {
-      const normalSeries = createProjectionSeries(sampleData, "weight", "Weight", false);
-      const narrowSeries = createProjectionSeries(sampleData, "weight", "Weight", true);
-
-      expect(normalSeries.lineWidth).toBe(2);
-      expect(narrowSeries.lineWidth).toBe(1.5);
+    it("draws a thinner line on narrow displays", () => {
+      expect(createProjectionSeries(sampleData, "weight", "Weight", false).lineWidth).toBe(2);
+      expect(createProjectionSeries(sampleData, "weight", "Weight", true).lineWidth).toBe(1.5);
     });
 
-    it("should prevent legend item clicks", () => {
+    it("cancels legend clicks", () => {
       const series = createProjectionSeries(sampleData, "weight", "Weight", false);
 
-      expect(series.events?.legendItemClick).toBeDefined();
-      expect(typeof series.events?.legendItemClick).toBe("function");
+      expect(clickLegendItem(series.events?.legendItemClick)).toBe(false);
     });
   });
 
   describe("createSinkersSeries", () => {
-    it("should create sinkers series for actual data", () => {
+    it("draws actual sinkers as a hidden, non-interactive hlc series", () => {
       const series = createSinkersSeries(sampleSinkersData, false);
 
-      expect(series.type).toBe("hlc");
-      expect(series.id).toBe("actual-sinkers");
-      expect(series.name).toBe("Actual Sinkers");
-      expect(series.showInLegend).toBe(false);
-      expect(series.enableMouseTracking).toBe(false);
-      expect(series.zIndex).toBe(2);
-      expect(series.color).toBe("var(--chart-actual-sinker)");
-      expect(series.pointValKey).toBe("high");
+      expect(series).toMatchObject({
+        type: "hlc",
+        id: "actual-sinkers",
+        name: "Actual Sinkers",
+        showInLegend: false,
+        enableMouseTracking: false,
+        zIndex: 2,
+        color: "var(--chart-actual-sinker)",
+        pointValKey: "high",
+      });
       expect(series.data).toBe(sampleSinkersData);
     });
 
-    it("should create sinkers series for interpolated data", () => {
+    it("draws interpolated sinkers in the estimated colour", () => {
       const series = createSinkersSeries(sampleSinkersData, true);
 
-      expect(series.id).toBe("estimated-sinkers");
-      expect(series.name).toBe("Estimated Sinkers");
-      expect(series.color).toBe("var(--chart-interpolated-sinker)");
+      expect(series).toMatchObject({ id: "estimated-sinkers", name: "Estimated Sinkers", color: "var(--chart-interpolated-sinker)" });
     });
   });
 
-  describe("color consistency", () => {
-    it("should use same colors across trend and projection series", () => {
-      const trendSeries = createTrendSeries(sampleData, "leanmass", "Lean Mass", false, "Trend");
-      const projectionSeries = createProjectionSeries(sampleData, "leanmass", "Lean Mass", false);
+  it("uses the same colour for a mode's trend and projection", () => {
+    const trend = createTrendSeries(sampleData, "leanmass", "Lean Mass", false, "Trend");
+    const projection = createProjectionSeries(sampleData, "leanmass", "Lean Mass", false);
 
-      expect(trendSeries.color).toBe(projectionSeries.color);
-      expect(trendSeries.color).toBe("var(--chart-leanmass)");
-    });
+    expect(trend.color).toBe("var(--chart-leanmass)");
+    expect(projection.color).toBe("var(--chart-leanmass)");
   });
 
-  describe("z-index layering", () => {
-    it("should have correct z-index hierarchy", () => {
-      const diamondsSeries = createDiamondsSeries(sampleDataWithNulls, false, false);
-      const trendSeries = createTrendSeries(sampleData, "weight", "Weight", false, "Trend");
-      const dotSeries = createDotSeries(sampleDataWithNulls, false);
-      const lineSeries = createLineSeries(sampleDataWithNulls, false);
-      const sinkersSeries = createSinkersSeries(sampleSinkersData, false);
+  it("layers diamonds above the trend, dots, lines and sinkers in that order", () => {
+    const zIndexes = [
+      createDiamondsSeries(sampleDataWithNulls, false, false).zIndex,
+      createTrendSeries(sampleData, "weight", "Weight", false, "Trend").zIndex,
+      createDotSeries(sampleDataWithNulls, false).zIndex,
+      createLineSeries(sampleDataWithNulls, false).zIndex,
+      createSinkersSeries(sampleSinkersData, false).zIndex,
+    ];
 
-      expect(diamondsSeries.zIndex).toBe(6); // highest
-      expect(trendSeries.zIndex).toBe(5);
-      expect(dotSeries.zIndex).toBe(4);
-      expect(lineSeries.zIndex).toBe(3);
-      expect(sinkersSeries.zIndex).toBe(2); // lowest
-    });
+    expect(zIndexes).toEqual([6, 5, 4, 3, 2]);
   });
 });

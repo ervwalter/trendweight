@@ -11,7 +11,10 @@ describe("TipJar", () => {
     expect(kofi).toHaveAttribute("target", "_blank");
     expect(kofi).toHaveAttribute("rel", "noopener noreferrer");
 
+    // Injected markup has no user-facing query; assert its absence structurally
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector("style")).toBeNull();
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector("link")).toBeNull();
   });
 

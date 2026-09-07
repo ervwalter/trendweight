@@ -4,62 +4,44 @@ import userEvent from "@testing-library/user-event";
 import { Toggle } from "./toggle";
 
 describe("Toggle", () => {
-  it("renders children correctly", () => {
+  it("renders children as an unpressed button", () => {
     render(<Toggle>Toggle me</Toggle>);
-    expect(screen.getByRole("button", { name: "Toggle me" })).toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Toggle me", pressed: false })).toBeInTheDocument();
   });
 
-  it("applies default variant and size styles", () => {
-    render(<Toggle>Default Toggle</Toggle>);
-    const toggle = screen.getByRole("button");
-    expect(toggle).toHaveClass("border"); // outline variant
-    expect(toggle).toHaveClass("h-9"); // default size
-  });
-
-  it("applies outline variant with brand colors when pressed", () => {
+  it("reports the pressed state", () => {
     render(<Toggle pressed>Pressed Toggle</Toggle>);
-    const toggle = screen.getByRole("button");
-    expect(toggle).toHaveAttribute("data-state", "on");
-    expect(toggle).toHaveClass("data-[state=on]:bg-primary");
-    expect(toggle).toHaveClass("data-[state=on]:border-primary");
-    expect(toggle).toHaveClass("data-[state=on]:text-primary-foreground");
+
+    expect(screen.getByRole("button", { name: "Pressed Toggle", pressed: true })).toBeInTheDocument();
   });
 
-  it("applies different sizes correctly", () => {
-    const { rerender } = render(<Toggle size="sm">Small</Toggle>);
-    expect(screen.getByRole("button")).toHaveClass("h-8");
-
-    rerender(<Toggle size="lg">Large</Toggle>);
-    expect(screen.getByRole("button")).toHaveClass("h-10");
-  });
-
-  it("handles press state changes", async () => {
+  it("toggles on click and on Space", async () => {
     const handlePressedChange = vi.fn();
     const user = userEvent.setup();
-
     render(<Toggle onPressedChange={handlePressedChange}>Toggle Button</Toggle>);
 
-    const toggle = screen.getByRole("button");
-    expect(toggle).toHaveAttribute("data-state", "off");
+    await user.click(screen.getByRole("button"));
+    expect(handlePressedChange).toHaveBeenLastCalledWith(true);
+    expect(screen.getByRole("button", { pressed: true })).toBeInTheDocument();
 
-    await user.click(toggle);
-    expect(handlePressedChange).toHaveBeenCalledWith(true);
+    await user.keyboard(" ");
+    expect(handlePressedChange).toHaveBeenLastCalledWith(false);
+    expect(screen.getByRole("button", { pressed: false })).toBeInTheDocument();
   });
 
-  it("can be disabled", () => {
-    render(<Toggle disabled>Disabled Toggle</Toggle>);
-    const toggle = screen.getByRole("button");
-    expect(toggle).toBeDisabled();
-    expect(toggle).toHaveClass("disabled:opacity-50");
-  });
-
-  it("forwards additional props", () => {
+  it("ignores clicks while disabled", async () => {
+    const handlePressedChange = vi.fn();
+    const user = userEvent.setup();
     render(
-      <Toggle data-testid="custom-toggle" className="custom-class">
-        Custom Toggle
+      <Toggle disabled onPressedChange={handlePressedChange}>
+        Disabled Toggle
       </Toggle>,
     );
-    const toggle = screen.getByTestId("custom-toggle");
-    expect(toggle).toHaveClass("custom-class");
+
+    const toggle = screen.getByRole("button");
+    expect(toggle).toBeDisabled();
+    await user.click(toggle);
+    expect(handlePressedChange).not.toHaveBeenCalled();
   });
 });

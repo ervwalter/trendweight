@@ -1,205 +1,209 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useEmbedParams } from "@/lib/hooks/use-embed-params";
 import { EmbedLayout } from "./embed-layout";
 
-// Mock the hooks
-vi.mock("@/lib/hooks/use-embed-params", () => ({
-  useEmbedParams: vi.fn(),
-}));
+// The embed params come from the sharing route's search params; there is no router here
+vi.mock("@/lib/hooks/use-embed-params", () => ({ useEmbedParams: vi.fn() }));
 
-// Mock page title utility
-vi.mock("@/lib/utils/page-title", () => ({
-  pageTitle: vi.fn((title) => (title ? `${title} - TrendWeight` : "TrendWeight")),
-}));
+const useEmbedParamsMock = vi.mocked(useEmbedParams);
 
-const mockUseEmbedParams = vi.mocked(await import("@/lib/hooks/use-embed-params")).useEmbedParams;
+// A component that suspends until resolve() is called
+function createSuspender(text: string) {
+  let settled = false;
+  let resolve!: () => void;
+  const promise = new Promise<void>((r) => {
+    resolve = () => {
+      settled = true;
+      r();
+    };
+  });
+  const Suspender = () => {
+    if (!settled) throw promise;
+    return <div>{text}</div>;
+  };
+  return { Suspender, resolve };
+}
 
 describe("EmbedLayout", () => {
   beforeEach(() => {
-    // Reset document.documentElement.classList
+    useEmbedParamsMock.mockReturnValue({});
     document.documentElement.className = "";
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
     document.documentElement.className = "";
   });
 
-  it("renders children correctly", () => {
-    mockUseEmbedParams.mockReturnValue({});
-
+  it("renders its children", () => {
     render(
       <EmbedLayout>
-        <div data-testid="test-content">Test Content</div>
+        <div>Test Content</div>
       </EmbedLayout>,
     );
 
-    expect(screen.getByTestId("test-content")).toBeInTheDocument();
+    expect(screen.getByText("Test Content")).toBeInTheDocument();
   });
 
-  it("applies dark mode when dark parameter is true", () => {
-    mockUseEmbedParams.mockReturnValue({ dark: true });
+  describe("dark mode", () => {
+    it("adds the dark class when the dark parameter is true", () => {
+      useEmbedParamsMock.mockReturnValue({ dark: true });
 
-    render(
-      <EmbedLayout>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
+      render(
+        <EmbedLayout>
+          <div>Content</div>
+        </EmbedLayout>,
+      );
 
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
-  });
-
-  it("removes dark mode when dark parameter is false", () => {
-    // Start with dark mode
-    document.documentElement.classList.add("dark");
-    mockUseEmbedParams.mockReturnValue({ dark: false });
-
-    render(
-      <EmbedLayout>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    expect(document.documentElement.classList.contains("dark")).toBe(false);
-  });
-
-  it("does not modify dark mode when dark parameter is undefined", () => {
-    // Start with dark mode
-    document.documentElement.classList.add("dark");
-    mockUseEmbedParams.mockReturnValue({ dark: undefined });
-
-    render(
-      <EmbedLayout>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
-  });
-
-  it("applies max-width style when width parameter is provided", () => {
-    mockUseEmbedParams.mockReturnValue({ width: 800 });
-
-    render(
-      <EmbedLayout>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    const container = document.querySelector(".min-h-screen");
-    expect(container).toHaveStyle({ maxWidth: "800px" });
-  });
-
-  it("does not apply max-width style when width parameter is not provided", () => {
-    mockUseEmbedParams.mockReturnValue({});
-
-    render(
-      <EmbedLayout>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    const container = document.querySelector(".min-h-screen");
-    // In jsdom v27, undefined style attributes are handled differently
-    // Check that maxWidth is either empty string or not set
-    const style = container ? window.getComputedStyle(container) : null;
-    expect(style?.maxWidth).toMatch(/^(none|)$/);
-  });
-
-  it("renders title correctly", () => {
-    mockUseEmbedParams.mockReturnValue({});
-
-    render(
-      <EmbedLayout title="Test Page">
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    expect(document.title).toBe("Test Page - TrendWeight");
-  });
-
-  it("renders default title when no title provided", () => {
-    mockUseEmbedParams.mockReturnValue({});
-
-    render(
-      <EmbedLayout>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    expect(document.title).toBe("TrendWeight");
-  });
-
-  it("renders noindex meta tag when noIndex is true", () => {
-    mockUseEmbedParams.mockReturnValue({});
-
-    render(
-      <EmbedLayout noIndex>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    const metaTag = document.querySelector('meta[name="robots"]');
-    expect(metaTag).toHaveAttribute("content", "noindex, nofollow");
-  });
-
-  it("does not render noindex meta tag when noIndex is false", () => {
-    mockUseEmbedParams.mockReturnValue({});
-
-    render(
-      <EmbedLayout noIndex={false}>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    const metaTag = document.querySelector('meta[name="robots"]');
-    expect(metaTag).not.toBeInTheDocument();
-  });
-
-  it("renders custom suspense fallback", () => {
-    mockUseEmbedParams.mockReturnValue({});
-    const customFallback = <div data-testid="custom-loading">Custom Loading</div>;
-
-    render(
-      <EmbedLayout suspenseFallback={customFallback}>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    // The content should be rendered immediately since it's not actually suspended
-    expect(screen.getByText("Content")).toBeInTheDocument();
-  });
-
-  it("renders default loading fallback when no custom fallback provided", () => {
-    mockUseEmbedParams.mockReturnValue({});
-
-    render(
-      <EmbedLayout>
-        <div>Content</div>
-      </EmbedLayout>,
-    );
-
-    // The content should be rendered immediately since it's not actually suspended
-    expect(screen.getByText("Content")).toBeInTheDocument();
-  });
-
-  it("handles multiple search parameters together", () => {
-    mockUseEmbedParams.mockReturnValue({
-      dark: true,
-      width: 1200,
+      expect(document.documentElement).toHaveClass("dark");
     });
 
-    render(
+    it("removes the dark class when the dark parameter is false", () => {
+      document.documentElement.classList.add("dark");
+      useEmbedParamsMock.mockReturnValue({ dark: false });
+
+      render(
+        <EmbedLayout>
+          <div>Content</div>
+        </EmbedLayout>,
+      );
+
+      expect(document.documentElement).not.toHaveClass("dark");
+    });
+
+    it("leaves the dark class alone when the dark parameter is absent", () => {
+      document.documentElement.classList.add("dark");
+      useEmbedParamsMock.mockReturnValue({ dark: undefined });
+
+      render(
+        <EmbedLayout>
+          <div>Content</div>
+        </EmbedLayout>,
+      );
+
+      expect(document.documentElement).toHaveClass("dark");
+    });
+  });
+
+  describe("width", () => {
+    it("caps the layout at the width parameter", () => {
+      useEmbedParamsMock.mockReturnValue({ width: 800 });
+
+      const { container } = render(
+        <EmbedLayout>
+          <div>Content</div>
+        </EmbedLayout>,
+      );
+
+      expect(container).toContainHTML('style="max-width: 800px;"');
+    });
+
+    it("applies no cap without a width parameter", () => {
+      const { container } = render(
+        <EmbedLayout>
+          <div>Content</div>
+        </EmbedLayout>,
+      );
+
+      expect(container).not.toContainHTML("max-width");
+    });
+  });
+
+  describe("document head", () => {
+    it("sets the page title from the title prop", () => {
+      render(
+        <EmbedLayout title="Test Page">
+          <div>Content</div>
+        </EmbedLayout>,
+      );
+
+      expect(document.title).toBe("Test Page - TrendWeight");
+    });
+
+    it("falls back to the site name without a title", () => {
+      render(
+        <EmbedLayout>
+          <div>Content</div>
+        </EmbedLayout>,
+      );
+
+      expect(document.title).toBe("TrendWeight");
+    });
+
+    it("asks robots not to index when noIndex is set", () => {
+      render(
+        <EmbedLayout noIndex>
+          <div>Content</div>
+        </EmbedLayout>,
+      );
+
+      expect(document.head.innerHTML).toContain('<meta name="robots" content="noindex, nofollow">');
+    });
+
+    it("emits no robots directive by default", () => {
+      render(
+        <EmbedLayout>
+          <div>Content</div>
+        </EmbedLayout>,
+      );
+
+      expect(document.head.innerHTML).not.toContain('name="robots"');
+    });
+  });
+
+  describe("suspense", () => {
+    it("shows the custom fallback while a child suspends, then the child", async () => {
+      const { Suspender, resolve } = createSuspender("Loaded content");
+
+      render(
+        <EmbedLayout suspenseFallback={<div>Custom Loading</div>}>
+          <Suspender />
+        </EmbedLayout>,
+      );
+
+      expect(screen.getByText("Custom Loading")).toBeInTheDocument();
+      expect(screen.queryByText("Loaded content")).not.toBeInTheDocument();
+
+      await act(async () => {
+        resolve();
+      });
+
+      expect(await screen.findByText("Loaded content")).toBeInTheDocument();
+      expect(screen.queryByText("Custom Loading")).not.toBeInTheDocument();
+    });
+
+    it("shows the built-in spinner while a child suspends when no fallback is given", async () => {
+      const { Suspender, resolve } = createSuspender("Loaded content");
+
+      const { container } = render(
+        <EmbedLayout>
+          <Suspender />
+        </EmbedLayout>,
+      );
+
+      expect(screen.queryByText("Loaded content")).not.toBeInTheDocument();
+      expect(container).toContainHTML("animate-spin");
+
+      await act(async () => {
+        resolve();
+      });
+
+      expect(await screen.findByText("Loaded content")).toBeInTheDocument();
+      expect(container).not.toContainHTML("animate-spin");
+    });
+  });
+
+  it("applies every parameter together", () => {
+    useEmbedParamsMock.mockReturnValue({ dark: true, width: 1200 });
+
+    const { container } = render(
       <EmbedLayout title="Multi Param Test">
         <div>Content</div>
       </EmbedLayout>,
     );
 
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
-
-    const container = document.querySelector(".min-h-screen");
-    expect(container).toHaveStyle({ maxWidth: "1200px" });
-
+    expect(document.documentElement).toHaveClass("dark");
+    expect(container).toContainHTML('style="max-width: 1200px;"');
     expect(document.title).toBe("Multi Param Test - TrendWeight");
   });
 });
