@@ -25,9 +25,48 @@ vi.mock("@/lib/api/queries", () => ({
 describe("ensureProfile", () => {
   const mockRedirect = vi.mocked(redirect);
   const nullTokenGetter = vi.fn().mockResolvedValue(null);
+  const mockGetToken = vi.fn().mockResolvedValue("mock-token");
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe("authenticated users", () => {
+    it("passes when the profile exists and is not newly migrated", async () => {
+      const client = new QueryClient();
+      const fetchQuery = vi.spyOn(client, "fetchQuery").mockResolvedValue({ user: { firstName: "Sam", isNewlyMigrated: false } });
+
+      await expect(ensureProfile(client, mockGetToken)).resolves.toBeUndefined();
+
+      expect(fetchQuery).toHaveBeenCalledWith({ queryKey: ["profile", undefined] });
+      expect(mockRedirect).not.toHaveBeenCalled();
+    });
+
+    it("redirects to initial setup when there is no profile yet", async () => {
+      const client = new QueryClient();
+      vi.spyOn(client, "fetchQuery").mockResolvedValue(null);
+
+      await expect(ensureProfile(client, mockGetToken)).rejects.toThrow("Redirect");
+      expect(mockRedirect).toHaveBeenCalledWith({ to: "/initial-setup", replace: true });
+    });
+
+    it("redirects to the migration page for a newly migrated profile", async () => {
+      const client = new QueryClient();
+      // fetchQuery returns the raw ProfileResponse, so the flag lives under `user`
+      vi.spyOn(client, "fetchQuery").mockResolvedValue({ user: { firstName: "Sam", isNewlyMigrated: true } });
+
+      await expect(ensureProfile(client, mockGetToken)).rejects.toThrow("Redirect");
+      expect(mockRedirect).toHaveBeenCalledWith({ to: "/migration", replace: true });
+    });
+
+    it("surfaces server and network failures instead of redirecting", async () => {
+      const client = new QueryClient();
+      const failure = new Error("Internal Server Error");
+      vi.spyOn(client, "fetchQuery").mockRejectedValue(failure);
+
+      await expect(ensureProfile(client, mockGetToken)).rejects.toBe(failure);
+      expect(mockRedirect).not.toHaveBeenCalled();
+    });
   });
 
   describe("shared dashboards", () => {
