@@ -78,6 +78,19 @@ public class WithingsServiceTests
         result.Measurements.Should().ContainSingle().Which.Weight.Should().Be(decimal.Parse(expectedKg, CultureInfo.InvariantCulture));
     }
 
+
+    [Fact]
+    public async Task SyncMeasurementsAsync_AcceptsFractionalMeasureValues()
+    {
+        var userId = LinkUser();
+        // The docs describe value as an integer; a fractional value must not fail the page
+        MeasurePage(null, GetMeas("UTC", [Group(1, Jan1_0800Utc, Measure(79350, 1, -3).Replace("79350", "79350.5", StringComparison.Ordinal))]));
+
+        var result = await _sut.SyncMeasurementsAsync(userId, true);
+
+        result.Success.Should().BeTrue();
+        result.Measurements.Should().ContainSingle().Which.Weight.Should().Be(79.3505m);
+    }
     [Theory]
     [InlineData(2265, -2)]
     [InlineData(22650, -3)]
@@ -446,8 +459,7 @@ public class WithingsServiceTests
     public static TheoryData<string, string> UnparseableBodies => new()
     {
         { "empty body", string.Empty },
-        { "truncated JSON", GetMeas("UTC", [Group(1, Jan1_0800Utc, Weight79_35)])[..40] },
-        { "value as float", GetMeas("UTC", [Group(1, Jan1_0800Utc, Weight79_35.Replace("79350", "79350.0", StringComparison.Ordinal))]) }
+        { "truncated JSON", GetMeas("UTC", [Group(1, Jan1_0800Utc, Weight79_35)])[..40] }
     };
 
     #endregion

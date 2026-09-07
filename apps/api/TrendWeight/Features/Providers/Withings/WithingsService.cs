@@ -477,6 +477,13 @@ public class WithingsService : ProviderServiceBase, IWithingsService
     /// </summary>
     private static decimal MeasureToDecimal(WithingsMeasure measure)
     {
-        return (decimal)(measure.Value * Math.Pow(10, measure.Unit));
+        // value * 10^unit, scaled in decimal so 79350 / 1000 is exactly 79.35
+        var scale = 1m;
+        for (var i = 0; i < Math.Abs(measure.Unit); i++)
+        {
+            scale *= 10m;
+        }
+
+        return measure.Unit < 0 ? measure.Value / scale : measure.Value * scale;
     }
 }

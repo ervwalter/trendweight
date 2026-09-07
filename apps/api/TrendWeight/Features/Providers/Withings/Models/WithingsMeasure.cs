@@ -8,10 +8,12 @@ namespace TrendWeight.Features.Providers.Withings.Models;
 public class WithingsMeasure
 {
     /// <summary>
-    /// The value of the measurement (needs to be converted using the unit)
+    /// The value of the measurement (needs to be converted using the unit).
+    /// Documented as an integer, but read as a decimal so a fractional value
+    /// does not fail the whole page.
     /// </summary>
     [JsonPropertyName("value")]
-    public int Value { get; set; }
+    public decimal Value { get; set; }
 
     /// <summary>
     /// The type of measurement:
