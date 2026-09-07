@@ -1,6 +1,7 @@
 import { LocalDate } from "@js-joda/core";
 import type { Measurement, ProfileData } from "@/lib/core/interfaces";
 import type { ApiComputedMeasurement } from "@/lib/api/types";
+import { KG_TO_LBS } from "@/lib/core/weight-units";
 
 /**
  * Converts backend computed measurements to frontend format with proper unit conversion
@@ -10,7 +11,7 @@ export function convertMeasurements(computedMeasurements: ApiComputedMeasurement
 
   // Determine conversion factor (backend stores in kg, convert to lbs for non-metric users)
   const useMetric = profile?.useMetric ?? false;
-  const conversionFactor = useMetric ? 1 : 2.20462262; // kg to lbs
+  const conversionFactor = useMetric ? 1 : KG_TO_LBS;
 
   return computedMeasurements.map((computed: ApiComputedMeasurement) => {
     // Parse date string to LocalDate
