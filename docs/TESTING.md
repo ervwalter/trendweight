@@ -29,8 +29,65 @@ review the diff before committing.
 
 The backend uses xUnit v3 with Microsoft.Testing.Platform (`global.json`), not
 legacy VSTest `--filter` syntax. Frontend coverage HTML is written under
-`apps/web/coverage`; it reflects the configured measured files, not the entire
-repository.
+`apps/web/coverage` (see Coverage below).
+
+## Test fixtures and conventions
+
+Frontend helpers live in `apps/web/src/test/`:
+
+- `render.tsx`: `renderWithProviders` (real `QueryClient`), `createQueryWrapper`
+  for `renderHook`, and `renderWithDashboardData`, which mounts the real
+  dashboard context provider so dashboard components are tested without
+  mocking `useDashboardData`.
+- `msw.ts`: `recordRequests()` captures every request MSW handles (method, path,
+  headers, parsed body) so tests assert the `Authorization` header and body
+  outside the handler; `json(status, body)` and `noContent()` build responses.
+- `auth.ts`: `mockAuth()` / `signedOutAuth()` (each file keeps a one-line
+  `vi.mock("@/lib/auth/use-auth")`). `clock.ts`: `freezeClock()` fakes only
+  `Date`, which js-joda's `LocalDate.now()` reads. `routes.ts`: `runLoader`,
+  `runBeforeLoad`, `expectRedirect` exercise route loaders without a router.
+- `fixtures/`: builders with every field populated (`buildProfileResponse`,
+  `buildMeasurementsResponse`, `buildProviderLink`, `buildDataPoint`, ...) so
+  `toEqual` catches a dropped mapping.
+
+Prefer MSW-backed real hooks over `vi.mock` of `@/lib/api/*`; never mock
+`@/lib/core/numbers` or `@/lib/core/dates`. Assert rendered text, roles, and
+aria labels rather than class names. ESLint enforces the testing-library,
+jest-dom, and vitest rules for test files (no conditional or standalone
+`expect`, awaited async utilities, no `container` or DOM traversal).
+
+Backend fixtures live in `apps/api/TrendWeight.Tests/Fixtures/`:
+
+- `FakeSupabaseService`: an in-memory `ISupabaseService` that evaluates the
+  real `Where`, `Filter` (including `profile->>Field` JSON paths), and `Limit`
+  calls against seeded rows, so a missing or wrong filter returns another
+  user's data and fails the test. Seed with `Seed(rows...)`, inspect with
+  `Rows<T>()`, inject failures with `ThrowOnQuery/Insert/Update/Delete`.
+- `WithingsPayloads`: hand-written JSON matching the documented Withings API,
+  never serialized from our own models, so a renamed property attribute fails.
+- `RecordingHttpHandler` (`ProviderTestSupport.cs`): records outbound provider
+  requests (URL, auth header, body) and throws on unexpected ones.
+- `CapturingLoggerProvider` + `LogAssertions`: `ShouldHaveLogged`,
+  `ShouldNotHaveLogged`, and `ShouldNotMention(secret)`, which scans messages,
+  exceptions, and structured state so sharing codes never reach a log.
+
+Tests of third-party parsing verify that our code reads the documented format
+and survives drift (missing or extra fields, nulls, unknown types, non-200s,
+malformed bodies); they do not verify that providers send documented data.
+
+## Coverage
+
+Coverage is reported, not gated:
+
+| Task            | Command                             |
+| --------------- | ----------------------------------- |
+| Both workspaces | `npm run test:coverage`             |
+| Frontend only   | `npm run -w apps/web test:coverage` |
+| Backend only    | `npm run -w apps/api test:coverage` |
+
+The frontend report (`apps/web/coverage`) measures every file under `src/`,
+so untested modules appear at 0%. The backend writes `apps/api/TestResults/coverage.cobertura.xml` through the
+Microsoft.Testing.Platform code-coverage extension.
 
 ## Where to add a regression
 

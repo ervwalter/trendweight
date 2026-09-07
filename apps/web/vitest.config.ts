@@ -17,19 +17,13 @@ export default defineConfig({
     include: ["**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "json", "html"],
+      reporter: ["text-summary", "json", "html"],
       reportsDirectory: "./coverage",
-      exclude: [
-        "node_modules",
-        "src/test/setup.ts",
-        "**/*.d.ts",
-        "**/*.config.*",
-        "**/mockData",
-        "src/routes/__root.tsx",
-        "src/routeTree.gen.ts",
-        "dist/**",
-        "coverage/**",
-      ],
+      // Measure every source file, not only the ones a test happens to import,
+      // so untested modules show up as 0% instead of being invisible. Reporting
+      // only: there are deliberately no thresholds.
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/test/**", "src/**/*.test.{ts,tsx}", "**/*.d.ts", "**/mockData/**", "src/main.tsx", "src/routes/__root.tsx", "src/routeTree.gen.ts"],
     },
   },
   resolve: {

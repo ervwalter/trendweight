@@ -11,6 +11,11 @@
     },
     "test": {
       "dependsOn": ["build"],
+      "outputs": ["coverage/**"],
+      "cache": false
+    },
+    "test:coverage": {
+      "dependsOn": ["build"],
       "outputs": ["coverage/**", "**/coverage.cobertura.xml"],
       "cache": false
     },

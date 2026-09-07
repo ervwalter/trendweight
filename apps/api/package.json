@@ -6,6 +6,7 @@
     "dev": "cd TrendWeight && dotnet watch --non-interactive run",
     "build": "dotnet build",
     "test": "dotnet test",
+    "test:coverage": "dotnet test --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml",
     "format": "dotnet format",
     "format:check": "dotnet format --verify-no-changes",
     "lint": "dotnet build --warnaserror",
