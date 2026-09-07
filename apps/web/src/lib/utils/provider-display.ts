@@ -1,6 +1,10 @@
 // Blog post explaining the Fitbit API retirement and what TrendWeight users can do about it
 export const FITBIT_SUNSET_ARTICLE_URL = "https://ewal.dev/fitbit-google-health-and-whats-next";
 
+// Shown for a still-connected Fitbit account after its integration has been shut off for good
+export const FITBIT_ENDED_NOTE =
+  "Fitbit syncing has ended — Google retired the Fitbit API that TrendWeight used. Your Fitbit history is preserved and keeps appearing in your charts.";
+
 // Provider metadata interface
 export interface ProviderMetadata {
   id: string;

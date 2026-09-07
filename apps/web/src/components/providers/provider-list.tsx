@@ -1,32 +1,23 @@
 import { useState } from "react";
-import { CheckCircle } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { apiRequest } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/use-auth";
 import { useDisconnectProvider, useClearProviderData, useEnableProvider } from "@/lib/api/mutations";
 import { useProviderLinks, useProvidersConfig } from "@/lib/api/queries";
 import { useToast } from "@/lib/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ExternalLink } from "@/components/common/external-link";
 import { Heading } from "@/components/common/heading";
-import { NotePencilIcon } from "@/components/common/note-pencil-icon";
-import { getProviderDisplayName, getOAuthProviders, FITBIT_SUNSET_ARTICLE_URL, type ProviderMetadata } from "@/lib/utils/provider-display";
-
-// Simple date formatter for connection dates
-const connectionDateFormatter = new Intl.DateTimeFormat([], {
-  year: "numeric",
-  month: "numeric",
-  day: "numeric",
-});
+import { getOAuthProviders, FITBIT_SUNSET_ARTICLE_URL, type ProviderMetadata } from "@/lib/utils/provider-display";
+import { LegacyRow } from "./legacy-row";
+import { ManualCard, ManualRow } from "./manual-tiles";
+import type { ProviderActionState, ProviderListVariant } from "./provider-actions";
+import { ProviderCard } from "./provider-card";
+import { ProviderRow } from "./provider-row";
 
 interface ProviderListProps {
-  variant?: "link" | "settings"; // Different layouts for different pages
+  variant?: ProviderListVariant; // Different layouts for different pages
 }
-
-// Shown for a still-connected provider after its integration has been shut off for good
-const fitbitEndedNote =
-  "Fitbit syncing has ended — Google retired the Fitbit API that TrendWeight used. Your Fitbit history is preserved and keeps appearing in your charts.";
 
 export function ProviderList({ variant = "link" }: ProviderListProps) {
   const { data: providerLinks } = useProviderLinks();
@@ -63,6 +54,42 @@ export function ProviderList({ variant = "link" }: ProviderListProps) {
     }
   };
 
+  const handleResync = (provider: ProviderMetadata) => {
+    clearDataMutation.mutate(provider.id, {
+      // Navigate to dashboard which will trigger automatic sync
+      onSuccess: () => navigate({ to: "/dashboard" }),
+      onError: () => {
+        showToast({
+          title: "Resync Failed",
+          description: `Failed to resync ${provider.name} data. Please try again.`,
+          variant: "error",
+        });
+      },
+    });
+  };
+
+  const handleToggleLegacy = (isDisabled: boolean) => {
+    if (isDisabled) {
+      enableMutation.mutate("legacy", {
+        onSuccess: () => {
+          showToast({ title: "Legacy Data Enabled", description: "Your historical data is now visible in charts and exports.", variant: "success" });
+        },
+        onError: () => {
+          showToast({ title: "Enable Failed", description: "Failed to enable legacy data. Please try again.", variant: "error" });
+        },
+      });
+    } else {
+      disconnectMutation.mutate("legacy", {
+        onSuccess: () => {
+          showToast({ title: "Legacy Data Disabled", description: "Your historical data is now hidden from charts and exports.", variant: "success" });
+        },
+        onError: () => {
+          showToast({ title: "Disable Failed", description: "Failed to disable legacy data. Please try again.", variant: "error" });
+        },
+      });
+    }
+  };
+
   // Suspense handles loading state
   if (!providerLinks) {
     return <div className="text-muted-foreground">Loading providers...</div>;
@@ -76,7 +103,7 @@ export function ProviderList({ variant = "link" }: ProviderListProps) {
 
   const renderOauthProvider = (provider: ProviderMetadata) => {
     const isConnected = connectedProviders.has(provider.id);
-    const providerLink = providerLinks?.find((link) => link.provider === provider.id);
+    const providerLink = providerLinks.find((link) => link.provider === provider.id);
     const isShutOff = disabledProviders.has(provider.id);
 
     // A shut-off provider that isn't connected has nothing to offer - hide it entirely.
@@ -86,165 +113,28 @@ export function ProviderList({ variant = "link" }: ProviderListProps) {
       return null;
     }
 
-    if (variant === "settings") {
-      // Compact layout for settings page
-      return (
-        <div
-          key={provider.id}
-          className="border-border flex flex-col space-y-3 rounded-lg border p-4 @sm:flex-row @sm:items-center @sm:justify-between @sm:space-y-0"
-        >
-          <div className="flex items-center space-x-3">
-            <img src={provider.logo} alt={provider.name} className="h-10 w-10" />
-            <div>
-              <Heading level={3} className="text-foreground">
-                {provider.name}
-              </Heading>
-              <p className="text-muted-foreground text-sm">
-                {isConnected ? `Connected ${connectionDateFormatter.format(new Date(providerLink!.connectedAt))}` : "Not connected"}
-              </p>
-              {provider.id === "fitbit" && (
-                <p className="text-muted-foreground text-sm">
-                  {isShutOff ? fitbitEndedNote : "Google is retiring the Fitbit API — syncing is expected to end in September 2026."}{" "}
-                  <ExternalLink href={FITBIT_SUNSET_ARTICLE_URL}>Read more about what's happening</ExternalLink>
-                </p>
-              )}
-            </div>
-          </div>
+    const actions: ProviderActionState = {
+      isConnected,
+      isShutOff,
+      // Pending labels only on the provider being acted on; every button waits for the mutation
+      resyncPending: clearDataMutation.isPending && clearDataMutation.variables === provider.id,
+      resyncDisabled: clearDataMutation.isPending,
+      disconnectPending: disconnectMutation.isPending && disconnectMutation.variables === provider.id,
+      disconnectDisabled: disconnectMutation.isPending,
+      onConnect: () => handleConnect(provider.id),
+      onResync: () => handleResync(provider),
+      onDisconnect: () => setDisconnectProvider({ id: provider.id, name: provider.name }),
+    };
 
-          <div className="flex items-center space-x-2 self-end @sm:self-auto">
-            {isConnected ? (
-              <>
-                {/* A disabled provider cannot fulfill a queued refresh */}
-                {!isShutOff && (
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      clearDataMutation.mutate(provider.id, {
-                        onSuccess: () => {
-                          // Navigate to dashboard which will trigger automatic sync
-                          navigate({ to: "/dashboard" });
-                        },
-                        onError: () => {
-                          showToast({
-                            title: "Resync Failed",
-                            description: `Failed to resync ${provider.name} data. Please try again.`,
-                            variant: "error",
-                          });
-                        },
-                      });
-                    }}
-                    disabled={clearDataMutation.isPending}
-                    variant="default"
-                    size="sm"
-                  >
-                    {clearDataMutation.isPending && clearDataMutation.variables === provider.id ? "Syncing..." : "Resync"}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  onClick={() => setDisconnectProvider({ id: provider.id, name: provider.name })}
-                  disabled={disconnectMutation.isPending}
-                  variant="destructive"
-                  size="sm"
-                >
-                  {disconnectMutation.isPending ? (isShutOff ? "Deleting..." : "Disconnecting...") : isShutOff ? "Delete Data" : "Disconnect"}
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => handleConnect(provider.id)} variant="default" size="sm">
-                Connect
-              </Button>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // Full layout for link page
-    return (
-      <div key={provider.id} className="border-border bg-muted relative rounded-lg border p-4 @sm:p-6">
-        {isConnected && (
-          <div className="absolute top-4 right-4">
-            <CheckCircle className="text-success h-5 w-5 @sm:h-6 @sm:w-6" />
-          </div>
-        )}
-        <Heading level={2}>{provider.displayName}</Heading>
-        <div className="flex flex-col gap-4 @md:flex-row @md:gap-6">
-          <div className="flex-shrink-0 self-center @md:self-start">
-            <img src={provider.logo} alt={`${provider.name} logo`} className="h-auto w-24 @sm:w-32 @md:w-48" />
-          </div>
-          <div className="flex-1">
-            <p className="text-muted-foreground mb-3 text-sm @sm:text-base">{isShutOff ? fitbitEndedNote : provider.description}</p>
-            {provider.linkUrl && provider.linkText && (
-              <p className="text-muted-foreground mb-3 text-sm @sm:text-base">
-                <ExternalLink href={provider.linkUrl} className="font-medium">
-                  {provider.linkText}
-                </ExternalLink>
-              </p>
-            )}
-            <p className="text-muted-foreground mb-4 text-xs italic @sm:text-sm">
-              {provider.note}
-              {provider.learnMoreUrl && (
-                <>
-                  {" "}
-                  <ExternalLink href={provider.learnMoreUrl}>Read more about what's happening</ExternalLink>
-                </>
-              )}
-            </p>
-            {isConnected ? (
-              <div className="flex flex-col gap-2 @sm:flex-row">
-                {/* A disabled provider cannot fulfill a queued refresh */}
-                {!isShutOff && (
-                  <Button
-                    onClick={() => {
-                      clearDataMutation.mutate(provider.id, {
-                        onSuccess: () => {
-                          // Navigate to dashboard which will trigger automatic sync
-                          navigate({ to: "/dashboard" });
-                        },
-                        onError: () => {
-                          showToast({
-                            title: "Resync Failed",
-                            description: `Failed to resync ${provider.name} data. Please try again.`,
-                            variant: "error",
-                          });
-                        },
-                      });
-                    }}
-                    disabled={clearDataMutation.isPending}
-                    variant="default"
-                    size="sm"
-                    className="@sm:px-6"
-                  >
-                    {clearDataMutation.isPending && clearDataMutation.variables === provider.id ? "Syncing..." : "Resync Data"}
-                  </Button>
-                )}
-                <Button
-                  onClick={() => setDisconnectProvider({ id: provider.id, name: provider.name })}
-                  disabled={disconnectMutation.isPending}
-                  variant="destructive"
-                  size="sm"
-                  className="@sm:px-6"
-                >
-                  {disconnectMutation.isPending && disconnectMutation.variables === provider.id
-                    ? isShutOff
-                      ? "Deleting..."
-                      : "Disconnecting..."
-                    : isShutOff
-                      ? "Delete Data"
-                      : "Disconnect"}
-                </Button>
-              </div>
-            ) : (
-              <Button onClick={() => handleConnect(provider.id)} variant="success" size="sm" className="@sm:px-6">
-                Connect {provider.name} Account
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+    return variant === "settings" ? (
+      <ProviderRow key={provider.id} provider={provider} connectedAt={providerLink?.connectedAt} actions={actions} />
+    ) : (
+      <ProviderCard key={provider.id} provider={provider} actions={actions} />
     );
   };
+
+  const legacyLink = providerLinks.find((link) => link.provider === "legacy");
+  const hasManualEntries = connectedProviders.has("manual");
 
   return (
     <>
@@ -263,166 +153,19 @@ export function ProviderList({ variant = "link" }: ProviderListProps) {
         {/* Live providers first; Fitbit is sunsetting, so it lists after the weight log */}
         {oauthProviders.filter((p) => p.id !== "fitbit").map((p) => renderOauthProvider(p))}
 
-        {/* Manual entry alongside the other connections on the settings page */}
-        {variant === "settings" && (
-          <div className="border-border flex flex-col space-y-3 rounded-lg border p-4 @sm:flex-row @sm:items-center @sm:justify-between @sm:space-y-0">
-            <div className="flex items-center space-x-3">
-              <div className="bg-manual-tile flex h-10 w-10 items-center justify-center rounded-md">
-                <NotePencilIcon className="h-7 w-7 text-black/80" accentClassName="fill-primary" />
-              </div>
-              <div>
-                <Heading level={3} className="text-foreground">
-                  Weight Log
-                </Heading>
-                <p className="text-muted-foreground text-sm">
-                  {connectedProviders.has("manual") ? "Weights you've entered yourself" : "No smart scale needed — log weights yourself"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 self-end @sm:self-auto">
-              <Button asChild variant="default" size="sm">
-                <Link to="/log">Edit</Link>
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Manual entry is a first-class option on the link page, presented like the providers above */}
-        {variant === "link" && (
-          <div className="border-border bg-muted relative rounded-lg border p-4 @sm:p-6">
-            {connectedProviders.has("manual") && (
-              <div className="absolute top-4 right-4">
-                <CheckCircle className="text-success h-5 w-5 @sm:h-6 @sm:w-6" />
-              </div>
-            )}
-            <Heading level={2}>Log It Yourself</Heading>
-            <div className="flex flex-col gap-4 @md:flex-row @md:gap-6">
-              <div className="flex-shrink-0 self-center @md:self-start">
-                <div className="bg-manual-tile flex h-24 w-24 items-center justify-center rounded-2xl @sm:h-32 @sm:w-32 @md:h-48 @md:w-48">
-                  <NotePencilIcon className="h-16 w-16 text-black/80 @sm:h-22 @sm:w-22 @md:h-32 @md:w-32" accentClassName="fill-primary" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-muted-foreground mb-3 text-sm @sm:text-base">
-                  No smart scale? No problem. Type in your weight whenever you weigh in, and TrendWeight gives you the same trend analysis, charts, and stats as
-                  a connected scale.
-                </p>
-                <p className="text-muted-foreground mb-4 text-xs italic @sm:text-sm">
-                  Your weight log works alongside connected scales too — you can mix and match.
-                </p>
-                <Button asChild variant="success" size="sm" className="@sm:px-6">
-                  <Link to="/log">Log Your Weight</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Manual entry is a first-class option, presented like the providers around it */}
+        {variant === "settings" ? <ManualRow hasEntries={hasManualEntries} /> : <ManualCard hasEntries={hasManualEntries} />}
 
         {/* Fitbit last among connections (before legacy data) while it winds down */}
         {oauthProviders.filter((p) => p.id === "fitbit").map((p) => renderOauthProvider(p))}
 
-        {/* Show legacy provider if it exists */}
-        {providerLinks?.some((link) => link.provider === "legacy") && (
-          <>
-            {(() => {
-              const legacyLink = providerLinks.find((link) => link.provider === "legacy");
-              if (!legacyLink) return null;
-
-              const isDisabled = legacyLink.isDisabled || false;
-
-              if (variant === "settings") {
-                // Compact layout for settings page
-                return (
-                  <div key="legacy" className="border-border rounded-lg border p-4">
-                    <div className="flex flex-col space-y-4">
-                      {/* Header section */}
-                      <div className="flex flex-col space-y-3 @sm:flex-row @sm:items-center @sm:justify-between @sm:space-y-0">
-                        <div className="flex items-center space-x-3">
-                          <img src="/legacy-logo.png" alt="Legacy Data" className="h-10 w-10" />
-                          <div>
-                            <Heading level={3} className="text-foreground">
-                              {getProviderDisplayName("legacy")}
-                            </Heading>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center space-x-2 self-end @sm:self-auto">
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              if (isDisabled) {
-                                // Enable the legacy provider
-                                enableMutation.mutate("legacy", {
-                                  onSuccess: () => {
-                                    showToast({
-                                      title: "Legacy Data Enabled",
-                                      description: "Your historical data is now visible in charts and exports.",
-                                      variant: "success",
-                                    });
-                                  },
-                                  onError: () => {
-                                    showToast({
-                                      title: "Enable Failed",
-                                      description: "Failed to enable legacy data. Please try again.",
-                                      variant: "error",
-                                    });
-                                  },
-                                });
-                              } else {
-                                // Disable the legacy provider
-                                disconnectMutation.mutate("legacy", {
-                                  onSuccess: () => {
-                                    showToast({
-                                      title: "Legacy Data Disabled",
-                                      description: "Your historical data is now hidden from charts and exports.",
-                                      variant: "success",
-                                    });
-                                  },
-                                  onError: () => {
-                                    showToast({
-                                      title: "Disable Failed",
-                                      description: "Failed to disable legacy data. Please try again.",
-                                      variant: "error",
-                                    });
-                                  },
-                                });
-                              }
-                            }}
-                            disabled={enableMutation.isPending || disconnectMutation.isPending}
-                            variant={isDisabled ? "default" : "destructive"}
-                            size="sm"
-                          >
-                            {enableMutation.isPending || disconnectMutation.isPending
-                              ? isDisabled
-                                ? "Enabling..."
-                                : "Disabling..."
-                              : isDisabled
-                                ? "Enable"
-                                : "Disable"}
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Description and note - always visible for legacy */}
-                      <div className="space-y-2">
-                        <p className="text-muted-foreground text-sm">
-                          Historical weight data imported from classic TrendWeight. This data was migrated from your previous account and provides your complete
-                          weight history.
-                        </p>
-                        <p className="text-muted-foreground text-xs italic">
-                          This data cannot be synced or updated. You can enable or disable its visibility in your charts and exports.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              // Full layout for link page (legacy provider shouldn't appear here, but handle just in case)
-              return null;
-            })()}
-          </>
+        {/* Imported classic data can only be shown or hidden, and only from settings */}
+        {legacyLink && variant === "settings" && (
+          <LegacyRow
+            isDisabled={legacyLink.isDisabled || false}
+            isPending={enableMutation.isPending || disconnectMutation.isPending}
+            onToggle={() => handleToggleLegacy(legacyLink.isDisabled || false)}
+          />
         )}
       </div>
 

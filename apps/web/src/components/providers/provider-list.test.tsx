@@ -504,6 +504,23 @@ describe("ProviderList", () => {
       expect(screen.getByText("Disconnecting...")).toBeInTheDocument();
     });
 
+    it("should mark only the provider being disconnected as pending in the settings layout", () => {
+      vi.mocked(useProviderLinks).mockReturnValue({
+        data: [...mockProviderLinks, { provider: "fitbit", connectedAt: "2024-02-01T10:00:00Z", userId: "123" }],
+      } as any);
+      vi.mocked(useDisconnectProvider).mockReturnValue({
+        mutate: mockDisconnectMutate,
+        isPending: true,
+        variables: "fitbit",
+      } as any);
+
+      render(<ProviderList variant="settings" />);
+
+      expect(screen.getAllByText("Disconnecting...")).toHaveLength(1);
+      // Withings keeps its label but still waits for the in-flight mutation
+      expect(screen.getByText("Disconnect").closest("button")).toBeDisabled();
+    });
+
     it("should disable buttons during mutations", () => {
       vi.mocked(useClearProviderData).mockReturnValue({
         mutate: mockClearDataMutate,
