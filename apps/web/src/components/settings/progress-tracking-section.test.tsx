@@ -16,11 +16,16 @@ vi.mock("./start-date-settings", () => ({
 
 // Test wrapper component
 function TestWrapper({ defaultValues = {} }: { defaultValues?: Partial<ProfileData> }) {
-  const { register, control, watch } = useForm<ProfileData>({
+  const {
+    register,
+    control,
+    watch,
+    formState: { errors },
+  } = useForm<ProfileData>({
     defaultValues,
   });
 
-  return <ProgressTrackingSection register={register} watch={watch} control={control} />;
+  return <ProgressTrackingSection register={register} errors={errors} watch={watch} control={control} />;
 }
 
 describe("ProgressTrackingSection", () => {

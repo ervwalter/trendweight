@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LocalDate } from "@js-joda/core";
 import { useForm } from "react-hook-form";
@@ -7,12 +7,23 @@ import { StartDateSettings } from "./start-date-settings";
 import type { ProfileData } from "@/lib/core/interfaces";
 
 // Test wrapper component
-function TestWrapper({ defaultValues = {} }: { defaultValues?: Partial<ProfileData> }) {
-  const { register, control, watch } = useForm<ProfileData>({
+function TestWrapper({ defaultValues = {}, onSubmit = () => {} }: { defaultValues?: Partial<ProfileData>; onSubmit?: (data: ProfileData) => void }) {
+  const {
+    register,
+    control,
+    watch,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ProfileData>({
     defaultValues,
   });
 
-  return <StartDateSettings register={register} control={control} watch={watch} />;
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <StartDateSettings register={register} errors={errors} control={control} watch={watch} />
+      <button type="submit">Save</button>
+    </form>
+  );
 }
 
 describe("StartDateSettings", () => {
@@ -83,6 +94,50 @@ describe("StartDateSettings", () => {
       vi.useRealTimers();
       vi.unstubAllEnvs();
     }
+  });
+
+  describe("future dates", () => {
+    // Freeze the clock so "today" cannot roll over mid-test
+    const withFrozenClock = (fn: () => Promise<void>) => async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date("2024-03-10T12:00:00"));
+      try {
+        await fn();
+      } finally {
+        vi.useRealTimers();
+      }
+    };
+
+    it(
+      "rejects a typed future date on submit",
+      withFrozenClock(async () => {
+        const onSubmit = vi.fn();
+        render(<TestWrapper defaultValues={{ goalStart: "2024-03-11" }} onSubmit={onSubmit} />);
+
+        fireEvent.submit(screen.getByRole("button", { name: "Save" }));
+
+        expect(await screen.findByText("Start date cannot be in the future")).toBeInTheDocument();
+        expect(screen.getByLabelText("Start Date")).toHaveAttribute("aria-invalid", "true");
+        expect(onSubmit).not.toHaveBeenCalled();
+      }),
+    );
+
+    it(
+      "accepts today and an empty start date",
+      withFrozenClock(async () => {
+        const onSubmit = vi.fn();
+        const { unmount } = render(<TestWrapper defaultValues={{ goalStart: "2024-03-10" }} onSubmit={onSubmit} />);
+
+        fireEvent.submit(screen.getByRole("button", { name: "Save" }));
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+        expect(screen.queryByText("Start date cannot be in the future")).not.toBeInTheDocument();
+        unmount();
+
+        render(<TestWrapper defaultValues={{ goalStart: "" }} onSubmit={onSubmit} />);
+        fireEvent.submit(screen.getByRole("button", { name: "Save" }));
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
+      }),
+    );
   });
 
   it("should display existing start date", () => {

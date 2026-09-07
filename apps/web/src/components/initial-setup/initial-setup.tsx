@@ -64,7 +64,7 @@ export function InitialSetup() {
 
             <div>
               <h2 className="text-foreground mb-4 text-lg font-medium">Progress Tracking (Optional)</h2>
-              <StartDateSettings register={register} control={control} watch={watch} />
+              <StartDateSettings register={register} errors={errors} control={control} watch={watch} />
             </div>
 
             <div className="flex items-center justify-between">

@@ -113,7 +113,7 @@ export function Settings() {
       <Card className="mb-6 py-0">
         <form onSubmit={handleSubmit(onSubmit)}>
           <ProfileSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} onUnitChange={handleUnitChange} />
-          <ProgressTrackingSection register={register} watch={watch} control={control} />
+          <ProgressTrackingSection register={register} errors={errors} watch={watch} control={control} />
           <GoalSection register={register} errors={errors} watch={watch} control={control} />
           <AdvancedSection register={register} errors={errors} watch={watch} setValue={setValue} control={control} />
 
