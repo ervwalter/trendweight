@@ -29,7 +29,7 @@ function Harness({ errors = {}, defaultValues = {}, onSubmit = () => {} }: Harne
 // Radix Select opens from the click handler only for non-mouse pointers (the default in
 // jsdom), so drive it with fireEvent like ui/select.test.tsx does
 async function openPlanSelect() {
-  fireEvent.click(screen.getByRole("combobox"));
+  fireEvent.click(screen.getByRole("combobox", { name: "My Plan" }));
   await screen.findByRole("listbox");
 }
 
@@ -64,13 +64,13 @@ describe("GoalSection", () => {
   it("shows the label of the current plan", () => {
     render(<Harness defaultValues={{ useMetric: false, plannedPoundsPerWeek: -1.5 }} />);
 
-    expect(screen.getByRole("combobox")).toHaveTextContent("Lose 1 1/2 lbs per week");
+    expect(screen.getByRole("combobox", { name: "My Plan" })).toHaveTextContent("Lose 1 1/2 lbs per week");
   });
 
   it("shows a placeholder until a plan is chosen", () => {
     render(<Harness />);
 
-    expect(screen.getByRole("combobox")).toHaveTextContent("Select a plan...");
+    expect(screen.getByRole("combobox", { name: "My Plan" })).toHaveTextContent("Select a plan...");
   });
 
   it("stores the chosen plan as a number", async () => {
@@ -80,7 +80,7 @@ describe("GoalSection", () => {
 
     await openPlanSelect();
     fireEvent.click(screen.getByRole("option", { name: "Lose 1 1/2 lbs per week" }));
-    expect(screen.getByRole("combobox")).toHaveTextContent("Lose 1 1/2 lbs per week");
+    expect(screen.getByRole("combobox", { name: "My Plan" })).toHaveTextContent("Lose 1 1/2 lbs per week");
 
     await user.click(screen.getByRole("button", { name: "Submit" }));
 

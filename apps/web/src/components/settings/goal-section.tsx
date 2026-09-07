@@ -86,7 +86,7 @@ export function GoalSection({ register, errors, watch, control }: GoalSectionPro
                     field.onChange(numericValue);
                   }}
                 >
-                  <SelectTrigger className="w-full md:w-64">
+                  <SelectTrigger id="plannedPoundsPerWeek" className="w-full md:w-64">
                     <SelectValue placeholder="Select a plan..." />
                   </SelectTrigger>
                   <SelectContent>
