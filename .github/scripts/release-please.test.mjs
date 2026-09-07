@@ -105,6 +105,22 @@ test("breaking dependency updates retain migration notes and major versioning", 
   assert.match(await notesFrom(pr), /update database driver/);
 });
 
+test("breaking and routine dependency updates share one Dependencies section", async () => {
+  const pr = await candidate([
+    "deps!: update database driver\n\nBREAKING CHANGE: migrate driver configuration",
+    "deps: update package-a",
+  ]);
+  assert.equal(pr.version.toString(), "3.0.0");
+  const notes = await notesFrom(pr);
+  assert.equal(notes.match(/### Dependencies/g).length, 1);
+  assert.equal(notes.match(/Updated dependencies\./g).length, 1);
+  assert.match(notes, /update database driver/);
+  assert.doesNotMatch(notes, /package-a/);
+  const section = notes.slice(notes.indexOf("### Dependencies"));
+  assert.match(section, /Updated dependencies\./);
+  assert.match(section, /update database driver/);
+});
+
 test("dry run only builds candidates, without publishing or opening PRs", async () => {
   const calls = [];
   const loadManifest = async (...args) => {
