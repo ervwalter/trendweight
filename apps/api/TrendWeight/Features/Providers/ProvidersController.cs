@@ -318,7 +318,8 @@ public class ProvidersController : ControllerBase
             var user = await _profileService.GetBySharingTokenAsync(sharingCode);
             if (user == null || !user.Profile.SharingEnabled)
             {
-                _logger.LogWarning("User not found or sharing disabled for sharing code: {SharingCode}", sharingCode);
+                // The code itself is a bearer secret (even a disabled one can be re-enabled), so it stays out of the log.
+                _logger.LogWarning("Shared provider links requested for an unknown or disabled sharing code");
                 return NotFound(new ErrorResponse { Error = "User not found" });
             }
 

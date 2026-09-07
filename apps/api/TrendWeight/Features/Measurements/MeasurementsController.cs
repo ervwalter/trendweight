@@ -115,14 +115,15 @@ public class MeasurementsController : ControllerBase
             var user = await _profileService.GetBySharingTokenAsync(sharingCode);
             if (user == null)
             {
-                _logger.LogWarning("User not found for sharing code: {SharingCode}", sharingCode);
+                // Sharing codes are bearer secrets and stay out of the log, matching the HTTP log redaction.
+                _logger.LogWarning("Shared data requested for an unknown sharing code");
                 return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
             // Check if sharing is actually enabled
             if (!user.Profile.SharingEnabled)
             {
-                _logger.LogWarning("Sharing is disabled for sharing code: {SharingCode}", sharingCode);
+                _logger.LogWarning("Shared data requested for a sharing code whose sharing is disabled");
                 return NotFound(new ErrorResponse { Error = "User not found" });
             }
 
