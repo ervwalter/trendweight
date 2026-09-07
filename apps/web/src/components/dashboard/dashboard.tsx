@@ -1,10 +1,8 @@
 import { Navigate } from "@tanstack/react-router";
 import type { FC } from "react";
-import { ApiError } from "@/lib/api/client";
 import { Modes, TimeRanges } from "@/lib/core/interfaces";
 import { DashboardProvider } from "@/lib/dashboard/context";
 import { useComputeDashboardData } from "@/lib/dashboard/hooks";
-import { useSharingCode } from "@/lib/hooks/use-sharing-code";
 import { useEmbedParams } from "@/lib/hooks/use-embed-params";
 import { EmbedDashboard } from "./embed-dashboard";
 import { Heading } from "@/components/common/heading";
@@ -21,20 +19,11 @@ import RecentReadings from "./recent-readings";
 import Stats from "./stats";
 
 const Dashboard: FC = () => {
-  const sharingCode = useSharingCode();
   const { embed } = useEmbedParams();
 
+  // A missing profile never reaches this component: the route loaders' ensureProfile
+  // already redirected to initial setup (own dashboard) or home (shared dashboard)
   const dashboardData = useComputeDashboardData();
-
-  // Check if profile exists - if not, redirect to initial setup (skip for shared views)
-  if (!sharingCode && dashboardData.profileError instanceof ApiError && dashboardData.profileError.status === 404) {
-    return <Navigate to="/initial-setup" replace />;
-  }
-
-  // If shared view and profile not found, redirect to home
-  if (sharingCode && sharingCode !== "demo" && dashboardData.profileError instanceof ApiError && dashboardData.profileError.status === 404) {
-    return <Navigate to="/" replace />;
-  }
 
   // Embed mode: use dedicated embed component (handles its own no data case)
   if (embed) {

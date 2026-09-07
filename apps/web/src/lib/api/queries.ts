@@ -257,7 +257,6 @@ export function useDashboardQueries(sharingCode?: string) {
     measurementData: measurementsResponse.computedMeasurements,
     sourceData: measurementsResponse.sourceData,
     providerStatus: measurementsResponse.providerStatus,
-    profileError: profileResult.data === null ? new ApiError(404, "Profile not found") : null,
     isMe: measurementsResponse.isMe ?? true,
   };
 }

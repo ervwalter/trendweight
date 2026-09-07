@@ -27,7 +27,6 @@ function mockQueries(overrides: Partial<ReturnType<typeof useDashboardQueries>> 
     measurementData: [measurement],
     sourceData: undefined,
     providerStatus: {},
-    profileError: null,
     isMe: true,
     ...overrides,
   } as any);

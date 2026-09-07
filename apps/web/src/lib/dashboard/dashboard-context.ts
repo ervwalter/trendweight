@@ -8,7 +8,6 @@ export interface DashboardData {
   mode: [Mode, (mode: Mode) => void];
   timeRange: [TimeRange, (timeRange: TimeRange) => void];
   profile: ProfileData;
-  profileError?: unknown;
   weightSlope: number;
   activeSlope: number;
   deltas: Delta[];

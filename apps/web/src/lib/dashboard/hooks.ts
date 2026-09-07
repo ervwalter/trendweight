@@ -40,7 +40,7 @@ export const useComputeDashboardData = (): DashboardData => {
   );
 
   // Get profile and measurement data in parallel
-  const { profile, measurementData: computedMeasurements, providerStatus, profileError, isMe } = useDashboardQueries(sharingCode);
+  const { profile, measurementData: computedMeasurements, providerStatus, isMe } = useDashboardQueries(sharingCode);
 
   // Transform computed measurements from backend to frontend format with unit conversion
   const measurements = useMemo(() => {
@@ -68,7 +68,6 @@ export const useComputeDashboardData = (): DashboardData => {
       dayStartOffset: 0,
       showCalories: false,
     },
-    profileError,
     mode: [mode, setMode],
     timeRange: [timeRange, setTimeRange],
     weightSlope,

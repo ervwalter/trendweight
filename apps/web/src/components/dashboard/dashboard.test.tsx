@@ -2,9 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { LocalDate } from "@js-joda/core";
 import Dashboard from "./dashboard";
-import { ApiError } from "@/lib/api/client";
 import { useComputeDashboardData } from "@/lib/dashboard/hooks";
-import { useSharingCode } from "@/lib/hooks/use-sharing-code";
 import { useEmbedParams } from "@/lib/hooks/use-embed-params";
 import type { DashboardData } from "@/lib/dashboard/dashboard-context";
 
@@ -12,7 +10,6 @@ vi.mock("@tanstack/react-router", () => ({
   Navigate: ({ to }: { to: string }) => <div data-testid="navigate">{to}</div>,
 }));
 vi.mock("@/lib/dashboard/hooks");
-vi.mock("@/lib/hooks/use-sharing-code");
 vi.mock("@/lib/hooks/use-embed-params");
 vi.mock("@/lib/dashboard/context", () => ({
   DashboardProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -47,7 +44,6 @@ function mockData(overrides: Partial<DashboardData> = {}) {
     mode: ["weight", vi.fn()],
     timeRange: ["4w", vi.fn()],
     profile: { firstName: "Jane", useMetric: false } as DashboardData["profile"],
-    profileError: null,
     weightSlope: 0,
     activeSlope: 0,
     deltas: [],
@@ -60,32 +56,11 @@ function mockData(overrides: Partial<DashboardData> = {}) {
 describe("Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useSharingCode).mockReturnValue(undefined);
     vi.mocked(useEmbedParams).mockReturnValue({});
     mockData();
   });
 
-  describe("profile not found", () => {
-    it("sends the owner to initial setup", () => {
-      mockData({ profileError: new ApiError(404, "Profile not found") });
-
-      render(<Dashboard />);
-
-      expect(screen.getByTestId("navigate")).toHaveTextContent("/initial-setup");
-    });
-
-    it("sends a shared viewer home", () => {
-      vi.mocked(useSharingCode).mockReturnValue("abc123");
-      mockData({ profileError: new ApiError(404, "Profile not found"), isMe: false });
-
-      render(<Dashboard />);
-
-      expect(screen.getByTestId("navigate")).toHaveTextContent("/");
-    });
-  });
-
   it("renders the embed dashboard when embedded", () => {
-    vi.mocked(useSharingCode).mockReturnValue("abc123");
     vi.mocked(useEmbedParams).mockReturnValue({ embed: true });
     mockData({ isMe: false });
 
@@ -108,7 +83,6 @@ describe("Dashboard", () => {
     });
 
     it("sends a shared viewer home", () => {
-      vi.mocked(useSharingCode).mockReturnValue("abc123");
       mockData({ measurements: [], dataPoints: [], isMe: false });
 
       render(<Dashboard />);
@@ -132,7 +106,6 @@ describe("Dashboard", () => {
     });
 
     it("names the owner and hides the log button on a shared dashboard", () => {
-      vi.mocked(useSharingCode).mockReturnValue("abc123");
       mockData({ isMe: false, timeRange: ["all", vi.fn()] });
 
       render(<Dashboard />);
@@ -161,7 +134,6 @@ describe("Dashboard", () => {
     });
 
     it("does not show the Fitbit sunset notice to shared viewers", () => {
-      vi.mocked(useSharingCode).mockReturnValue("abc123");
       mockData({ isMe: false, providerStatus: { fitbit: { success: true } } });
 
       render(<Dashboard />);

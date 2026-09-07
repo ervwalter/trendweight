@@ -266,10 +266,9 @@ describe("queries", () => {
       expect(result.current.measurementData).toEqual(mockMeasurementsResponse.computedMeasurements);
       expect(result.current.providerStatus).toEqual(mockMeasurementsResponse.providerStatus);
       expect(result.current.isMe).toBe(true);
-      expect(result.current.profileError).toBeNull();
     });
 
-    it("should handle missing profile with 404 error", async () => {
+    it("should return a null profile when the profile request is a 404", async () => {
       server.use(
         http.get("/api/profile", () => {
           return new HttpResponse(null, { status: 404 });
@@ -287,9 +286,6 @@ describe("queries", () => {
         expect(result.current.profile).toBeNull();
         expect(result.current.measurementData).toBeDefined();
       });
-
-      expect(result.current.profileError).toBeDefined();
-      expect(result.current.profileError?.status).toBe(404);
     });
 
     it("should fetch data with sharing code", async () => {
