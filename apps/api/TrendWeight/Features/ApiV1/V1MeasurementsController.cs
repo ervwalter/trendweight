@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using TrendWeight.Features.ApiV1.Models;
 using TrendWeight.Features.Measurements;
@@ -40,7 +41,7 @@ public class V1MeasurementsController : BaseApiV1Controller
     [ProducesResponseType(typeof(V1ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<List<V1Measurement>>> GetMeasurements([FromQuery] string? since = null)
     {
-        if (!string.IsNullOrEmpty(since) && !ManualMeasurementValidation.TryValidateDate(since, out _))
+        if (!IsValidSince(since))
         {
             return BadRequest(new V1ErrorResponse { Error = "Invalid since date. Expected yyyy-MM-dd format." });
         }
@@ -80,7 +81,7 @@ public class V1MeasurementsController : BaseApiV1Controller
         [FromQuery] string? since = null,
         [FromQuery] string? provider = null)
     {
-        if (!string.IsNullOrEmpty(since) && !ManualMeasurementValidation.TryValidateDate(since, out _))
+        if (!IsValidSince(since))
         {
             return BadRequest(new V1ErrorResponse { Error = "Invalid since date. Expected yyyy-MM-dd format." });
         }
@@ -117,6 +118,14 @@ public class V1MeasurementsController : BaseApiV1Controller
             .ToList();
 
         return Ok(sources);
+    }
+
+    // `since` is a filter, not a reading: any well-formed date is acceptable. A date in the
+    // future simply matches nothing, and a date before 1900 matches everything.
+    private static bool IsValidSince(string? since)
+    {
+        return string.IsNullOrEmpty(since)
+            || DateTime.TryParseExact(since, ManualMeasurementValidation.DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
     }
 
     private static bool SinceFilter(string date, string? since)

@@ -133,15 +133,42 @@ public class V1MeasurementsControllerTests
         measurements.Select(m => m.Date).Should().Equal("2024-06-15", "2024-12-31");
     }
 
-    [Fact]
-    public async Task GetMeasurements_WithInvalidSince_ReturnsBadRequest()
+    [Theory]
+    [InlineData("not-a-date")]
+    [InlineData("2024-6-15")]
+    [InlineData("06/15/2024")]
+    [InlineData("2024-13-01")]
+    public async Task GetMeasurements_WithMalformedSince_ReturnsBadRequest(string since)
     {
-        var result = await _sut.GetMeasurements(since: "not-a-date");
+        var result = await _sut.GetMeasurements(since: since);
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
         _orchestrationServiceMock.Verify(
             x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<Guid?>()),
             Times.Never);
+    }
+
+    [Theory]
+    [InlineData("2999-01-01")]
+    [InlineData("1899-01-01")]
+    public async Task GetMeasurements_WithWellFormedOutOfRangeSince_FiltersInsteadOfRejecting(string since)
+    {
+        // `since` is a filter, not a reading: a future date yields an empty list and a
+        // very old date yields everything, rather than a 400 about the date format
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+
+        var result = await _sut.GetMeasurements(since: since);
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var measurements = ok.Value.Should().BeAssignableTo<List<V1Measurement>>().Subject;
+        if (since.StartsWith("2999"))
+        {
+            measurements.Should().BeEmpty();
+        }
+        else
+        {
+            measurements.Should().HaveCount(3);
+        }
     }
 
     [Fact]
@@ -211,12 +238,30 @@ public class V1MeasurementsControllerTests
             Times.Never);
     }
 
-    [Fact]
-    public async Task GetSourceReadings_WithInvalidSince_ReturnsBadRequest()
+    [Theory]
+    [InlineData("not-a-date")]
+    [InlineData("2024-6-15")]
+    public async Task GetSourceReadings_WithMalformedSince_ReturnsBadRequest(string since)
     {
-        var result = await _sut.GetSourceReadings(since: "not-a-date");
+        var result = await _sut.GetSourceReadings(since: since);
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
+        _orchestrationServiceMock.Verify(
+            x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<Guid?>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task GetSourceReadings_WithFutureSince_ReturnsSourcesWithNoReadings()
+    {
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+
+        var result = await _sut.GetSourceReadings(since: "2999-01-01");
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var sources = ok.Value.Should().BeAssignableTo<List<V1SourceData>>().Subject;
+        sources.Should().NotBeEmpty();
+        sources.Should().OnlyContain(s => s.Measurements.Count == 0);
     }
 
     [Fact]
