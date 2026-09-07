@@ -1,6 +1,5 @@
 import { useClerk, useAuth as useClerkAuth, useUser } from "@clerk/react";
 import type { GetToken } from "@clerk/shared/types";
-import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "@/types/user";
 
 // Re-export GetToken so other files don't need to import from Clerk directly
@@ -18,7 +17,6 @@ export function useAuth(): AuthState {
   const { isLoaded, isSignedIn, getToken } = useClerkAuth();
   const { user: clerkUser } = useUser();
   const { signOut: clerkSignOut } = useClerk();
-  const queryClient = useQueryClient();
 
   // Map Clerk user to our User type
   const user: User | null =
@@ -30,10 +28,10 @@ export function useAuth(): AuthState {
         }
       : null;
 
+  // Cached data is discarded by AuthCacheBoundary, which remounts the whole tree with a fresh
+  // QueryClient whenever the Clerk identity changes, so nothing needs clearing here
   const signOut = async (redirectUrl?: string) => {
     await clerkSignOut({ redirectUrl: redirectUrl || "/" });
-    // Clear all React Query caches on sign out
-    queryClient.clear();
   };
 
   return {

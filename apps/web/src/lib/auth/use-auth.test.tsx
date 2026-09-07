@@ -13,15 +13,6 @@ vi.mock("@clerk/react", () => ({
   useClerk: () => mockUseClerk(),
 }));
 
-// Mock TanStack Query
-const mockQueryClient = {
-  clear: vi.fn(),
-};
-
-vi.mock("@tanstack/react-query", () => ({
-  useQueryClient: () => mockQueryClient,
-}));
-
 describe("useAuth", () => {
   it("should return user data when logged in", () => {
     mockUseUser.mockReturnValue({
@@ -121,7 +112,7 @@ describe("useAuth", () => {
     expect(result.current.user?.displayName).toBe("test@example.com");
   });
 
-  it("should clear query cache on sign out", async () => {
+  it("signs out through Clerk with the default redirect and no QueryClientProvider", async () => {
     const mockSignOut = vi.fn();
     mockUseUser.mockReturnValue({
       user: {
@@ -146,11 +137,8 @@ describe("useAuth", () => {
       await result.current.signOut();
     });
 
-    // Verify Clerk signOut was called with default redirect
+    // Verify Clerk signOut was called with default redirect; cache disposal is AuthCacheBoundary's job
     expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: "/" });
-
-    // Verify query cache was cleared
-    expect(mockQueryClient.clear).toHaveBeenCalled();
   });
 
   it("should sign out with custom redirectUrl", async () => {
@@ -180,8 +168,5 @@ describe("useAuth", () => {
 
     // Verify Clerk signOut was called with custom redirect
     expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: "/account-deleted" });
-
-    // Verify query cache was cleared
-    expect(mockQueryClient.clear).toHaveBeenCalled();
   });
 });
