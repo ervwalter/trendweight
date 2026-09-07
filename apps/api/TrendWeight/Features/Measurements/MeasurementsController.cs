@@ -55,10 +55,9 @@ public class MeasurementsController : ControllerBase
                 return Unauthorized(new ErrorResponse { Error = "User ID not found in token" });
             }
 
-            var externalId = User.FindFirst("clerk_user_id")?.Value;
             Guid? progressGuid = !string.IsNullOrEmpty(progressId) && Guid.TryParse(progressId, out var pid) ? pid : null;
 
-            var result = await _orchestrationService.GetForUserAsync(userGuid, externalId, progressGuid);
+            var result = await _orchestrationService.GetForUserAsync(userGuid, progressGuid);
             if (result == null)
             {
                 return NotFound(new ErrorResponse { Error = "User not found" });

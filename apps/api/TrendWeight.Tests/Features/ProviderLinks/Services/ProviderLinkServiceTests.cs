@@ -24,18 +24,6 @@ public class ProviderLinkServiceTests : TestBase
     }
 
     [Fact]
-    public async Task DeleteAllProviderLinksAsync_WhenReadFails_DoesNotReportSuccess()
-    {
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ThrowsAsync(new HttpRequestException("Database unavailable"));
-
-        var act = () => _sut.DeleteAllProviderLinksAsync(Guid.NewGuid());
-
-        await act.Should().ThrowAsync<HttpRequestException>();
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<DbProviderLink>()), Times.Never);
-    }
-
-    [Fact]
     public async Task StoreProviderLinkAsync_WhenReadFails_DoesNotInsertDuplicateLink()
     {
         _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
@@ -299,27 +287,6 @@ public class ProviderLinkServiceTests : TestBase
             l.Provider == provider &&
             l.Token == token &&
             l.UpdateReason == updateReason)), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeleteAllProviderLinksAsync_DeletesAllUserLinks()
-    {
-        // Arrange
-        var uid = Guid.NewGuid();
-        var links = new List<DbProviderLink>
-        {
-            CreateTestProviderLink(uid, "fitbit"),
-            CreateTestProviderLink(uid, "withings")
-        };
-
-        _supabaseServiceMock.Setup(x => x.QueryAsync<DbProviderLink>(It.IsAny<Action<ISupabaseTable<DbProviderLink, RealtimeChannel>>>()))
-            .ReturnsAsync(links);
-
-        // Act
-        await _sut.DeleteAllProviderLinksAsync(uid);
-
-        // Assert
-        _supabaseServiceMock.Verify(x => x.DeleteAsync(It.IsAny<DbProviderLink>()), Times.Exactly(2));
     }
 
     private static DbProviderLink CreateTestProviderLink(Guid uid, string provider)

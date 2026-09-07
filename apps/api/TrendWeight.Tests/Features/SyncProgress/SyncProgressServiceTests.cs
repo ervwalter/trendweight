@@ -18,8 +18,6 @@ public class SyncProgressServiceTests
     private readonly Mock<ILogger<SyncProgressService>> _loggerMock;
     private readonly SyncProgressService _sut;
     private readonly Guid _progressId = Guid.NewGuid();
-    private readonly Guid _userId = Guid.NewGuid();
-    private const string ExternalId = "clerk_user_123";
 
     public SyncProgressServiceTests()
     {
@@ -28,8 +26,6 @@ public class SyncProgressServiceTests
         _loggerMock = new Mock<ILogger<SyncProgressService>>();
 
         _requestContextMock.Setup(x => x.ProgressId).Returns(_progressId);
-        _requestContextMock.Setup(x => x.UserId).Returns(_userId);
-        _requestContextMock.Setup(x => x.ExternalId).Returns(ExternalId);
 
         _sut = new SyncProgressService(
             _supabaseServiceMock.Object,

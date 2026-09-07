@@ -234,7 +234,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
 
             if (more && (newOffset == null || !seenOffsets.Add(newOffset.ToString()!)))
             {
-                throw new ProviderApiException("withings", "Withings returned an invalid pagination cursor");
+                throw new ProviderException("Withings returned an invalid pagination cursor", HttpStatusCode.OK, "INVALID_PAGINATION", isRetryable: false);
             }
 
             hasMore = more;
@@ -419,7 +419,7 @@ public class WithingsService : ProviderServiceBase, IWithingsService
     /// <summary>
     /// Withings reports failures as HTTP 200 with a non-zero status. Token problems
     /// (status 401, or 503 with an "invalid refresh_token"-style message) become
-    /// ProviderAuthException; anything else is a ProviderApiException.
+    /// ProviderAuthException; anything else is a non-retryable ProviderException.
     /// </summary>
     private static Exception ApiError<T>(WithingsResponse<T>? response)
     {
@@ -439,7 +439,8 @@ public class WithingsService : ProviderServiceBase, IWithingsService
                 response!.Status.ToString(CultureInfo.InvariantCulture));
         }
 
-        return new ProviderApiException("withings", $"Withings API error: {response?.Status} {error}", error, response?.Status);
+        // The HTTP status was 200; the failure is the Withings status in the body
+        return new ProviderException($"Withings API error: {response?.Status} {error}", HttpStatusCode.OK, "WITHINGS_API_ERROR", isRetryable: false);
     }
 
     /// <summary>

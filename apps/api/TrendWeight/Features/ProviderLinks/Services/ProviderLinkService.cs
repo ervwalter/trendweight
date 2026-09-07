@@ -101,24 +101,4 @@ public class ProviderLinkService : IProviderLinkService
             await CreateAsync(newLink);
         }
     }
-
-    public async Task DeleteAllProviderLinksAsync(Guid uid)
-    {
-        try
-        {
-            var allProviderLinks = await GetAllForUserAsync(uid);
-
-            foreach (var link in allProviderLinks)
-            {
-                await _supabaseService.DeleteAsync<DbProviderLink>(link);
-            }
-
-            _logger.LogInformation("Deleted all provider links for user {Uid}", uid);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting all provider links for user {Uid}", uid);
-            throw;
-        }
-    }
 }

@@ -103,27 +103,12 @@ public class SourceDataService : ISourceDataService
     }
 
     /// <summary>
-    /// Clears cache entries for a user and optionally specific provider
+    /// Clears the cache entry for a user's provider
     /// </summary>
-    private void ClearCache(Guid userId, string? provider = null)
+    private void ClearCache(Guid userId, string provider)
     {
-        if (provider != null)
-        {
-            // Clear specific provider
-            var key = (userId, provider);
-            _dataCache.TryRemove(key, out _);
-            _logger.LogDebug("Removed from cache for user {UserId} provider {Provider}", userId, provider);
-        }
-        else
-        {
-            // Clear all entries for this user
-            var keysToRemove = _dataCache.Keys.Where(k => k.userId == userId).ToList();
-            foreach (var key in keysToRemove)
-            {
-                _dataCache.TryRemove(key, out _);
-            }
-            _logger.LogDebug("Cleared all cache entries for user {UserId}", userId);
-        }
+        _dataCache.TryRemove((userId, provider), out _);
+        _logger.LogDebug("Removed from cache for user {UserId} provider {Provider}", userId, provider);
     }
 
     /// <inheritdoc />
@@ -304,31 +289,6 @@ public class SourceDataService : ISourceDataService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting source data for user {UserId} provider {Provider}", userId, provider);
-            throw;
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task DeleteAllSourceDataAsync(Guid userId)
-    {
-        try
-        {
-            var allSourceData = await _supabaseService.QueryAsync<DbSourceData>(q =>
-                q.Where(sd => sd.Uid == userId));
-
-            foreach (var data in allSourceData)
-            {
-                await _supabaseService.DeleteAsync<DbSourceData>(data);
-            }
-
-            // Clear from cache
-            ClearCache(userId);
-
-            _logger.LogInformation("Deleted all source data for user {UserId}", userId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting all source data for user {UserId}", userId);
             throw;
         }
     }

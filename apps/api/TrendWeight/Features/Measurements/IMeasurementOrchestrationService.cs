@@ -16,7 +16,7 @@ public interface IMeasurementOrchestrationService
     /// disables progress reporting entirely (e.g. for API callers).
     /// Returns null if no profile exists for the user.
     /// </summary>
-    Task<MeasurementDataResult?> GetForUserAsync(Guid userId, string? externalId, Guid? progressId);
+    Task<MeasurementDataResult?> GetForUserAsync(Guid userId, Guid? progressId);
 
     /// <summary>
     /// Fetches measurement data for an already-resolved profile (e.g. via sharing code)

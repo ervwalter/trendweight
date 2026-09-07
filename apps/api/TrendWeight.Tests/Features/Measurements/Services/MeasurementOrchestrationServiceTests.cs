@@ -76,7 +76,7 @@ public class MeasurementOrchestrationServiceTests
         var userId = Guid.NewGuid();
         var (user, sourceData, computed) = SetupUser(userId);
 
-        var result = await _sut.GetForUserAsync(userId, "clerk_123", null);
+        var result = await _sut.GetForUserAsync(userId, null);
 
         result.Should().NotBeNull();
         result!.Profile.Should().Be(user);
@@ -86,28 +86,25 @@ public class MeasurementOrchestrationServiceTests
     }
 
     [Fact]
-    public async Task GetForUserAsync_PopulatesRequestContext()
+    public async Task GetForUserAsync_PopulatesRequestContextProgressId()
     {
         var userId = Guid.NewGuid();
         var progressId = Guid.NewGuid();
         SetupUser(userId);
 
-        await _sut.GetForUserAsync(userId, "clerk_123", progressId);
+        await _sut.GetForUserAsync(userId, progressId);
 
-        _requestContext.UserId.Should().Be(userId);
-        _requestContext.ExternalId.Should().Be("clerk_123");
         _requestContext.ProgressId.Should().Be(progressId);
     }
 
     [Fact]
-    public async Task GetForUserAsync_WithoutProgressIdOrExternalId_LeavesProgressUnsetAndExternalIdEmpty()
+    public async Task GetForUserAsync_WithoutProgressId_LeavesProgressUnset()
     {
         var userId = Guid.NewGuid();
         SetupUser(userId);
 
-        await _sut.GetForUserAsync(userId, null, null);
+        await _sut.GetForUserAsync(userId, null);
 
-        _requestContext.ExternalId.Should().Be(string.Empty);
         _requestContext.ProgressId.Should().BeNull();
     }
 
@@ -117,7 +114,7 @@ public class MeasurementOrchestrationServiceTests
         var userId = Guid.NewGuid();
         _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync((DbProfile?)null);
 
-        var result = await _sut.GetForUserAsync(userId, null, null);
+        var result = await _sut.GetForUserAsync(userId, null);
 
         result.Should().BeNull();
         _measurementSyncServiceMock.Verify(
@@ -142,7 +139,7 @@ public class MeasurementOrchestrationServiceTests
         _measurementComputationServiceMock.Setup(x => x.ComputeMeasurements(sourceData, user.Profile))
             .Returns(new List<ComputedMeasurement>());
 
-        var result = await _sut.GetForUserAsync(userId, null, null);
+        var result = await _sut.GetForUserAsync(userId, null);
 
         result!.ProviderStatus["withings"].Success.Should().BeFalse();
         result.ProviderStatus["withings"].Error.Should().Be("authfailed");

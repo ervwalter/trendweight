@@ -100,7 +100,7 @@ public class V1MeasurementsControllerTests
     [Fact]
     public async Task GetMeasurements_ReturnsMappedTrendMeasurements()
     {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null)).ReturnsAsync(CreateDataResult());
 
         var result = await _sut.GetMeasurements();
 
@@ -113,18 +113,18 @@ public class V1MeasurementsControllerTests
     [Fact]
     public async Task GetMeasurements_DisablesProgressReporting()
     {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null)).ReturnsAsync(CreateDataResult());
 
         await _sut.GetMeasurements();
 
         // externalId and progressId must both be null for API-key callers
-        _orchestrationServiceMock.Verify(x => x.GetForUserAsync(_userId, null, null), Times.Once);
+        _orchestrationServiceMock.Verify(x => x.GetForUserAsync(_userId, null), Times.Once);
     }
 
     [Fact]
     public async Task GetMeasurements_WithSince_FiltersMeasurements()
     {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null)).ReturnsAsync(CreateDataResult());
 
         var result = await _sut.GetMeasurements(since: "2024-06-15");
 
@@ -144,7 +144,7 @@ public class V1MeasurementsControllerTests
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
         _orchestrationServiceMock.Verify(
-            x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<Guid?>()),
+            x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid?>()),
             Times.Never);
     }
 
@@ -155,7 +155,7 @@ public class V1MeasurementsControllerTests
     {
         // `since` is a filter, not a reading: a future date yields an empty list and a
         // very old date yields everything, rather than a 400 about the date format
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null)).ReturnsAsync(CreateDataResult());
 
         var result = await _sut.GetMeasurements(since: since);
 
@@ -174,7 +174,7 @@ public class V1MeasurementsControllerTests
     [Fact]
     public async Task GetMeasurements_WhenUserNotFound_ReturnsNotFound()
     {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null))
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null))
             .ReturnsAsync((MeasurementDataResult?)null);
 
         var result = await _sut.GetMeasurements();
@@ -189,7 +189,7 @@ public class V1MeasurementsControllerTests
     [Fact]
     public async Task GetSourceReadings_ReturnsScaleSourcesExcludingManual()
     {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null)).ReturnsAsync(CreateDataResult());
 
         var result = await _sut.GetSourceReadings();
 
@@ -203,7 +203,7 @@ public class V1MeasurementsControllerTests
     [Fact]
     public async Task GetSourceReadings_WithProviderFilter_ReturnsOnlyThatSource()
     {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null)).ReturnsAsync(CreateDataResult());
 
         var result = await _sut.GetSourceReadings(provider: "fitbit");
 
@@ -215,7 +215,7 @@ public class V1MeasurementsControllerTests
     [Fact]
     public async Task GetSourceReadings_WithSince_FiltersReadings()
     {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null)).ReturnsAsync(CreateDataResult());
 
         var result = await _sut.GetSourceReadings(since: "2024-06-15");
 
@@ -234,7 +234,7 @@ public class V1MeasurementsControllerTests
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
         _orchestrationServiceMock.Verify(
-            x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<Guid?>()),
+            x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid?>()),
             Times.Never);
     }
 
@@ -247,14 +247,14 @@ public class V1MeasurementsControllerTests
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
         _orchestrationServiceMock.Verify(
-            x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<Guid?>()),
+            x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid?>()),
             Times.Never);
     }
 
     [Fact]
     public async Task GetSourceReadings_WithFutureSince_ReturnsSourcesWithNoReadings()
     {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null)).ReturnsAsync(CreateDataResult());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null)).ReturnsAsync(CreateDataResult());
 
         var result = await _sut.GetSourceReadings(since: "2999-01-01");
 
@@ -267,7 +267,7 @@ public class V1MeasurementsControllerTests
     [Fact]
     public async Task GetSourceReadings_WhenUserNotFound_ReturnsNotFound()
     {
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null, null))
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(_userId, null))
             .ReturnsAsync((MeasurementDataResult?)null);
 
         var result = await _sut.GetSourceReadings();

@@ -31,11 +31,8 @@ public class MeasurementOrchestrationService : IMeasurementOrchestrationService
         _logger = logger;
     }
 
-    public async Task<MeasurementDataResult?> GetForUserAsync(Guid userId, string? externalId, Guid? progressId)
+    public async Task<MeasurementDataResult?> GetForUserAsync(Guid userId, Guid? progressId)
     {
-        _requestContext.UserId = userId;
-        // External ID is required for RLS updates but may be absent (test paths, API keys)
-        _requestContext.ExternalId = externalId ?? string.Empty;
         if (progressId.HasValue)
         {
             _requestContext.ProgressId = progressId;

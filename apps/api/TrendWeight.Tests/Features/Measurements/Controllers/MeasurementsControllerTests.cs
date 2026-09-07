@@ -47,7 +47,7 @@ public class MeasurementsControllerTests : TestBase
         var dataResult = CreateDataResult(userId);
 
         SetupAuthenticatedUser(userId.ToString());
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null, null)).ReturnsAsync(dataResult);
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null)).ReturnsAsync(dataResult);
 
         // Act
         var result = await _sut.GetMeasurements();
@@ -69,7 +69,7 @@ public class MeasurementsControllerTests : TestBase
         var dataResult = CreateDataResult(userId);
 
         SetupAuthenticatedUser(userId.ToString());
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null, null)).ReturnsAsync(dataResult);
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null)).ReturnsAsync(dataResult);
 
         // Act
         var result = await _sut.GetMeasurements(includeSource: true);
@@ -81,22 +81,22 @@ public class MeasurementsControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetMeasurements_PassesClerkIdAndProgressIdToOrchestration()
+    public async Task GetMeasurements_PassesProgressIdToOrchestration()
     {
         // Arrange
         var userId = Guid.NewGuid();
         var progressId = Guid.NewGuid();
         var dataResult = CreateDataResult(userId);
 
-        SetupAuthenticatedUser(userId.ToString(), clerkUserId: "clerk_123");
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, "clerk_123", progressId)).ReturnsAsync(dataResult);
+        SetupAuthenticatedUser(userId.ToString());
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, progressId)).ReturnsAsync(dataResult);
 
         // Act
         var result = await _sut.GetMeasurements(progressId: progressId.ToString());
 
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>();
-        _orchestrationServiceMock.Verify(x => x.GetForUserAsync(userId, "clerk_123", progressId), Times.Once);
+        _orchestrationServiceMock.Verify(x => x.GetForUserAsync(userId, progressId), Times.Once);
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public class MeasurementsControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null, null))
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(userId, null))
             .ReturnsAsync((MeasurementDataResult?)null);
 
         // Act
@@ -138,7 +138,7 @@ public class MeasurementsControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<Guid?>()))
+        _orchestrationServiceMock.Setup(x => x.GetForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid?>()))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
@@ -305,13 +305,11 @@ public class MeasurementsControllerTests : TestBase
 
     #region Helper Methods
 
-    private void SetupAuthenticatedUser(string? userId, string? clerkUserId = null)
+    private void SetupAuthenticatedUser(string? userId)
     {
         var claims = new List<Claim>();
         if (userId != null)
             claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
-        if (clerkUserId != null)
-            claims.Add(new Claim("clerk_user_id", clerkUserId));
 
         var identity = new ClaimsIdentity(claims, "Test");
         var principal = new ClaimsPrincipal(identity);

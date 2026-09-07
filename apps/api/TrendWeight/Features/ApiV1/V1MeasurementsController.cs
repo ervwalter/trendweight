@@ -47,7 +47,7 @@ public class V1MeasurementsController : BaseApiV1Controller
         }
 
         // ProgressId null disables sync progress reporting - API callers have no UI to report to
-        var result = await _orchestrationService.GetForUserAsync(UserId, null, null);
+        var result = await _orchestrationService.GetForUserAsync(UserId, null);
         if (result == null)
         {
             return NotFound(new V1ErrorResponse { Error = "User not found" });
@@ -91,7 +91,7 @@ public class V1MeasurementsController : BaseApiV1Controller
             return BadRequest(new V1ErrorResponse { Error = "Invalid provider. Must be 'withings', 'fitbit', or 'legacy'." });
         }
 
-        var result = await _orchestrationService.GetForUserAsync(UserId, null, null);
+        var result = await _orchestrationService.GetForUserAsync(UserId, null);
         if (result == null)
         {
             return NotFound(new V1ErrorResponse { Error = "User not found" });
