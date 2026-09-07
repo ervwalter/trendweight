@@ -196,6 +196,12 @@ builder.Services.Configure<HostFilteringOptions>(options => options.AllowedHosts
 
 var app = builder.Build();
 _ = app.Services.GetRequiredService<PublicUrl>(); // Fail startup for missing/invalid origins.
+if (!app.Environment.IsDevelopment())
+{
+    // Development keeps the appsettings placeholders usable for partial local
+    // setups; everywhere else the process refuses to start without real values.
+    RequiredConfiguration.Validate(app.Configuration);
+}
 
 // Configure the HTTP request pipeline
 app.UseMiddleware<RequestTimingMiddleware>();

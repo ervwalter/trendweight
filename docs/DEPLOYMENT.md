@@ -36,6 +36,11 @@ Use an HTTPS origin without credentials, path, query, or fragment. Startup fails
 if the value is missing or invalid. Authorization and token exchange callback URLs
 and OpenAPI URLs all use this setting.
 
+Outside Development, startup also fails when `Clerk__Authority`, `Clerk__SecretKey`,
+`Supabase__Url`, or `Supabase__ServiceKey` is missing or still holds a placeholder
+from `appsettings.json` (values containing `your-` or `paste-`). The error names
+the offending keys, never their values.
+
 `AllowedHosts` is a semicolon-separated list of actual hostnames accepted by the
 API. Include the legitimate domain; `/api/health` is exempt from the check, so
 the Docker health check does not need `localhost` listed. Do not include schemes

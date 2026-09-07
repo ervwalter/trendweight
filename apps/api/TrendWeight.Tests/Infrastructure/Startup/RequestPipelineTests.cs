@@ -206,6 +206,35 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
         start.Should().Throw<InvalidOperationException>().WithMessage("PublicBaseUrl*");
     }
 
+    [Theory]
+    [InlineData("Supabase:ServiceKey", "paste-your-service-role-key-here")]
+    [InlineData("Clerk:SecretKey", "your-clerk-secret-key")]
+    [InlineData("Clerk:Authority", "")]
+    public void PlaceholderOrMissingConfiguration_PreventsProductionStartup(string key, string value)
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
+                new Dictionary<string, string?> { [key] = value })));
+        var start = () => factory.CreateClient();
+        start.Should().Throw<InvalidOperationException>().WithMessage($"Required configuration*{key}*");
+    }
+
+    [Fact]
+    public async Task PlaceholderConfiguration_StillStartsInDevelopment()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Development");
+            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
+                new Dictionary<string, string?> { ["Supabase:ServiceKey"] = "paste-your-service-role-key-here" }));
+        });
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/api/health", TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     [Fact]
     public async Task HostValidation_RejectsInvalidHostEvenWhenForwardedHostIsAllowed()
     {
@@ -686,7 +715,12 @@ public sealed class StartupTestFactory : WebApplicationFactory<Program>
         builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["AllowedHosts"] = "*",
-            ["PublicBaseUrl"] = "https://canonical.example"
+            ["PublicBaseUrl"] = "https://canonical.example",
+            // Production refuses the appsettings.json placeholders; these are synthetic.
+            ["Clerk:Authority"] = "https://pipeline-test.clerk.accounts.dev",
+            ["Clerk:SecretKey"] = "sk_test_pipeline_synthetic",
+            ["Supabase:Url"] = "https://pipeline-test.supabase.co",
+            ["Supabase:ServiceKey"] = "sb_secret_pipeline_synthetic"
         }));
         builder.ConfigureServices(services =>
         {
