@@ -44,9 +44,11 @@ LICENSE
 **/*.user
 **/*.suo
 
-# Test results
+# Test results (patterns are case-sensitive; xUnit writes TestResults/)
 **/coverage/
+**/coverage.cobertura.xml
 **/test-results/
+**/TestResults/
 **/.nyc_output/
 
 # OS files
