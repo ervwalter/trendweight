@@ -32,7 +32,6 @@
     "release-please": "17.11.2",
     "turbo": "2.10.12"
   },
-  "version": "2.0.0-alpha.1",
   "engines": {
     "node": ">=26",
     "npm": ">=12.0.2"
