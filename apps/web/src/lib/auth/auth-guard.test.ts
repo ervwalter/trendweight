@@ -96,9 +96,27 @@ describe("authGuard", () => {
       expect(safeRedirectPath("/")).toBe("/");
     });
 
+    it("returns the normalized path, search and hash", () => {
+      expect(safeRedirectPath("/settings#top")).toBe("/settings#top");
+      expect(safeRedirectPath("/dashboard?range=explore#chart")).toBe("/dashboard?range=explore#chart");
+      expect(safeRedirectPath("/a b")).toBe("/a%20b");
+      expect(safeRedirectPath("/./settings/../download")).toBe("/download");
+    });
+
     it("rejects protocol-relative and backslash-relative URLs", () => {
       expect(safeRedirectPath("//evil.example/phish")).toBeUndefined();
       expect(safeRedirectPath("/\\evil.example/phish")).toBeUndefined();
+      expect(safeRedirectPath("/\\\\evil.example/phish")).toBeUndefined();
+    });
+
+    it("rejects paths the URL parser would resolve to another origin", () => {
+      // Tab and newline are stripped by the WHATWG parser, leaving a protocol-relative URL
+      expect(safeRedirectPath("/\t/evil.example/phish")).toBeUndefined();
+      expect(safeRedirectPath("/\n/evil.example/phish")).toBeUndefined();
+      expect(safeRedirectPath("/\r\n/evil.example")).toBeUndefined();
+      expect(safeRedirectPath("/\t\\evil.example")).toBeUndefined();
+      // Percent-encoded control characters stay in the path and are harmless
+      expect(safeRedirectPath("/%09/evil.example")).toBe("/%09/evil.example");
     });
 
     it("rejects absolute URLs and schemes", () => {
