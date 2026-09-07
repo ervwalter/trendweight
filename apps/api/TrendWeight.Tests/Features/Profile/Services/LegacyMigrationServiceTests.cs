@@ -668,7 +668,9 @@ public class LegacyMigrationServiceTests : TestBase
         };
         var expectedProfile = CreateTestDbProfile(Guid.Parse(userId), email);
 
+        DbProfile? createdProfile = null;
         _profileServiceMock.Setup(x => x.CreateAsync(It.IsAny<DbProfile>()))
+            .Callback<DbProfile>(p => createdProfile = p)
             .ReturnsAsync(expectedProfile);
 
         // Act
@@ -676,6 +678,14 @@ public class LegacyMigrationServiceTests : TestBase
 
         // Assert
         result.Should().BeEquivalentTo(expectedProfile);
+
+        // Unset legacy goals must stay unset; 0 means "maintain" in the settings contract
+        createdProfile.Should().NotBeNull();
+        createdProfile!.Profile.GoalWeight.Should().BeNull();
+        createdProfile.Profile.PlannedPoundsPerWeek.Should().BeNull();
+        createdProfile.Profile.GoalStart.Should().BeNull();
+        createdProfile.Profile.FirstName.Should().BeEmpty();
+        createdProfile.Profile.DayStartOffset.Should().Be(0);
 
         // Should not create provider link for unknown device type or empty token
         _providerLinkServiceMock.Verify(x => x.StoreProviderLinkAsync(

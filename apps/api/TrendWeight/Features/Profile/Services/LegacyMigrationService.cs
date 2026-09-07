@@ -85,8 +85,9 @@ public class LegacyMigrationService : ILegacyMigrationService
                 FirstName = legacyProfile.FirstName ?? string.Empty,
                 UseMetric = legacyProfile.UseMetric ?? false, // Default to Imperial (pounds)
                 GoalStart = legacyProfile.StartDate,
-                GoalWeight = legacyProfile.GoalWeight ?? 0,
-                PlannedPoundsPerWeek = legacyProfile.PlannedPoundsPerWeek ?? 0, // Already in correct units
+                // Unset goals stay unset: 0 would read as a "maintain" plan and a goal weight of 0
+                GoalWeight = legacyProfile.GoalWeight,
+                PlannedPoundsPerWeek = legacyProfile.PlannedPoundsPerWeek, // Already in correct units
                 DayStartOffset = legacyProfile.DayStartOffset ?? 0,
                 ShowCalories = true, // it was on in the old site
                 SharingToken = sharingToken,
