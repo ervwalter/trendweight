@@ -23,7 +23,7 @@ export default defineConfig({
   },
   server: {
     host: true,
-    allowedHosts: ["studio-1", "studio-1.elf-hadar.ts.net", ".local", "localhost", ""],
+    allowedHosts: ["studio-1", "studio-1.elf-hadar.ts.net", ".local"],
     proxy: {
       // Proxy all /api requests to the C# backend
       "/api": {
