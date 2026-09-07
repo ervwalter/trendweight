@@ -20,8 +20,9 @@ export function InitialSetup() {
     handleSubmit,
     control,
     setValue,
+    getValues,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, touchedFields },
   } = useForm<ProfileData>({
     defaultValues: {
       firstName: "",
@@ -30,12 +31,15 @@ export function InitialSetup() {
     },
   });
 
-  // Set default first name from auth user
+  // Prefill the first name from the auth user. Depend on the string (useAuth returns a fresh
+  // user object every render) and leave a touched or filled field alone so a re-render after a
+  // validation error never overwrites what the user typed or cleared.
+  const displayName = user?.displayName;
   useEffect(() => {
-    if (user?.displayName) {
-      setValue("firstName", extractFirstName(user.displayName));
-    }
-  }, [user, setValue]);
+    if (!displayName) return;
+    if (touchedFields.firstName || getValues("firstName")) return;
+    setValue("firstName", extractFirstName(displayName));
+  }, [displayName, touchedFields.firstName, getValues, setValue]);
 
   const onSubmit = async (data: ProfileData) => {
     try {

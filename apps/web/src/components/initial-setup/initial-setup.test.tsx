@@ -23,8 +23,9 @@ const mockUser = {
   email: "test@example.com",
   displayName: "John Doe Smith",
 };
+// Like the real hook, return a fresh user object on every call so the component cannot rely on identity
 vi.mock("@/lib/auth/use-auth", () => ({
-  useAuth: vi.fn(() => ({ user: mockUser })),
+  useAuth: vi.fn(() => ({ user: { ...mockUser } })),
 }));
 
 vi.mock("@/lib/utils/locale", () => ({
@@ -212,6 +213,27 @@ describe("InitialSetup", () => {
     });
 
     expect(mockMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("should not repopulate a cleared first name after a validation error", async () => {
+    const user = userEvent.setup();
+
+    render(<InitialSetup />);
+
+    const firstNameInput = screen.getByTestId("first-name") as HTMLInputElement;
+    await waitFor(() => expect(firstNameInput.value).toBe("John"));
+    await user.clear(firstNameInput);
+    await user.click(screen.getByText("Continue"));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("First name is required");
+    });
+    expect(firstNameInput.value).toBe("");
+
+    // A later re-render (e.g. Clerk re-emitting the user) must not undo the edit either
+    await user.type(firstNameInput, "J");
+    await user.clear(firstNameInput);
+    expect(firstNameInput.value).toBe("");
   });
 
   it("should set metric units based on locale", async () => {
