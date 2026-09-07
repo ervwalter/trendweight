@@ -560,6 +560,12 @@ public class RequestPipelineTests : IClassFixture<StartupTestFactory>
     }
 }
 
+// Shared as an IClassFixture, so every test that hits _factory directly runs
+// against one host. TestServer supplies no RemoteIpAddress, so anonymous and
+// rejected-credential API requests all land in the single "anonymous:unknown"
+// partition (60/min) and the shared anonymous ceiling. Roughly 15 such requests
+// accumulate across the class today; a test that needs to exhaust a limit must
+// create its own StartupTestFactory instead of drawing down the shared budget.
 public sealed class StartupTestFactory : WebApplicationFactory<Program>
 {
     public const string ApiKey = "sk-pipeline-test-key";
