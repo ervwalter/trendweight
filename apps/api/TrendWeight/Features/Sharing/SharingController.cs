@@ -27,7 +27,7 @@ public class SharingController : BaseAuthController
     [HttpGet]
     public async Task<ActionResult<SharingResponse>> GetSharingSettings()
     {
-        var user = await _profileService.GetByIdAsync(UserId);
+        var user = await _profileService.GetByIdAsync(UserGuid);
         if (user == null)
         {
             _logger.LogWarning("User document not found for Supabase UID: {UserId}", UserId);
@@ -49,7 +49,7 @@ public class SharingController : BaseAuthController
     [HttpPost("toggle")]
     public async Task<ActionResult<SharingResponse>> ToggleSharing([FromBody] ToggleSharingRequest request)
     {
-        var user = await _profileService.GetByIdAsync(UserId);
+        var user = await _profileService.GetByIdAsync(UserGuid);
         if (user == null)
         {
             _logger.LogWarning("User document not found for Supabase UID: {UserId}", UserId);

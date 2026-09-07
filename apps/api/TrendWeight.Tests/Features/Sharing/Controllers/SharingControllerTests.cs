@@ -42,7 +42,7 @@ public class SharingControllerTests : TestBase
         user.Profile.SharingToken = "test-sharing-token";
 
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
 
         // Act
@@ -76,7 +76,7 @@ public class SharingControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync((DbProfile?)null);
 
         // Act
@@ -94,7 +94,7 @@ public class SharingControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(It.IsAny<string>()))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
@@ -124,7 +124,7 @@ public class SharingControllerTests : TestBase
         var request = new ToggleSharingRequest { Enabled = true };
 
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
         _profileServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
             .ReturnsAsync(updatedUser);
@@ -161,7 +161,7 @@ public class SharingControllerTests : TestBase
         var request = new ToggleSharingRequest { Enabled = false };
 
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
         _profileServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
             .ReturnsAsync(updatedUser);
@@ -203,7 +203,7 @@ public class SharingControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync((DbProfile?)null);
         var request = new ToggleSharingRequest { Enabled = true };
 
@@ -222,7 +222,7 @@ public class SharingControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(It.IsAny<string>()))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
             .ThrowsAsync(new Exception("Database error"));
         var request = new ToggleSharingRequest { Enabled = true };
 
@@ -244,7 +244,7 @@ public class SharingControllerTests : TestBase
         var request = new ToggleSharingRequest { Enabled = true };
 
         SetupAuthenticatedUser(userId.ToString());
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString()))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
         _profileServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>()))
             .ReturnsAsync(user);

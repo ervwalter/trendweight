@@ -11,7 +11,7 @@ public interface ILegacyMigrationService
     /// <param name="userId">Supabase UID</param>
     /// <param name="userEmail">User's email address</param>
     /// <returns>Migrated profile if migration was performed, null otherwise</returns>
-    Task<DbProfile?> CheckAndMigrateIfNeededAsync(string userId, string? userEmail);
+    Task<DbProfile?> CheckAndMigrateIfNeededAsync(Guid userId, string? userEmail);
 
     /// <summary>
     /// Migrate a legacy profile to the new system
@@ -20,7 +20,7 @@ public interface ILegacyMigrationService
     /// <param name="email">User's email address</param>
     /// <param name="legacyProfile">Legacy profile data</param>
     /// <returns>The migrated profile</returns>
-    Task<DbProfile> MigrateLegacyProfileAsync(string userId, string email, LegacyProfile legacyProfile);
+    Task<DbProfile> MigrateLegacyProfileAsync(Guid userId, string email, LegacyProfile legacyProfile);
 
     /// <summary>
     /// Migrate legacy measurements for an existing migrated user

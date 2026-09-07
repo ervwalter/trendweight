@@ -38,7 +38,7 @@ public class LegacyMigrationService : ILegacyMigrationService
     /// <param name="userId">Supabase UID</param>
     /// <param name="userEmail">User's email address</param>
     /// <returns>Migrated profile if migration was performed, null otherwise</returns>
-    public async Task<DbProfile?> CheckAndMigrateIfNeededAsync(string userId, string? userEmail)
+    public async Task<DbProfile?> CheckAndMigrateIfNeededAsync(Guid userId, string? userEmail)
     {
         if (string.IsNullOrEmpty(userEmail))
         {
@@ -65,7 +65,7 @@ public class LegacyMigrationService : ILegacyMigrationService
     /// <param name="email">User's email address</param>
     /// <param name="legacyProfile">Legacy profile data</param>
     /// <returns>The migrated profile</returns>
-    public async Task<DbProfile> MigrateLegacyProfileAsync(string userId, string email, LegacyProfile legacyProfile)
+    public async Task<DbProfile> MigrateLegacyProfileAsync(Guid userId, string email, LegacyProfile legacyProfile)
     {
         // Keep the legacy private URL working, but never adopt a blank key or one that
         // already belongs to another profile: sharing is forced on for migrated users.
@@ -75,10 +75,9 @@ public class LegacyMigrationService : ILegacyMigrationService
             : legacyProfile.PrivateUrlKey;
 
         // Create new profile with migrated data
-        var userGuid = Guid.Parse(userId);
         var profile = new DbProfile
         {
-            Uid = userGuid,
+            Uid = userId,
             Email = email,
             Profile = new ProfileData
             {
@@ -105,11 +104,11 @@ public class LegacyMigrationService : ILegacyMigrationService
         // Create provider links if legacy profile has OAuth tokens
         if (!string.IsNullOrEmpty(legacyProfile.RefreshToken) && !string.IsNullOrEmpty(legacyProfile.DeviceType))
         {
-            await MigrateProviderLinkAsync(userGuid, legacyProfile);
+            await MigrateProviderLinkAsync(userId, legacyProfile);
         }
 
         // Migrate legacy measurements for the new user (pass already-loaded profile to avoid duplicate query)
-        await MigrateLegacyMeasurementsAsync(userGuid, email, legacyProfile);
+        await MigrateLegacyMeasurementsAsync(userId, email, legacyProfile);
 
         return profile;
     }

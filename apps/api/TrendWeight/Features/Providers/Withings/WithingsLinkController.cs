@@ -44,7 +44,7 @@ public class WithingsLinkController : BaseAuthController
             if (string.IsNullOrEmpty(jwtSigningKey))
             {
                 _logger.LogError("JWT signing key not configured");
-                return StatusCode(500, new { error = "JWT signing key not configured" });
+                return StatusCode(500, new ApiErrorResponse { Error = "JWT signing key not configured" });
             }
 
             // The signed state rides along in the authorization URL and is validated on exchange
@@ -63,7 +63,7 @@ public class WithingsLinkController : BaseAuthController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating Withings authorization URL");
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new ApiErrorResponse { Error = "Internal server error" });
         }
     }
 
@@ -77,12 +77,12 @@ public class WithingsLinkController : BaseAuthController
         {
             if (string.IsNullOrEmpty(request.Code))
             {
-                return BadRequest(new { error = "Authorization code is required" });
+                return BadRequest(new ApiErrorResponse { Error = "Authorization code is required" });
             }
 
             if (!OAuthStateToken.IsValid(request.State, _configuration["Jwt:SigningKey"], UserId, "withings"))
             {
-                return BadRequest(new { error = "Invalid or expired authorization state. Please connect your account again." });
+                return BadRequest(new ApiErrorResponse { Error = "Invalid or expired authorization state. Please connect your account again." });
             }
 
             // Build the redirect URI that was used in the authorization request
@@ -97,7 +97,7 @@ public class WithingsLinkController : BaseAuthController
                 return Ok(new { success = true, message = "Withings account successfully connected" });
             }
 
-            return BadRequest(new { error = "Failed to complete authorization" });
+            return BadRequest(new ApiErrorResponse { Error = "Failed to complete authorization" });
         }
         catch (ProviderException ex)
         {

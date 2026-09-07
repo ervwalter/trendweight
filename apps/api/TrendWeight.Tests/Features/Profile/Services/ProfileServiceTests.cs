@@ -60,45 +60,6 @@ public class ProfileServiceTests : TestBase
     }
 
     [Fact]
-    public async Task GetByIdAsync_WithStringGuid_ParsesAndReturnsProfile()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var userIdString = userId.ToString();
-        var expectedProfile = CreateTestProfile(userId);
-        _supabaseServiceMock.Setup(x => x.GetByIdAsync<DbProfile>(userId))
-            .ReturnsAsync(expectedProfile);
-
-        // Act
-        var result = await _sut.GetByIdAsync(userIdString);
-
-        // Assert
-        result.Should().NotBeNull();
-        result!.Uid.Should().Be(userId);
-    }
-
-    [Fact]
-    public async Task GetByIdAsync_WithInvalidStringGuid_ReturnsNull()
-    {
-        // Arrange
-        var invalidId = "not-a-guid";
-
-        // Act
-        var result = await _sut.GetByIdAsync(invalidId);
-
-        // Assert
-        result.Should().BeNull();
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Invalid user ID format")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-    }
-
-    [Fact]
     public async Task CreateAsync_CallsSupabaseService()
     {
         // Arrange
@@ -134,7 +95,7 @@ public class ProfileServiceTests : TestBase
     public async Task UpdateOrCreateProfileAsync_WhenProfileDoesNotExist_CreatesNewProfile()
     {
         // Arrange
-        var userId = Guid.NewGuid().ToString();
+        var userId = Guid.NewGuid();
         var email = "test@example.com";
         var request = new UpdateProfileRequest
         {
@@ -195,7 +156,7 @@ public class ProfileServiceTests : TestBase
             .ReturnsAsync((DbProfile p) => p);
 
         // Act
-        var result = await _sut.UpdateOrCreateProfileAsync(userId.ToString(), email, request);
+        var result = await _sut.UpdateOrCreateProfileAsync(userId, email, request);
 
         // Assert
         result.Should().NotBeNull();
@@ -225,7 +186,7 @@ public class ProfileServiceTests : TestBase
             .ReturnsAsync((DbProfile p) => p);
 
         // Act
-        var result = await _sut.UpdateOrCreateProfileAsync(userId.ToString(), email, request);
+        var result = await _sut.UpdateOrCreateProfileAsync(userId, email, request);
 
         // Assert
         result.Profile.TrendAlgorithm.Should().Be("holt");
@@ -247,7 +208,7 @@ public class ProfileServiceTests : TestBase
             .ReturnsAsync((DbProfile p) => p);
 
         // Act
-        var result = await _sut.UpdateOrCreateProfileAsync(userId.ToString(), email, request);
+        var result = await _sut.UpdateOrCreateProfileAsync(userId, email, request);
 
         // Assert
         result.Profile.TrendAlgorithm.Should().Be("holt-gentle");
@@ -358,7 +319,7 @@ public class ProfileServiceTests : TestBase
             .ReturnsAsync((DbProfile p) => p);
 
         // Act
-        var result = await _sut.GenerateNewSharingTokenAsync(userId.ToString());
+        var result = await _sut.GenerateNewSharingTokenAsync(userId);
 
         // Assert
         result.Should().NotBeNull();
@@ -381,7 +342,7 @@ public class ProfileServiceTests : TestBase
             .ReturnsAsync((DbProfile p) => p);
 
         // Act
-        var result = await _sut.CompleteMigrationAsync(userId.ToString());
+        var result = await _sut.CompleteMigrationAsync(userId);
 
         // Assert
         result.Should().BeTrue();

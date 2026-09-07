@@ -3,35 +3,32 @@ using Microsoft.AspNetCore.Mvc;
 using System.Globalization;
 using System.Security.Claims;
 using TrendWeight.Common.Models;
+using TrendWeight.Features.Common;
 using TrendWeight.Features.Measurements;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Features.Profile.Services;
-using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 
 namespace TrendWeight.Features.Profile;
 
-[ApiController]
 [Route("api/profile")]
-[Authorize]
-public class ProfileController : ControllerBase
+public class ProfileController : BaseAuthController
 {
     private readonly IProfileService _profileService;
     private readonly ILegacyMigrationService _legacyMigrationService;
-    private readonly ISupabaseService _supabaseService;
     private readonly ILogger<ProfileController> _logger;
 
     public ProfileController(
         IProfileService profileService,
         ILegacyMigrationService legacyMigrationService,
-        ISupabaseService supabaseService,
         ILogger<ProfileController> logger)
     {
         _profileService = profileService;
         _legacyMigrationService = legacyMigrationService;
-        _supabaseService = supabaseService;
         _logger = logger;
     }
+
+    private string? UserEmail => User.FindFirst(ClaimTypes.Email)?.Value;
 
     /// <summary>
     /// Gets the user's profile/settings
@@ -40,64 +37,39 @@ public class ProfileController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ProfileResponse>> GetProfile()
     {
-        try
+        var userId = UserGuid;
+        var userEmail = UserEmail;
+
+        var user = await _profileService.GetByIdAsync(userId);
+        if (user == null)
         {
-            // Get user ID from authenticated user claim
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            // A first sign-in from a legacy account migrates the old profile and data
+            var migratedProfile = await _legacyMigrationService.CheckAndMigrateIfNeededAsync(userId, userEmail);
+            if (migratedProfile != null)
             {
-                _logger.LogWarning("User ID not found in authenticated user claims");
-                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
+                return BuildProfileResponse(migratedProfile, isMe: true);
             }
 
-            // Parse user ID and get email for potential legacy operations
-            if (!Guid.TryParse(userId, out var userGuid))
-            {
-                _logger.LogWarning("Invalid user ID format: {UserId}", userId);
-                return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
-            }
-            var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
-
-            // Get user from Supabase by UID
-            var user = await _profileService.GetByIdAsync(userId);
-
-            if (user == null)
-            {
-
-                // Check for legacy profile migration
-                var migratedProfile = await _legacyMigrationService.CheckAndMigrateIfNeededAsync(userId, userEmail);
-
-                if (migratedProfile != null)
-                {
-                    // Legacy profile was found and migrated (includes data import)
-                    return BuildProfileResponse(migratedProfile, isMe: true);
-                }
-
-                _logger.LogWarning("User document not found for Supabase UID: {UserId}", userId);
-                return NotFound(new ErrorResponse { Error = "User not found" });
-            }
-            else if (user.Profile.IsMigrated == true)
-            {
-                // Check if we need to migrate legacy data for existing migrated users
-                await _legacyMigrationService.CheckAndMigrateLegacyDataIfNeededAsync(userGuid, userEmail);
-            }
-
-            // Update email in profile if it doesn't match Clerk claim
-            if (!string.IsNullOrEmpty(userEmail) && user.Email != userEmail)
-            {
-                _logger.LogInformation("Updating profile email from {OldEmail} to {NewEmail} for user {UserId}", user.Email, userEmail, userId);
-                user.Email = userEmail;
-                user.UpdatedAt = DateTime.UtcNow.ToString("o");
-                await _supabaseService.UpdateAsync(user);
-            }
-
-            return BuildProfileResponse(user, isMe: true);
+            _logger.LogWarning("User document not found for Supabase UID: {UserId}", userId);
+            return NotFound(new ErrorResponse { Error = "User not found" });
         }
-        catch (Exception ex)
+
+        if (user.Profile.IsMigrated == true)
         {
-            _logger.LogError(ex, "Error getting profile for user");
-            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
+            // Migrated users may still have legacy measurements waiting to be imported
+            await _legacyMigrationService.CheckAndMigrateLegacyDataIfNeededAsync(userId, userEmail);
         }
+
+        // Keep the stored email in step with the Clerk claim
+        if (!string.IsNullOrEmpty(userEmail) && user.Email != userEmail)
+        {
+            _logger.LogInformation("Updating profile email from {OldEmail} to {NewEmail} for user {UserId}", user.Email, userEmail, userId);
+            user.Email = userEmail;
+            user.UpdatedAt = DateTime.UtcNow.ToString("o");
+            await _profileService.UpdateAsync(user);
+        }
+
+        return BuildProfileResponse(user, isMe: true);
     }
 
     /// <summary>
@@ -109,37 +81,99 @@ public class ProfileController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<ProfileResponse>> GetProfileBySharingCode(string sharingCode)
     {
-        try
+        var user = await _profileService.GetBySharingTokenAsync(sharingCode);
+        if (user == null || !user.Profile.SharingEnabled)
         {
-            // Get user by sharing code
-            var user = await _profileService.GetBySharingTokenAsync(sharingCode);
-            if (user == null)
-            {
-                _logger.LogWarning("User not found for sharing code: {SharingCode}", sharingCode);
-                return NotFound(new ErrorResponse { Error = "User not found" });
-            }
-
-            // Check if sharing is actually enabled
-            if (!user.Profile.SharingEnabled)
-            {
-                _logger.LogWarning("Sharing is disabled for sharing code: {SharingCode}", sharingCode);
-                return NotFound(new ErrorResponse { Error = "User not found" });
-            }
-
-            // Always return isMe = false when using sharing code
-            // This allows users to preview how their dashboard appears to others
-            return BuildProfileResponse(user, isMe: false);
+            _logger.LogWarning("User not found or sharing disabled for the supplied sharing code");
+            return NotFound(new ErrorResponse { Error = "User not found" });
         }
-        catch (Exception ex)
+
+        // Always isMe = false via a sharing code so owners can preview the shared view
+        return BuildProfileResponse(user, isMe: false);
+    }
+
+    /// <summary>
+    /// Updates the user's profile/settings or creates a new profile if none exists
+    /// </summary>
+    /// <param name="request">The profile fields to update</param>
+    /// <returns>The updated profile data</returns>
+    [HttpPut]
+    public async Task<ActionResult<ProfileResponse>> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        var userId = UserGuid;
+        var userEmail = UserEmail;
+        if (string.IsNullOrEmpty(userEmail))
         {
-            _logger.LogError(ex, "Error getting profile for sharing code");
-            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
+            _logger.LogWarning("User email not found in authenticated user claims");
+            return Unauthorized(new ErrorResponse { Error = "User email not found" });
         }
+
+        if (!TryValidateUpdateRequest(request, out var validationError))
+        {
+            return BadRequest(new ErrorResponse { Error = validationError });
+        }
+
+        var profile = await _profileService.UpdateOrCreateProfileAsync(userId, userEmail, request);
+        return BuildProfileResponse(profile, isMe: true);
+    }
+
+    /// <summary>
+    /// Generate a new sharing token
+    /// </summary>
+    /// <returns>Updated sharing data with new token</returns>
+    [HttpPost("generate-token")]
+    public async Task<ActionResult<SharingTokenResponse>> GenerateNewToken()
+    {
+        var updatedUser = await _profileService.GenerateNewSharingTokenAsync(UserGuid);
+        if (updatedUser == null)
+        {
+            return NotFound(new ErrorResponse { Error = "User not found" });
+        }
+
+        return Ok(new SharingTokenResponse
+        {
+            SharingEnabled = updatedUser.Profile.SharingEnabled,
+            SharingToken = updatedUser.Profile.SharingToken ?? string.Empty
+        });
+    }
+
+    /// <summary>
+    /// Complete the migration process by clearing the IsNewlyMigrated flag
+    /// </summary>
+    /// <returns>Success response</returns>
+    [HttpPost("complete-migration")]
+    public async Task<ActionResult<SuccessResponse>> CompleteMigration()
+    {
+        var success = await _profileService.CompleteMigrationAsync(UserGuid);
+        if (!success)
+        {
+            return NotFound(new ErrorResponse { Error = "User not found" });
+        }
+
+        return Ok(new SuccessResponse { Success = true });
+    }
+
+    /// <summary>
+    /// Deletes the user's account and all associated data
+    /// </summary>
+    /// <returns>Success or error response</returns>
+    [HttpDelete]
+    public async Task<ActionResult<MessageResponse>> DeleteAccount()
+    {
+        var userId = UserGuid;
+
+        var success = await _profileService.DeleteAccountAsync(userId);
+        if (!success)
+        {
+            return StatusCode(500, new ErrorResponse { Error = "Failed to delete account" });
+        }
+
+        _logger.LogInformation("Account deleted successfully for user {UserId}", userId);
+        return Ok(new MessageResponse { Message = "Account deleted successfully" });
     }
 
     private ActionResult<ProfileResponse> BuildProfileResponse(DbProfile user, bool isMe)
     {
-        // Return profile data with metadata
         return Ok(new ProfileResponse
         {
             User = new UserProfileData
@@ -161,57 +195,6 @@ public class ProfileController : ControllerBase
             IsMe = isMe,
             Timestamp = DateTime.UtcNow
         });
-    }
-
-    /// <summary>
-    /// Updates the user's profile/settings or creates a new profile if none exists
-    /// </summary>
-    /// <param name="request">The profile fields to update</param>
-    /// <returns>The updated profile data</returns>
-    [HttpPut]
-    public async Task<ActionResult<ProfileResponse>> UpdateProfile([FromBody] UpdateProfileRequest request)
-    {
-        try
-        {
-            // Get user ID from authenticated user claim
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning("User ID not found in authenticated user claims");
-                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
-            }
-
-            // Get user email from authenticated user claim
-            var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                _logger.LogWarning("User email not found in authenticated user claims");
-                return Unauthorized(new ErrorResponse { Error = "User email not found" });
-            }
-
-            // Parse the user ID
-            if (!Guid.TryParse(userId, out var userGuid))
-            {
-                _logger.LogWarning("Invalid user ID format: {UserId}", userId);
-                return Unauthorized(new ErrorResponse { Error = "Invalid authentication" });
-            }
-
-            if (!TryValidateUpdateRequest(request, out var validationError))
-            {
-                return BadRequest(new ErrorResponse { Error = validationError });
-            }
-
-            // Use the service to update or create the profile
-            var profile = await _profileService.UpdateOrCreateProfileAsync(userId, userEmail, request);
-
-            // Return updated profile data in the same format as GET
-            return BuildProfileResponse(profile, isMe: true);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating profile for user");
-            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
-        }
     }
 
     // Goal weight and weekly plan arrive in the user's display units (kg or lb), so the
@@ -264,116 +247,4 @@ public class ProfileController : ControllerBase
         error = string.Empty;
         return true;
     }
-
-    /// <summary>
-    /// Generate a new sharing token
-    /// </summary>
-    /// <returns>Updated sharing data with new token</returns>
-    [HttpPost("generate-token")]
-    public async Task<ActionResult<SharingTokenResponse>> GenerateNewToken()
-    {
-        try
-        {
-            // Get user ID from authenticated user claim
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning("User ID not found in authenticated user claims");
-                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
-            }
-
-            // Use service to generate new token
-            var updatedUser = await _profileService.GenerateNewSharingTokenAsync(userId);
-            if (updatedUser == null)
-            {
-                return NotFound(new ErrorResponse { Error = "User not found" });
-            }
-
-            return Ok(new SharingTokenResponse
-            {
-                SharingEnabled = updatedUser.Profile.SharingEnabled,
-                SharingToken = updatedUser.Profile.SharingToken ?? string.Empty
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating new share token for user");
-            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
-        }
-    }
-
-    /// <summary>
-    /// Complete the migration process by clearing the IsNewlyMigrated flag
-    /// </summary>
-    /// <returns>Success response</returns>
-    [HttpPost("complete-migration")]
-    public async Task<ActionResult<SuccessResponse>> CompleteMigration()
-    {
-        try
-        {
-            // Get user ID from authenticated user claim
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning("User ID not found in authenticated user claims");
-                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
-            }
-
-            // Use service to complete migration
-            var success = await _profileService.CompleteMigrationAsync(userId);
-            if (!success)
-            {
-                return NotFound(new ErrorResponse { Error = "User not found" });
-            }
-
-            return Ok(new SuccessResponse { Success = true });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error completing migration for user");
-            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
-        }
-    }
-
-    /// <summary>
-    /// Deletes the user's account and all associated data
-    /// </summary>
-    /// <returns>Success or error response</returns>
-    [HttpDelete]
-    public async Task<ActionResult<MessageResponse>> DeleteAccount()
-    {
-        try
-        {
-            // Get user ID from authenticated user claim
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning("User ID not found in authenticated user claims");
-                return Unauthorized(new ErrorResponse { Error = "User ID not found" });
-            }
-
-            // Parse user ID as GUID
-            if (!Guid.TryParse(userId, out var userGuid))
-            {
-                _logger.LogWarning("Invalid user ID format: {UserId}", userId);
-                return BadRequest(new ErrorResponse { Error = "Invalid user ID format" });
-            }
-
-            // Delete the account
-            var success = await _profileService.DeleteAccountAsync(userGuid);
-            if (!success)
-            {
-                return StatusCode(500, new ErrorResponse { Error = "Failed to delete account" });
-            }
-
-            _logger.LogInformation("Account deleted successfully for user {UserId}", userId);
-            return Ok(new MessageResponse { Message = "Account deleted successfully" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting account");
-            return StatusCode(500, new ErrorResponse { Error = "Internal server error" });
-        }
-    }
-
 }

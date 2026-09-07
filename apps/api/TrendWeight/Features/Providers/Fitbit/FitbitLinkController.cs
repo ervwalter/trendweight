@@ -53,7 +53,7 @@ public class FitbitLinkController : BaseAuthController
         if (string.IsNullOrEmpty(jwtSigningKey))
         {
             _logger.LogError("JWT signing key not configured");
-            return StatusCode(500, new { error = "JWT signing key not configured" });
+            return StatusCode(500, new ApiErrorResponse { Error = "JWT signing key not configured" });
         }
 
         var state = OAuthStateToken.Create(jwtSigningKey, UserId, "fitbit");
@@ -87,12 +87,12 @@ public class FitbitLinkController : BaseAuthController
         {
             if (string.IsNullOrEmpty(request.Code))
             {
-                return BadRequest(new { error = "Authorization code is required" });
+                return BadRequest(new ApiErrorResponse { Error = "Authorization code is required" });
             }
 
             if (!OAuthStateToken.IsValid(request.State, _configuration["Jwt:SigningKey"], UserId, "fitbit"))
             {
-                return BadRequest(new { error = "Invalid or expired authorization state. Please connect your account again." });
+                return BadRequest(new ApiErrorResponse { Error = "Invalid or expired authorization state. Please connect your account again." });
             }
 
             // Build the redirect URI that was used in the authorization request
@@ -107,7 +107,7 @@ public class FitbitLinkController : BaseAuthController
                 return Ok(new { success = true, message = "Fitbit account successfully connected" });
             }
 
-            return BadRequest(new { error = "Failed to complete authorization" });
+            return BadRequest(new ApiErrorResponse { Error = "Failed to complete authorization" });
         }
         catch (ProviderException ex)
         {

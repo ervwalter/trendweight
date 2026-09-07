@@ -107,9 +107,8 @@ public class WithingsLinkControllerTests : TestBase
         var errorResult = result as ObjectResult;
         errorResult!.StatusCode.Should().Be(500);
 
-        var errorResponse = errorResult.Value;
-        var errorProperty = errorResponse!.GetType().GetProperty("error");
-        errorProperty!.GetValue(errorResponse).Should().Be("JWT signing key not configured");
+        errorResult.Value.Should().BeOfType<ApiErrorResponse>()
+            .Which.Error.Should().Be("JWT signing key not configured");
     }
 
     [Fact]
@@ -132,9 +131,8 @@ public class WithingsLinkControllerTests : TestBase
         var errorResult = result as ObjectResult;
         errorResult!.StatusCode.Should().Be(500);
 
-        var errorResponse = errorResult.Value;
-        var errorProperty = errorResponse!.GetType().GetProperty("error");
-        errorProperty!.GetValue(errorResponse).Should().Be("Internal server error");
+        errorResult.Value.Should().BeOfType<ApiErrorResponse>()
+            .Which.Error.Should().Be("Internal server error");
     }
 
     [Fact]
@@ -208,10 +206,8 @@ public class WithingsLinkControllerTests : TestBase
         // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
         var badRequestResult = result as BadRequestObjectResult;
-        var errorResponse = badRequestResult!.Value;
-
-        var errorProperty = errorResponse!.GetType().GetProperty("error");
-        errorProperty!.GetValue(errorResponse).Should().Be("Authorization code is required");
+        badRequestResult!.Value.Should().BeOfType<ApiErrorResponse>()
+            .Which.Error.Should().Be("Authorization code is required");
     }
 
     [Fact]
@@ -229,10 +225,8 @@ public class WithingsLinkControllerTests : TestBase
         // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
         var badRequestResult = result as BadRequestObjectResult;
-        var errorResponse = badRequestResult!.Value;
-
-        var errorProperty = errorResponse!.GetType().GetProperty("error");
-        errorProperty!.GetValue(errorResponse).Should().Be("Authorization code is required");
+        badRequestResult!.Value.Should().BeOfType<ApiErrorResponse>()
+            .Which.Error.Should().Be("Authorization code is required");
     }
 
     [Fact]
@@ -255,10 +249,8 @@ public class WithingsLinkControllerTests : TestBase
         // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
         var badRequestResult = result as BadRequestObjectResult;
-        var errorResponse = badRequestResult!.Value;
-
-        var errorProperty = errorResponse!.GetType().GetProperty("error");
-        errorProperty!.GetValue(errorResponse).Should().Be("Failed to complete authorization");
+        badRequestResult!.Value.Should().BeOfType<ApiErrorResponse>()
+            .Which.Error.Should().Be("Failed to complete authorization");
     }
 
     [Fact]

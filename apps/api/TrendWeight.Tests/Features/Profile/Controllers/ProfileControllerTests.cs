@@ -8,7 +8,6 @@ using TrendWeight.Features.Profile;
 using TrendWeight.Features.Profile.Models;
 using TrendWeight.Common.Models;
 using TrendWeight.Features.Profile.Services;
-using TrendWeight.Infrastructure.DataAccess;
 using TrendWeight.Infrastructure.DataAccess.Models;
 using TrendWeight.Tests.Fixtures;
 using Xunit;
@@ -19,7 +18,6 @@ public class ProfileControllerTests : TestBase
 {
     private readonly Mock<IProfileService> _profileServiceMock;
     private readonly Mock<ILegacyMigrationService> _migrationServiceMock;
-    private readonly Mock<ISupabaseService> _supabaseServiceMock;
     private readonly Mock<ILogger<ProfileController>> _loggerMock;
     private readonly ProfileController _sut;
 
@@ -27,12 +25,10 @@ public class ProfileControllerTests : TestBase
     {
         _profileServiceMock = new Mock<IProfileService>();
         _migrationServiceMock = new Mock<ILegacyMigrationService>();
-        _supabaseServiceMock = new Mock<ISupabaseService>();
         _loggerMock = new Mock<ILogger<ProfileController>>();
         _sut = new ProfileController(
             _profileServiceMock.Object,
             _migrationServiceMock.Object,
-            _supabaseServiceMock.Object,
             _loggerMock.Object);
     }
 
@@ -45,7 +41,7 @@ public class ProfileControllerTests : TestBase
         var userId = Guid.NewGuid();
         var user = CreateTestProfile(userId);
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
         var result = await _sut.GetProfile();
@@ -60,18 +56,14 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetProfile_WithNoUserIdClaim_ReturnsUnauthorized()
+    public async Task GetProfile_WithNoUserIdClaim_ThrowsUnauthorized()
     {
-        // Arrange
         SetupAuthenticatedUser(null, "test@example.com");
 
-        // Act
-        var result = await _sut.GetProfile();
+        var act = () => _sut.GetProfile();
 
-        // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>()
-            .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("User ID not found");
+        // The error middleware turns this into a 401
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [Fact]
@@ -81,8 +73,8 @@ public class ProfileControllerTests : TestBase
         var userId = Guid.NewGuid();
         var migratedProfile = CreateTestProfile(userId);
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
-        _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId.ToString(), "test@example.com"))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync((DbProfile?)null);
+        _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId, "test@example.com"))
             .ReturnsAsync(migratedProfile);
 
         // Act
@@ -103,8 +95,8 @@ public class ProfileControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
-        _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId.ToString(), "test@example.com"))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync((DbProfile?)null);
+        _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId, "test@example.com"))
             .ReturnsAsync((DbProfile?)null);
 
         // Act
@@ -122,8 +114,8 @@ public class ProfileControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
-        _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId.ToString(), "test@example.com"))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync((DbProfile?)null);
+        _migrationServiceMock.Setup(x => x.CheckAndMigrateIfNeededAsync(userId, "test@example.com"))
             .ReturnsAsync((DbProfile?)null);
 
         // Act
@@ -136,20 +128,46 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetProfile_WhenExceptionThrown_ReturnsInternalServerError()
+    public async Task GetProfile_WhenExceptionThrown_PropagatesToErrorMiddleware()
     {
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(It.IsAny<string>()))
+        _profileServiceMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
             .ThrowsAsync(new Exception("Database error"));
 
-        // Act
+        var act = () => _sut.GetProfile();
+
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
+    }
+
+    [Fact]
+    public async Task GetProfile_WhenClerkEmailDiffers_UpdatesStoredEmailThroughProfileService()
+    {
+        var userId = Guid.NewGuid();
+        var user = CreateTestProfile(userId);
+        user.Email = "old@example.com";
+        SetupAuthenticatedUser(userId.ToString(), "new@example.com");
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.UpdateAsync(It.IsAny<DbProfile>())).ReturnsAsync((DbProfile p) => p);
+
         var result = await _sut.GetProfile();
 
-        // Assert
-        result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(500);
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _profileServiceMock.Verify(x => x.UpdateAsync(It.Is<DbProfile>(p => p.Uid == userId && p.Email == "new@example.com")), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProfile_WhenClerkEmailMatches_DoesNotWrite()
+    {
+        var userId = Guid.NewGuid();
+        var user = CreateTestProfile(userId);
+        SetupAuthenticatedUser(userId.ToString(), user.Email);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
+
+        await _sut.GetProfile();
+
+        _profileServiceMock.Verify(x => x.UpdateAsync(It.IsAny<DbProfile>()), Times.Never);
     }
 
     [Fact]
@@ -160,7 +178,7 @@ public class ProfileControllerTests : TestBase
         var user = CreateTestProfile(userId);
         user.Profile.IsMigrated = true;
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
         var result = await _sut.GetProfile();
@@ -181,7 +199,7 @@ public class ProfileControllerTests : TestBase
         var user = CreateTestProfile(userId);
         user.Profile.IsMigrated = true;
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
         var result = await _sut.GetProfile();
@@ -202,7 +220,7 @@ public class ProfileControllerTests : TestBase
         var user = CreateTestProfile(userId);
         user.Profile.IsMigrated = false; // Not a migrated user
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
         var result = await _sut.GetProfile();
@@ -223,7 +241,7 @@ public class ProfileControllerTests : TestBase
         var user = CreateTestProfile(userId);
         user.Profile.IsMigrated = true;
         SetupAuthenticatedUser(userId.ToString(), null); // No email in claims
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
         var result = await _sut.GetProfile();
@@ -244,7 +262,7 @@ public class ProfileControllerTests : TestBase
         var user = CreateTestProfile(userId);
         user.Profile.IsMigrated = true;
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GetByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _profileServiceMock.Setup(x => x.GetByIdAsync(userId)).ReturnsAsync(user);
         // CheckAndImportLegacyDataIfNeededAsync catches exceptions internally,
         // so we don't need to test exception handling here
         _migrationServiceMock.Setup(x => x.CheckAndMigrateLegacyDataIfNeededAsync(userId, "test@example.com"))
@@ -328,19 +346,16 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GetProfileBySharingCode_WhenExceptionThrown_ReturnsInternalServerError()
+    public async Task GetProfileBySharingCode_WhenExceptionThrown_PropagatesToErrorMiddleware()
     {
         // Arrange
         var sharingCode = "test-code";
         _profileServiceMock.Setup(x => x.GetBySharingTokenAsync(It.IsAny<string>()))
             .ThrowsAsync(new Exception("Database error"));
 
-        // Act
-        var result = await _sut.GetProfileBySharingCode(sharingCode);
+        var act = () => _sut.GetProfileBySharingCode(sharingCode);
 
-        // Assert
-        result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(500);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
     }
 
     #endregion
@@ -364,7 +379,7 @@ public class ProfileControllerTests : TestBase
         updatedProfile.Profile.UseMetric = request.UseMetric.Value;
 
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request))
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId, "test@example.com", request))
             .ReturnsAsync(updatedProfile);
 
         // Act
@@ -394,7 +409,7 @@ public class ProfileControllerTests : TestBase
 
         result.Result.Should().BeOfType<BadRequestObjectResult>();
         _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
     }
 
     [Theory]
@@ -412,7 +427,7 @@ public class ProfileControllerTests : TestBase
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Contain("Goal weight");
         _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
     }
 
     [Theory]
@@ -429,7 +444,7 @@ public class ProfileControllerTests : TestBase
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Contain("Planned weekly change");
         _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
     }
 
     [Fact]
@@ -443,7 +458,7 @@ public class ProfileControllerTests : TestBase
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Contain("First name");
         _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
     }
 
     public static TheoryData<DateTime> OutOfRangeGoalStarts => new()
@@ -465,7 +480,7 @@ public class ProfileControllerTests : TestBase
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Contain("Start date");
         _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
     }
 
     [Fact]
@@ -482,16 +497,16 @@ public class ProfileControllerTests : TestBase
             GoalStart = DateTime.UtcNow.Date.AddDays(1)
         };
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request))
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId, "test@example.com", request))
             .ReturnsAsync(CreateTestProfile(userId));
 
         var result = await _sut.UpdateProfile(request);
 
         result.Result.Should().BeOfType<OkObjectResult>();
-        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request), Times.Once);
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(userId, "test@example.com", request), Times.Once);
 
         var oldest = new UpdateProfileRequest { GoalStart = new DateTime(1900, 1, 1), PlannedPoundsPerWeek = 5m, GoalWeight = 0.1m };
-        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", oldest))
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId, "test@example.com", oldest))
             .ReturnsAsync(CreateTestProfile(userId));
         (await _sut.UpdateProfile(oldest)).Result.Should().BeOfType<OkObjectResult>();
     }
@@ -503,7 +518,7 @@ public class ProfileControllerTests : TestBase
         var userId = Guid.NewGuid();
         var request = new UpdateProfileRequest { UseMetric = true };
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request))
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId, "test@example.com", request))
             .ReturnsAsync(CreateTestProfile(userId));
 
         var result = await _sut.UpdateProfile(request);
@@ -526,7 +541,7 @@ public class ProfileControllerTests : TestBase
         result.Result.Should().BeOfType<BadRequestObjectResult>()
             .Which.Value.Should().BeOfType<ErrorResponse>()
             .Which.Error.Should().Be("Invalid trend algorithm");
-        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
+        _profileServiceMock.Verify(x => x.UpdateOrCreateProfileAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()), Times.Never);
     }
 
     [Fact]
@@ -539,7 +554,7 @@ public class ProfileControllerTests : TestBase
         updatedProfile.Profile.TrendAlgorithm = "holt";
 
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId.ToString(), "test@example.com", request))
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(userId, "test@example.com", request))
             .ReturnsAsync(updatedProfile);
 
         // Act
@@ -552,19 +567,14 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task UpdateProfile_WithNoUserIdClaim_ReturnsUnauthorized()
+    public async Task UpdateProfile_WithNoUserIdClaim_ThrowsUnauthorized()
     {
-        // Arrange
         SetupAuthenticatedUser(null, "test@example.com");
-        var request = new UpdateProfileRequest { FirstName = "Test" };
 
-        // Act
-        var result = await _sut.UpdateProfile(request);
+        var act = () => _sut.UpdateProfile(new UpdateProfileRequest { FirstName = "Test" });
 
-        // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>()
-            .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("User ID not found");
+        // The error middleware turns this into a 401
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [Fact]
@@ -585,21 +595,18 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task UpdateProfile_WhenExceptionThrown_ReturnsInternalServerError()
+    public async Task UpdateProfile_WhenExceptionThrown_PropagatesToErrorMiddleware()
     {
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
         var request = new UpdateProfileRequest { FirstName = "Test" };
-        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()))
+        _profileServiceMock.Setup(x => x.UpdateOrCreateProfileAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<UpdateProfileRequest>()))
             .ThrowsAsync(new Exception("Database error"));
 
-        // Act
-        var result = await _sut.UpdateProfile(request);
+        var act = () => _sut.UpdateProfile(request);
 
-        // Assert
-        result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(500);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
     }
 
     #endregion
@@ -616,7 +623,7 @@ public class ProfileControllerTests : TestBase
         updatedUser.Profile.SharingEnabled = true;
 
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GenerateNewSharingTokenAsync(userId.ToString())).ReturnsAsync(updatedUser);
+        _profileServiceMock.Setup(x => x.GenerateNewSharingTokenAsync(userId)).ReturnsAsync(updatedUser);
 
         // Act
         var result = await _sut.GenerateNewToken();
@@ -631,18 +638,14 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GenerateNewToken_WithNoUserIdClaim_ReturnsUnauthorized()
+    public async Task GenerateNewToken_WithNoUserIdClaim_ThrowsUnauthorized()
     {
-        // Arrange
         SetupAuthenticatedUser(null, "test@example.com");
 
-        // Act
-        var result = await _sut.GenerateNewToken();
+        var act = () => _sut.GenerateNewToken();
 
-        // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>()
-            .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("User ID not found");
+        // The error middleware turns this into a 401
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [Fact]
@@ -651,7 +654,7 @@ public class ProfileControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GenerateNewSharingTokenAsync(userId.ToString())).ReturnsAsync((DbProfile?)null);
+        _profileServiceMock.Setup(x => x.GenerateNewSharingTokenAsync(userId)).ReturnsAsync((DbProfile?)null);
 
         // Act
         var result = await _sut.GenerateNewToken();
@@ -663,20 +666,17 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task GenerateNewToken_WhenExceptionThrown_ReturnsInternalServerError()
+    public async Task GenerateNewToken_WhenExceptionThrown_PropagatesToErrorMiddleware()
     {
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.GenerateNewSharingTokenAsync(It.IsAny<string>()))
+        _profileServiceMock.Setup(x => x.GenerateNewSharingTokenAsync(It.IsAny<Guid>()))
             .ThrowsAsync(new Exception("Database error"));
 
-        // Act
-        var result = await _sut.GenerateNewToken();
+        var act = () => _sut.GenerateNewToken();
 
-        // Assert
-        result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(500);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
     }
 
     #endregion
@@ -689,7 +689,7 @@ public class ProfileControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.CompleteMigrationAsync(userId.ToString())).ReturnsAsync(true);
+        _profileServiceMock.Setup(x => x.CompleteMigrationAsync(userId)).ReturnsAsync(true);
 
         // Act
         var result = await _sut.CompleteMigration();
@@ -703,18 +703,14 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task CompleteMigration_WithNoUserIdClaim_ReturnsUnauthorized()
+    public async Task CompleteMigration_WithNoUserIdClaim_ThrowsUnauthorized()
     {
-        // Arrange
         SetupAuthenticatedUser(null, "test@example.com");
 
-        // Act
-        var result = await _sut.CompleteMigration();
+        var act = () => _sut.CompleteMigration();
 
-        // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>()
-            .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("User ID not found");
+        // The error middleware turns this into a 401
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [Fact]
@@ -723,7 +719,7 @@ public class ProfileControllerTests : TestBase
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.CompleteMigrationAsync(userId.ToString())).ReturnsAsync(false);
+        _profileServiceMock.Setup(x => x.CompleteMigrationAsync(userId)).ReturnsAsync(false);
 
         // Act
         var result = await _sut.CompleteMigration();
@@ -735,20 +731,17 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task CompleteMigration_WhenExceptionThrown_ReturnsInternalServerError()
+    public async Task CompleteMigration_WhenExceptionThrown_PropagatesToErrorMiddleware()
     {
         // Arrange
         var userId = Guid.NewGuid();
         SetupAuthenticatedUser(userId.ToString(), "test@example.com");
-        _profileServiceMock.Setup(x => x.CompleteMigrationAsync(It.IsAny<string>()))
+        _profileServiceMock.Setup(x => x.CompleteMigrationAsync(It.IsAny<Guid>()))
             .ThrowsAsync(new Exception("Database error"));
 
-        // Act
-        var result = await _sut.CompleteMigration();
+        var act = () => _sut.CompleteMigration();
 
-        // Assert
-        result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(500);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
     }
 
     #endregion
@@ -775,33 +768,25 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task DeleteAccount_WithNoUserIdClaim_ReturnsUnauthorized()
+    public async Task DeleteAccount_WithNoUserIdClaim_ThrowsUnauthorized()
     {
-        // Arrange
         SetupAuthenticatedUser(null, "test@example.com");
 
-        // Act
-        var result = await _sut.DeleteAccount();
+        var act = () => _sut.DeleteAccount();
 
-        // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>()
-            .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("User ID not found");
+        // The error middleware turns this into a 401
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [Fact]
-    public async Task DeleteAccount_WithInvalidGuidFormat_ReturnsBadRequest()
+    public async Task DeleteAccount_WithInvalidGuidFormat_ThrowsUnauthorized()
     {
-        // Arrange
         SetupAuthenticatedUser("invalid-guid", "test@example.com");
 
-        // Act
-        var result = await _sut.DeleteAccount();
+        var act = () => _sut.DeleteAccount();
 
-        // Assert
-        result.Result.Should().BeOfType<BadRequestObjectResult>()
-            .Which.Value.Should().BeOfType<ErrorResponse>()
-            .Which.Error.Should().Be("Invalid user ID format");
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        _profileServiceMock.Verify(x => x.DeleteAccountAsync(It.IsAny<Guid>()), Times.Never);
     }
 
     [Fact]
@@ -824,7 +809,7 @@ public class ProfileControllerTests : TestBase
     }
 
     [Fact]
-    public async Task DeleteAccount_WhenExceptionThrown_ReturnsInternalServerError()
+    public async Task DeleteAccount_WhenExceptionThrown_PropagatesToErrorMiddleware()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -832,12 +817,9 @@ public class ProfileControllerTests : TestBase
         _profileServiceMock.Setup(x => x.DeleteAccountAsync(It.IsAny<Guid>()))
             .ThrowsAsync(new Exception("Database error"));
 
-        // Act
-        var result = await _sut.DeleteAccount();
+        var act = () => _sut.DeleteAccount();
 
-        // Assert
-        result.Result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(500);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Database error");
     }
 
     #endregion

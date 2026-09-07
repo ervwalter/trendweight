@@ -32,18 +32,6 @@ public class ProfileService : IProfileService
         return await _supabaseService.GetByIdAsync<DbProfile>(id);
     }
 
-    public async Task<DbProfile?> GetByIdAsync(string id)
-    {
-        // Parse as GUID (Supabase UIDs are UUIDs)
-        if (Guid.TryParse(id, out var guid))
-        {
-            return await GetByIdAsync(guid);
-        }
-
-        _logger.LogWarning("Invalid user ID format: {Id}", id);
-        return null;
-    }
-
 
     public async Task<DbProfile> CreateAsync(DbProfile profile)
     {
@@ -55,7 +43,7 @@ public class ProfileService : IProfileService
         return await _supabaseService.UpdateAsync(profile);
     }
 
-    public async Task<DbProfile> UpdateOrCreateProfileAsync(string userId, string email, UpdateProfileRequest request)
+    public async Task<DbProfile> UpdateOrCreateProfileAsync(Guid userId, string email, UpdateProfileRequest request)
     {
         // Try to get existing profile by ID
         var profile = await GetByIdAsync(userId);
@@ -65,10 +53,9 @@ public class ProfileService : IProfileService
             _logger.LogInformation("Creating new profile for user {UserId}", userId);
 
             // Create new profile with only provided values
-            var userGuid = Guid.Parse(userId);
             profile = new DbProfile
             {
-                Uid = userGuid,
+                Uid = userId,
                 Email = email,
                 Profile = new ProfileData
                 {
@@ -169,7 +156,7 @@ public class ProfileService : IProfileService
     /// </summary>
     /// <param name="userId">The user's Supabase UID</param>
     /// <returns>Updated profile with new sharing token</returns>
-    public async Task<DbProfile?> GenerateNewSharingTokenAsync(string userId)
+    public async Task<DbProfile?> GenerateNewSharingTokenAsync(Guid userId)
     {
         var user = await GetByIdAsync(userId);
         if (user == null)
@@ -194,7 +181,7 @@ public class ProfileService : IProfileService
     /// </summary>
     /// <param name="userId">The user's Supabase UID</param>
     /// <returns>True if successful, false otherwise</returns>
-    public async Task<bool> CompleteMigrationAsync(string userId)
+    public async Task<bool> CompleteMigrationAsync(Guid userId)
     {
         var user = await GetByIdAsync(userId);
         if (user == null)
