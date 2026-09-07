@@ -30,7 +30,11 @@
         "**/prettier.config.*",
         "$TURBO_ROOT$/.editorconfig",
         "**/*.csproj",
-        "**/*.sln"
+        "**/*.sln",
+        "**/packages.lock.json",
+        "**/Directory.Build.props",
+        "**/nuget.config",
+        "$TURBO_ROOT$/global.json"
       ]
     },
     "typecheck": {
@@ -69,7 +73,11 @@
         "**/*.cs",
         ".prettierrc*",
         "prettier.config.*",
-        "$TURBO_ROOT$/.editorconfig"
+        "$TURBO_ROOT$/.editorconfig",
+        "**/packages.lock.json",
+        "**/Directory.Build.props",
+        "**/nuget.config",
+        "$TURBO_ROOT$/global.json"
       ]
     },
     "dev": {
