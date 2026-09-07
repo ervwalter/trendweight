@@ -12,6 +12,11 @@ fi
 : "${VITE_SUPABASE_URL:?Set VITE_SUPABASE_URL in .env or the environment}"
 : "${VITE_SUPABASE_ANON_KEY:?Set VITE_SUPABASE_ANON_KEY in .env or the environment}"
 
+# owner/repo for the build page's commit and changelog links. Both
+# https://github.com/owner/repo[.git] and git@github.com:owner/repo[.git]
+# reduce to owner/repo; the value is empty when there is no origin remote.
+BUILD_REPO="$(git remote get-url origin 2>/dev/null | sed -E -e 's|/+$||' -e 's|\.git$||' -e 's|^.*github\.com[:/]||' || echo "")"
+
 # BUILD_VERSION defaults to "local"; the footer shows the commit for non-"v" values.
 # Export BUILD_VERSION=vX.Y.Z to build a locally tagged release image.
 docker build \
@@ -22,6 +27,6 @@ docker build \
   --build-arg BUILD_COMMIT="$(git rev-parse HEAD)" \
   --build-arg BUILD_BRANCH="$(git rev-parse --abbrev-ref HEAD)" \
   --build-arg BUILD_VERSION="${BUILD_VERSION:-local}" \
-  --build-arg BUILD_REPO="$(git remote get-url origin 2>/dev/null | sed -E "s|^.*github.com[:/](.+)\.git$|\1|" || echo "")" \
+  --build-arg BUILD_REPO="$BUILD_REPO" \
   -t trendweight:local \
   .

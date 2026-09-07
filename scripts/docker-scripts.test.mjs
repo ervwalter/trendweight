@@ -26,9 +26,19 @@ function fixture(t) {
     `#!${process.execPath}\nimport('node:fs').then(fs => fs.writeFileSync(process.env.TEST_OUTPUT, JSON.stringify(process.argv.slice(2))));\n`,
     { mode: 0o755 },
   );
+  // `git remote get-url origin` answers with TEST_ORIGIN_URL; every other git
+  // call (rev-parse HEAD, rev-parse --abbrev-ref HEAD) prints a fixed revision.
   writeFileSync(
     path.join(bin, "git"),
-    "#!/bin/sh\nprintf '%s\\n' test-revision\n",
+    [
+      "#!/bin/sh",
+      'if [ "$1 $2" = "remote get-url" ]; then',
+      "  printf '%s\\n' \"${TEST_ORIGIN_URL:-https://github.com/example/trendweight.git}\"",
+      "else",
+      "  printf '%s\\n' test-revision",
+      "fi",
+      "",
+    ].join("\n"),
     { mode: 0o755 },
   );
   const env = { PATH: `${bin}:/usr/bin:/bin`, TEST_OUTPUT: output };
@@ -137,6 +147,45 @@ test("docker run forwards the rate limiting client address headers", (t) => {
   });
   assert.equal(result.status, 0, result.stderr);
   assert.ok(result.args.includes("RateLimiting__ClientAddressHeaders"));
+});
+
+test("docker build reduces the origin URL to owner/repo with or without a .git suffix", (t) => {
+  const setup = fixture(t);
+  const variables = {
+    VITE_CLERK_PUBLISHABLE_KEY: "pk_test_example",
+    VITE_SUPABASE_URL: "https://example.supabase.co",
+    VITE_SUPABASE_ANON_KEY: "public-example-key",
+  };
+  const origins = [
+    "https://github.com/example/trendweight.git",
+    "https://github.com/example/trendweight",
+    "https://github.com/example/trendweight/",
+    "git@github.com:example/trendweight.git",
+    "git@github.com:example/trendweight",
+  ];
+  for (const origin of origins) {
+    const result = setup.run("docker-build.sh", {
+      ...variables,
+      TEST_ORIGIN_URL: origin,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(
+      result.args.includes("BUILD_REPO=example/trendweight"),
+      `${origin} produced ${JSON.stringify(result.args.filter((a) => a.startsWith("BUILD_REPO=")))}`,
+    );
+  }
+});
+
+test("docker build keeps dots in repository names", (t) => {
+  const setup = fixture(t);
+  const result = setup.run("docker-build.sh", {
+    VITE_CLERK_PUBLISHABLE_KEY: "pk_test_example",
+    VITE_SUPABASE_URL: "https://example.supabase.co",
+    VITE_SUPABASE_ANON_KEY: "public-example-key",
+    TEST_ORIGIN_URL: "https://github.com/example/trendweight.js.git",
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.args.includes("BUILD_REPO=example/trendweight.js"));
 });
 
 test("docker build defaults the version to local and honors an override", (t) => {
