@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.12.2](https://github.com/ervwalter/trendweight/compare/v2.12.1...v2.12.2) (2026-09-08)
+
+
+### Fixes
+
+* **api:** accept fractional Withings measure values and scale them exactly ([425c210](https://github.com/ervwalter/trendweight/commit/425c210673779d8f98ccfefe312c7b5c882b642f))
+* **api:** reject non-UUID identity claims with 401 in every controller ([cabb1f6](https://github.com/ervwalter/trendweight/commit/cabb1f6fd5b173bb502524fe10626c5d1350cfe3))
+* **api:** report a Withings success response without a body as a provider error ([188130b](https://github.com/ervwalter/trendweight/commit/188130b2d9fdd9746fddca3ac0e0f4d24e230643))
+* **release:** keep a single Dependencies heading when breaking and routine updates coexist ([809396b](https://github.com/ervwalter/trendweight/commit/809396bc36de8cd6b191a5c267f3f86fd68de100))
+* show last used login method ([fe48498](https://github.com/ervwalter/trendweight/commit/fe484988f9e4241220209de0e1bdcf4c69781df6))
+* **web:** give the plan select the id its label points at ([22745e8](https://github.com/ervwalter/trendweight/commit/22745e8c5f82c09c1a67b2313825dd562dd9b5a1))
+* **web:** return the raw build time when it cannot be parsed ([3e10e6f](https://github.com/ervwalter/trendweight/commit/3e10e6f874fa43b3b2324809798282c2993404f1))
+
+
+### Refactoring
+
+* **api:** LegacyService.EnableProviderLinkAsync no longer needs to be virtual ([75fdb86](https://github.com/ervwalter/trendweight/commit/75fdb8682212bf16c25b8c32f795cf53e5544d91))
+* **ci:** extract the release CLI entry into a testable main() ([f1630a0](https://github.com/ervwalter/trendweight/commit/f1630a0611876fd6efd1730e639ff3ce657669d8))
+
+
+### Tests
+
+* rewrite superficial tests and cover critical paths ([0e0d213](https://github.com/ervwalter/trendweight/commit/0e0d213459a0d18f678fef735ab4f393b1b9ed58))
+
+### Dependencies
+
+* Updated dependencies.
+
 ## [2.12.1](https://github.com/ervwalter/trendweight/compare/v2.12.0...v2.12.1) (2026-09-07)
 
 
