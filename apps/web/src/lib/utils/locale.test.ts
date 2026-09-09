@@ -1,18 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { shouldUseMetric, extractFirstName } from "./locale";
 
 describe("locale", () => {
   describe("shouldUseMetric", () => {
-    let originalNavigator: Navigator;
-
-    beforeEach(() => {
-      // Store original navigator
-      originalNavigator = globalThis.navigator;
-    });
+    // jsdom defines `navigator` as a getter-only window property, so it cannot be
+    // assigned; vi.stubGlobal redefines it and unstubAllGlobals restores it.
+    const stubNavigator = (overrides: Partial<Navigator>) => vi.stubGlobal("navigator", { ...globalThis.navigator, ...overrides });
 
     afterEach(() => {
-      // Restore original navigator
-      globalThis.navigator = originalNavigator;
+      vi.unstubAllGlobals();
     });
 
     it("should return false for US locale", () => {
@@ -49,31 +45,28 @@ describe("locale", () => {
     });
 
     it("should use navigator.language when no locale provided", () => {
-      globalThis.navigator = {
-        ...originalNavigator,
+      stubNavigator({
         language: "fr-FR",
         languages: ["fr-FR", "en-US"],
-      } as Navigator;
+      });
 
       expect(shouldUseMetric()).toBe(true);
     });
 
     it("should use navigator.languages[0] when navigator.language is not available", () => {
-      globalThis.navigator = {
-        ...originalNavigator,
+      stubNavigator({
         language: "",
         languages: ["de-DE", "en-US"],
-      } as Navigator;
+      });
 
       expect(shouldUseMetric()).toBe(true);
     });
 
     it("should default to US (imperial) when no locale info available", () => {
-      globalThis.navigator = {
-        ...originalNavigator,
+      stubNavigator({
         language: "",
         languages: [],
-      } as Navigator;
+      });
 
       expect(shouldUseMetric()).toBe(false);
     });
@@ -94,11 +87,10 @@ describe("locale", () => {
     });
 
     it("should handle null/undefined navigator properties", () => {
-      globalThis.navigator = {
-        ...originalNavigator,
+      stubNavigator({
         language: undefined as any,
         languages: undefined as any,
-      } as Navigator;
+      });
 
       expect(shouldUseMetric()).toBe(false); // Should default to en-US
     });
