@@ -465,11 +465,6 @@
         "resolved": "4.0.0",
         "contentHash": "5WK3+mjdCeCKg3znVr+sm/sikVnya7UOHWxt4vJeW+Tbp2GgdLiBLRFBJ91oDyL/NcDVd1sEelQ7ixIN68s33g=="
       },
-      "Newtonsoft.Json": {
-        "type": "Transitive",
-        "resolved": "13.0.2",
-        "contentHash": "R2pZ3B0UjeyHShm9vG+Tu0EBb2lC8b0dFzV9gVn50ofHXh9Smjk6kTn7A/FdAsC8B5cKib1OnGYOXxRBz5XQDg=="
-      },
       "Scalar.AspNetCore": {
         "type": "Transitive",
         "resolved": "2.17.2",
@@ -477,71 +472,65 @@
       },
       "Supabase": {
         "type": "Transitive",
-        "resolved": "1.6.2",
-        "contentHash": "Vf4cKjQuUqjUiGm9ttZ5F/DqfV8NZKuvmeS8/BB5MVIEBxB8sYXw0SIHTvYm9CbBpJtnEEbV7Z+MGHIc2XrXbw==",
+        "resolved": "8.0.0",
+        "contentHash": "4LTGPEbGqsyB8pOhMteYko7XGeL2WlJ/oGpg3yGli36z3oyVnVQHtWEhKx6/3G8/i8xtjOtWdU24oouF5NVfCA==",
         "dependencies": {
-          "Newtonsoft.Json": "13.0.2",
-          "Supabase.Core": "1.2.0",
-          "Supabase.Functions": "2.2.0",
-          "Supabase.Gotrue": "6.3.2",
-          "Supabase.Postgrest": "4.4.0",
-          "Supabase.Realtime": "7.4.0",
-          "Supabase.Storage": "2.7.0"
+          "Supabase.Core": "8.0.0",
+          "Supabase.Functions": "8.0.0",
+          "Supabase.Gotrue": "8.0.0",
+          "Supabase.Postgrest": "8.0.0",
+          "Supabase.Realtime": "8.0.0",
+          "Supabase.Storage": "8.0.0"
         }
       },
       "Supabase.Core": {
         "type": "Transitive",
-        "resolved": "1.2.0",
-        "contentHash": "jw/2YW+sVgICcCPNE1GUQJMMhdMSuity7cZFki+bgEGsYNQF5Hgpq2YPEzchgnYj8ICnQkoNeu83TgtXj3GfgQ=="
+        "resolved": "8.0.0",
+        "contentHash": "GETibGAtioJq3fbonYcpqfQUrwyLHLzrgpInGzeHoagCnpQq57RKTEkBzQb3SXET5LAMYtosfSWtRctbT07iHw=="
       },
       "Supabase.Functions": {
         "type": "Transitive",
-        "resolved": "2.2.0",
-        "contentHash": "uqGpcjKu7K7XkUdgauxmqMo63gnQFfbXa+P+Zg5++ABOsf1HwEesg5wKmcEcz4mO1/E8oZzGESsbK2I6b6f5kA==",
+        "resolved": "8.0.0",
+        "contentHash": "SQQ3Sul7kYak+Ajedoe07S19YHS5jT3xXX44EmWNnJCnXZo/ua/ILM5DzGgF9xeR6/fs4r9sKdPyhjKnXr72zA==",
         "dependencies": {
-          "Newtonsoft.Json": "13.0.2",
-          "Supabase.Core": "1.2.0"
+          "Supabase.Core": "8.0.0"
         }
       },
       "Supabase.Gotrue": {
         "type": "Transitive",
-        "resolved": "6.3.2",
-        "contentHash": "1j+4thKQxzAhEWMtZT+URi2OoDITr1nxyVqmR90kyk7Uo6Cqh7rLDQao80htx/cvgPtiDrCkG7mCCcYdlFph9g==",
+        "resolved": "8.0.0",
+        "contentHash": "s1M5hVTLVNlzS93lB6cVtkbfszGvy0VMhwJ3owAF+JM1HBT4KoOE/wJ/OQNv8uycC5uyzloqj6utdqBT04p0qg==",
         "dependencies": {
-          "Newtonsoft.Json": "13.0.2",
-          "Supabase.Core": "1.2.0",
+          "Supabase.Core": "8.0.0",
           "System.IdentityModel.Tokens.Jwt": "7.5.1"
         }
       },
       "Supabase.Postgrest": {
         "type": "Transitive",
-        "resolved": "4.4.0",
-        "contentHash": "y2FPOyLhNMepVe5dWJF9HsiHdTSsFoigBDg2xvwkPX/bkfi/gjQhsJL/e1e92SyQmDkoJHjumQfvxuQUq3lhAQ==",
+        "resolved": "8.0.0",
+        "contentHash": "VTbZdL9KQB8eblL8elOfPVB1dSniaqYSLhQio0vCaMUR0Gh2A3HINshWNKAELWDUAnhzjj4OF4Tcr5IdkBfCng==",
         "dependencies": {
-          "Newtonsoft.Json": "13.0.2",
-          "Supabase.Core": "1.2.0"
+          "Supabase.Core": "8.0.0"
         }
       },
       "Supabase.Realtime": {
         "type": "Transitive",
-        "resolved": "7.4.0",
-        "contentHash": "1fbPz34u4bDxHiRTFy20KimJ0+P59++t9BGp96mgPWc/SR1CZ0MV1ddzduNSMxOcdpW1dDR20c+Q9TBay98BuQ==",
+        "resolved": "8.0.0",
+        "contentHash": "5/KtuoZOlUjfpHRsN7G37C4UJ6q+cZDaaZV4+fgz1YFbKQsKawOyg+/vbi6mzwjcTHqm7UBZe39mUdyxw1bszg==",
         "dependencies": {
-          "Newtonsoft.Json": "13.0.2",
-          "Supabase.Core": "1.1.0",
-          "Supabase.Postgrest": "4.3.0",
+          "Supabase.Core": "8.0.0",
+          "Supabase.Postgrest": "8.0.0",
           "Websocket.Client": "5.5.0"
         }
       },
       "Supabase.Storage": {
         "type": "Transitive",
-        "resolved": "2.7.0",
-        "contentHash": "OqMABagMDLUbP9xrUCat+aYqNrJXr2ABbASJssMI3soo9rXDS7dl7GZ9Puj/1YQ5onspTrAgj04dFzizl98ecg==",
+        "resolved": "8.0.0",
+        "contentHash": "5q2BJxBc33KDB4y+HczWTZ+nfzj+HBiKdJ8RJ7ZhVhHIcCeZq4z/1x9VvNwZYLlTAlE4R9YCxq0yjfH4IziG/w==",
         "dependencies": {
           "BirdMessenger": "4.0.0",
           "MimeMapping": "4.0.0",
-          "Newtonsoft.Json": "13.0.2",
-          "Supabase.Core": "1.2.0"
+          "Supabase.Core": "8.0.0"
         }
       },
       "System.Diagnostics.EventLog": {
@@ -669,7 +658,7 @@
         "dependencies": {
           "Microsoft.AspNetCore.OpenApi": "[10.0.11, )",
           "Scalar.AspNetCore": "[2.17.2, )",
-          "Supabase": "[1.6.2, )",
+          "Supabase": "[8.0.0, )",
           "System.IdentityModel.Tokens.Jwt": "[8.22.0, )",
           "TimeZoneConverter": "[7.2.0, )",
           "Yarp.ReverseProxy": "[2.3.0, )"
