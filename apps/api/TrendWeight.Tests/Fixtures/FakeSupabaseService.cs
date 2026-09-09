@@ -320,7 +320,7 @@ public sealed class FakeSupabaseService : ISupabaseService
 
         public Task<int> Count(CountType type, CancellationToken cancellationToken = default) => throw Unsupported(nameof(Count));
 
-        public Task Delete(QueryOptions? options = null, CancellationToken cancellationToken = default) => throw Unsupported(nameof(Delete));
+        public Task<ModeledResponse<T>> Delete(QueryOptions? options = null, CancellationToken cancellationToken = default) => throw Unsupported(nameof(Delete));
 
         public Task<ModeledResponse<T>> Delete(T model, QueryOptions? options = null, CancellationToken cancellationToken = default) => throw Unsupported(nameof(Delete));
 

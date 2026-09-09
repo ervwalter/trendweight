@@ -1,8 +1,8 @@
 using System.Globalization;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Newtonsoft.Json;
 using Supabase.Postgrest;
 using TrendWeight.Features.ApiKeys;
 using TrendWeight.Features.Measurements.Models;
@@ -654,13 +654,13 @@ public class ProfileServiceTests
     }
 
     /// <summary>
-    /// Deserialises a row the way the Postgrest client does: Newtonsoft.Json with the
-    /// <see cref="PostgrestContractResolver"/> that maps <c>[Column]</c> names.
+    /// Deserialises a row the way the Postgrest client does: System.Text.Json with the
+    /// serializer options that map <c>[Column]</c> names.
     /// </summary>
     private static DbProfile DeserialiseLikePostgrest(string json)
     {
         var settings = Client.SerializerSettings(new ClientOptions());
-        return JsonConvert.DeserializeObject<DbProfile>(json, settings)!;
+        return JsonSerializer.Deserialize<DbProfile>(json, settings)!;
     }
 
     private static DateTime Parse(string timestamp)
