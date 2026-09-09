@@ -3,7 +3,9 @@ using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -27,6 +29,8 @@ public class SupabaseServiceTests
         var builder = WebApplication.CreateSlimBuilder();
         builder.Logging.ClearProviders();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
+        // A developer machine may export AllowedHosts for the real API; accept the SDK's 127.0.0.1:<port>.
+        builder.Services.Configure<HostFilteringOptions>(options => options.AllowedHosts = ["*"]);
         await using var server = builder.Build();
         server.Run(async context =>
         {
