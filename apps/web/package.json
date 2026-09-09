@@ -19,7 +19,7 @@
     "clean": "rm -rf dist coverage .turbo *.tsbuildinfo src/routeTree.gen.ts"
   },
   "dependencies": {
-    "@clerk/react": "6.15.0",
+    "@clerk/react": "6.15.1",
     "@clerk/themes": "2.4.57",
     "@fontsource-variable/inter": "5.3.0",
     "@fontsource/zilla-slab": "5.3.0",
@@ -44,7 +44,7 @@
     "highcharts": "13.0.2",
     "highcharts-react-official": "3.2.3",
     "katex": "0.18.5",
-    "lucide-react": "1.40.0",
+    "lucide-react": "1.41.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "7.87.0",
@@ -70,7 +70,7 @@
     "@vitest/coverage-v8": "4.1.11",
     "@vitest/eslint-plugin": "1.6.27",
     "@vitest/ui": "4.1.11",
-    "eslint": "10.9.1",
+    "eslint": "10.10.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jest-dom": "5.10.1",
     "eslint-plugin-react-hooks": "7.1.1",
