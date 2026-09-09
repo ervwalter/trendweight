@@ -43,7 +43,7 @@ WORKDIR /app/apps/web
 RUN npm run build
 
 # Stage 2: Build backend
-FROM mcr.microsoft.com/dotnet/sdk:11.0@sha256:f06c3716bc78ece7ad97fc5376edcdff70ea5ed54004ebedf55758246c1e0d26 AS backend-build
+FROM mcr.microsoft.com/dotnet/sdk:11.0@sha256:86afb5e989113ab0c32f04002635ff1c6fe0620cbb8ca0e22d2db1e151384a3f AS backend-build
 
 WORKDIR /src
 
@@ -59,7 +59,7 @@ RUN dotnet restore TrendWeight.sln --locked-mode
 RUN dotnet publish TrendWeight/TrendWeight.csproj --no-restore -c Release -o /app/publish
 
 # Stage 3: Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:11.0@sha256:f2ea7ec96658c94a8269f284943c6c6df4fe64db4d9f091bb1196e08143991db AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0@sha256:656770db703ebbc4f5115104095573677d9a21a906fcccc16393d18ea949a49f AS runtime
 
 WORKDIR /app
 
