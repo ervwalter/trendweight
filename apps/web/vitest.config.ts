@@ -14,6 +14,13 @@ export default defineConfig({
       },
     },
     setupFiles: "./src/test/setup.ts",
+    // Tests never talk to Supabase Realtime. Pin the client env to empty so a developer
+    // shell that exports VITE_SUPABASE_* cannot make SyncProgressProvider open a real
+    // WebSocket mid-run; client.test.ts stubs these per test where it needs them.
+    env: {
+      VITE_SUPABASE_URL: "",
+      VITE_SUPABASE_ANON_KEY: "",
+    },
     include: ["**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     coverage: {
       provider: "v8",
