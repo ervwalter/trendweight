@@ -1,12 +1,9 @@
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import { ErrorUI } from "./error-ui";
 
-interface RouterErrorFallbackProps {
-  error: Error;
-  reset?: () => void;
-}
-
-export function RouterErrorFallback({ error }: RouterErrorFallbackProps) {
+export function RouterErrorFallback({ error }: ErrorComponentProps) {
   console.error("Router error fallback:", error);
 
-  return <ErrorUI error={error} />;
+  const normalizedError = error instanceof Error ? error : new Error(String(error));
+  return <ErrorUI error={normalizedError} />;
 }

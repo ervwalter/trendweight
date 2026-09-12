@@ -467,70 +467,70 @@
       },
       "Scalar.AspNetCore": {
         "type": "Transitive",
-        "resolved": "2.17.2",
-        "contentHash": "ciW2HuRWJgNEecophHN9DvoRlTs/+8TNPhB6tQW1gmJWh/eoAIO0ys8XIxx7irUpIu3KRHZyxyuHstqqrTn1Tw=="
+        "resolved": "2.17.3",
+        "contentHash": "TwAf1zy/MH2famozcDqk9+/jD37VAbonRXfnjAso0Q2YKeWtA0kH59WxhuevvAxWDL3jUU3TDpNmUFS2gF9bHw=="
       },
       "Supabase": {
         "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "4LTGPEbGqsyB8pOhMteYko7XGeL2WlJ/oGpg3yGli36z3oyVnVQHtWEhKx6/3G8/i8xtjOtWdU24oouF5NVfCA==",
+        "resolved": "8.1.0",
+        "contentHash": "ZSmFX2OHI/IuAiml1pmiYvivUQfbppIRQa4W71QUVoHnlysggbXG7dsp882sBe0PlNZPfwJtR86w+9AtX91+xA==",
         "dependencies": {
-          "Supabase.Core": "8.0.0",
-          "Supabase.Functions": "8.0.0",
-          "Supabase.Gotrue": "8.0.0",
-          "Supabase.Postgrest": "8.0.0",
-          "Supabase.Realtime": "8.0.0",
-          "Supabase.Storage": "8.0.0"
+          "Supabase.Core": "8.1.0",
+          "Supabase.Functions": "8.1.0",
+          "Supabase.Gotrue": "8.1.0",
+          "Supabase.Postgrest": "8.1.0",
+          "Supabase.Realtime": "8.1.0",
+          "Supabase.Storage": "8.1.0"
         }
       },
       "Supabase.Core": {
         "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "GETibGAtioJq3fbonYcpqfQUrwyLHLzrgpInGzeHoagCnpQq57RKTEkBzQb3SXET5LAMYtosfSWtRctbT07iHw=="
+        "resolved": "8.1.0",
+        "contentHash": "HDzd5zgIIZK/a/1mivOeaXbaUcqTzcMhLJ6CuQUd4p4LVg0MdzdpCLU1LIFReeH6U+gmFeDCOZQFRBxD3RNxXA=="
       },
       "Supabase.Functions": {
         "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "SQQ3Sul7kYak+Ajedoe07S19YHS5jT3xXX44EmWNnJCnXZo/ua/ILM5DzGgF9xeR6/fs4r9sKdPyhjKnXr72zA==",
+        "resolved": "8.1.0",
+        "contentHash": "awAdedJf5dNsRcgmZbwPgHHlShqEDqD6QsG9e95quioRK6QKabkM6//jK7sfxCFT6DFPXQwOdMKqgJVoVtpGNw==",
         "dependencies": {
-          "Supabase.Core": "8.0.0"
+          "Supabase.Core": "8.1.0"
         }
       },
       "Supabase.Gotrue": {
         "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "s1M5hVTLVNlzS93lB6cVtkbfszGvy0VMhwJ3owAF+JM1HBT4KoOE/wJ/OQNv8uycC5uyzloqj6utdqBT04p0qg==",
+        "resolved": "8.1.0",
+        "contentHash": "Iu66im1N2+h1o+NyeZd6EwhnbJQAgN28elKie5o6F47SB3jK2+t+BHdUNW9rxEn5La/Es6WLQ6V0OYXs0jskag==",
         "dependencies": {
-          "Supabase.Core": "8.0.0",
+          "Supabase.Core": "8.1.0",
           "System.IdentityModel.Tokens.Jwt": "7.5.1"
         }
       },
       "Supabase.Postgrest": {
         "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "VTbZdL9KQB8eblL8elOfPVB1dSniaqYSLhQio0vCaMUR0Gh2A3HINshWNKAELWDUAnhzjj4OF4Tcr5IdkBfCng==",
+        "resolved": "8.1.0",
+        "contentHash": "qnZaewcwIxEsI146Jz56lQl6oIswC79SHR8mGkP8nx1XIkKZzurqeB+7clXn6cwMwobAX8Vd23MRdVTxZrf1Nw==",
         "dependencies": {
-          "Supabase.Core": "8.0.0"
+          "Supabase.Core": "8.1.0"
         }
       },
       "Supabase.Realtime": {
         "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "5/KtuoZOlUjfpHRsN7G37C4UJ6q+cZDaaZV4+fgz1YFbKQsKawOyg+/vbi6mzwjcTHqm7UBZe39mUdyxw1bszg==",
+        "resolved": "8.1.0",
+        "contentHash": "2lhOS/3rWy0FmlwlP5ioUhymDj+LAe/aF33G4q9VY/fLD3NkbDSgier7+WyQrN+feC7bWmnqFgKgpUMvMfVqig==",
         "dependencies": {
-          "Supabase.Core": "8.0.0",
-          "Supabase.Postgrest": "8.0.0",
+          "Supabase.Core": "8.1.0",
+          "Supabase.Postgrest": "8.1.0",
           "Websocket.Client": "5.5.0"
         }
       },
       "Supabase.Storage": {
         "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "5q2BJxBc33KDB4y+HczWTZ+nfzj+HBiKdJ8RJ7ZhVhHIcCeZq4z/1x9VvNwZYLlTAlE4R9YCxq0yjfH4IziG/w==",
+        "resolved": "8.1.0",
+        "contentHash": "xwc19tc6AeRMbpR3g2p/1m886pmNxYZ0QFvVHiDxQcFDkiyyfyoPIs3Bf7wpSnMbrDyjlQj6y0GegCleBf9omw==",
         "dependencies": {
           "BirdMessenger": "4.0.0",
           "MimeMapping": "4.0.0",
-          "Supabase.Core": "8.0.0"
+          "Supabase.Core": "8.1.0"
         }
       },
       "System.Diagnostics.EventLog": {
@@ -657,8 +657,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.OpenApi": "[10.0.11, )",
-          "Scalar.AspNetCore": "[2.17.2, )",
-          "Supabase": "[8.0.0, )",
+          "Scalar.AspNetCore": "[2.17.3, )",
+          "Supabase": "[8.1.0, )",
           "System.IdentityModel.Tokens.Jwt": "[8.22.0, )",
           "TimeZoneConverter": "[7.2.0, )",
           "Yarp.ReverseProxy": "[2.3.0, )"
