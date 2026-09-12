@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.12.3](https://github.com/ervwalter/trendweight/compare/v2.12.2...v2.12.3) (2026-09-12)
+
+
+### Fixes
+
+* **docker:** build and run the API on the .NET 10 images ([#479](https://github.com/ervwalter/trendweight/issues/479)) ([532f03e](https://github.com/ervwalter/trendweight/commit/532f03e78ebb2d7b23e2e4fc3f34d9620ca1c7f8))
+
+### Dependencies
+
+* Updated dependencies.
+
 ## [2.12.2](https://github.com/ervwalter/trendweight/compare/v2.12.1...v2.12.2) (2026-09-08)
 
 
