@@ -4,9 +4,9 @@
     "net10.0": {
       "FluentAssertions": {
         "type": "Direct",
-        "requested": "[8.10.0, )",
-        "resolved": "8.10.0",
-        "contentHash": "yGvv+xp0gHFgGwhQcGoDdKIrhLhPi3zYYWWLLHPMctr+G6PWD7QH8L4wqoa5WRZquPbfSV/cP1MraI7ppAHrWw=="
+        "requested": "[8.11.0, )",
+        "resolved": "8.11.0",
+        "contentHash": "dZqOxys9uY/0vO5BAwFtDECkFNSr9vWGwHa1fwZyuM1xAMbI4wiPTUBR2nH5e6R2/bQkXegxFY1B/oU1yqNNOw=="
       },
       "Microsoft.AspNetCore.Mvc.Testing": {
         "type": "Direct",
@@ -47,11 +47,11 @@
       },
       "xunit.v3": {
         "type": "Direct",
-        "requested": "[4.0.0, )",
-        "resolved": "4.0.0",
-        "contentHash": "czH4MaZ2k2eLjetuN5W1fUEnNVADsTOeYxDvrqIFh04XO6H3Y8Yu1FrSy3psF1q06DZV33wftjqZVv4acwIp9Q==",
+        "requested": "[4.0.1, )",
+        "resolved": "4.0.1",
+        "contentHash": "KpDYf6jFjYfOchuRJOAXPOpwN03hLE1AF4kWzCUSnhr8JZMiGH4BT1YidCcm6BE1H4E90GyJzuKoCwXbg9PXmA==",
         "dependencies": {
-          "xunit.v3.mtp-v2": "[4.0.0]"
+          "xunit.v3.mtp-v2": "[4.0.1]"
         }
       },
       "BirdMessenger": {
@@ -427,19 +427,19 @@
       },
       "Microsoft.Testing.Extensions.Telemetry": {
         "type": "Transitive",
-        "resolved": "2.3.3",
-        "contentHash": "nY8ceQyPWB9TRE1WE5Oe/sks2e10SxgPv61vBHsFYpgCeDtNwhpMZwmL29GklO3/etTdOsLdrCmNr4zJWaR2fg==",
+        "resolved": "2.4.0",
+        "contentHash": "JeP1RFqBa11fWmBk8xEfZcMKr4rxWSyI6OZ+659V069CaMkTEOQBW2UdSSeNz3absOsygcn7JJkzerC4LGnZ9w==",
         "dependencies": {
           "Microsoft.ApplicationInsights": "2.23.0",
-          "Microsoft.Testing.Platform": "2.3.3"
+          "Microsoft.Testing.Platform": "[2.4.0, 3.0.0)"
         }
       },
       "Microsoft.Testing.Extensions.TrxReport.Abstractions": {
         "type": "Transitive",
-        "resolved": "2.3.3",
-        "contentHash": "dceVNxnfTEjKnrIreLcMfkgrzzBY8kgCCJX5NAv7Lq/6vPlTP4VB5zxKeuYy0yfCoBtWuPkLjUG6qtOBMfpypA==",
+        "resolved": "2.4.0",
+        "contentHash": "uRb+4qM42dFDg4kWJZ2kFEcwESNVCRZJjItp5vETorN3rSJGysP617LqYirOcrCYmxg+obPreHMM5JcsNDKtBw==",
         "dependencies": {
-          "Microsoft.Testing.Platform": "2.3.3"
+          "Microsoft.Testing.Platform": "[2.4.0, 3.0.0)"
         }
       },
       "Microsoft.Testing.Platform": {
@@ -449,10 +449,10 @@
       },
       "Microsoft.Testing.Platform.MSBuild": {
         "type": "Transitive",
-        "resolved": "2.3.3",
-        "contentHash": "iVAvNbZ5JPDZSrTcIrCDoCsAkzjDxwDEt2mDuMd8ng1P6e2P2NCd0g0BsoBVG+nJLSmK//V+yeEvjCa3E2fxHw==",
+        "resolved": "2.4.0",
+        "contentHash": "qr5M6h16YHMJLFDcWELFVMMpGte2BUmveBZKT5YoBV+bmuJRPu9bv/Zqke4yQuOEKRNxoAETrG5jr+/6Rnr3Hg==",
         "dependencies": {
-          "Microsoft.Testing.Platform": "2.3.3"
+          "Microsoft.Testing.Platform": "[2.4.0, 3.0.0)"
         }
       },
       "Microsoft.Win32.Registry": {
@@ -472,65 +472,65 @@
       },
       "Supabase": {
         "type": "Transitive",
-        "resolved": "8.1.0",
-        "contentHash": "ZSmFX2OHI/IuAiml1pmiYvivUQfbppIRQa4W71QUVoHnlysggbXG7dsp882sBe0PlNZPfwJtR86w+9AtX91+xA==",
+        "resolved": "8.1.1",
+        "contentHash": "fb0891SNCrBBatBfnPTYun4OEIqkyBgo2nM12YOh/fN3XGMtSksmDQqAiwfb0v/fMVgyxk6ZM2JYoCqyd/A5dQ==",
         "dependencies": {
-          "Supabase.Core": "8.1.0",
-          "Supabase.Functions": "8.1.0",
-          "Supabase.Gotrue": "8.1.0",
-          "Supabase.Postgrest": "8.1.0",
-          "Supabase.Realtime": "8.1.0",
-          "Supabase.Storage": "8.1.0"
+          "Supabase.Core": "8.1.1",
+          "Supabase.Functions": "8.1.1",
+          "Supabase.Gotrue": "8.1.1",
+          "Supabase.Postgrest": "8.1.1",
+          "Supabase.Realtime": "8.1.1",
+          "Supabase.Storage": "8.1.1"
         }
       },
       "Supabase.Core": {
         "type": "Transitive",
-        "resolved": "8.1.0",
-        "contentHash": "HDzd5zgIIZK/a/1mivOeaXbaUcqTzcMhLJ6CuQUd4p4LVg0MdzdpCLU1LIFReeH6U+gmFeDCOZQFRBxD3RNxXA=="
+        "resolved": "8.1.1",
+        "contentHash": "/4Dna5lc4wPkxjsjPOTUHMy6YhaXxJnAWZ3elCqqFB8DAqYDsovFa70o6QD50dXICmwdUwQEJZWLBcdlDuACKA=="
       },
       "Supabase.Functions": {
         "type": "Transitive",
-        "resolved": "8.1.0",
-        "contentHash": "awAdedJf5dNsRcgmZbwPgHHlShqEDqD6QsG9e95quioRK6QKabkM6//jK7sfxCFT6DFPXQwOdMKqgJVoVtpGNw==",
+        "resolved": "8.1.1",
+        "contentHash": "O0jimOv8ngwU965OqJ+zmzv9dhZ+TEMlVjy5HQciu4Na0y6NNUXEBroGcHjkeRA16i0Jd0CijbDX9N1Hb5BoSw==",
         "dependencies": {
-          "Supabase.Core": "8.1.0"
+          "Supabase.Core": "8.1.1"
         }
       },
       "Supabase.Gotrue": {
         "type": "Transitive",
-        "resolved": "8.1.0",
-        "contentHash": "Iu66im1N2+h1o+NyeZd6EwhnbJQAgN28elKie5o6F47SB3jK2+t+BHdUNW9rxEn5La/Es6WLQ6V0OYXs0jskag==",
+        "resolved": "8.1.1",
+        "contentHash": "hKuYIlkC2KLxYH6P76njGoGZQH3QB++vN5PAfrMCDNDx4CXN0rbCFhEyG9hNEASlEnfE0Z6A7l1kiqQrEYhJMA==",
         "dependencies": {
-          "Supabase.Core": "8.1.0",
+          "Supabase.Core": "8.1.1",
           "System.IdentityModel.Tokens.Jwt": "7.5.1"
         }
       },
       "Supabase.Postgrest": {
         "type": "Transitive",
-        "resolved": "8.1.0",
-        "contentHash": "qnZaewcwIxEsI146Jz56lQl6oIswC79SHR8mGkP8nx1XIkKZzurqeB+7clXn6cwMwobAX8Vd23MRdVTxZrf1Nw==",
+        "resolved": "8.1.1",
+        "contentHash": "TappEUgba7/CALocvVupdlf61voV7t/UtTMrmpJxSUGdKi05ujW56yQMZFrkLL7NL88Ew5cCXEK4WamERuc5qA==",
         "dependencies": {
-          "Supabase.Core": "8.1.0"
+          "Supabase.Core": "8.1.1"
         }
       },
       "Supabase.Realtime": {
         "type": "Transitive",
-        "resolved": "8.1.0",
-        "contentHash": "2lhOS/3rWy0FmlwlP5ioUhymDj+LAe/aF33G4q9VY/fLD3NkbDSgier7+WyQrN+feC7bWmnqFgKgpUMvMfVqig==",
+        "resolved": "8.1.1",
+        "contentHash": "+WhyzHJVU0e8Q+R+FEqeLZxxuSeawkue8/LsqNYWMfNnge7KkCOLs1dMS3fEH8Qlq2q7x6bFAs3OQSlg5SCGoQ==",
         "dependencies": {
-          "Supabase.Core": "8.1.0",
-          "Supabase.Postgrest": "8.1.0",
+          "Supabase.Core": "8.1.1",
+          "Supabase.Postgrest": "8.1.1",
           "Websocket.Client": "5.5.0"
         }
       },
       "Supabase.Storage": {
         "type": "Transitive",
-        "resolved": "8.1.0",
-        "contentHash": "xwc19tc6AeRMbpR3g2p/1m886pmNxYZ0QFvVHiDxQcFDkiyyfyoPIs3Bf7wpSnMbrDyjlQj6y0GegCleBf9omw==",
+        "resolved": "8.1.1",
+        "contentHash": "wavAAoF4PAsq1bAg6NkP3b6/Uj8dBvYjEwSIU28s323oQ/mjeHYeekuv2zbDc7kKRyJ3LGPjv7p2hUxM8ckT8w==",
         "dependencies": {
           "BirdMessenger": "4.0.0",
           "MimeMapping": "4.0.0",
-          "Supabase.Core": "8.1.0"
+          "Supabase.Core": "8.1.1"
         }
       },
       "System.Diagnostics.EventLog": {
@@ -579,70 +579,70 @@
       },
       "xunit.analyzers": {
         "type": "Transitive",
-        "resolved": "2.0.0",
-        "contentHash": "2UtauxWDa9C6bT7MvFfZkNoFulfflb00jnDU2xeVO9Y58l4Ah2Mv/HiMs4b0zdpK/SfAxpajkgKNMN8zBKa+7Q=="
+        "resolved": "2.1.0",
+        "contentHash": "X7QXEcZQGz0G/HL4HUyK+aAvNa/IMGbOCnFIq4jD/Evktq12xANKwzOUr7b08vCmC1LXu/47qHWOdjm3KfaJ0A=="
       },
       "xunit.v3.assert": {
         "type": "Transitive",
-        "resolved": "4.0.0",
-        "contentHash": "QxYfC+98lCMe7Kl9iWDUeUn+gmiPJ2Sz/r+trSdp1mvKyDMXj8S1kYdfkFNJSHyUSQ6KWomenSDgfWhGpR8zEQ=="
+        "resolved": "4.0.1",
+        "contentHash": "nC7d3cY06Oo7hkdwWPZkBR0Ud75xNhgx0P7i0GmMMZC3puCGlc4szFiT30biH03IN/eDnr8h+nv3A1UD17bk/A=="
       },
       "xunit.v3.common": {
         "type": "Transitive",
-        "resolved": "4.0.0",
-        "contentHash": "cjaNGmOVA5QJxcp6uuSsDhbt0lNmxezFo226mbYOuXm9E9Owq8bYTKxa9wnAMZRnbvyCmCYhAvc/+UAzf0M2vA==",
+        "resolved": "4.0.1",
+        "contentHash": "Qf25TVdadDQYf9zVxSd7L9RNQhuP0jCUHmo96XTmIKLxGefylIEV63jRbXBPFzdXmV09TCdcurk+AQ9LiWS2Hg==",
         "dependencies": {
           "Microsoft.Bcl.AsyncInterfaces": "6.0.0"
         }
       },
       "xunit.v3.core.mtp-v2": {
         "type": "Transitive",
-        "resolved": "4.0.0",
-        "contentHash": "2I7apws+6HPz5aYi4choAn7c8P4jPAvwbfAtLSy0JPH89oeY/z1Zqz65Cm3HJmput5l56Z1sJOinTxsAQmbyWQ==",
+        "resolved": "4.0.1",
+        "contentHash": "7qfTfrIfS2wybpSVyRLmhXHbSudD2eNw66LfukixmKsRCTcfvOrLsx0qGL/lObcEh3Z2F4SIXgoFnLIiB8yfjQ==",
         "dependencies": {
-          "Microsoft.Testing.Extensions.Telemetry": "2.3.3",
-          "Microsoft.Testing.Extensions.TrxReport.Abstractions": "2.3.3",
-          "Microsoft.Testing.Platform": "2.3.3",
-          "Microsoft.Testing.Platform.MSBuild": "2.3.3",
-          "xunit.v3.extensibility.core": "[4.0.0]",
-          "xunit.v3.runner.inproc.console": "[4.0.0]"
+          "Microsoft.Testing.Extensions.Telemetry": "2.4.0",
+          "Microsoft.Testing.Extensions.TrxReport.Abstractions": "2.4.0",
+          "Microsoft.Testing.Platform": "2.4.0",
+          "Microsoft.Testing.Platform.MSBuild": "2.4.0",
+          "xunit.v3.extensibility.core": "[4.0.1]",
+          "xunit.v3.runner.inproc.console": "[4.0.1]"
         }
       },
       "xunit.v3.extensibility.core": {
         "type": "Transitive",
-        "resolved": "4.0.0",
-        "contentHash": "+tTe9VX2vwrUHGI48FE4ly956Ry084wPH4I/7g5D36AkAMGjQRZZDVz8eH2GwX/CLS9PDQRSca534WyrAYsyzw==",
+        "resolved": "4.0.1",
+        "contentHash": "J0d5OfFcp920nZxCRIvU14+TZhiSPQR0wvqEMZ3MRiJLPu1VmYlcRNkmcSW0i1DwkB81gAHc+fHUQf/cU64MYg==",
         "dependencies": {
-          "xunit.v3.common": "[4.0.0]"
+          "xunit.v3.common": "[4.0.1]"
         }
       },
       "xunit.v3.mtp-v2": {
         "type": "Transitive",
-        "resolved": "4.0.0",
-        "contentHash": "svYjct2c3VbLyUSB2r9VWiIkYwemwXHhOgIVAor8RvupcZBFcdiGdmq8G519ZCu30yjPCr0EP3Hy4mvgEXcXpQ==",
+        "resolved": "4.0.1",
+        "contentHash": "s88KiWwDDYgOWV3A+ViJiqCe9cLU/Rt6Gb5TfOC7Abv/HKSoj4IHVPcOQk7jPt7HhZHHEts5IuaVpB30eO5B1w==",
         "dependencies": {
-          "xunit.analyzers": "2.0.0",
-          "xunit.v3.assert": "[4.0.0]",
-          "xunit.v3.core.mtp-v2": "[4.0.0]"
+          "xunit.analyzers": "2.1.0",
+          "xunit.v3.assert": "[4.0.1]",
+          "xunit.v3.core.mtp-v2": "[4.0.1]"
         }
       },
       "xunit.v3.runner.common": {
         "type": "Transitive",
-        "resolved": "4.0.0",
-        "contentHash": "1IEIAVRgnPo9nihd9D0TvxxsLKVRySa+K0wLy/m0SJ4RMdveRCUj/mICFboruO+ILUJ10fUfCCyp7MC5/y7cGw==",
+        "resolved": "4.0.1",
+        "contentHash": "p9AyfBpj2e5Iws8B57SbLiSngg7mEdvegHInKR4T2cjt2mis9h8htVgCnmu//agZO4zri6p6VQOj5EkHHTy3gA==",
         "dependencies": {
           "Microsoft.Win32.Registry": "[5.0.0]",
           "System.Security.AccessControl": "[6.0.1]",
-          "xunit.v3.common": "[4.0.0]"
+          "xunit.v3.common": "[4.0.1]"
         }
       },
       "xunit.v3.runner.inproc.console": {
         "type": "Transitive",
-        "resolved": "4.0.0",
-        "contentHash": "Sp5AALIlZUf2U5pEt2LHs+ebn18eAPSFnXEouJTltLez5p+NQvBm7kzsKSkZOM6iyoS6nuN/wKdsJt2LvixjsQ==",
+        "resolved": "4.0.1",
+        "contentHash": "Hqwfd6ehMIhPmVWUQ2dgmknzuLFTWeyp8ES1q3D4YR5bQVyiXDcaIoaFwqAz2zgLr49WaW4Mz7VVncP7u/Q8/Q==",
         "dependencies": {
-          "xunit.v3.extensibility.core": "[4.0.0]",
-          "xunit.v3.runner.common": "[4.0.0]"
+          "xunit.v3.extensibility.core": "[4.0.1]",
+          "xunit.v3.runner.common": "[4.0.1]"
         }
       },
       "Yarp.ReverseProxy": {
@@ -658,7 +658,7 @@
         "dependencies": {
           "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
           "Scalar.AspNetCore": "[2.17.3, )",
-          "Supabase": "[8.1.0, )",
+          "Supabase": "[8.1.1, )",
           "System.IdentityModel.Tokens.Jwt": "[8.22.0, )",
           "TimeZoneConverter": "[7.2.0, )",
           "Yarp.ReverseProxy": "[2.3.0, )"
