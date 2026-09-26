@@ -185,7 +185,7 @@ export function Faq() {
               </Question>
               <Question title="Is TrendWeight open source?">
                 <p>
-                  Yes. You can find the project on GitHub <ExternalLink href="https://github.com/ervwalter/trendweight">here</ExternalLink>. However, it's
+                  Yes. You can find the project on GitHub <ExternalLink href="https://github.com/twistymaze/trendweight">here</ExternalLink>. However, it's
                   essentially a one-man show (me), and I'm pretty protective of the project—probably too overprotective. That said, if you have something you'd
                   like to contribute, please reach out.
                 </p>
