@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>ervwalter/renovate-config:auto-merge"
+    "github>twistymaze/renovate-config:auto-merge"
   ],
   "semanticCommitType": "deps",
   "semanticCommitScope": "",
