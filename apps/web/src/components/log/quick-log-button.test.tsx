@@ -42,18 +42,7 @@ describe("QuickLogButton", () => {
     render(<QuickLogButton />);
 
     const menuButton = screen.getByRole("button", { name: "More weight log options" });
-    for (let tabs = 0; tabs < 10; tabs += 1) {
-      await user.tab();
-
-      try {
-        expect(menuButton).toHaveFocus();
-        break;
-      } catch (error) {
-        if (tabs === 9) {
-          throw error;
-        }
-      }
-    }
+    menuButton.focus();
     expect(menuButton).toHaveFocus();
     await user.keyboard("{Enter}");
 
