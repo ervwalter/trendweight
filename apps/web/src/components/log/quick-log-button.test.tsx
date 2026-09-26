@@ -41,7 +41,9 @@ describe("QuickLogButton", () => {
     const user = userEvent.setup();
     render(<QuickLogButton />);
 
-    await user.click(screen.getByRole("button", { name: "More weight log options" }));
+    const menuButton = screen.getByRole("button", { name: "More weight log options" });
+    menuButton.focus();
+    await user.keyboard("{Enter}");
 
     const item = await screen.findByRole("menuitem", { name: /Edit your weight log/ });
     expect(item).toHaveAttribute("href", "/log");
