@@ -135,7 +135,7 @@ The tests also run under `npm test` and before the release workflow writes to Gi
 Track upstream [template configuration support](https://github.com/googleapis/release-please/pull/2706);
 once released in the standard action, reassess replacing this wrapper.
 
-For a read-only preview, set `GITHUB_REPOSITORY=ervwalter/trendweight` and provide
+For a read-only preview, set `GITHUB_REPOSITORY=twistymaze/trendweight` and provide
 `RELEASE_PLEASE_TOKEN` through your environment, then run
 `node .github/scripts/release-please.mjs --dry-run`. This reads the configuration and history
 from GitHub's `main`, so unpushed configuration changes are not included. Do not

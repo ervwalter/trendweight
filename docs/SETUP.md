@@ -123,7 +123,7 @@ New npm resolutions have a five-day release-age floor, including transitive upda
 `npm ci` reuses the committed lockfile; this is not a retrospective age check of
 already locked packages. Review lockfile changes before accepting them. Renovate
 inherits a five-day normal cooldown and a twelve-hour security-fix cooldown from
-`ervwalter/renovate-config:default`. The npm resolution floor can delay a fresh
+`twistymaze/renovate-config:default`. The npm resolution floor can delay a fresh
 security fix beyond twelve hours; an urgent exception should be reviewed and
 limited to the affected package, rather than disabling the policy globally.
 Unknown npm/NuGet publication timestamps block version updates subject to the
@@ -139,7 +139,7 @@ workflow from enabling auto-merge. It does not cancel auto-merge already enabled
 manually. Renovate's built-in automerge is not enabled.
 
 Renovate alone retains `allow-remote=all` for the npm bundled-dependency bug tracked
-in [#463](https://github.com/ervwalter/trendweight/issues/463). Do not copy that
+in [#463](https://github.com/twistymaze/trendweight/issues/463). Do not copy that
 exception into the root `.npmrc`; `npmrcMerge` prepends the override during Renovate
 runs. Install scripts remain disabled in those runs.
 

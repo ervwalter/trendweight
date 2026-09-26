@@ -32,7 +32,7 @@ export function Footer() {
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm md:gap-4">
             <div className="flex items-center gap-2 md:gap-4">
-              <a href="https://github.com/ervwalter/trendweight" className="hover:text-muted-foreground transition-colors">
+              <a href="https://github.com/twistymaze/trendweight" className="hover:text-muted-foreground transition-colors">
                 <svg
                   className="h-4 w-4"
                   xmlns="http://www.w3.org/2000/svg"

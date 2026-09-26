@@ -16,7 +16,7 @@ Start with [local setup](docs/SETUP.md), which covers credentials, the database,
 and provider callbacks. An npm install alone does not configure these services.
 
 ```bash
-git clone https://github.com/ervwalter/trendweight.git
+git clone https://github.com/twistymaze/trendweight.git
 cd trendweight
 npm ci
 dotnet restore apps/api/TrendWeight.sln
